@@ -26,6 +26,7 @@ interface ServiceCardProps {
   service: Service;
   matchConfidence?: MatchConfidence;
   matchScore?: number;
+  fromSessionId?: string;
 }
 
 const CONFIDENCE_COLORS: Record<
@@ -55,6 +56,7 @@ export default function ServiceCard({
   service,
   matchConfidence,
   matchScore,
+  fromSessionId,
 }: ServiceCardProps) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -84,7 +86,11 @@ export default function ServiceCard({
         },
         transition: "transform 0.2s ease, box-shadow 0.2s ease",
       }}
-      onClick={() => navigate(`/services/${service.slug}`)}
+      onClick={() =>
+        navigate(
+          `/services/${service.slug}${fromSessionId ? `?session=${fromSessionId}` : ""}`,
+        )
+      }
     >
       <CardContent sx={{ flex: 1, pb: 1 }}>
         {/* Top row: categories + confidence */}

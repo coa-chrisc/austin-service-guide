@@ -19,6 +19,7 @@ interface StartHereHeroProps {
   topMatch?: ServiceMatch;
   nextItem?: ApplicationOrderItem;
   remainingCount: number;
+  sessionId?: string;
   onShowAll: () => void;
 }
 
@@ -27,9 +28,11 @@ export default function StartHereHero({
   topMatch,
   nextItem,
   remainingCount,
+  sessionId,
   onShowAll,
 }: StartHereHeroProps) {
   const navigate = useNavigate();
+  const sessionQs = sessionId ? `?session=${sessionId}` : "";
   const service = topMatch?.service;
   const primaryLocation =
     service?.locations?.find((l) => l.is_primary) ?? service?.locations?.[0];
@@ -238,7 +241,9 @@ export default function StartHereHero({
             cursor: "pointer",
             "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)" },
           }}
-          onClick={() => navigate(`/services/${nextItem.service_slug}`)}
+          onClick={() =>
+            navigate(`/services/${nextItem.service_slug}${sessionQs}`)
+          }
         >
           <CardContent
             sx={{

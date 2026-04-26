@@ -339,6 +339,7 @@ export default function Results() {
                 topMatch={topMatch}
                 nextItem={nextItem}
                 remainingCount={Math.max(matches.length - 1, 0)}
+                sessionId={sessionId}
                 onShowAll={() => setView("all")}
               />
             ) : (
@@ -747,6 +748,7 @@ export default function Results() {
                           service={match.service}
                           matchConfidence={match.match_confidence}
                           matchScore={match.match_score}
+                          fromSessionId={sessionId}
                         />
                       </Grid>
                     ))}
