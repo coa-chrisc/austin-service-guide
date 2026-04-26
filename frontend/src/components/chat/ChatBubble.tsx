@@ -28,10 +28,12 @@ export default function ChatBubble({
         alignItems: "flex-start",
         gap: 1.5,
         mb: 2,
-        animation: "fadeSlideIn 0.3s ease-out",
-        "@keyframes fadeSlideIn": {
-          from: { opacity: 0, transform: "translateY(8px)" },
-          to: { opacity: 1, transform: "translateY(0)" },
+        "@media (prefers-reduced-motion: no-preference)": {
+          animation: "fadeSlideIn 0.3s ease-out",
+          "@keyframes fadeSlideIn": {
+            from: { opacity: 0, transform: "translateY(8px)" },
+            to: { opacity: 1, transform: "translateY(0)" },
+          },
         },
       }}
     >
@@ -150,7 +152,9 @@ export default function ChatBubble({
                 flexWrap: "wrap",
                 gap: 0.75,
                 mt: 1.5,
-                animation: "fadeSlideIn 0.4s ease-out 0.15s both",
+                "@media (prefers-reduced-motion: no-preference)": {
+                  animation: "fadeSlideIn 0.4s ease-out 0.15s both",
+                },
               }}
             >
               {message.suggested_buttons.map((btn) => (

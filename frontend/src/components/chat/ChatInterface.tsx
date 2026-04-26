@@ -142,6 +142,7 @@ export default function ChatInterface({
         <LinearProgress
           variant="determinate"
           value={progress}
+          aria-label="Intake progress"
           sx={{
             height: 6,
             borderRadius: 3,
@@ -189,6 +190,10 @@ export default function ChatInterface({
 
       {/* Messages area */}
       <Box
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Conversation"
         sx={{
           flex: 1,
           overflowY: "auto",
@@ -249,15 +254,19 @@ export default function ChatInterface({
         {/* Typing indicator */}
         {isLoading && (
           <Box
+            role="status"
+            aria-label="Assistant is typing"
             sx={{
               display: "flex",
               alignItems: "center",
               gap: 1.5,
               mb: 2,
-              animation: "fadeSlideIn 0.3s ease-out",
-              "@keyframes fadeSlideIn": {
-                from: { opacity: 0, transform: "translateY(8px)" },
-                to: { opacity: 1, transform: "translateY(0)" },
+              "@media (prefers-reduced-motion: no-preference)": {
+                animation: "fadeSlideIn 0.3s ease-out",
+                "@keyframes fadeSlideIn": {
+                  from: { opacity: 0, transform: "translateY(8px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
               },
             }}
           >
@@ -284,14 +293,16 @@ export default function ChatInterface({
                     height: 8,
                     borderRadius: "50%",
                     bgcolor: "text.secondary",
-                    animation: "typingDot 1.4s infinite ease-in-out",
-                    animationDelay: `${i * 0.2}s`,
-                    "@keyframes typingDot": {
-                      "0%, 80%, 100%": {
-                        opacity: 0.3,
-                        transform: "scale(0.8)",
+                    "@media (prefers-reduced-motion: no-preference)": {
+                      animation: "typingDot 1.4s infinite ease-in-out",
+                      animationDelay: `${i * 0.2}s`,
+                      "@keyframes typingDot": {
+                        "0%, 80%, 100%": {
+                          opacity: 0.3,
+                          transform: "scale(0.8)",
+                        },
+                        "40%": { opacity: 1, transform: "scale(1)" },
                       },
-                      "40%": { opacity: 1, transform: "scale(1)" },
                     },
                   }}
                 />
@@ -314,10 +325,12 @@ export default function ChatInterface({
             flexDirection: "column",
             alignItems: "stretch",
             gap: 1,
-            animation: "ctaSlideIn 0.4s ease-out",
-            "@keyframes ctaSlideIn": {
-              from: { opacity: 0, transform: "translateY(12px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
+            "@media (prefers-reduced-motion: no-preference)": {
+              animation: "ctaSlideIn 0.4s ease-out",
+              "@keyframes ctaSlideIn": {
+                from: { opacity: 0, transform: "translateY(12px)" },
+                to: { opacity: 1, transform: "translateY(0)" },
+              },
             },
           }}
         >
@@ -360,7 +373,9 @@ export default function ChatInterface({
       {/* Input area */}
       <Box
         sx={{
-          p: 2,
+          pt: 2,
+          px: 2,
+          pb: "calc(16px + env(safe-area-inset-bottom, 0px))",
           borderTop: "1px solid",
           borderColor: "divider",
           bgcolor: "background.paper",
@@ -392,11 +407,12 @@ export default function ChatInterface({
             color="primary"
             onClick={() => handleSend(inputValue)}
             disabled={!inputValue.trim() || isLoading || isComplete}
+            aria-label="Send message"
             sx={{
               bgcolor: "primary.main",
               color: "white",
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               "&:hover": { bgcolor: "primary.dark" },
               "&:disabled": { bgcolor: "grey.300", color: "grey.500" },
             }}
