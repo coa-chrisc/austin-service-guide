@@ -49,6 +49,7 @@ import {
   type ApplicationOrderItem,
 } from "@/lib/api";
 import { setActiveSession } from "@/lib/session";
+import { canNativeShare, nativeShare } from "@/lib/share";
 import type {
   ServiceMatch,
   MatchConfidence,
@@ -114,9 +115,30 @@ export default function Results() {
 
   const handlePrint = () => window.print();
 
-  const openShareSms = () => {
+  const openShareDialog = () => {
     setShareChannel("sms");
     setShareOpen(true);
+  };
+
+  const handleShare = async () => {
+    if (!sessionId) return;
+    const url = `${window.location.origin}/results/${sessionId}`;
+    const matchCount = data?.matches.length ?? 0;
+    const text =
+      matchCount > 0
+        ? `My Austin Service Guide plan — ${matchCount} matched service${matchCount !== 1 ? "s" : ""}.`
+        : "My Austin Service Guide plan.";
+
+    if (canNativeShare()) {
+      const result = await nativeShare({
+        title: "My Austin Service Guide plan",
+        text,
+        url,
+      });
+      if (result.kind === "shared" || result.kind === "cancelled") return;
+      // unsupported / error → fall through to dialog
+    }
+    openShareDialog();
   };
 
   const handleShareSubmit = async () => {
@@ -500,7 +522,7 @@ export default function Results() {
                   <Button
                     variant="contained"
                     startIcon={<ShareIcon />}
-                    onClick={() => setShareOpen(true)}
+                    onClick={handleShare}
                     sx={{
                       bgcolor: "rgba(255,255,255,0.2)",
                       color: "white",
@@ -812,11 +834,11 @@ export default function Results() {
           <Button
             variant="outlined"
             fullWidth
-            startIcon={<SmsIcon />}
-            onClick={openShareSms}
+            startIcon={<ShareIcon />}
+            onClick={handleShare}
             sx={{ minHeight: 48, fontWeight: 600, borderRadius: "24px" }}
           >
-            Send to my phone
+            Send to me
           </Button>
         </Paper>
       )}
@@ -895,7 +917,7 @@ export default function Results() {
         fullScreen={isPhone}
         className="no-print"
       >
-        <DialogTitle>Send your matches</DialogTitle>
+        <DialogTitle>Send your plan</DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
         >
@@ -980,6 +1002,14 @@ export default function Results() {
         onClose={() => setSnackbar(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         message={snackbar ?? ""}
+        sx={{
+          // Lift above the sticky action bar in simple view (the bar is
+          // ~64px tall after safe-area inset).
+          bottom: {
+            xs: view === "simple" && topItem ? 88 : 24,
+            sm: 24,
+          },
+        }}
       />
     </Box>
   );
