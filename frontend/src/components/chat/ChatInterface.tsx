@@ -44,6 +44,16 @@ export default function ChatInterface({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Re-focus the input after the assistant's reply lands. The TextField is
+  // disabled while isLoading is true, so a focus() call from the request's
+  // finally block runs before React re-enables the input — this effect runs
+  // after the render and reliably restores focus for the next turn.
+  useEffect(() => {
+    if (!isLoading && !isComplete) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading, isComplete]);
+
   useEffect(() => {
     const convo = session.conversation ?? [];
     if (convo.length > 0) {
@@ -104,7 +114,6 @@ export default function ChatInterface({
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsLoading(false);
-      inputRef.current?.focus();
     }
   };
 
