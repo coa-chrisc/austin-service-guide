@@ -8,7 +8,7 @@ Austin Service Guide — an AI-powered resident service portal for the City of A
 
 Two interfaces: a resident-facing portal and a COA staff administrative console.
 
-This is a **demonstration application** showcasing Azure OpenAI capabilities.
+This is a **demonstration application** showcasing the OpenAI Responses API with reasoning models for an agent-style civic services intake.
 
 ## Tech Stack
 
@@ -16,30 +16,39 @@ Built on the [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter) t
 
 - **Frontend:** React 18 + TypeScript + Vite + Material UI v7 (MUI). No Tailwind — all styling through MUI theme system via `brand.config.json`.
 - **Backend:** FastAPI (Python 3.11+) + Pydantic v2. Routes under `/api/v1/`.
-- **AI:** Azure OpenAI — **GPT-5.4-mini** is the single model for all operations (intake, matching, translation, risk assessment). text-embedding-ada-002 for semantic search. All AI calls go through `ai_service.py` with retry logic — never call providers directly.
-- **Database:** Azure Database for PostgreSQL (Flexible Server) with pgvector extension. Migrations via Alembic.
-- **Auth:** Azure AD B2C for residents, Azure AD / Entra ID for staff. No Supabase.
-- **Storage:** Azure Blob Storage. **Caching:** Azure Cache for Redis.
-- **Hosting:** Azure Container Apps. **CI/CD:** GitHub Actions.
+- **AI:** Standard OpenAI **Responses API** with **`gpt-5.5-2026-04-23`** at `reasoning_effort="medium"`. Single model for the conversational intake, the catalog tool calls, language switching, and matching. All AI calls go through `backend/app/services/ai.py`. Falls back to a scripted demo flow when `OPENAI_API_KEY` is unset or `DEMO_MODE=true`.
+- **Database (demo):** in-memory seed data in `backend/app/services/seed_data.py` (PostgreSQL + pgvector are the production target — not wired in this demo).
+- **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Production target is Azure AD B2C / Entra ID.
+- **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend).
 
 ## Architecture
 
-The AI chat assistant is the core interface. It uses OpenAI function calling (tool use) with 7 tools: `search_services`, `get_service_details`, `search_by_location`, `check_eligibility`, `get_crisis_resources`, `calculate_benefits`, `find_matching_services_batch`. The assistant handles language detection, mid-conversation language switching, and cross-lingual service catalog search (translates queries to English for DB lookup, presents results in resident's language).
+The AI intake is implemented as a **Responses API agent loop** in `backend/app/services/ai.py`. Each turn the model can call any of these function tools, often several in sequence within a single user turn:
 
-Service matching is two-phase: rules-based (eligibility_rules evaluated against resident profile) then semantic (pgvector similarity search). Results are merged and ranked.
+- `search_services(query, category?, zip?)` — keyword search the in-memory catalog
+- `get_service_details(slug)` — full record for one service
+- `get_crisis_resources(language?)` — surface crisis hotlines
+- `extract_profile(...)` — persist resident profile fields the model has inferred
+- `find_matching_services()` — run the rules-based matching engine on the current profile
+- `set_language(code)` — switch the session language mid-conversation
+- `complete_intake()` — finalize, run matching, return the summary
 
-The service catalog is stored in English as the canonical language. All translation is performed by GPT-5.4-mini at runtime — no static translation files.
+The loop walks `response.output`, dispatches each `function_call` item locally, appends the call + a `function_call_output` (correlated by `call_id`) to the conversation context, and re-invokes `client.responses.create(...)` until the model returns a plain text message. Iteration cap lives in `OPENAI_MAX_TOOL_ITERATIONS` (default 6).
 
-Admin console lives under `/admin/*` routes in the same SPA, gated by Entra ID auth. Four roles: super_admin, admin, manager, viewer.
+Service matching today is rules-based only (`backend/app/services/matching.py`). Semantic search via pgvector is the production target.
+
+The service catalog is stored in English. All translation is delegated to the model at runtime — no static translation files.
+
+Admin console lives under `/admin/*` routes in the same SPA. Auth is stubbed for the demo; production target is Entra ID with four roles (super_admin, admin, manager, viewer).
 
 ## Key Design Decisions
 
-- **No Supabase** — pure Azure stack (PostgreSQL, AD B2C, Blob Storage, Redis)
-- **No human translation** — all multilingual support via generative AI at runtime
-- **GPT-5.4-mini for everything** — single model, demo app
-- **English-canonical catalog** — services stored in English, AI translates on the fly
-- **No-account-first** — full intake and results work without creating an account; anonymous session data lives only in browser memory
-- **Crisis detection interrupts intake** — if the AI detects crisis language, it immediately surfaces emergency resources via `get_crisis_resources` tool before continuing
+- **OpenAI Responses API, not Chat Completions** — needed for the multi-tool agent loop and reasoning models
+- **`gpt-5.5-2026-04-23` at `reasoning_effort="medium"`** — one model for everything (conversation, tool dispatch, translation, summarization)
+- **No human translation** — multilingual support is purely generative
+- **English-canonical catalog** — services stored in English, model translates on the fly
+- **No-account-first** — full intake and results work without an account; anonymous session data lives only in browser memory + backend in-memory store
+- **Crisis detection interrupts intake** — keyword check in the backend short-circuits to a crisis response; the model also has `get_crisis_resources` available to call proactively
 
 ## Design Documents
 
@@ -56,7 +65,7 @@ Read these before implementing:
 These patterns come from the starter template and must be followed:
 
 - MUI: use `sx` prop for one-off styles, `styled()` for reusable. Import from specific paths (`@mui/material/Button`). Use `theme.palette.*` colors, never hardcoded hex. Buttons: `textTransform: "none"`, `fontWeight: 600`, `disableElevation: true`.
-- Backend: AI provider abstraction via factory pattern in `ai_providers/`. New providers subclass `AIProvider` from `base.py`. Register in `_PROVIDER_REGISTRY` dict.
+- Backend: AI calls live in `backend/app/services/ai.py`. The Responses-API path is `_responses_flow`; the scripted path is `_demo_flow`. The router (`process_message`) picks based on `settings.use_live_ai`.
 - Branding: all visual identity driven by `brand.config.json`. Use `useBrandConfig()` hook.
 - Auth: FastAPI dependency injection (`Depends(require_auth)`).
 - Grid: MUI Grid v2 with `size` prop: `<Grid size={{ xs: 12, md: 6 }}>`.

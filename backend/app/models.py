@@ -165,6 +165,10 @@ class IntakeSession(BaseModel):
     matches: list[ServiceMatch] = Field(default_factory=list)
     risk_flags: list[RiskFlag] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Full Responses-API input items (user messages, assistant messages,
+    # reasoning items, function_calls, function_call_outputs). Replayed
+    # verbatim each turn so the model has its own tool-call history.
+    responses_input: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
