@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import { useTheme } from "@mui/material/styles";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import type { MapPin } from "@/types";
+import { haversineMiles } from "@/lib/geo";
 
 const AUSTIN_CENTER: [number, number] = [30.2672, -97.7431];
 const DEFAULT_ZOOM = 11;
@@ -221,6 +224,18 @@ function Recenter({ position }: { position: [number, number] }) {
   return null;
 }
 
+function NearestFitter({ pins }: { pins: MapPin[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (pins.length === 0) return;
+    const bounds = L.latLngBounds(
+      pins.map((p) => [p.latitude, p.longitude] as [number, number]),
+    );
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+  }, [map, pins]);
+  return null;
+}
+
 /* ── Main component ─────────────────────────────────────────────────── */
 
 interface ServiceMapProps {
@@ -243,15 +258,74 @@ export default function ServiceMap({
   fitBounds = false,
 }: ServiceMapProps) {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [userPosition, setUserPosition] = useState<[number, number] | null>(
     null,
   );
   const [mapReady, setMapReady] = useState(false);
+  const [nearestActive, setNearestActive] = useState(false);
 
   const filteredPins = useMemo(() => {
     if (!selectedCategories || selectedCategories.length === 0) return pins;
     return pins.filter((p) => selectedCategories.includes(p.category));
   }, [pins, selectedCategories]);
+
+  const distancesById = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!userPosition) return map;
+    const origin = { lat: userPosition[0], lng: userPosition[1] };
+    for (const p of filteredPins) {
+      map.set(
+        p.id,
+        haversineMiles(origin, { lat: p.latitude, lng: p.longitude }),
+      );
+    }
+    return map;
+  }, [filteredPins, userPosition]);
+
+  const nearestPins = useMemo(() => {
+    if (!userPosition || filteredPins.length === 0) return [];
+    return [...filteredPins]
+      .sort(
+        (a, b) =>
+          (distancesById.get(a.id) ?? 0) - (distancesById.get(b.id) ?? 0),
+      )
+      .slice(0, 5);
+  }, [filteredPins, userPosition, distancesById]);
+
+  const nearestIds = useMemo(
+    () => new Set(nearestActive ? nearestPins.map((p) => p.id) : []),
+    [nearestActive, nearestPins],
+  );
+
+  useEffect(() => {
+    if (nearestActive && (!userPosition || nearestPins.length === 0)) {
+      setNearestActive(false);
+    }
+  }, [nearestActive, userPosition, nearestPins.length]);
+
+  const clusterIconCreate = useCallback(
+    (cluster: { getChildCount: () => number }) => {
+      const count = cluster.getChildCount();
+      const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+      const color = theme.palette.primary.main;
+      return L.divIcon({
+        html: `<div style="
+          background:${color};
+          color:white;
+          width:${size}px;height:${size}px;
+          border-radius:50%;
+          display:flex;align-items:center;justify-content:center;
+          font-weight:700;font-size:13px;font-family:inherit;
+          border:3px solid rgba(255,255,255,0.9);
+          box-shadow:0 2px 6px rgba(0,0,0,0.3);
+        ">${count}</div>`,
+        className: "",
+        iconSize: [size, size],
+      });
+    },
+    [theme.palette.primary.main],
+  );
 
   const allCategories = useMemo(() => {
     if (categories.length > 0) return categories;
@@ -344,57 +418,82 @@ export default function ServiceMap({
           />
 
           {userPosition && <Recenter position={userPosition} />}
+          {nearestActive && nearestPins.length > 0 && (
+            <NearestFitter pins={nearestPins} />
+          )}
 
-          {filteredPins.map((pin) => (
-            <Marker
-              key={pin.id}
-              position={[pin.latitude, pin.longitude]}
-              icon={createCategoryIcon(pin.category)}
-            >
-              <Popup>
-                <Box sx={{ minWidth: 220, p: 0.5 }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                      mb: 0.5,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {pin.name}
-                  </Typography>
-                  <Chip
-                    label={getCategoryDisplayName(pin.category)}
-                    size="small"
-                    sx={{
-                      bgcolor: getCategoryColor(pin.category),
-                      color: "white",
-                      fontSize: 12,
-                      height: 24,
-                      fontWeight: 600,
-                      mb: 1.5,
-                    }}
-                  />
-                  <Box>
-                    <Button
-                      size="small"
-                      variant="contained"
-                      onClick={() => navigate(`/services/${pin.service_id}`)}
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: 13,
-                        borderRadius: "16px",
-                        py: 0.75,
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </Box>
-                </Box>
-              </Popup>
-            </Marker>
-          ))}
+          <MarkerClusterGroup
+            chunkedLoading
+            iconCreateFunction={clusterIconCreate}
+            showCoverageOnHover={false}
+          >
+            {filteredPins.map((pin) => {
+              const distanceMi = distancesById.get(pin.id);
+              const isHighlighted = nearestIds.has(pin.id);
+              return (
+                <Marker
+                  key={pin.id}
+                  position={[pin.latitude, pin.longitude]}
+                  icon={createCategoryIcon(pin.category)}
+                  opacity={isHighlighted ? 1 : nearestActive ? 0.55 : 1}
+                >
+                  <Popup>
+                    <Box sx={{ minWidth: 220, p: 0.5 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          mb: 0.5,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {pin.name}
+                      </Typography>
+                      <Chip
+                        label={getCategoryDisplayName(pin.category)}
+                        size="small"
+                        sx={{
+                          bgcolor: getCategoryColor(pin.category),
+                          color: "white",
+                          fontSize: 12,
+                          height: 24,
+                          fontWeight: 600,
+                          mb: distanceMi != null ? 0.5 : 1.5,
+                        }}
+                      />
+                      {distanceMi != null && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mb: 1.5 }}
+                        >
+                          {distanceMi.toFixed(1)} mi away
+                        </Typography>
+                      )}
+                      <Box>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() =>
+                            navigate(`/services/${pin.service_id}`)
+                          }
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: 13,
+                            borderRadius: "16px",
+                            py: 0.75,
+                          }}
+                        >
+                          View Details
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Popup>
+                </Marker>
+              );
+            })}
+          </MarkerClusterGroup>
 
           {userPosition && (
             <Marker
@@ -423,6 +522,27 @@ export default function ServiceMap({
             </Marker>
           )}
         </MapContainer>
+
+        {userPosition && filteredPins.length > 0 && (
+          <Chip
+            label="Nearest 5"
+            clickable
+            color={nearestActive ? "primary" : "default"}
+            variant={nearestActive ? "filled" : "outlined"}
+            onClick={() => setNearestActive((v) => !v)}
+            sx={{
+              position: "absolute",
+              top: 12,
+              left: 12,
+              zIndex: 1000,
+              fontWeight: 600,
+              bgcolor: nearestActive ? "primary.main" : "background.paper",
+              color: nearestActive ? "primary.contrastText" : "text.primary",
+              boxShadow: "0 2px 6px rgba(34, 37, 78, 0.2)",
+              borderColor: "primary.main",
+            }}
+          />
+        )}
 
         {showControls && (
           <IconButton
