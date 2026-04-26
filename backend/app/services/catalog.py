@@ -17,6 +17,7 @@ from app.models import (
     ServiceCategory,
     ServiceLocation,
 )
+from app.services.hours import is_open_now, next_open_label, service_open_now
 
 
 # ── Module-level stores (populated by ``load_seed_data``) ─────────────
@@ -101,6 +102,7 @@ def get_all_services(
     zip_code: str | None = None,
     radius: float = 10.0,
     status: str | None = None,
+    open_now: bool = False,
     page: int = 1,
     page_size: int = 20,
 ) -> dict[str, Any]:
@@ -148,6 +150,9 @@ def get_all_services(
                             return True
                 return False
             results = [s for s in results if _within_radius(s)]
+
+    if open_now:
+        results = [s for s in results if service_open_now(s.locations)]
 
     total = len(results)
     total_pages = max(1, math.ceil(total / page_size))
@@ -209,6 +214,7 @@ def get_map_pins(
                     or loc.longitude < bounds.get("west", -180)
                     or loc.longitude > bounds.get("east", 180)):
                     continue
+            open_state = is_open_now(loc) if loc.hours else None
             pins.append(MapPin(
                 id=loc.id,
                 service_id=svc.id,
@@ -216,6 +222,8 @@ def get_map_pins(
                 category=primary_cat,
                 latitude=loc.latitude,
                 longitude=loc.longitude,
+                open_now=open_state,
+                next_open=next_open_label(loc) if open_state is False else None,
             ))
     return pins
 

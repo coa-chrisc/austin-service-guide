@@ -70,6 +70,7 @@ class ServiceLocation(BaseModel):
     phone: str = ""
     is_primary: bool = False
     hours: dict[str, str] = Field(default_factory=dict)
+    hours_verified: bool = False
 
 
 class Service(BaseModel):
@@ -300,6 +301,8 @@ class MapPin(BaseModel):
     category: str
     latitude: float
     longitude: float
+    open_now: bool | None = None
+    next_open: str | None = None
 
 
 class CrisisResource(BaseModel):

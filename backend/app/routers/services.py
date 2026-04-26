@@ -26,6 +26,7 @@ async def list_services(
     zip_code: Optional[str] = Query(None, description="Center zip code for radius filter"),
     radius: float = Query(10.0, description="Radius in miles from zip_code center"),
     status: Optional[str] = Query(None, description="Filter by service status"),
+    open_now: bool = Query(False, description="Only services with at least one location open right now"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -36,6 +37,7 @@ async def list_services(
         zip_code=zip_code,
         radius=radius,
         status=status,
+        open_now=open_now,
         page=page,
         page_size=page_size,
     )
