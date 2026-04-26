@@ -65,7 +65,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
       },
       {
         label: "Eligibility Rules",
-        path: "/admin/services",
+        path: "/admin/eligibility",
         icon: <RuleIcon />,
       },
     ],
@@ -75,14 +75,14 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
     items: [
       { label: "Overview", path: "/admin/analytics", icon: <BarChartIcon /> },
       { label: "Equity", path: "/admin/equity", icon: <BalanceIcon /> },
-      { label: "Demand Map", path: "/admin/analytics", icon: <MapIcon /> },
+      { label: "Demand Map", path: "/admin/demand-map", icon: <MapIcon /> },
       { label: "Languages", path: "/admin/languages", icon: <TranslateIcon /> },
     ],
   },
   {
     heading: "SYSTEM",
     items: [
-      { label: "Reports", path: "/admin/analytics", icon: <AssessmentIcon /> },
+      { label: "Reports", path: "/admin/reports", icon: <AssessmentIcon /> },
       { label: "Audit Log", path: "/admin/audit", icon: <HistoryIcon /> },
       { label: "Staff", path: "/admin/staff", icon: <BadgeIcon /> },
     ],

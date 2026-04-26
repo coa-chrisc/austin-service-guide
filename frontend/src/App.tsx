@@ -18,6 +18,9 @@ import AdminEquity from "@/pages/admin/AdminEquity";
 import AdminLanguages from "@/pages/admin/AdminLanguages";
 import AdminAuditLog from "@/pages/admin/AdminAuditLog";
 import AdminStaff from "@/pages/admin/AdminStaff";
+import AdminEligibility from "@/pages/admin/AdminEligibility";
+import AdminDemandMap from "@/pages/admin/AdminDemandMap";
+import AdminReports from "@/pages/admin/AdminReports";
 import Box from "@mui/material/Box";
 
 export default function App() {
@@ -31,9 +34,12 @@ export default function App() {
         <Route path="services" element={<AdminServices />} />
         <Route path="services/new" element={<AdminServiceEdit />} />
         <Route path="services/:id/edit" element={<AdminServiceEdit />} />
+        <Route path="eligibility" element={<AdminEligibility />} />
         <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="demand-map" element={<AdminDemandMap />} />
         <Route path="equity" element={<AdminEquity />} />
         <Route path="languages" element={<AdminLanguages />} />
+        <Route path="reports" element={<AdminReports />} />
         <Route path="audit" element={<AdminAuditLog />} />
         <Route path="staff" element={<AdminStaff />} />
       </Route>
