@@ -43,7 +43,7 @@ import SmsIcon from "@mui/icons-material/Sms";
 import EmailIcon from "@mui/icons-material/Email";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ServiceCard from "@/components/services/ServiceCard";
-import StartHereHero from "@/components/results/StartHereHero";
+import PlanList from "@/components/results/PlanList";
 import {
   getIntakeResults,
   shareIntakeResults,
@@ -277,9 +277,8 @@ export default function Results() {
   const hasBenefits =
     benefits.total_monthly_value > 0 || benefits.breakdown.length > 0;
 
-  // Find rank-1 service from sequencing for the simple-view hero
+  // Find rank-1 service from sequencing — used by hero + sticky bar
   const topItem = data.application_order[0];
-  const nextItem = data.application_order[1];
   const topMatch = topItem
     ? matches.find((m) => m.service.id === topItem.service_id)
     : undefined;
@@ -326,8 +325,8 @@ export default function Results() {
               },
             }}
           >
-            <ToggleButton value="simple">Simple view</ToggleButton>
-            <ToggleButton value="all">Show all matches</ToggleButton>
+            <ToggleButton value="simple">My plan</ToggleButton>
+            <ToggleButton value="all">Browse all</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -400,11 +399,9 @@ export default function Results() {
             )}
 
             {topItem ? (
-              <StartHereHero
-                topItem={topItem}
-                topMatch={topMatch}
-                nextItem={nextItem}
-                remainingCount={Math.max(matches.length - 1, 0)}
+              <PlanList
+                items={data.application_order}
+                matches={matches}
                 sessionId={sessionId}
                 onShowAll={() => setView("all")}
               />

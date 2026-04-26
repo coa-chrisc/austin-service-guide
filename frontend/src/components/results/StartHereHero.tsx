@@ -9,30 +9,18 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CheckIcon from "@mui/icons-material/Check";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { useNavigate } from "react-router-dom";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
 
 interface StartHereHeroProps {
   topItem: ApplicationOrderItem;
   topMatch?: ServiceMatch;
-  nextItem?: ApplicationOrderItem;
-  remainingCount: number;
-  sessionId?: string;
-  onShowAll: () => void;
 }
 
 export default function StartHereHero({
   topItem,
   topMatch,
-  nextItem,
-  remainingCount,
-  sessionId,
-  onShowAll,
 }: StartHereHeroProps) {
-  const navigate = useNavigate();
-  const sessionQs = sessionId ? `?session=${sessionId}` : "";
   const service = topMatch?.service;
   const primaryLocation =
     service?.locations?.find((l) => l.is_primary) ?? service?.locations?.[0];
@@ -231,80 +219,6 @@ export default function StartHereHero({
           )}
         </CardContent>
       </Card>
-
-      {/* Next preview */}
-      {nextItem && (
-        <Card
-          sx={{
-            borderRadius: 3,
-            mb: 2,
-            cursor: "pointer",
-            "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)" },
-          }}
-          onClick={() =>
-            navigate(`/services/${nextItem.service_slug}${sessionQs}`)
-          }
-        >
-          <CardContent
-            sx={{
-              p: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              "&:last-child": { pb: 2 },
-            }}
-          >
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                bgcolor: "grey.200",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                color: "text.secondary",
-                flexShrink: 0,
-              }}
-            >
-              2
-            </Box>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", fontWeight: 600 }}
-              >
-                NEXT
-              </Typography>
-              <Typography variant="subtitle2" fontWeight={700} noWrap>
-                {nextItem.service_name}
-              </Typography>
-            </Box>
-            <ArrowForwardIcon color="action" />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Show all matches */}
-      {remainingCount > 0 && (
-        <Button
-          variant="outlined"
-          size="large"
-          fullWidth
-          onClick={onShowAll}
-          sx={{
-            minHeight: 52,
-            fontSize: "1rem",
-            fontWeight: 600,
-            borderRadius: "28px",
-            mb: 2,
-          }}
-        >
-          Show all {remainingCount + 1} services
-        </Button>
-      )}
     </Box>
   );
 }
