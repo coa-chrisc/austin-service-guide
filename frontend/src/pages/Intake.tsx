@@ -11,7 +11,7 @@ import Stack from "@mui/material/Stack";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ChatInterface from "@/components/chat/ChatInterface";
-import { startIntake } from "@/lib/api";
+import { startIntake, getIntakePlanSummary } from "@/lib/api";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import {
   getActiveSession,
@@ -29,6 +29,8 @@ export default function Intake() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("checking");
   const [recoveredId, setRecoveredId] = useState<string | null>(null);
+  const [planSummary, setPlanSummary] = useState<string | null>(null);
+  const [confirmStartOver, setConfirmStartOver] = useState(false);
 
   const lifeEvent = searchParams.get("event") || undefined;
   const skipRecovery = !!lifeEvent || searchParams.get("fresh") === "1";
@@ -45,6 +47,10 @@ export default function Intake() {
     if (existing) {
       setRecoveredId(existing);
       setPhase("recovering");
+      setPlanSummary(null);
+      getIntakePlanSummary(existing)
+        .then((res) => setPlanSummary(res.summary))
+        .catch(() => setPlanSummary(null));
     } else {
       beginNewIntake();
     }
@@ -77,8 +83,13 @@ export default function Intake() {
   };
 
   const handleStartOver = () => {
+    if (!confirmStartOver) {
+      setConfirmStartOver(true);
+      return;
+    }
     clearActiveSession();
     setRecoveredId(null);
+    setConfirmStartOver(false);
     beginNewIntake();
   };
 
@@ -120,11 +131,35 @@ export default function Intake() {
             <Typography
               variant="body1"
               color="text.secondary"
-              sx={{ mb: 3, lineHeight: 1.6 }}
+              sx={{ mb: planSummary ? 1.5 : 3, lineHeight: 1.6 }}
             >
               You finished an intake earlier. Pick up where you left off, or
               start a fresh conversation.
             </Typography>
+            {planSummary && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 1.75,
+                  borderRadius: 2,
+                  bgcolor: "primary.50",
+                  border: "1px solid",
+                  borderColor: "primary.light",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{ color: "primary.dark", lineHeight: 1.5 }}
+                >
+                  {planSummary}
+                </Typography>
+              </Box>
+            )}
+            {confirmStartOver && (
+              <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+                This will clear your saved plan. Are you sure?
+              </Alert>
+            )}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <Button
                 variant="contained"
@@ -141,7 +176,8 @@ export default function Intake() {
                 See my plan
               </Button>
               <Button
-                variant="outlined"
+                variant={confirmStartOver ? "contained" : "outlined"}
+                color={confirmStartOver ? "error" : "primary"}
                 size="large"
                 fullWidth
                 startIcon={<RefreshIcon />}
@@ -152,9 +188,19 @@ export default function Intake() {
                   borderRadius: "26px",
                 }}
               >
-                Start over
+                {confirmStartOver ? "Yes, start over" : "Start over"}
               </Button>
             </Stack>
+            {confirmStartOver && (
+              <Button
+                size="small"
+                onClick={() => setConfirmStartOver(false)}
+                sx={{ mt: 1.5, fontWeight: 600, alignSelf: "center" }}
+                fullWidth
+              >
+                Cancel
+              </Button>
+            )}
           </CardContent>
         </Card>
       </Box>

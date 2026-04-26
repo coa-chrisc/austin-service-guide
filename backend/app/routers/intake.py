@@ -9,7 +9,12 @@ from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest
-from app.services.ai import get_session, process_message, start_session
+from app.services.ai import (
+    generate_plan_summary,
+    get_session,
+    process_message,
+    start_session,
+)
 from app.services.notify import send_email, send_sms
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
@@ -77,6 +82,23 @@ async def get_results(session_id: str):
         "benefits_estimate": benefits,
         "application_order": sequencing,
         "conversation_length": len(session.conversation),
+    }
+
+
+@router.get("/{session_id}/summary")
+async def get_plan_summary(session_id: str):
+    """Return a one-sentence resident-facing summary of a saved plan."""
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    summary = await generate_plan_summary(session)
+    return {
+        "session_id": session_id,
+        "summary": summary,
+        "match_count": len(session.matches),
+        "started_at": session.created_at.isoformat(),
+        "status": session.status.value,
     }
 
 

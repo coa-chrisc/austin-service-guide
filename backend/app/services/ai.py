@@ -941,3 +941,54 @@ async def _complete_intake_demo(session: IntakeSession) -> IntakeMessage:
     )
     session.conversation.append(msg)
     return msg
+
+
+async def generate_plan_summary(session: IntakeSession) -> str:
+    """One-sentence resident-facing recap of a saved plan.
+
+    Used by the /intake recovery prompt so a returning user can see what
+    their saved session contains before deciding to resume vs start over.
+    Falls back to a deterministic template when live AI is unavailable.
+    """
+    match_count = len(session.matches)
+    started = session.created_at.strftime("%b %d")
+
+    def fallback() -> str:
+        if match_count == 0:
+            return f"Conversation started {started} — no matches yet."
+        plural = "service" if match_count == 1 else "services"
+        return f"{match_count} {plural} matched on {started}."
+
+    settings = get_settings()
+    if not settings.use_live_ai or not session.matches:
+        return fallback()
+
+    try:
+        from openai import AsyncOpenAI
+
+        top_names = [m.service.name for m in session.matches[:3]]
+        top_risk = session.risk_flags[0].risk_type if session.risk_flags else None
+
+        bullets = "\n".join(f"- {n}" for n in top_names)
+        prompt = (
+            "Write ONE warm, plain-English sentence (max 20 words) "
+            "summarizing this resident's saved plan. Mention how many "
+            "services were matched and one or two specific names. "
+            "Do not use the word 'plan' twice. No emoji.\n\n"
+            f"Total matches: {match_count}\n"
+            f"Top matched services:\n{bullets}\n"
+        )
+        if top_risk:
+            prompt += f"Most pressing concern: {top_risk}\n"
+
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        response = await client.responses.create(
+            model=settings.openai_model,
+            input=[{"role": "user", "content": prompt}],
+            reasoning={"effort": "low"},
+            max_output_tokens=120,
+        )
+        text = (response.output_text or "").strip()
+        return text or fallback()
+    except Exception:
+        return fallback()

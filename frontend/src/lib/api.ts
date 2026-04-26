@@ -136,6 +136,16 @@ export function getIntakeResults(sessionId: string) {
   }>("GET", `/api/v1/intake/${sessionId}/results`);
 }
 
+export function getIntakePlanSummary(sessionId: string) {
+  return apiRequest<{
+    session_id: string;
+    summary: string;
+    match_count: number;
+    started_at: string;
+    status: string;
+  }>("GET", `/api/v1/intake/${sessionId}/summary`);
+}
+
 export function shareIntakeResults(
   sessionId: string,
   body: { channel: "sms" | "email"; recipient: string; language?: string },
