@@ -1,0 +1,10 @@
+export { default as AdminDashboard } from "./AdminDashboard";
+export { default as AdminResidents } from "./AdminResidents";
+export { default as AdminResidentDetail } from "./AdminResidentDetail";
+export { default as AdminServices } from "./AdminServices";
+export { default as AdminServiceEdit } from "./AdminServiceEdit";
+export { default as AdminAnalytics } from "./AdminAnalytics";
+export { default as AdminEquity } from "./AdminEquity";
+export { default as AdminLanguages } from "./AdminLanguages";
+export { default as AdminAuditLog } from "./AdminAuditLog";
+export { default as AdminStaff } from "./AdminStaff";
