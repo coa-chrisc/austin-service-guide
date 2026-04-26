@@ -68,9 +68,14 @@ _DEMO_STEPS: list[dict[str, Any]] = [
 
 # ── Public entrypoints ───────────────────────────────────────────────
 
-async def start_session(language: str = "en") -> IntakeSession:
+async def start_session(
+    language: str = "en",
+    life_event: str | None = None,
+) -> IntakeSession:
     """Create a new intake session and seed the greeting."""
     session = IntakeSession(language=language)
+    if life_event:
+        session.extracted_profile.immediate_needs = _needs_from_life_event(life_event)
     _sessions[session.id] = session
 
     settings = get_settings()
@@ -127,7 +132,7 @@ async def process_message(
     crisis_kind = _check_crisis(user_text)
     if crisis_kind:
         session.extracted_profile.crisis_indicators.append(crisis_kind)
-        if crisis_kind == "immediate_danger":
+        if crisis_kind:
             return _crisis_response(session)
 
     if settings.use_live_ai:
@@ -702,6 +707,41 @@ def _check_crisis(text: str) -> str:
     if any(w in t for w in ["in danger", "not safe", "threatened", "going to hurt me"]):
         return "immediate_danger"
     return ""
+
+
+def _needs_from_life_event(life_event: str) -> list[str]:
+    """Map a landing-page life-event slug into initial need categories."""
+    slug = life_event.strip().lower().replace("_", "-")
+    mapping = {
+        "lost-job": ["employment"],
+        "job-loss": ["employment"],
+        "food-help": ["food"],
+        "need-food": ["food"],
+        "housing-crisis": ["housing", "emergency"],
+        "facing-eviction": ["housing", "legal"],
+        "behind-on-rent": ["housing", "utilities"],
+        "medical-help": ["healthcare"],
+        "need-healthcare": ["healthcare"],
+        "healthcare": ["healthcare"],
+        "childcare": ["childcare"],
+        "child-care": ["childcare"],
+        "having-baby": ["childcare", "healthcare", "food"],
+        "new-baby": ["childcare", "healthcare", "food"],
+        "mental-health": ["healthcare"],
+        "senior-care": ["senior"],
+        "senior-help": ["senior"],
+        "veteran": ["veterans"],
+        "veteran-benefits": ["veterans"],
+        "legal-help": ["legal"],
+        "legal-trouble": ["legal"],
+        "transportation": ["transportation"],
+        "back-to-school": ["education"],
+        "new-to-austin": ["food", "housing", "healthcare"],
+    }
+    if slug in mapping:
+        return mapping[slug]
+    fallback = slug.replace("-", " ").strip()
+    return [fallback] if fallback else []
 
 
 def _crisis_response(session: IntakeSession) -> IntakeMessage:

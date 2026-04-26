@@ -7,8 +7,10 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import PhoneIcon from "@mui/icons-material/Phone";
 import DirectionsIcon from "@mui/icons-material/Directions";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CheckIcon from "@mui/icons-material/Check";
+import { useNavigate } from "react-router-dom";
 import { openStatusLabel } from "@/lib/hours";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
@@ -16,12 +18,15 @@ import type { ServiceMatch } from "@/types";
 interface StartHereHeroProps {
   topItem: ApplicationOrderItem;
   topMatch?: ServiceMatch;
+  sessionId?: string;
 }
 
 export default function StartHereHero({
   topItem,
   topMatch,
+  sessionId,
 }: StartHereHeroProps) {
+  const navigate = useNavigate();
   const service = topMatch?.service;
   const primaryLocation =
     service?.locations?.find((l) => l.is_primary) ?? service?.locations?.[0];
@@ -30,6 +35,7 @@ export default function StartHereHero({
         `${primaryLocation.address}, ${primaryLocation.city}, ${primaryLocation.state} ${primaryLocation.zip_code}`,
       )}`
     : null;
+  const sessionQs = sessionId ? `?session=${sessionId}` : "";
 
   return (
     <Box>
@@ -128,6 +134,26 @@ export default function StartHereHero({
                 Get directions
               </Button>
             )}
+            <Button
+              variant={
+                service?.phone || directionsUrl ? "outlined" : "contained"
+              }
+              size="large"
+              fullWidth
+              endIcon={<ArrowForwardIcon />}
+              onClick={() =>
+                navigate(`/services/${topItem.service_slug}${sessionQs}`)
+              }
+              sx={{
+                minHeight: 56,
+                fontSize: "1rem",
+                fontWeight: 600,
+                borderRadius: "28px",
+                flex: 1,
+              }}
+            >
+              View details
+            </Button>
           </Stack>
 
           {service?.phone && (

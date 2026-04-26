@@ -45,12 +45,23 @@ export default function Intake() {
 
     const existing = getActiveSession();
     if (existing) {
-      setRecoveredId(existing);
-      setPhase("recovering");
+      setPhase("checking");
       setPlanSummary(null);
       getIntakePlanSummary(existing)
-        .then((res) => setPlanSummary(res.summary))
-        .catch(() => setPlanSummary(null));
+        .then((res) => {
+          if (res.status === "completed" && res.match_count > 0) {
+            setRecoveredId(existing);
+            setPlanSummary(res.summary);
+            setPhase("recovering");
+            return;
+          }
+          clearActiveSession();
+          beginNewIntake();
+        })
+        .catch(() => {
+          clearActiveSession();
+          beginNewIntake();
+        });
     } else {
       beginNewIntake();
     }
@@ -63,7 +74,6 @@ export default function Intake() {
     startIntake(language, lifeEvent)
       .then((s) => {
         setSession(s);
-        setActiveSession(s.id);
         setPhase("ready");
       })
       .catch((err) => {
@@ -75,6 +85,7 @@ export default function Intake() {
   };
 
   const handleComplete = (sessionId: string) => {
+    setActiveSession(sessionId);
     navigate(`/results/${sessionId}`);
   };
 
@@ -133,7 +144,7 @@ export default function Intake() {
               color="text.secondary"
               sx={{ mb: planSummary ? 1.5 : 3, lineHeight: 1.6 }}
             >
-              You finished an intake earlier. Pick up where you left off, or
+              You have a saved service plan. Pick up where you left off, or
               start a fresh conversation.
             </Typography>
             {planSummary && (

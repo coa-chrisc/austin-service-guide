@@ -287,6 +287,7 @@ class PaginatedResponse(BaseModel):
 
 class IntakeStartRequest(BaseModel):
     language: str = "en"
+    life_event: str | None = None
 
 
 class IntakeMessageRequest(BaseModel):

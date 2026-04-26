@@ -47,7 +47,11 @@ export default function PlanList({
 
   return (
     <Box>
-      <StartHereHero topItem={topItem} topMatch={topMatch} />
+      <StartHereHero
+        topItem={topItem}
+        topMatch={topMatch}
+        sessionId={sessionId}
+      />
 
       {primary.length > 0 && (
         <Box sx={{ mt: 1, mb: 2 }}>

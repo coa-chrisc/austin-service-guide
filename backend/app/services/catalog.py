@@ -16,6 +16,7 @@ from app.models import (
     Service,
     ServiceCategory,
     ServiceLocation,
+    ServiceStatus,
 )
 from app.services.hours import is_open_now, next_open_label, service_open_now
 
@@ -110,7 +111,11 @@ def get_all_services(
     results = list(_services.values())
 
     if status:
-        results = [s for s in results if s.status.value == status]
+        results = [
+            s for s in results
+            if (s.status.value if hasattr(s.status, "value") else s.status)
+            == status
+        ]
     else:
         # By default exclude inactive
         results = [s for s in results if s.status != "inactive"]
@@ -257,10 +262,13 @@ def update_service(service_id: str, updates: dict[str, Any]) -> Service | None:
     if not svc:
         return None
     data = svc.model_dump()
+    old_slug = svc.slug
     data.update(updates)
     updated = Service(**data)
     # Replace in stores
     _services[service_id] = updated
+    if old_slug != updated.slug:
+        _services_by_slug.pop(old_slug, None)
     _services_by_slug[updated.slug] = updated
     for cat in _categories.values():
         cat.service_count = sum(
@@ -275,7 +283,7 @@ def delete_service(service_id: str) -> bool:
     svc = _services.get(service_id)
     if not svc:
         return False
-    svc.status = "inactive"
+    svc.status = ServiceStatus.inactive
     for cat in _categories.values():
         cat.service_count = sum(
             1 for s in _services.values()

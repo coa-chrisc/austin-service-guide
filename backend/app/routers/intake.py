@@ -30,7 +30,8 @@ class ShareRequest(BaseModel):
 async def start_intake(body: IntakeStartRequest | None = None):
     """Create a new intake session and return the greeting."""
     language = body.language if body else "en"
-    session = await start_session(language=language)
+    life_event = body.life_event if body else None
+    session = await start_session(language=language, life_event=life_event)
     return {
         "session_id": session.id,
         "language": session.language,
