@@ -31,11 +31,12 @@ import MapIcon from "@mui/icons-material/Map";
 import PhoneIcon from "@mui/icons-material/Phone";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChatIcon from "@mui/icons-material/Chat";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import InfoIcon from "@mui/icons-material/Info";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
+import VolunteerActivismIcon from "@mui/icons-material/VolunteerActivism";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
+import CloseIcon from "@mui/icons-material/Close";
 import PrintIcon from "@mui/icons-material/Print";
 import ShareIcon from "@mui/icons-material/Share";
 import SmsIcon from "@mui/icons-material/Sms";
@@ -71,14 +72,34 @@ const formatCurrency = (n: number) =>
     maximumFractionDigits: 0,
   });
 
-const SEVERITY_CONFIG: Record<
+// Risk flags read as "things we noticed and can help with" — the resident
+// already knows their situation is hard. Iconography stays warm: helping
+// hands, support agent, lightbulb, heart. Severity drives icon choice but
+// not alarm color (no red/yellow alerts in the dense view).
+const RISK_VISUAL: Record<
   string,
-  { color: "error" | "warning" | "info"; icon: React.ReactNode }
+  { icon: React.ReactNode; tint: string; ring: string }
 > = {
-  critical: { color: "error", icon: <ErrorOutlineIcon /> },
-  high: { color: "error", icon: <WarningAmberIcon /> },
-  medium: { color: "warning", icon: <InfoIcon /> },
-  low: { color: "info", icon: <EmojiObjectsIcon /> },
+  critical: {
+    icon: <SupportAgentIcon />,
+    tint: "primary.50",
+    ring: "primary.light",
+  },
+  high: {
+    icon: <VolunteerActivismIcon />,
+    tint: "primary.50",
+    ring: "primary.light",
+  },
+  medium: {
+    icon: <FavoriteBorderIcon />,
+    tint: "secondary.50",
+    ring: "secondary.light",
+  },
+  low: {
+    icon: <EmojiObjectsIcon />,
+    tint: "secondary.50",
+    ring: "secondary.light",
+  },
 };
 
 type ViewMode = "simple" | "all";
@@ -339,20 +360,43 @@ export default function Results() {
               </Box>
             )}
 
-            {/* Critical risk only */}
+            {/* Critical risk only — calm, supportive framing */}
             {criticalRiskFlag && (
-              <Alert
-                severity="error"
-                icon={<ErrorOutlineIcon />}
-                sx={{ borderRadius: 2, mb: 2.5 }}
+              <Card
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  mb: 2.5,
+                  bgcolor: "primary.50",
+                  borderColor: "primary.light",
+                }}
               >
-                <Typography variant="subtitle2" fontWeight={700}>
-                  {criticalRiskFlag.risk_type}
-                </Typography>
-                <Typography variant="body2">
-                  {criticalRiskFlag.description}
-                </Typography>
-              </Alert>
+                <CardContent
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    gap: 1.5,
+                    "&:last-child": { pb: 2 },
+                  }}
+                >
+                  <SupportAgentIcon
+                    color="primary"
+                    sx={{ mt: 0.25, flexShrink: 0 }}
+                  />
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      {criticalRiskFlag.risk_type}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mt: 0.5, lineHeight: 1.5 }}
+                    >
+                      {criticalRiskFlag.description}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             )}
 
             {topItem ? (
@@ -616,7 +660,7 @@ export default function Results() {
               </Card>
             )}
 
-            {/* Risk flags */}
+            {/* Risk flags — framed as "Areas Where We Can Help" */}
             {data.risk_flags.length > 0 && (
               <Box sx={{ mb: 4 }}>
                 <Typography
@@ -625,47 +669,77 @@ export default function Results() {
                   gutterBottom
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                  <CheckCircleIcon color="primary" />
+                  <VolunteerActivismIcon color="primary" />
                   Areas Where We Can Help
                 </Typography>
                 <Grid container spacing={2}>
                   {data.risk_flags.map((flag: RiskFlag, idx: number) => {
-                    const config =
-                      SEVERITY_CONFIG[flag.severity] || SEVERITY_CONFIG.low;
+                    const visual =
+                      RISK_VISUAL[flag.severity] || RISK_VISUAL.low;
                     return (
                       <Grid key={idx} size={{ xs: 12, md: 6 }}>
-                        <Alert
-                          severity={config.color}
-                          icon={config.icon}
-                          sx={{ borderRadius: 2, height: "100%" }}
+                        <Card
+                          variant="outlined"
+                          sx={{
+                            borderRadius: 2,
+                            height: "100%",
+                            bgcolor: visual.tint,
+                            borderColor: visual.ring,
+                          }}
                         >
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {flag.risk_type}
-                          </Typography>
-                          <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            {flag.description}
-                          </Typography>
-                          {flag.prevention_services.length > 0 && (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                gap: 0.5,
-                                flexWrap: "wrap",
-                                mt: 1,
-                              }}
-                            >
-                              {flag.prevention_services.map((s) => (
-                                <Chip
-                                  key={s}
-                                  label={s}
-                                  size="small"
-                                  variant="outlined"
-                                  sx={{ fontSize: 11 }}
-                                />
-                              ))}
+                          <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                            <Box sx={{ display: "flex", gap: 1.5 }}>
+                              <Box
+                                sx={{
+                                  color: "primary.main",
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  pt: 0.25,
+                                }}
+                              >
+                                {visual.icon}
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography
+                                  variant="subtitle2"
+                                  fontWeight={700}
+                                >
+                                  {flag.risk_type}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mt: 0.5, lineHeight: 1.5 }}
+                                >
+                                  {flag.description}
+                                </Typography>
+                                {flag.prevention_services.length > 0 && (
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      gap: 0.5,
+                                      flexWrap: "wrap",
+                                      mt: 1.25,
+                                    }}
+                                  >
+                                    {flag.prevention_services.map((s) => (
+                                      <Chip
+                                        key={s}
+                                        label={s}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{
+                                          fontSize: 11,
+                                          bgcolor: "background.paper",
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                )}
+                              </Box>
                             </Box>
-                          )}
-                        </Alert>
+                          </CardContent>
+                        </Card>
                       </Grid>
                     );
                   })}
@@ -733,6 +807,22 @@ export default function Results() {
                   }
                   size="small"
                 />
+                {(filterCategory || filterConfidence) && (
+                  <Chip
+                    label="Clear filter"
+                    icon={<CloseIcon style={{ fontSize: 14 }} />}
+                    onClick={() => {
+                      setFilterCategory(null);
+                      setFilterConfidence(null);
+                    }}
+                    size="small"
+                    sx={{
+                      ml: 0.5,
+                      fontWeight: 600,
+                      color: "text.secondary",
+                    }}
+                  />
+                )}
               </Box>
             </Box>
 
