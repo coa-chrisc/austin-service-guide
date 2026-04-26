@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
 import L from "leaflet";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
-import { useTheme } from "@mui/material/styles";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import type { MapPin } from "@/types";
 import { haversineMiles } from "@/lib/geo";
@@ -258,7 +256,6 @@ export default function ServiceMap({
   fitBounds = false,
 }: ServiceMapProps) {
   const navigate = useNavigate();
-  const theme = useTheme();
   const [userPosition, setUserPosition] = useState<[number, number] | null>(
     null,
   );
@@ -303,29 +300,6 @@ export default function ServiceMap({
       setNearestActive(false);
     }
   }, [nearestActive, userPosition, nearestPins.length]);
-
-  const clusterIconCreate = useCallback(
-    (cluster: { getChildCount: () => number }) => {
-      const count = cluster.getChildCount();
-      const size = count < 10 ? 36 : count < 50 ? 44 : 52;
-      const color = theme.palette.primary.main;
-      return L.divIcon({
-        html: `<div style="
-          background:${color};
-          color:white;
-          width:${size}px;height:${size}px;
-          border-radius:50%;
-          display:flex;align-items:center;justify-content:center;
-          font-weight:700;font-size:13px;font-family:inherit;
-          border:3px solid rgba(255,255,255,0.9);
-          box-shadow:0 2px 6px rgba(0,0,0,0.3);
-        ">${count}</div>`,
-        className: "",
-        iconSize: [size, size],
-      });
-    },
-    [theme.palette.primary.main],
-  );
 
   const allCategories = useMemo(() => {
     if (categories.length > 0) return categories;
@@ -422,109 +396,101 @@ export default function ServiceMap({
             <NearestFitter pins={nearestPins} />
           )}
 
-          <MarkerClusterGroup
-            chunkedLoading
-            iconCreateFunction={clusterIconCreate}
-            showCoverageOnHover={false}
-          >
-            {filteredPins.map((pin) => {
-              const distanceMi = distancesById.get(pin.id);
-              const isHighlighted = nearestIds.has(pin.id);
-              return (
-                <Marker
-                  key={pin.id}
-                  position={[pin.latitude, pin.longitude]}
-                  icon={createCategoryIcon(pin.category)}
-                  opacity={isHighlighted ? 1 : nearestActive ? 0.55 : 1}
-                >
-                  <Popup>
-                    <Box sx={{ minWidth: 220, p: 0.5 }}>
+          {filteredPins.map((pin) => {
+            const distanceMi = distancesById.get(pin.id);
+            const isHighlighted = nearestIds.has(pin.id);
+            return (
+              <Marker
+                key={pin.id}
+                position={[pin.latitude, pin.longitude]}
+                icon={createCategoryIcon(pin.category)}
+                opacity={isHighlighted ? 1 : nearestActive ? 0.55 : 1}
+              >
+                <Popup>
+                  <Box sx={{ minWidth: 220, p: 0.5 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        mb: 0.5,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {pin.name}
+                    </Typography>
+                    <Chip
+                      label={getCategoryDisplayName(pin.category)}
+                      size="small"
+                      sx={{
+                        bgcolor: getCategoryColor(pin.category),
+                        color: "white",
+                        fontSize: 12,
+                        height: 24,
+                        fontWeight: 600,
+                        mb: distanceMi != null ? 0.5 : 1.5,
+                      }}
+                    />
+                    {distanceMi != null && (
                       <Typography
-                        variant="subtitle2"
+                        variant="caption"
+                        color="text.secondary"
                         sx={{
-                          fontWeight: 700,
-                          fontSize: 14,
-                          mb: 0.5,
-                          lineHeight: 1.3,
+                          display: "block",
+                          mb: pin.open_now != null ? 0.5 : 1.5,
                         }}
                       >
-                        {pin.name}
+                        {distanceMi.toFixed(1)} mi away
                       </Typography>
+                    )}
+                    {pin.open_now != null && (
                       <Chip
-                        label={getCategoryDisplayName(pin.category)}
+                        label={
+                          pin.open_now
+                            ? "Open now"
+                            : pin.next_open
+                              ? `Closed · ${pin.next_open}`
+                              : "Closed"
+                        }
                         size="small"
+                        variant={pin.open_now ? "filled" : "outlined"}
                         sx={{
-                          bgcolor: getCategoryColor(pin.category),
-                          color: "white",
-                          fontSize: 12,
-                          height: 24,
+                          mb: 1.5,
+                          height: 22,
+                          fontSize: 11,
                           fontWeight: 600,
-                          mb: distanceMi != null ? 0.5 : 1.5,
+                          bgcolor: pin.open_now
+                            ? "success.50"
+                            : "transparent",
+                          color: pin.open_now
+                            ? "success.dark"
+                            : "text.secondary",
+                          borderColor: pin.open_now
+                            ? "success.light"
+                            : "divider",
                         }}
                       />
-                      {distanceMi != null && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            display: "block",
-                            mb: pin.open_now != null ? 0.5 : 1.5,
-                          }}
-                        >
-                          {distanceMi.toFixed(1)} mi away
-                        </Typography>
-                      )}
-                      {pin.open_now != null && (
-                        <Chip
-                          label={
-                            pin.open_now
-                              ? "Open now"
-                              : pin.next_open
-                                ? `Closed · ${pin.next_open}`
-                                : "Closed"
-                          }
-                          size="small"
-                          variant={pin.open_now ? "filled" : "outlined"}
-                          sx={{
-                            mb: 1.5,
-                            height: 22,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            bgcolor: pin.open_now
-                              ? "success.50"
-                              : "transparent",
-                            color: pin.open_now
-                              ? "success.dark"
-                              : "text.secondary",
-                            borderColor: pin.open_now
-                              ? "success.light"
-                              : "divider",
-                          }}
-                        />
-                      )}
-                      <Box>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          onClick={() =>
-                            navigate(`/services/${pin.service_id}`)
-                          }
-                          sx={{
-                            fontWeight: 600,
-                            fontSize: 13,
-                            borderRadius: "16px",
-                            py: 0.75,
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </Box>
+                    )}
+                    <Box>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => navigate(`/services/${pin.service_id}`)}
+                        sx={{
+                          fontWeight: 600,
+                          fontSize: 13,
+                          borderRadius: "16px",
+                          py: 0.75,
+                        }}
+                      >
+                        View Details
+                      </Button>
                     </Box>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MarkerClusterGroup>
+                  </Box>
+                </Popup>
+              </Marker>
+            );
+          })}
 
           {userPosition && (
             <Marker
