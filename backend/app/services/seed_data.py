@@ -1918,6 +1918,19 @@ SERVICES: list[Service] = [
 ]
 
 
+# ── Catalog integrity guard ──────────────────────────────────────────
+# Trip on import if a service references a category slug that does not
+# exist in CATEGORIES.  Cheap to run; catches typos before they ship.
+_KNOWN_CATEGORY_SLUGS = {c.slug for c in CATEGORIES}
+_BAD = [
+    (s.slug, c)
+    for s in SERVICES
+    for c in s.categories
+    if c not in _KNOWN_CATEGORY_SLUGS
+]
+assert not _BAD, f"Unknown category slugs in seed data: {_BAD[:5]}"
+
+
 # ── Life Events ───────────────────────────────────────────────────────
 
 LIFE_EVENTS: list[LifeEvent] = [

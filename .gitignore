@@ -76,3 +76,6 @@ images/
 .claude/cache/
 .claude/sessions/
 .claude/context-layer/
+
+# Dedupe script output (advisory; regenerate with backend/scripts/dedupe_catalog.py)
+backend/dedupe_review.csv
