@@ -21,6 +21,7 @@ import DirectionsIcon from "@mui/icons-material/Directions";
 import ShareIcon from "@mui/icons-material/Share";
 import AccessibleIcon from "@mui/icons-material/Accessible";
 import TranslateIcon from "@mui/icons-material/Translate";
+import { openStatusLabel } from "@/lib/hours";
 import type { Service } from "@/types";
 
 interface ServiceDetailCardProps {
@@ -286,8 +287,9 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                           sx={{
                             display: "flex",
                             alignItems: "center",
-                            gap: 0.5,
+                            gap: 0.75,
                             mb: 0.5,
+                            flexWrap: "wrap",
                           }}
                         >
                           <AccessTimeIcon
@@ -297,6 +299,30 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                           <Typography variant="body2" fontWeight={500}>
                             Hours
                           </Typography>
+                          {(() => {
+                            const status = openStatusLabel(primaryLocation);
+                            return (
+                              <Chip
+                                label={status.open ? "Open now" : status.label}
+                                size="small"
+                                variant={status.open ? "filled" : "outlined"}
+                                sx={{
+                                  height: 20,
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  bgcolor: status.open
+                                    ? "success.50"
+                                    : "transparent",
+                                  color: status.open
+                                    ? "success.dark"
+                                    : "text.secondary",
+                                  borderColor: status.open
+                                    ? "success.light"
+                                    : "divider",
+                                }}
+                              />
+                            );
+                          })()}
                         </Box>
                         {Object.entries(primaryLocation.hours).map(
                           ([day, hours]) => (

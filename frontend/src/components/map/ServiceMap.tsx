@@ -466,10 +466,41 @@ export default function ServiceMap({
                         <Typography
                           variant="caption"
                           color="text.secondary"
-                          sx={{ display: "block", mb: 1.5 }}
+                          sx={{
+                            display: "block",
+                            mb: pin.open_now != null ? 0.5 : 1.5,
+                          }}
                         >
                           {distanceMi.toFixed(1)} mi away
                         </Typography>
+                      )}
+                      {pin.open_now != null && (
+                        <Chip
+                          label={
+                            pin.open_now
+                              ? "Open now"
+                              : pin.next_open
+                                ? `Closed · ${pin.next_open}`
+                                : "Closed"
+                          }
+                          size="small"
+                          variant={pin.open_now ? "filled" : "outlined"}
+                          sx={{
+                            mb: 1.5,
+                            height: 22,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            bgcolor: pin.open_now
+                              ? "success.50"
+                              : "transparent",
+                            color: pin.open_now
+                              ? "success.dark"
+                              : "text.secondary",
+                            borderColor: pin.open_now
+                              ? "success.light"
+                              : "divider",
+                          }}
+                        />
                       )}
                       <Box>
                         <Button

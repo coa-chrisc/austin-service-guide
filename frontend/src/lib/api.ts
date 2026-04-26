@@ -164,6 +164,7 @@ export function getServices(params?: {
   category?: string;
   search?: string;
   sort?: string;
+  open_now?: boolean;
 }) {
   const sp = new URLSearchParams();
   if (params?.page) sp.set("page", String(params.page));
@@ -171,6 +172,7 @@ export function getServices(params?: {
   if (params?.category) sp.set("category", params.category);
   if (params?.search) sp.set("search", params.search);
   if (params?.sort) sp.set("sort", params.sort);
+  if (params?.open_now) sp.set("open_now", "true");
   const qs = sp.toString();
   return apiRequest<PaginatedResponse<Service>>(
     "GET",

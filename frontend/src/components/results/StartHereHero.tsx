@@ -9,6 +9,7 @@ import PhoneIcon from "@mui/icons-material/Phone";
 import DirectionsIcon from "@mui/icons-material/Directions";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CheckIcon from "@mui/icons-material/Check";
+import { openStatusLabel } from "@/lib/hours";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
 
@@ -139,11 +140,31 @@ export default function StartHereHero({
             </Typography>
           )}
           {primaryLocation && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               📍 {primaryLocation.address}, {primaryLocation.city},{" "}
               {primaryLocation.state} {primaryLocation.zip_code}
             </Typography>
           )}
+          {primaryLocation &&
+            (() => {
+              const status = openStatusLabel(primaryLocation);
+              return (
+                <Chip
+                  label={status.open ? "Open now" : status.label}
+                  size="small"
+                  variant={status.open ? "filled" : "outlined"}
+                  sx={{
+                    mb: 2,
+                    height: 24,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    bgcolor: status.open ? "success.50" : "transparent",
+                    color: status.open ? "success.dark" : "text.secondary",
+                    borderColor: status.open ? "success.light" : "divider",
+                  }}
+                />
+              );
+            })()}
 
           {/* What to bring — inline, not collapsed */}
           {service && service.documents && service.documents.length > 0 && (

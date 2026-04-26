@@ -28,6 +28,7 @@ export default function ServiceDirectory() {
   const debouncedSearch = useDebouncedValue(search, 250);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sort, setSort] = useState("name");
+  const [openNowOnly, setOpenNowOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [popular, setPopular] = useState<Service[]>([]);
@@ -51,6 +52,7 @@ export default function ServiceDirectory() {
         (params as Record<string, string>).search = debouncedSearch;
       if (selectedCategory)
         (params as Record<string, string>).category = selectedCategory;
+      if (openNowOnly) (params as Record<string, boolean>).open_now = true;
       const res = await getServices(
         params as Parameters<typeof getServices>[0],
       );
@@ -63,7 +65,7 @@ export default function ServiceDirectory() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, selectedCategory, sort]);
+  }, [page, debouncedSearch, selectedCategory, sort, openNowOnly]);
 
   useEffect(() => {
     fetchServices();
@@ -135,6 +137,17 @@ export default function ServiceDirectory() {
       {/* Category filter chips */}
       {categories.length > 0 && (
         <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mb: 3 }}>
+          <Chip
+            label={openNowOnly ? "Open now ✓" : "Open now"}
+            onClick={() => {
+              setOpenNowOnly((v) => !v);
+              setPage(1);
+            }}
+            color={openNowOnly ? "success" : "default"}
+            variant={openNowOnly ? "filled" : "outlined"}
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
           <Chip
             label="All Categories"
             onClick={() => {

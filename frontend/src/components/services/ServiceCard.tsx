@@ -23,6 +23,7 @@ import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CloseIcon from "@mui/icons-material/Close";
 import { QRCodeSVG } from "qrcode.react";
 import { highlightMatch } from "@/lib/highlight";
+import { openStatusLabel, serviceOpenNow } from "@/lib/hours";
 import type { Service, MatchConfidence } from "@/types";
 
 interface ServiceCardProps {
@@ -168,8 +169,15 @@ export default function ServiceCard({
             {service.description}
           </Typography>
 
-          {/* Cost indicator */}
-          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          {/* Cost + open-now indicators */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 0.75,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <Chip
               label={COST_LABELS[service.cost_type] ?? service.cost_type}
               size="small"
@@ -186,6 +194,26 @@ export default function ServiceCard({
                   service.cost_type === "free" ? "success.main" : "divider",
               }}
             />
+            {primaryLocation &&
+              (() => {
+                const open = serviceOpenNow(service.locations ?? []);
+                const status = openStatusLabel(primaryLocation);
+                return (
+                  <Chip
+                    label={open ? "Open now" : status.label}
+                    size="small"
+                    variant={open ? "filled" : "outlined"}
+                    sx={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      height: 22,
+                      bgcolor: open ? "success.50" : "transparent",
+                      color: open ? "success.dark" : "text.secondary",
+                      borderColor: open ? "success.light" : "divider",
+                    }}
+                  />
+                );
+              })()}
           </Box>
         </CardContent>
       </CardActionArea>

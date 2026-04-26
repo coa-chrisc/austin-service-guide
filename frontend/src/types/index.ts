@@ -36,6 +36,7 @@ export interface ServiceLocation {
   phone: string;
   is_primary: boolean;
   hours: Record<string, string>;
+  hours_verified?: boolean;
 }
 
 export interface Service {
@@ -138,6 +139,8 @@ export interface MapPin {
   category: string;
   latitude: number;
   longitude: number;
+  open_now?: boolean | null;
+  next_open?: string | null;
 }
 
 // Demo resident (admin)
