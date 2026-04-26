@@ -190,6 +190,29 @@ export default function Header() {
             </Button>
           )}
 
+          {/* My Plan pill — compact icon variant for mobile AppBar */}
+          {showPlanPill && isMobile && (
+            <IconButton
+              onClick={() => navigate(`/results/${activeSessionId}`)}
+              aria-label="View my plan"
+              sx={{
+                width: 40,
+                height: 40,
+                mr: 0.5,
+                color: "white",
+                background: (t) =>
+                  `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
+                boxShadow: "0 2px 6px rgba(0,91,187,0.25)",
+                "&:hover": {
+                  background: (t) =>
+                    `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})`,
+                },
+              }}
+            >
+              <AssignmentTurnedInIcon fontSize="small" />
+            </IconButton>
+          )}
+
           {/* Language selector */}
           <LanguageSelector />
 
