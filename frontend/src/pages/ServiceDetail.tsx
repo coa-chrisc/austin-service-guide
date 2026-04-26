@@ -119,7 +119,7 @@ export default function ServiceDetail() {
           elevation={0}
           sx={{
             position: "sticky",
-            top: 64,
+            top: { xs: 56, sm: 64 },
             zIndex: 1050,
             borderRadius: 0,
             borderBottom: "1px solid",
@@ -151,12 +151,12 @@ export default function ServiceDetail() {
               </Button>
               <Typography
                 variant="body2"
-                color="text.secondary"
+                color="text.primary"
                 sx={{
                   flex: 1,
                   textAlign: "center",
-                  fontWeight: 600,
-                  fontSize: { xs: 12, sm: 14 },
+                  fontWeight: 700,
+                  fontSize: { xs: 14, sm: 15 },
                 }}
               >
                 Service {planNav!.index + 1} of {planNav!.total}

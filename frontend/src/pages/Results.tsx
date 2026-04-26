@@ -747,7 +747,6 @@ export default function Results() {
                         <ServiceCard
                           service={match.service}
                           matchConfidence={match.match_confidence}
-                          matchScore={match.match_score}
                           fromSessionId={sessionId}
                         />
                       </Grid>
