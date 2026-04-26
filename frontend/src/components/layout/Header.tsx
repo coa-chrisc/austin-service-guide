@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -25,9 +25,11 @@ import LoginIcon from "@mui/icons-material/Login";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeMode } from "@/theme/ThemeContext";
+import { getActiveSession } from "@/lib/session";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/", icon: <HomeIcon /> },
@@ -47,6 +49,19 @@ export default function Header() {
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() =>
+    getActiveSession(),
+  );
+
+  // Re-read on every route change so the pill appears the moment a user
+  // lands on /results or disappears after "Start over."
+  useEffect(() => {
+    setActiveSessionId(getActiveSession());
+  }, [location.pathname]);
+
+  const onResultsPage =
+    !!activeSessionId && location.pathname === `/results/${activeSessionId}`;
+  const showPlanPill = !!activeSessionId && !onResultsPage;
 
   const handleUserMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(e.currentTarget);
@@ -152,6 +167,29 @@ export default function Header() {
 
           <Box sx={{ flex: 1 }} />
 
+          {/* My Plan pill — visible whenever an active session exists */}
+          {showPlanPill && !isMobile && (
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AssignmentTurnedInIcon />}
+              onClick={() => navigate(`/results/${activeSessionId}`)}
+              sx={{
+                borderRadius: "20px",
+                fontWeight: 700,
+                textTransform: "none",
+                px: 2,
+                mr: 1,
+                background: (t) =>
+                  `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
+                color: "white",
+                boxShadow: "0 2px 6px rgba(0,91,187,0.25)",
+              }}
+            >
+              View my plan
+            </Button>
+          )}
+
           {/* Language selector */}
           <LanguageSelector />
 
@@ -237,6 +275,29 @@ export default function Header() {
         </Box>
         <Divider />
         <List>
+          {showPlanPill && (
+            <ListItemButton
+              onClick={() => {
+                navigate(`/results/${activeSessionId}`);
+                setDrawerOpen(false);
+              }}
+              sx={{
+                bgcolor: "primary.50",
+                "&:hover": { bgcolor: "primary.100" },
+              }}
+            >
+              <ListItemIcon>
+                <AssignmentTurnedInIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText
+                primary="View my plan"
+                primaryTypographyProps={{
+                  fontWeight: 700,
+                  color: "primary.main",
+                }}
+              />
+            </ListItemButton>
+          )}
           {NAV_ITEMS.map((item) => (
             <ListItemButton
               key={item.path}
