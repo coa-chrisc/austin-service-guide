@@ -63,6 +63,8 @@ interface ResultsData {
   risk_flags: RiskFlag[];
   benefits_estimate: BenefitsEstimate;
   application_order: ApplicationOrderItem[];
+  plan_synthesis: string;
+  plan_ai_generated: boolean;
 }
 
 const formatCurrency = (n: number) =>
@@ -200,6 +202,8 @@ export default function Results() {
             breakdown: [],
           },
           application_order: res.application_order ?? [],
+          plan_synthesis: res.plan_synthesis ?? "",
+          plan_ai_generated: res.plan_ai_generated ?? false,
         });
       })
       .catch((err) => setError(err.message || "Failed to load results"))
@@ -326,7 +330,7 @@ export default function Results() {
             }}
           >
             <ToggleButton value="simple">My plan</ToggleButton>
-            <ToggleButton value="all">Browse all</ToggleButton>
+            <ToggleButton value="all">All matches</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -399,12 +403,75 @@ export default function Results() {
             )}
 
             {topItem ? (
-              <PlanList
-                items={data.application_order}
-                matches={matches}
-                sessionId={sessionId}
-                onShowAll={() => setView("all")}
-              />
+              <>
+                {data.plan_synthesis && (
+                  <Box
+                    sx={{
+                      mb: 2,
+                      p: 2,
+                      borderRadius: 2,
+                      bgcolor: "primary.50",
+                      border: "1px solid",
+                      borderColor: "primary.light",
+                    }}
+                  >
+                    <Typography
+                      variant="overline"
+                      sx={{
+                        display: "block",
+                        fontWeight: 700,
+                        color: "primary.dark",
+                        mb: 0.5,
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      Why this order
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.primary", lineHeight: 1.55 }}
+                    >
+                      {data.plan_synthesis}
+                    </Typography>
+                  </Box>
+                )}
+                <PlanList
+                  items={data.application_order}
+                  matches={matches}
+                  sessionId={sessionId}
+                  onShowAll={() => setView("all")}
+                />
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    display: "block",
+                    mt: 2,
+                    px: 0.5,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {data.plan_ai_generated
+                    ? "AI-suggested order based on what you shared. Double-check eligibility and hours before you go. "
+                    : "Suggested order based on what you shared. Double-check eligibility and hours before you go. "}
+                  <Box
+                    component="a"
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      setView("all");
+                    }}
+                    sx={{
+                      color: "primary.main",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    See all matches
+                  </Box>{" "}
+                  if you'd rather pick your own.
+                </Typography>
+              </>
             ) : (
               <Box sx={{ textAlign: "center", py: 4 }}>
                 <Typography

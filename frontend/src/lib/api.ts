@@ -132,6 +132,8 @@ export function getIntakeResults(sessionId: string) {
     risk_flags: import("@/types").RiskFlag[];
     benefits_estimate: import("@/types").BenefitsEstimate;
     application_order: ApplicationOrderItem[];
+    plan_synthesis: string;
+    plan_ai_generated: boolean;
     conversation_length: number;
   }>("GET", `/api/v1/intake/${sessionId}/results`);
 }

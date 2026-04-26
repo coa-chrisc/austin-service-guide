@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest
 from app.services.ai import (
     generate_plan_summary,
+    get_application_order,
     get_session,
     process_message,
     start_session,
@@ -63,16 +64,18 @@ async def get_results(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from app.services.matching import (
-        calculate_benefits,
-        recommend_application_order,
-    )
+    from app.services.matching import calculate_benefits
 
     benefits = {}
     sequencing: list[dict] = []
+    plan_synthesis = ""
+    plan_ai_generated = False
     if session.matches:
         benefits = calculate_benefits(session.extracted_profile, session.matches)
-        sequencing = recommend_application_order(session.matches)
+        plan = await get_application_order(session)
+        sequencing = plan["items"]
+        plan_synthesis = plan["summary"]
+        plan_ai_generated = plan["ai_generated"]
 
     return {
         "session_id": session_id,
@@ -82,6 +85,8 @@ async def get_results(session_id: str):
         "risk_flags": [r.model_dump() for r in session.risk_flags],
         "benefits_estimate": benefits,
         "application_order": sequencing,
+        "plan_synthesis": plan_synthesis,
+        "plan_ai_generated": plan_ai_generated,
         "conversation_length": len(session.conversation),
     }
 
