@@ -22,12 +22,14 @@ import ChecklistIcon from "@mui/icons-material/Checklist";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import CloseIcon from "@mui/icons-material/Close";
 import { QRCodeSVG } from "qrcode.react";
+import { highlightMatch } from "@/lib/highlight";
 import type { Service, MatchConfidence } from "@/types";
 
 interface ServiceCardProps {
   service: Service;
   matchConfidence?: MatchConfidence;
   fromSessionId?: string;
+  highlightQuery?: string;
 }
 
 const CONFIDENCE_COLORS: Record<
@@ -57,6 +59,7 @@ export default function ServiceCard({
   service,
   matchConfidence,
   fromSessionId,
+  highlightQuery,
 }: ServiceCardProps) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -138,13 +141,13 @@ export default function ServiceCard({
               lineHeight: 1.3,
             }}
           >
-            {service.name}
+            {highlightMatch(service.name, highlightQuery ?? "")}
           </Typography>
 
           {/* Provider */}
           {service.provider_name && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {service.provider_name}
+              {highlightMatch(service.provider_name, highlightQuery ?? "")}
             </Typography>
           )}
 

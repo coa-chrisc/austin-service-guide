@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -16,6 +16,7 @@ import MenuItem from "@mui/material/MenuItem";
 import SearchIcon from "@mui/icons-material/Search";
 import ServiceCard from "@/components/services/ServiceCard";
 import { getServices, getCategories } from "@/lib/api";
+import { useDebouncedValue } from "@/lib/hooks";
 import type { Service, ServiceCategory } from "@/types";
 
 export default function ServiceDirectory() {
@@ -24,11 +25,18 @@ export default function ServiceDirectory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 250);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sort, setSort] = useState("name");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [popular, setPopular] = useState<Service[]>([]);
+  const popularFetchedRef = useRef(false);
   const pageSize = 12;
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const fetchServices = useCallback(async () => {
     setLoading(true);
@@ -39,7 +47,8 @@ export default function ServiceDirectory() {
         page_size: pageSize,
         sort,
       };
-      if (search) (params as Record<string, string>).search = search;
+      if (debouncedSearch)
+        (params as Record<string, string>).search = debouncedSearch;
       if (selectedCategory)
         (params as Record<string, string>).category = selectedCategory;
       const res = await getServices(
@@ -54,7 +63,7 @@ export default function ServiceDirectory() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, selectedCategory, sort]);
+  }, [page, debouncedSearch, selectedCategory, sort]);
 
   useEffect(() => {
     fetchServices();
@@ -66,11 +75,19 @@ export default function ServiceDirectory() {
       .catch(() => {});
   }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    fetchServices();
-  };
+  const showEmptyWithFilters =
+    !loading &&
+    services.length === 0 &&
+    !error &&
+    (Boolean(debouncedSearch) || Boolean(selectedCategory));
+
+  useEffect(() => {
+    if (!showEmptyWithFilters || popularFetchedRef.current) return;
+    popularFetchedRef.current = true;
+    getServices({ page: 1, page_size: 3 })
+      .then((res) => setPopular(res.items))
+      .catch(() => {});
+  }, [showEmptyWithFilters]);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -82,11 +99,7 @@ export default function ServiceDirectory() {
       </Typography>
 
       {/* Search and filters */}
-      <Box
-        component="form"
-        onSubmit={handleSearchSubmit}
-        sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}
-      >
+      <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
         <TextField
           placeholder="Search services..."
           value={search}
@@ -171,18 +184,57 @@ export default function ServiceDirectory() {
             ))
           : services.map((svc) => (
               <Grid key={svc.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                <ServiceCard service={svc} />
+                <ServiceCard service={svc} highlightQuery={debouncedSearch} />
               </Grid>
             ))}
       </Grid>
 
-      {!loading && services.length === 0 && !error && (
-        <Box sx={{ textAlign: "center", py: 8 }}>
-          <Typography variant="h6" color="text.secondary">
-            No services found matching your criteria.
-          </Typography>
+      {showEmptyWithFilters && (
+        <Box sx={{ py: 6 }}>
+          <Box sx={{ textAlign: "center", mb: 4 }}>
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No exact matches
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Try a different keyword or clear your filters.
+            </Typography>
+          </Box>
+          {popular.length > 0 && (
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{
+                  display: "block",
+                  fontWeight: 700,
+                  color: "text.secondary",
+                  mb: 1.5,
+                }}
+              >
+                Popular near you
+              </Typography>
+              <Grid container spacing={2}>
+                {popular.map((svc) => (
+                  <Grid key={svc.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                    <ServiceCard service={svc} highlightQuery="" />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
         </Box>
       )}
+
+      {!loading &&
+        services.length === 0 &&
+        !error &&
+        !debouncedSearch &&
+        !selectedCategory && (
+          <Box sx={{ textAlign: "center", py: 8 }}>
+            <Typography variant="h6" color="text.secondary">
+              No services available.
+            </Typography>
+          </Box>
+        )}
 
       {/* Pagination */}
       {totalPages > 1 && (
