@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from typing import Literal
 
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest
 from app.services.ai import get_session, process_message, start_session
+from app.services.notify import send_email, send_sms
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
+
+
+class ShareRequest(BaseModel):
+    channel: Literal["sms", "email"]
+    recipient: str = Field(min_length=3, max_length=200)
+    language: str = "en"
 
 
 @router.post("/start")
@@ -46,11 +57,16 @@ async def get_results(session_id: str):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    from app.services.matching import calculate_benefits
+    from app.services.matching import (
+        calculate_benefits,
+        recommend_application_order,
+    )
 
     benefits = {}
+    sequencing: list[dict] = []
     if session.matches:
         benefits = calculate_benefits(session.extracted_profile, session.matches)
+        sequencing = recommend_application_order(session.matches)
 
     return {
         "session_id": session_id,
@@ -59,5 +75,66 @@ async def get_results(session_id: str):
         "matches": [m.model_dump() for m in session.matches],
         "risk_flags": [r.model_dump() for r in session.risk_flags],
         "benefits_estimate": benefits,
+        "application_order": sequencing,
         "conversation_length": len(session.conversation),
     }
+
+
+@router.post("/{session_id}/share")
+async def share_results(session_id: str, body: ShareRequest):
+    """Send the matched-service summary to the resident via SMS or email."""
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not session.matches:
+        raise HTTPException(
+            status_code=400, detail="No matches yet — complete the intake first."
+        )
+
+    settings = get_settings()
+    origin = settings.public_origin.rstrip("/")
+
+    # Build a plain-text summary (works for SMS, doubles as email body)
+    lines = [
+        "Your Austin Service Guide matches:",
+        "",
+    ]
+    for i, m in enumerate(session.matches[:8], start=1):
+        svc = m.service
+        line = f"{i}. {svc.name}"
+        if svc.phone:
+            line += f" — {svc.phone}"
+        lines.append(line)
+        lines.append(f"   {origin}/services/{svc.slug}")
+    if len(session.matches) > 8:
+        lines.append("")
+        lines.append(f"…and {len(session.matches) - 8} more at:")
+        lines.append(f"{origin}/results/{session_id}")
+
+    text_body = "\n".join(lines)
+
+    if body.channel == "sms":
+        result = await send_sms(to=body.recipient, body=text_body)
+    else:
+        html_body = (
+            "<h2>Your Austin Service Guide matches</h2>"
+            "<ol>"
+            + "".join(
+                f'<li><strong>{m.service.name}</strong>'
+                f'{f" — {m.service.phone}" if m.service.phone else ""}<br>'
+                f'<a href="{origin}/services/{m.service.slug}">'
+                f"{origin}/services/{m.service.slug}</a></li>"
+                for m in session.matches[:8]
+            )
+            + "</ol>"
+            f'<p><a href="{origin}/results/{session_id}">'
+            f"View all matches</a></p>"
+        )
+        result = await send_email(
+            to=body.recipient,
+            subject="Your Austin Service Guide matches",
+            text=text_body,
+            html=html_body,
+        )
+
+    return result

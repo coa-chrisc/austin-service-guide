@@ -26,9 +26,12 @@ from app.services.seed_data import (
     DEMO_STAFF,
     generate_analytics_overview,
     generate_audit_log,
+    generate_demand_map,
     generate_demographics_data,
+    generate_eligibility_rules,
     generate_equity_data,
     generate_language_usage,
+    generate_reports,
     generate_service_demand,
 )
 
@@ -208,6 +211,28 @@ async def analytics_languages(x_staff_role: Optional[str] = Header(None)):
 async def analytics_equity(x_staff_role: Optional[str] = Header(None)):
     _check_staff_role(x_staff_role)
     return generate_equity_data()
+
+
+@router.get("/analytics/demand-map")
+async def analytics_demand_map(x_staff_role: Optional[str] = Header(None)):
+    _check_staff_role(x_staff_role)
+    return generate_demand_map()
+
+
+# ── Eligibility Rules ─────────────────────────────────────────────────
+
+@router.get("/eligibility-rules")
+async def eligibility_rules(x_staff_role: Optional[str] = Header(None)):
+    _check_staff_role(x_staff_role)
+    return generate_eligibility_rules()
+
+
+# ── Reports ───────────────────────────────────────────────────────────
+
+@router.get("/reports")
+async def reports(x_staff_role: Optional[str] = Header(None)):
+    _check_staff_role(x_staff_role)
+    return generate_reports()
 
 
 # ── Audit Log ─────────────────────────────────────────────────────────

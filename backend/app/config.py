@@ -21,10 +21,20 @@ class Settings(BaseSettings):
     azure_openai_key: str = ""
     azure_openai_deployment: str = "gpt-5.4-mini"
 
+    # ── Notifications (Twilio SMS + SendGrid email) ────────────────
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""  # e.g. "+15125551234"
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = "noreply@austin-service-guide.local"
+    sendgrid_from_name: str = "Austin Service Guide"
+
     # ── App behavior ───────────────────────────────────────────────
     # When True (or no OpenAI key set) the intake runs the scripted
     # fallback flow instead of calling the API.
     demo_mode: bool = False
+    # Public origin used to build shareable URLs (QR codes, SMS links)
+    public_origin: str = "http://localhost:5173"
 
     # CORS origins allowed by the API
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
@@ -40,6 +50,18 @@ class Settings(BaseSettings):
     @property
     def has_openai(self) -> bool:
         return bool(self.openai_api_key)
+
+    @property
+    def has_twilio(self) -> bool:
+        return bool(
+            self.twilio_account_sid
+            and self.twilio_auth_token
+            and self.twilio_from_number
+        )
+
+    @property
+    def has_email(self) -> bool:
+        return bool(self.sendgrid_api_key)
 
     @property
     def has_azure_openai(self) -> bool:

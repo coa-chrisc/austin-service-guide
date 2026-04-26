@@ -361,3 +361,75 @@ def calculate_benefits(
         "total_annual_value": round(total_monthly * 12, 2),
         "breakdown": breakdown,
     }
+
+
+# ── Application sequencing ───────────────────────────────────────────
+
+# Higher score = apply earlier. Crisis tops everything, then food/income
+# stabilizers (which often unlock other benefits), then shelter, then
+# health, then everything else.
+_SEQUENCE_PRIORITY: dict[str, int] = {
+    "emergency": 100,
+    "food": 80,
+    "housing": 75,
+    "utilities": 65,
+    "healthcare": 60,
+    "childcare": 55,
+    "employment": 45,
+    "veterans": 40,
+    "senior": 35,
+    "disability": 35,
+    "transportation": 25,
+    "legal": 20,
+    "immigration": 20,
+    "education": 10,
+}
+
+_SEQUENCE_REASONS: dict[str, str] = {
+    "emergency": "Address immediate safety first — these resources answer 24/7.",
+    "food": "Food assistance often qualifies you for other programs automatically.",
+    "housing": "Stabilize where you sleep before tackling longer-term goals.",
+    "utilities": "Keeping the lights on prevents eviction and protects your deposits.",
+    "healthcare": "Get covered before any out-of-pocket bills pile up.",
+    "childcare": "Childcare unblocks job search, school, and medical appointments.",
+    "employment": "Job placement is faster once basic needs are stable.",
+    "veterans": "VA benefits stack with most state and local programs.",
+    "senior": "Age-based programs are usually fastest to qualify for.",
+    "disability": "Disability documentation unlocks several other benefits.",
+    "transportation": "Reliable transit makes appointments and work feasible.",
+    "legal": "Legal aid can stop adverse actions already in motion.",
+    "immigration": "Legal status work goes alongside everything else.",
+    "education": "Plan after immediate needs are handled.",
+}
+
+
+def recommend_application_order(
+    matched_services: list[ServiceMatch],
+) -> list[dict]:
+    """Return matches re-ordered for action, each with a one-line reason."""
+    def score(m: ServiceMatch) -> tuple[float, float]:
+        cat_score = max(
+            (_SEQUENCE_PRIORITY.get(c, 0) for c in m.service.categories),
+            default=0,
+        )
+        return (cat_score, m.match_score)
+
+    ordered = sorted(matched_services, key=score, reverse=True)
+    out: list[dict] = []
+    for idx, m in enumerate(ordered, start=1):
+        primary_cat = next(
+            (c for c in m.service.categories if c in _SEQUENCE_PRIORITY),
+            (m.service.categories[0] if m.service.categories else "other"),
+        )
+        out.append({
+            "rank": idx,
+            "service_id": m.service.id,
+            "service_slug": m.service.slug,
+            "service_name": m.service.name,
+            "category": primary_cat,
+            "reason": _SEQUENCE_REASONS.get(
+                primary_cat,
+                "Apply when you have the time — this one is supportive rather than urgent.",
+            ),
+        })
+    return out
