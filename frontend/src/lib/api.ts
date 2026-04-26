@@ -114,6 +114,15 @@ export async function sendIntakeMessage(
   return raw.response;
 }
 
+export interface ApplicationOrderItem {
+  rank: number;
+  service_id: string;
+  service_slug: string;
+  service_name: string;
+  category: string;
+  reason: string;
+}
+
 export function getIntakeResults(sessionId: string) {
   return apiRequest<{
     session_id: string;
@@ -122,8 +131,21 @@ export function getIntakeResults(sessionId: string) {
     matches: import("@/types").ServiceMatch[];
     risk_flags: import("@/types").RiskFlag[];
     benefits_estimate: import("@/types").BenefitsEstimate;
+    application_order: ApplicationOrderItem[];
     conversation_length: number;
   }>("GET", `/api/v1/intake/${sessionId}/results`);
+}
+
+export function shareIntakeResults(
+  sessionId: string,
+  body: { channel: "sms" | "email"; recipient: string; language?: string },
+) {
+  return apiRequest<{
+    ok: boolean;
+    demo: boolean;
+    channel: string;
+    to: string;
+  }>("POST", `/api/v1/intake/${sessionId}/share`, body);
 }
 
 export function getServices(params?: {
@@ -265,4 +287,56 @@ export function updateAdminService(id: string, data: Partial<Service>) {
 
 export function createAdminService(data: Partial<Service>) {
   return apiRequest<Service>("POST", "/api/v1/admin/services", data);
+}
+
+// ── New admin endpoints ───────────────────────────────────────────
+
+export interface EligibilityRule {
+  id: string;
+  name: string;
+  category: string;
+  criteria: string;
+  services: string[];
+  hits_30d: number;
+  is_active: boolean;
+  last_updated: string;
+}
+
+export interface DemandMapPoint {
+  zip: string;
+  lat: number;
+  lng: number;
+  sessions: number;
+  top_categories: string[];
+  intensity: "high" | "medium" | "low";
+}
+
+export interface AdminReport {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  format: string;
+  row_count: number;
+  last_run: string;
+  schedule: string;
+  owner: string;
+}
+
+export function getAdminEligibilityRules() {
+  return apiRequest<EligibilityRule[]>(
+    "GET",
+    "/api/v1/admin/eligibility-rules",
+  );
+}
+
+export function getAdminDemandMap() {
+  return apiRequest<DemandMapPoint[]>(
+    "GET",
+    "/api/v1/admin/analytics/demand-map",
+  );
+}
+
+export function getAdminReports() {
+  return apiRequest<AdminReport[]>("GET", "/api/v1/admin/reports");
 }

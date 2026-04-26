@@ -15,8 +15,20 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import Skeleton from "@mui/material/Skeleton";
 import Fab from "@mui/material/Fab";
 import Drawer from "@mui/material/Drawer";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Snackbar from "@mui/material/Snackbar";
+import Stack from "@mui/material/Stack";
+import Paper from "@mui/material/Paper";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import MapIcon from "@mui/icons-material/Map";
-import SaveIcon from "@mui/icons-material/Save";
+import PhoneIcon from "@mui/icons-material/Phone";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChatIcon from "@mui/icons-material/Chat";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -24,9 +36,19 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import InfoIcon from "@mui/icons-material/Info";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
+import PrintIcon from "@mui/icons-material/Print";
+import ShareIcon from "@mui/icons-material/Share";
+import SmsIcon from "@mui/icons-material/Sms";
+import EmailIcon from "@mui/icons-material/Email";
+import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ServiceCard from "@/components/services/ServiceCard";
-import { getIntakeResults } from "@/lib/api";
-import { useAuth } from "@/hooks/useAuth";
+import StartHereHero from "@/components/results/StartHereHero";
+import {
+  getIntakeResults,
+  shareIntakeResults,
+  type ApplicationOrderItem,
+} from "@/lib/api";
+import { setActiveSession } from "@/lib/session";
 import type {
   ServiceMatch,
   MatchConfidence,
@@ -38,7 +60,15 @@ interface ResultsData {
   matches: ServiceMatch[];
   risk_flags: RiskFlag[];
   benefits_estimate: BenefitsEstimate;
+  application_order: ApplicationOrderItem[];
 }
+
+const formatCurrency = (n: number) =>
+  n.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
 
 const SEVERITY_CONFIG: Record<
   string,
@@ -50,10 +80,15 @@ const SEVERITY_CONFIG: Record<
   low: { color: "info", icon: <EmojiObjectsIcon /> },
 };
 
+type ViewMode = "simple" | "all";
+
+const VIEW_KEY_PREFIX = "asg.results.view.";
+
 export default function Results() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +96,58 @@ export default function Results() {
   const [filterConfidence, setFilterConfidence] =
     useState<MatchConfidence | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareChannel, setShareChannel] = useState<"sms" | "email">("sms");
+  const [shareRecipient, setShareRecipient] = useState("");
+  const [shareSending, setShareSending] = useState(false);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>(() => {
+    if (typeof window === "undefined" || !sessionId) return "simple";
+    const stored = window.sessionStorage.getItem(VIEW_KEY_PREFIX + sessionId);
+    return stored === "all" ? "all" : "simple";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !sessionId) return;
+    window.sessionStorage.setItem(VIEW_KEY_PREFIX + sessionId, view);
+  }, [view, sessionId]);
+
+  const handlePrint = () => window.print();
+
+  const openShareSms = () => {
+    setShareChannel("sms");
+    setShareOpen(true);
+  };
+
+  const handleShareSubmit = async () => {
+    if (!sessionId || !shareRecipient.trim()) return;
+    setShareSending(true);
+    try {
+      const res = await shareIntakeResults(sessionId, {
+        channel: shareChannel,
+        recipient: shareRecipient.trim(),
+      });
+      setSnackbar(
+        res.demo
+          ? `${shareChannel === "sms" ? "Text" : "Email"} queued (demo mode — no real send).`
+          : `${shareChannel === "sms" ? "Text" : "Email"} sent to ${res.to}.`,
+      );
+      setShareOpen(false);
+      setShareRecipient("");
+    } catch (err) {
+      setSnackbar(
+        `Failed to send: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+    } finally {
+      setShareSending(false);
+    }
+  };
 
   useEffect(() => {
     if (!sessionId) return;
     getIntakeResults(sessionId)
-      .then((res) =>
+      .then((res) => {
+        setActiveSession(sessionId);
         setData({
           matches: res.matches ?? [],
           risk_flags: res.risk_flags ?? [],
@@ -74,8 +156,9 @@ export default function Results() {
             total_annual_value: 0,
             breakdown: [],
           },
-        }),
-      )
+          application_order: res.application_order ?? [],
+        });
+      })
       .catch((err) => setError(err.message || "Failed to load results"))
       .finally(() => setLoading(false));
   }, [sessionId]);
@@ -147,242 +230,606 @@ export default function Results() {
     grouped[cat].push(m);
   }
 
+  const benefits = data.benefits_estimate;
+  const hasBenefits =
+    benefits.total_monthly_value > 0 || benefits.breakdown.length > 0;
+
+  // Find rank-1 service from sequencing for the simple-view hero
+  const topItem = data.application_order[0];
+  const nextItem = data.application_order[1];
+  const topMatch = topItem
+    ? matches.find((m) => m.service.id === topItem.service_id)
+    : undefined;
+  const criticalRiskFlag = data.risk_flags.find(
+    (f) => f.severity === "critical",
+  );
+  const topPhone = topMatch?.service.phone?.replace(/[^\d+]/g, "") ?? "";
+
   return (
-    <Box sx={{ pb: 10 }}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Summary card */}
-        <Card
+    <Box sx={{ pb: 10 }} className="results-root">
+      <style>{`
+        @media print {
+          @page { margin: 0.5in; }
+          body { background: white !important; }
+          header, nav, .no-print, .MuiDrawer-root, .MuiDialog-root,
+          .MuiSnackbar-root, .MuiFab-root { display: none !important; }
+          .results-root .MuiAccordion-root { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+          .results-root .MuiAccordionDetails-root .MuiGrid-root { display: block !important; }
+          .results-root .MuiAccordionDetails-root .MuiGrid-root > .MuiGrid-root { max-width: 100% !important; flex-basis: 100% !important; padding: 4px 0 !important; break-inside: avoid; }
+          .results-root .MuiCard-root { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; background: white !important; color: #111 !important; }
+          .results-root [class*="MuiCardContent-root"] { color: #111 !important; }
+        }
+      `}</style>
+      <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
+        {/* View toggle */}
+        <Box
           sx={{
-            mb: 4,
-            borderRadius: 3,
-            background: (theme) =>
-              `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-            color: "white",
+            display: "flex",
+            justifyContent: "flex-end",
+            mb: 2,
           }}
+          className="no-print"
         >
-          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
-              We found {matches.length} service{matches.length !== 1 ? "s" : ""}{" "}
-              you may be eligible for
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ opacity: 0.9, maxWidth: 700, lineHeight: 1.7 }}
-            >
-              Based on our conversation, we've matched you with services across{" "}
-              {categories.length} categories. Review each one below to see
-              eligibility details, documents needed, and how to apply.
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1.5, mt: 3, flexWrap: "wrap" }}>
-              <Button
-                variant="contained"
-                startIcon={<MapIcon />}
-                onClick={() => navigate("/map")}
-                sx={{
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
-                }}
-              >
-                View on Map
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    navigate("/login");
-                  }
-                }}
-                sx={{
-                  bgcolor: "rgba(255,255,255,0.2)",
-                  color: "white",
-                  "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
-                }}
-              >
-                {isAuthenticated ? "Save Results" : "Sign In to Save"}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Risk flags */}
-        {data.risk_flags.length > 0 && (
-          <Box sx={{ mb: 4 }}>
-            <Typography
-              variant="h5"
-              fontWeight={600}
-              gutterBottom
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
-              <CheckCircleIcon color="primary" />
-              Areas Where We Can Help
-            </Typography>
-            <Grid container spacing={2}>
-              {data.risk_flags.map((flag: RiskFlag, idx: number) => {
-                const config =
-                  SEVERITY_CONFIG[flag.severity] || SEVERITY_CONFIG.low;
-                return (
-                  <Grid key={idx} size={{ xs: 12, md: 6 }}>
-                    <Alert
-                      severity={config.color}
-                      icon={config.icon}
-                      sx={{ borderRadius: 2, height: "100%" }}
-                    >
-                      <Typography variant="subtitle2" fontWeight={600}>
-                        {flag.risk_type}
-                      </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5 }}>
-                        {flag.description}
-                      </Typography>
-                      {flag.prevention_services.length > 0 && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 0.5,
-                            flexWrap: "wrap",
-                            mt: 1,
-                          }}
-                        >
-                          {flag.prevention_services.map((s) => (
-                            <Chip
-                              key={s}
-                              label={s}
-                              size="small"
-                              variant="outlined"
-                              sx={{ fontSize: 11 }}
-                            />
-                          ))}
-                        </Box>
-                      )}
-                    </Alert>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
-        )}
-
-        {/* Filter chips */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-            Filter by:
-          </Typography>
-          <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
-            <Chip
-              label="All"
-              onClick={() => {
-                setFilterCategory(null);
-                setFilterConfidence(null);
-              }}
-              color={
-                !filterCategory && !filterConfidence ? "primary" : "default"
-              }
-              variant={
-                !filterCategory && !filterConfidence ? "filled" : "outlined"
-              }
-              size="small"
-            />
-            {categories.map((cat) => (
-              <Chip
-                key={cat}
-                label={cat}
-                onClick={() =>
-                  setFilterCategory(filterCategory === cat ? null : cat)
-                }
-                color={filterCategory === cat ? "primary" : "default"}
-                variant={filterCategory === cat ? "filled" : "outlined"}
-                size="small"
-              />
-            ))}
-            <Chip
-              label="Strong Match"
-              onClick={() =>
-                setFilterConfidence(filterConfidence === "high" ? null : "high")
-              }
-              color={filterConfidence === "high" ? "success" : "default"}
-              variant={filterConfidence === "high" ? "filled" : "outlined"}
-              size="small"
-            />
-            <Chip
-              label="Likely Match"
-              onClick={() =>
-                setFilterConfidence(
-                  filterConfidence === "medium" ? null : "medium",
-                )
-              }
-              color={filterConfidence === "medium" ? "warning" : "default"}
-              variant={filterConfidence === "medium" ? "filled" : "outlined"}
-              size="small"
-            />
-          </Box>
-        </Box>
-
-        {/* Grouped service results */}
-        {Object.entries(grouped).map(([category, catMatches]) => (
-          <Accordion
-            key={category}
-            defaultExpanded
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            size="small"
+            onChange={(_, v) => v && setView(v)}
             sx={{
-              mb: 2,
-              borderRadius: "12px !important",
-              "&::before": { display: "none" },
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              "& .MuiToggleButton-root": {
+                textTransform: "none",
+                fontWeight: 600,
+                px: 2,
+              },
             }}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6" fontWeight={600}>
-                {category}
-              </Typography>
-              <Chip
-                label={catMatches.length}
-                size="small"
-                color="primary"
-                sx={{ ml: 1.5, fontWeight: 600 }}
-              />
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                {catMatches.map((match) => (
-                  <Grid key={match.service.id} size={{ xs: 12, sm: 6, md: 4 }}>
-                    <ServiceCard
-                      service={match.service}
-                      matchConfidence={match.match_confidence}
-                      matchScore={match.match_score}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-        ))}
+            <ToggleButton value="simple">Simple view</ToggleButton>
+            <ToggleButton value="all">Show all matches</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-        {filteredMatches.length === 0 && (
-          <Box sx={{ textAlign: "center", py: 6 }}>
-            <Typography variant="h6" color="text.secondary">
-              No services match the current filters.
-            </Typography>
-            <Button
-              sx={{ mt: 2 }}
-              onClick={() => {
-                setFilterCategory(null);
-                setFilterConfidence(null);
+        {/* ───────────── Simple view ───────────── */}
+        {view === "simple" && (
+          <>
+            {/* One-line benefits estimate */}
+            {hasBenefits && (
+              <Box
+                sx={{
+                  mb: 2.5,
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: "success.50",
+                  border: "1px solid",
+                  borderColor: "success.light",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                <CheckCircleIcon color="success" />
+                <Typography variant="body1" sx={{ fontSize: "1rem" }}>
+                  You may qualify for about{" "}
+                  <Box component="span" sx={{ fontWeight: 800 }}>
+                    {formatCurrency(benefits.total_monthly_value)}/month
+                  </Box>{" "}
+                  in support.
+                </Typography>
+              </Box>
+            )}
+
+            {/* Critical risk only */}
+            {criticalRiskFlag && (
+              <Alert
+                severity="error"
+                icon={<ErrorOutlineIcon />}
+                sx={{ borderRadius: 2, mb: 2.5 }}
+              >
+                <Typography variant="subtitle2" fontWeight={700}>
+                  {criticalRiskFlag.risk_type}
+                </Typography>
+                <Typography variant="body2">
+                  {criticalRiskFlag.description}
+                </Typography>
+              </Alert>
+            )}
+
+            {topItem ? (
+              <StartHereHero
+                topItem={topItem}
+                topMatch={topMatch}
+                nextItem={nextItem}
+                remainingCount={Math.max(matches.length - 1, 0)}
+                onShowAll={() => setView("all")}
+              />
+            ) : (
+              <Box sx={{ textAlign: "center", py: 4 }}>
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  We couldn't find any matches yet.
+                </Typography>
+                <Button
+                  variant="contained"
+                  size="large"
+                  onClick={() => navigate("/intake")}
+                >
+                  Start a new intake
+                </Button>
+              </Box>
+            )}
+          </>
+        )}
+
+        {/* ───────────── Dense (all) view ───────────── */}
+        {view === "all" && (
+          <>
+            {/* Summary card */}
+            <Card
+              sx={{
+                mb: 4,
+                borderRadius: 3,
+                background: (theme) =>
+                  `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                color: "white",
               }}
             >
-              Clear Filters
-            </Button>
-          </Box>
+              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                <Typography variant="h4" fontWeight={700} gutterBottom>
+                  We found {matches.length} service
+                  {matches.length !== 1 ? "s" : ""} you may be eligible for
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ opacity: 0.9, maxWidth: 700, lineHeight: 1.7 }}
+                >
+                  Based on our conversation, we've matched you with services
+                  across {categories.length} categories. Review each one below
+                  to see eligibility details, documents needed, and how to
+                  apply.
+                </Typography>
+
+                {/* Benefits hero band */}
+                {hasBenefits && (
+                  <Box
+                    sx={{
+                      mt: 3,
+                      p: 2.5,
+                      borderRadius: 2,
+                      bgcolor: "rgba(0,0,0,0.18)",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    <Box sx={{ minWidth: 220 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          opacity: 0.85,
+                          letterSpacing: 0.5,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Estimated value to you
+                      </Typography>
+                      <Typography
+                        variant="h3"
+                        fontWeight={800}
+                        sx={{ lineHeight: 1.1, mt: 0.5 }}
+                      >
+                        {formatCurrency(benefits.total_monthly_value)}
+                        <Typography
+                          component="span"
+                          variant="body1"
+                          sx={{ opacity: 0.85, fontWeight: 500, ml: 0.5 }}
+                        >
+                          /mo
+                        </Typography>
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ opacity: 0.85, mt: 0.25 }}
+                      >
+                        ≈ {formatCurrency(benefits.total_annual_value)} per year
+                      </Typography>
+                    </Box>
+                    {benefits.breakdown.length > 0 && (
+                      <Box sx={{ flex: 1, minWidth: 240 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{ opacity: 0.85, display: "block", mb: 0.75 }}
+                        >
+                          Top contributors
+                        </Typography>
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {benefits.breakdown.slice(0, 5).map((b, i) => (
+                            <Chip
+                              key={i}
+                              size="small"
+                              label={`${b.service} · ${formatCurrency(b.monthly_value)}/mo`}
+                              sx={{
+                                bgcolor: "rgba(255,255,255,0.18)",
+                                color: "white",
+                                fontWeight: 500,
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                <Box
+                  sx={{ display: "flex", gap: 1.5, mt: 3, flexWrap: "wrap" }}
+                  className="no-print"
+                >
+                  <Button
+                    variant="contained"
+                    startIcon={<MapIcon />}
+                    onClick={() => navigate("/map")}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                    }}
+                  >
+                    View on Map
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<PrintIcon />}
+                    onClick={handlePrint}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                    }}
+                  >
+                    Save as PDF
+                  </Button>
+                  <Button
+                    variant="contained"
+                    startIcon={<ShareIcon />}
+                    onClick={() => setShareOpen(true)}
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.2)",
+                      color: "white",
+                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                    }}
+                  >
+                    Send to me
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Start here — sequencing */}
+            {data.application_order.length > 0 && (
+              <Card
+                sx={{
+                  mb: 4,
+                  borderRadius: 3,
+                  border: "1px solid",
+                  borderColor: "primary.light",
+                }}
+              >
+                <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      mb: 1.5,
+                    }}
+                  >
+                    <RocketLaunchIcon color="primary" />
+                    <Typography variant="h6" fontWeight={700}>
+                      Start here
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      · suggested order based on what's most urgent
+                    </Typography>
+                  </Box>
+                  <Stack spacing={1.25}>
+                    {data.application_order.slice(0, 3).map((item) => (
+                      <Box
+                        key={item.service_id}
+                        sx={{
+                          display: "flex",
+                          gap: 1.5,
+                          alignItems: "flex-start",
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: "primary.50",
+                          cursor: "pointer",
+                          transition: "background 0.15s",
+                          "&:hover": { bgcolor: "primary.100" },
+                        }}
+                        onClick={() =>
+                          navigate(`/services/${item.service_slug}`)
+                        }
+                      >
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "50%",
+                            bgcolor: "primary.main",
+                            color: "white",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {item.rank}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>
+                            {item.service_name}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mt: 0.25 }}
+                          >
+                            {item.reason}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Risk flags */}
+            {data.risk_flags.length > 0 && (
+              <Box sx={{ mb: 4 }}>
+                <Typography
+                  variant="h5"
+                  fontWeight={600}
+                  gutterBottom
+                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                >
+                  <CheckCircleIcon color="primary" />
+                  Areas Where We Can Help
+                </Typography>
+                <Grid container spacing={2}>
+                  {data.risk_flags.map((flag: RiskFlag, idx: number) => {
+                    const config =
+                      SEVERITY_CONFIG[flag.severity] || SEVERITY_CONFIG.low;
+                    return (
+                      <Grid key={idx} size={{ xs: 12, md: 6 }}>
+                        <Alert
+                          severity={config.color}
+                          icon={config.icon}
+                          sx={{ borderRadius: 2, height: "100%" }}
+                        >
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {flag.risk_type}
+                          </Typography>
+                          <Typography variant="body2" sx={{ mt: 0.5 }}>
+                            {flag.description}
+                          </Typography>
+                          {flag.prevention_services.length > 0 && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                gap: 0.5,
+                                flexWrap: "wrap",
+                                mt: 1,
+                              }}
+                            >
+                              {flag.prevention_services.map((s) => (
+                                <Chip
+                                  key={s}
+                                  label={s}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ fontSize: 11 }}
+                                />
+                              ))}
+                            </Box>
+                          )}
+                        </Alert>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
+
+            {/* Filter chips */}
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1 }}
+              >
+                Filter by:
+              </Typography>
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+                <Chip
+                  label="All"
+                  onClick={() => {
+                    setFilterCategory(null);
+                    setFilterConfidence(null);
+                  }}
+                  color={
+                    !filterCategory && !filterConfidence ? "primary" : "default"
+                  }
+                  variant={
+                    !filterCategory && !filterConfidence ? "filled" : "outlined"
+                  }
+                  size="small"
+                />
+                {categories.map((cat) => (
+                  <Chip
+                    key={cat}
+                    label={cat}
+                    onClick={() =>
+                      setFilterCategory(filterCategory === cat ? null : cat)
+                    }
+                    color={filterCategory === cat ? "primary" : "default"}
+                    variant={filterCategory === cat ? "filled" : "outlined"}
+                    size="small"
+                  />
+                ))}
+                <Chip
+                  label="Strong Match"
+                  onClick={() =>
+                    setFilterConfidence(
+                      filterConfidence === "high" ? null : "high",
+                    )
+                  }
+                  color={filterConfidence === "high" ? "success" : "default"}
+                  variant={filterConfidence === "high" ? "filled" : "outlined"}
+                  size="small"
+                />
+                <Chip
+                  label="Likely Match"
+                  onClick={() =>
+                    setFilterConfidence(
+                      filterConfidence === "medium" ? null : "medium",
+                    )
+                  }
+                  color={filterConfidence === "medium" ? "warning" : "default"}
+                  variant={
+                    filterConfidence === "medium" ? "filled" : "outlined"
+                  }
+                  size="small"
+                />
+              </Box>
+            </Box>
+
+            {/* Grouped service results */}
+            {Object.entries(grouped).map(([category, catMatches]) => (
+              <Accordion
+                key={category}
+                defaultExpanded
+                sx={{
+                  mb: 2,
+                  borderRadius: "12px !important",
+                  "&::before": { display: "none" },
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                }}
+              >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Typography variant="h6" fontWeight={600}>
+                    {category}
+                  </Typography>
+                  <Chip
+                    label={catMatches.length}
+                    size="small"
+                    color="primary"
+                    sx={{ ml: 1.5, fontWeight: 600 }}
+                  />
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Grid container spacing={2}>
+                    {catMatches.map((match) => (
+                      <Grid
+                        key={match.service.id}
+                        size={{ xs: 12, sm: 12, md: 6 }}
+                      >
+                        <ServiceCard
+                          service={match.service}
+                          matchConfidence={match.match_confidence}
+                          matchScore={match.match_score}
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+
+            {filteredMatches.length === 0 && (
+              <Box sx={{ textAlign: "center", py: 6 }}>
+                <Typography variant="h6" color="text.secondary">
+                  No services match the current filters.
+                </Typography>
+                <Button
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    setFilterCategory(null);
+                    setFilterConfidence(null);
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </Box>
+            )}
+          </>
         )}
       </Container>
 
-      {/* Follow-up FAB */}
+      {/* Sticky bottom action bar — simple view only */}
+      {view === "simple" && topItem && (
+        <Paper
+          elevation={8}
+          className="no-print"
+          sx={{
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1100,
+            borderRadius: 0,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            pt: 1,
+            pb: "calc(8px + env(safe-area-inset-bottom, 0px))",
+            px: 1,
+            display: "flex",
+            gap: 1,
+          }}
+        >
+          {topPhone && (
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              startIcon={<PhoneIcon />}
+              href={`tel:${topPhone}`}
+              sx={{ minHeight: 48, fontWeight: 700, borderRadius: "24px" }}
+            >
+              Call
+            </Button>
+          )}
+          <Button
+            variant="outlined"
+            fullWidth
+            startIcon={<SmsIcon />}
+            onClick={openShareSms}
+            sx={{ minHeight: 48, fontWeight: 600, borderRadius: "24px" }}
+          >
+            Send to my phone
+          </Button>
+        </Paper>
+      )}
+
+      {/* Follow-up FAB — hide on phone in simple view (sticky bar takes its place) */}
       <Fab
         color="primary"
+        className="no-print"
         onClick={() => setChatOpen(true)}
         sx={{
           position: "fixed",
           bottom: 24,
           right: 24,
+          display: view === "simple" ? { xs: "none", md: "flex" } : "flex",
           zIndex: 1200,
         }}
         aria-label="Ask a follow-up question"
@@ -437,6 +884,102 @@ export default function Results() {
           </Button>
         </Box>
       </Drawer>
+
+      {/* Share dialog */}
+      <Dialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={isPhone}
+        className="no-print"
+      >
+        <DialogTitle>Send your matches</DialogTitle>
+        <DialogContent
+          sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            We'll send you a list of your matched services with phone numbers
+            and links you can save or share.
+          </Typography>
+          <ToggleButtonGroup
+            value={shareChannel}
+            exclusive
+            onChange={(_, v) => v && setShareChannel(v)}
+            fullWidth
+            size="small"
+          >
+            <ToggleButton value="sms">
+              <SmsIcon fontSize="small" sx={{ mr: 1 }} /> Text message
+            </ToggleButton>
+            <ToggleButton value="email">
+              <EmailIcon fontSize="small" sx={{ mr: 1 }} /> Email
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            type={shareChannel === "email" ? "email" : "tel"}
+            label={shareChannel === "sms" ? "Phone number" : "Email address"}
+            placeholder={
+              shareChannel === "sms" ? "+1 512 555 1234" : "you@example.com"
+            }
+            value={shareRecipient}
+            onChange={(e) => setShareRecipient(e.target.value)}
+            helperText={
+              shareChannel === "sms"
+                ? "Include country code, e.g. +15125551234"
+                : ""
+            }
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: -0.5 }}
+          >
+            Want to keep your plan across devices?{" "}
+            <Box
+              component="a"
+              onClick={(e: React.MouseEvent) => {
+                e.preventDefault();
+                setShareOpen(false);
+                navigate(
+                  `/login?return=${encodeURIComponent(
+                    `/results/${sessionId ?? ""}`,
+                  )}`,
+                );
+              }}
+              sx={{
+                color: "primary.main",
+                fontWeight: 600,
+                cursor: "pointer",
+                textDecoration: "underline",
+              }}
+            >
+              Sign in
+            </Box>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShareOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleShareSubmit}
+            disabled={shareSending || !shareRecipient.trim()}
+          >
+            {shareSending ? "Sending…" : "Send"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!snackbar}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        message={snackbar ?? ""}
+      />
     </Box>
   );
 }

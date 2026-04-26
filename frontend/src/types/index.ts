@@ -243,10 +243,15 @@ export interface CrisisResource {
   languages: string[];
 }
 
+export interface BenefitsBreakdownItem {
+  service: string;
+  monthly_value: number;
+}
+
 export interface BenefitsEstimate {
   total_monthly_value: number;
   total_annual_value: number;
-  breakdown: Array<Record<string, unknown>>;
+  breakdown: BenefitsBreakdownItem[];
 }
 
 // Pagination

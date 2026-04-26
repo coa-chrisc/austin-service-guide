@@ -3,6 +3,8 @@ import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Chip from "@mui/material/Chip";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { IntakeMessage } from "@/types";
 
 interface ChatBubbleProps {
@@ -64,17 +66,77 @@ export default function ChatBubble({
                 }),
           }}
         >
-          <Typography
-            variant="body1"
-            sx={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              lineHeight: 1.6,
-              fontSize: "0.95rem",
-            }}
-          >
-            {message.content}
-          </Typography>
+          {isUser ? (
+            <Typography
+              variant="body1"
+              sx={{
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                lineHeight: 1.6,
+                fontSize: "0.95rem",
+              }}
+            >
+              {message.content}
+            </Typography>
+          ) : (
+            <Box
+              sx={{
+                fontSize: "0.95rem",
+                lineHeight: 1.6,
+                wordBreak: "break-word",
+                "& p": { my: 0.5 },
+                "& p:first-of-type": { mt: 0 },
+                "& p:last-of-type": { mb: 0 },
+                "& ul, & ol": { my: 0.5, pl: 3 },
+                "& li": { my: 0.25 },
+                "& li > p": { my: 0 },
+                "& strong": { fontWeight: 700 },
+                "& em": { fontStyle: "italic" },
+                "& code": {
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+                  fontSize: "0.875em",
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  px: 0.5,
+                  borderRadius: "3px",
+                },
+                "& pre": {
+                  bgcolor: "rgba(0,0,0,0.06)",
+                  p: 1,
+                  borderRadius: 1,
+                  overflowX: "auto",
+                },
+                "& a": {
+                  color: "primary.main",
+                  textDecoration: "underline",
+                },
+                "& h1, & h2, & h3": {
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  my: 1,
+                },
+                "& blockquote": {
+                  borderLeft: "3px solid",
+                  borderColor: "primary.light",
+                  pl: 1.5,
+                  ml: 0,
+                  my: 0.5,
+                  color: "text.secondary",
+                },
+              }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  a: ({ node: _node, ...props }) => (
+                    <a {...props} target="_blank" rel="noopener noreferrer" />
+                  ),
+                }}
+              >
+                {message.content}
+              </ReactMarkdown>
+            </Box>
+          )}
         </Box>
 
         {/* Suggested buttons */}

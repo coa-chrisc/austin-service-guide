@@ -12,6 +12,8 @@ import SendIcon from "@mui/icons-material/Send";
 import PhoneIcon from "@mui/icons-material/Phone";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChatBubble from "./ChatBubble";
 import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
@@ -303,22 +305,54 @@ export default function ChatInterface({
 
       {/* Completion CTA */}
       {isComplete && (
-        <Box sx={{ px: 2, pb: 1 }}>
+        <Box
+          sx={{
+            px: 2,
+            pb: 1.5,
+            pt: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            gap: 1,
+            animation: "ctaSlideIn 0.4s ease-out",
+            "@keyframes ctaSlideIn": {
+              from: { opacity: 0, transform: "translateY(12px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1,
+              color: "success.main",
+            }}
+          >
+            <CheckCircleIcon sx={{ fontSize: 22 }} />
+            <Typography variant="subtitle1" fontWeight={700}>
+              Your plan is ready
+            </Typography>
+          </Box>
           <Button
             variant="contained"
             size="large"
             fullWidth
             onClick={() => onComplete?.(session.id)}
+            endIcon={<ArrowForwardIcon />}
             sx={{
-              borderRadius: "24px",
-              py: 1.5,
-              fontSize: "1rem",
+              borderRadius: "28px",
+              py: 1.75,
+              fontSize: "1.125rem",
               fontWeight: 700,
+              minHeight: 56,
               background: (theme) =>
                 `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+              boxShadow: "0 6px 18px rgba(0, 91, 187, 0.35)",
             }}
           >
-            View Your Results
+            See my plan
           </Button>
         </Box>
       )}
