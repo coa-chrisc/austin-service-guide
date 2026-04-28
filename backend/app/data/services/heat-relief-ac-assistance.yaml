@@ -1,0 +1,60 @@
+id: svc-heat-relief
+name: Heat Relief & AC Repair Assistance
+slug: heat-relief-ac-assistance
+provider_name: Family Eldercare & Austin Energy
+description: One-time financial assistance for AC repair, AC unit replacement, or window-unit purchase
+  for income-qualified residents — prioritized for older adults, outdoor workers, and households with
+  chronic medical conditions during summer heat advisories. Includes a free fan distribution program in
+  May–September.
+eligibility_summary: 'Travis County resident, household income at or below 200% FPL, AND one of: age 60+,
+  household member with chronic cardiac/respiratory/renal condition, primary earner works outdoors, or
+  household includes a child under 5.'
+how_to_apply: Call 512-459-4837 (Family Eldercare summer program intake) or apply online during the May–September
+  enrollment window.
+cost: Free
+cost_type: free
+website_url: https://www.familyeldercare.org/services/summer-fan-drive
+phone: 512-459-4837
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Home visits available
+- Wheelchair accessible
+status: active
+categories:
+- cooling
+- utilities
+- senior
+locations:
+- id: loc-heat-1
+  service_id: svc-heat-relief
+  name: Family Eldercare Main Office
+  address: 1700 Rutherford Ln
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.358
+  longitude: -97.692
+  phone: 512-459-4837
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Proof of address
+  description: Utility bill or lease
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, SSI/SSDI letter, or program enrollment
+  is_required: true
+- name: Medical documentation
+  description: Note from a doctor for chronic-condition prioritization
+  is_required: false

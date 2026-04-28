@@ -1,0 +1,43 @@
+id: svc-capcog-aaa
+name: Capital Area Area Agency on Aging
+slug: capital-area-area-agency-on-aging
+provider_name: Capital Area Council of Governments
+description: Federally designated agency coordinating services for older adults in 10 Central Texas counties
+  — including benefits counseling, caregiver support, ombudsman services, and care management.
+eligibility_summary: Adults 60+ and family caregivers in the Capital Area region.
+how_to_apply: Call the Aging & Disability Resource Center at 512-916-6062.
+cost: Free
+cost_type: free
+website_url: https://www.capcog.org/divisions/area-agency-on-aging
+phone: 512-916-6062
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- senior
+locations:
+- id: loc-aaa-1
+  service_id: svc-capcog-aaa
+  name: CAPCOG Offices
+  address: 6800 Burleson Rd, Bldg 310
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.1972
+  longitude: -97.6678
+  phone: 512-916-6062
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

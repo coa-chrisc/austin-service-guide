@@ -1,0 +1,55 @@
+- name: 9-1-1 Emergency
+  description: Life-threatening emergencies
+  phone: '911'
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: 988 Suicide & Crisis Lifeline
+  description: Mental health crisis, suicidal thoughts, emotional distress
+  phone: '988'
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: Integral Care Crisis Helpline
+  description: Travis County mental health crisis line
+  phone: 512-472-4357
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: SAFE Alliance DV Hotline
+  description: Domestic violence, sexual assault support
+  phone: 512-267-7233
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: National DV Hotline
+  description: National domestic violence support
+  phone: 1-800-799-7233
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: 2-1-1 Texas
+  description: Comprehensive social service referrals
+  phone: 2-1-1
+  available_24_7: true
+  languages:
+  - en
+  - es
+- name: Trevor Project (LGBTQ+ Youth)
+  description: Crisis support for LGBTQ+ young people
+  phone: 1-866-488-7386
+  available_24_7: true
+  languages:
+  - en
+- name: Child Abuse Hotline
+  description: Report child abuse or neglect
+  phone: 1-800-252-5400
+  available_24_7: true
+  languages:
+  - en
+  - es

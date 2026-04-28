@@ -1,0 +1,45 @@
+id: svc-sustainable-food
+name: Sustainable Food Center — Cooking Classes
+slug: sustainable-food-center-cooking
+provider_name: Sustainable Food Center
+description: The Happy Kitchen / La Cocina Alegre is a free six-week series teaching low-cost cooking
+  with whole foods, with a focus on diabetes prevention and heart-healthy eating. Classes pair recipes
+  with grocery vouchers for the on-site farmers market.
+eligibility_summary: Open to anyone. Priority and free farmers-market vouchers for SNAP recipients and
+  Medicaid enrollees.
+how_to_apply: Browse the class calendar and register at sustainablefoodcenter.org or call 512-220-1080.
+cost: Free
+cost_type: free
+website_url: https://sustainablefoodcenter.org
+phone: 512-220-1080
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- nutrition
+- education
+locations:
+- id: loc-sfc-1
+  service_id: svc-sustainable-food
+  name: SFC Teaching Kitchen
+  address: 2921 E 17th St, Bldg C
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2799
+  longitude: -97.7079
+  phone: 512-220-1080
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

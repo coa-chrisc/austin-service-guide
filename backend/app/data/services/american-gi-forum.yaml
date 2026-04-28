@@ -1,0 +1,50 @@
+id: svc-agiforum
+name: American GI Forum
+slug: american-gi-forum
+provider_name: American GI Forum – National Veterans Outreach
+description: Job training, housing, and support services for veterans and their families, including the
+  Homeless Veterans Reintegration Program (HVRP) and transitional housing.
+eligibility_summary: Veterans and eligible family members. HVRP serves veterans experiencing homelessness
+  or at risk of homelessness.
+how_to_apply: Call 512-354-5700 or visit the Austin office.
+cost: Free
+cost_type: free
+website_url: https://www.nvop.org
+phone: 512-354-5700
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- veterans
+- employment
+- housing
+locations:
+- id: loc-agi-1
+  service_id: svc-agiforum
+  name: Austin Office
+  address: 611 S Congress Ave, Ste 415
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2561
+  longitude: -97.7471
+  phone: 512-354-5700
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: DD-214
+  description: Certificate of Release or Discharge
+  is_required: true
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

@@ -1,0 +1,56 @@
+id: svc-wfsa-cc
+name: Workforce Solutions Childcare Scholarships
+slug: workforce-solutions-childcare-scholarships
+provider_name: Workforce Solutions Capital Area
+description: Subsidized childcare scholarships for working parents and parents in school or job training,
+  payable to participating licensed childcare providers across Travis County.
+eligibility_summary: Parents working, in school, or in training at least 25 hrs/week with household income
+  ≤85% State Median Income.
+how_to_apply: Apply at wfsca.org/childcare or call 512-225-3838.
+cost: Free; co-payment based on income
+cost_type: sliding_scale
+website_url: https://www.wfsca.org/childcare
+phone: 512-225-3838
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Interpreter services
+status: active
+categories:
+- childcare
+locations:
+- id: loc-wfcc-1
+  service_id: svc-wfsa-cc
+  name: Childcare Services Office
+  address: 9001 IH-35 N, Ste 110-D
+  city: Austin
+  state: TX
+  zip_code: '78753'
+  latitude: 30.355
+  longitude: -97.694
+  phone: 512-225-3838
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Each parent in household
+  is_required: true
+- name: Proof of income
+  description: Last 30 days
+  is_required: true
+- name: Children's birth certificates
+  description: Each child needing care
+  is_required: true
+- name: Proof of work or school
+  description: Employment letter, school schedule
+  is_required: true

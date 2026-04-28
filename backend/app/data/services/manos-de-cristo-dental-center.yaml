@@ -1,0 +1,50 @@
+id: svc-mca
+name: Manos de Cristo Dental Center
+slug: manos-de-cristo-dental-center
+provider_name: Manos de Cristo
+description: Affordable dental care for uninsured low-income adults — including cleanings, fillings, extractions,
+  and dentures — alongside food pantry and ESL programs.
+eligibility_summary: Uninsured adults with household income ≤200% FPL.
+how_to_apply: Call 512-477-7454 to schedule a screening.
+cost: $50 cleaning, sliding-scale procedures
+cost_type: sliding_scale
+website_url: https://www.manosdecristo.org
+phone: 512-477-7454
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-mca-1
+  service_id: svc-mca
+  name: Manos de Cristo Dental
+  address: 4911 Harmon Ave
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.3145
+  longitude: -97.7169
+  phone: 512-477-7454
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: true
+- name: Proof of income
+  description: For sliding-fee eligibility
+  is_required: true

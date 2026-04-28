@@ -1,0 +1,54 @@
+id: svc-vida-clinic-schools
+name: Vida Clinic — School-Based Mental Health
+slug: vida-clinic-schools
+provider_name: Vida Clinic
+description: Embedded clinicians providing therapy, psychiatric care, and crisis response inside AISD
+  elementary, middle, and high schools. Telehealth and in-person sessions available. Most services billed
+  to insurance with sliding-scale and grant-funded slots for uninsured students.
+eligibility_summary: Enrolled at an AISD campus where Vida Clinic is contracted. Parent or guardian consent
+  required for ongoing therapy.
+how_to_apply: Contact your school counselor for a referral, or call 512-518-1180 to ask whether your campus
+  is a Vida partner site.
+cost: Free or sliding-scale
+cost_type: sliding_scale
+website_url: https://vidaclinic.org
+phone: 512-518-1180
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Telehealth
+- Spanish-speaking clinicians
+status: active
+categories:
+- schools
+- healthcare
+locations:
+- id: loc-vida-1
+  service_id: svc-vida-clinic-schools
+  name: Vida Clinic Headquarters
+  address: 1700 S Lamar Blvd, Suite 338
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2566
+  longitude: -97.7619
+  phone: 512-518-1180
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Insurance card
+  description: Bring if available — uninsured students still served
+  is_required: false
+- name: Parent consent form
+  description: Required before therapy begins
+  is_required: true

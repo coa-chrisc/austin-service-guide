@@ -1,0 +1,44 @@
+id: svc-sunrise
+name: Sunrise Homeless Navigation Center
+slug: sunrise-homeless-navigation-center
+provider_name: Sunrise Community Church
+description: Daytime resource center for people experiencing homelessness, offering meals, showers, mail
+  service, ID recovery assistance, case management, and a food pantry.
+eligibility_summary: Open to anyone experiencing homelessness or housing instability. No documentation
+  required.
+how_to_apply: Walk in during open hours; no appointment needed.
+cost: Free
+cost_type: free
+website_url: https://www.sunriseaustin.org
+phone: 512-522-1690
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- food
+- housing
+locations:
+- id: loc-sun-1
+  service_id: svc-sunrise
+  name: Navigation Center
+  address: 4430 Manchaca Rd
+  city: Austin
+  state: TX
+  zip_code: '78745'
+  latitude: 30.2226
+  longitude: -97.7944
+  phone: 512-522-1690
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 1:00 PM
+    tuesday: 8:00 AM – 1:00 PM
+    wednesday: 8:00 AM – 1:00 PM
+    thursday: 8:00 AM – 1:00 PM
+    friday: 8:00 AM – 1:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

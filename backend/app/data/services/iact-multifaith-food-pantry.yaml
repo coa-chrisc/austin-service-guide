@@ -1,0 +1,51 @@
+id: svc-iam-food-pantry
+name: iACT Multifaith Food Pantry
+slug: iact-multifaith-food-pantry
+provider_name: Interfaith Action of Central Texas (iACT)
+description: Culturally-aware food pantry serving refugee and immigrant families in north Austin — halal-certified
+  meats, regional staples (rice, lentils, spices), and infant formula stocked. Bilingual volunteers and
+  case-worker referrals from RST, Caritas, and Multicultural Refugee Coalition encouraged.
+eligibility_summary: Open to anyone in food need; no income or status verification required. Refugee/immigrant
+  families prioritized for cultural-needs stocking.
+how_to_apply: Drop in during open hours, or have your case worker call 512-386-9145 to schedule a first
+  visit.
+cost: Free
+cost_type: free
+website_url: https://interfaithtexas.org
+phone: 512-386-9145
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- fa
+- ps
+- sw
+accessibility_features:
+- Wheelchair accessible
+- Drive-through pickup
+status: active
+categories:
+- food
+- refugee
+locations:
+- id: loc-iact-1
+  service_id: svc-iam-food-pantry
+  name: iACT Pantry — North Austin
+  address: 701 Tudor House Rd
+  city: Austin
+  state: TX
+  zip_code: '78758'
+  latitude: 30.3835
+  longitude: -97.7
+  phone: 512-386-9145
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false

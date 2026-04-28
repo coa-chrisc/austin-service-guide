@@ -1,0 +1,53 @@
+id: svc-vaclinic
+name: Austin VA Outpatient Clinic
+slug: austin-va-outpatient-clinic
+provider_name: U.S. Department of Veterans Affairs
+description: Primary care, mental health, women's health, audiology, optometry, and specialty consults
+  for enrolled veterans, with telehealth links to the Central Texas Veterans Health Care System.
+eligibility_summary: Veterans enrolled in VA healthcare. New enrollees may apply on-site or at va.gov/healthbenefits.
+how_to_apply: Call 512-823-4000 to schedule. New patients should enroll through VA Health Eligibility
+  Center.
+cost: Free or low copay (income-based)
+cost_type: sliding_scale
+website_url: https://www.va.gov/central-texas-health-care/locations/austin-va-clinic
+phone: 512-823-4000
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- TTY available
+- Interpreter services
+status: active
+categories:
+- veterans
+- healthcare
+locations:
+- id: loc-va-1
+  service_id: svc-vaclinic
+  name: Austin VA Outpatient Clinic
+  address: 7901 Metropolis Dr
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.1894
+  longitude: -97.7338
+  phone: 512-823-4000
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: DD-214
+  description: Discharge papers
+  is_required: true
+- name: VA Health ID card
+  description: If already enrolled
+  is_required: false

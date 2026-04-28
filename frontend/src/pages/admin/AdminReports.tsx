@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -19,6 +20,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DescriptionIcon from "@mui/icons-material/Description";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 import { getAdminReports, type AdminReport } from "../../lib/api";
 
@@ -72,6 +74,7 @@ function downloadCsv(report: AdminReport) {
 }
 
 export default function AdminReports() {
+  const navigate = useNavigate();
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -314,23 +317,37 @@ export default function AdminReports() {
                       pt: 1.5,
                     }}
                   >
-                    <Button
-                      size="small"
-                      variant="contained"
-                      startIcon={<PlayArrowIcon />}
-                      onClick={() => handleRun(report)}
-                      disabled={runningId === report.id}
-                    >
-                      {runningId === report.id ? "Running…" : "Run Now"}
-                    </Button>
-                    <Tooltip title="Download latest output">
-                      <IconButton
+                    {report.id === "rpt-partner-gaps" ? (
+                      <Button
                         size="small"
-                        onClick={() => handleDownload(report)}
+                        variant="contained"
+                        color="error"
+                        startIcon={<OpenInNewIcon />}
+                        onClick={() => navigate("/admin/partner-gaps")}
                       >
-                        <DownloadIcon />
-                      </IconButton>
-                    </Tooltip>
+                        View Gaps
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          startIcon={<PlayArrowIcon />}
+                          onClick={() => handleRun(report)}
+                          disabled={runningId === report.id}
+                        >
+                          {runningId === report.id ? "Running…" : "Run Now"}
+                        </Button>
+                        <Tooltip title="Download latest output">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDownload(report)}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
                     <Box sx={{ flex: 1 }} />
                     <Typography
                       variant="caption"

@@ -1,0 +1,48 @@
+id: svc-cis-central-tx
+name: Communities In Schools of Central Texas
+slug: communities-in-schools
+provider_name: Communities In Schools of Central Texas (CIS)
+description: School-based case management for K-12 students at risk of dropping out — licensed counselors,
+  social workers, and academic coaches embedded on AISD, Del Valle, Manor, and Pflugerville ISD campuses.
+  Services include one-on-one mental-health counseling, family advocacy, attendance interventions, and
+  referrals to outside therapists when needed. Free for any student attending a partner campus.
+eligibility_summary: Enrolled at a CIS partner campus (AISD, Del Valle ISD, Manor ISD, or Pflugerville
+  ISD). Self-referral, parent referral, or teacher/counselor referral all accepted.
+how_to_apply: Ask your child's school counselor or principal for the CIS site coordinator, or call 512-462-1771
+  for a list of partner campuses.
+cost: Free
+cost_type: free
+website_url: https://ciscentraltexas.org
+phone: 512-462-1771
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Bilingual case managers
+- Telehealth available
+status: active
+categories:
+- schools
+- healthcare
+locations:
+- id: loc-cis-1
+  service_id: svc-cis-central-tx
+  name: CIS Central Texas Office
+  address: 3000 S IH-35, Suite 410
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2386
+  longitude: -97.751
+  phone: 512-462-1771
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

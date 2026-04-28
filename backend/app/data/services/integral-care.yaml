@@ -1,0 +1,66 @@
+id: svc-integral
+name: Integral Care
+slug: integral-care
+provider_name: Integral Care
+description: Travis County's Local Mental Health Authority providing psychiatric services, crisis intervention,
+  substance use treatment, and intellectual/developmental disability services.
+eligibility_summary: Travis County residents. Priority given to individuals with serious mental illness,
+  substance use disorders, or IDD. Sliding-fee scale available.
+how_to_apply: Call the 24/7 Crisis Helpline at 512-472-HELP (4357) or walk in to a clinic.
+cost: Sliding scale
+cost_type: sliding_scale
+website_url: https://integralcare.org
+phone: 512-472-4357
+email: info@integralcare.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- TTY available
+- Interpreter services
+status: active
+categories:
+- healthcare
+- emergency
+locations:
+- id: loc-ic-1
+  service_id: svc-integral
+  name: Headquarters
+  address: 1430 Collier St
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2481
+  longitude: -97.7586
+  phone: 512-440-4031
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-ic-2
+  service_id: svc-integral
+  name: Psychiatric Emergency Services
+  address: 56 East Ave
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.26
+  longitude: -97.7385
+  phone: 512-472-4357
+  is_primary: false
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false

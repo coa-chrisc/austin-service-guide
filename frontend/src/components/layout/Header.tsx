@@ -26,6 +26,7 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeMode } from "@/theme/ThemeContext";
@@ -213,6 +214,25 @@ export default function Header() {
             </IconButton>
           )}
 
+          {/* Demo launcher — opens persona drawer on Landing */}
+          {!isMobile && (
+            <Button
+              variant="outlined"
+              size="small"
+              color="secondary"
+              startIcon={<PlayCircleOutlineIcon />}
+              onClick={() => navigate("/?demo=1")}
+              sx={{
+                borderRadius: "20px",
+                fontWeight: 600,
+                textTransform: "none",
+                mr: 0.5,
+              }}
+            >
+              Demo
+            </Button>
+          )}
+
           {/* Language selector */}
           <LanguageSelector />
 
@@ -334,6 +354,17 @@ export default function Header() {
               <ListItemText primary={item.label} />
             </ListItemButton>
           ))}
+          <ListItemButton
+            onClick={() => {
+              navigate("/?demo=1");
+              setDrawerOpen(false);
+            }}
+          >
+            <ListItemIcon>
+              <PlayCircleOutlineIcon />
+            </ListItemIcon>
+            <ListItemText primary="Demo" />
+          </ListItemButton>
         </List>
         <Divider />
         <List>

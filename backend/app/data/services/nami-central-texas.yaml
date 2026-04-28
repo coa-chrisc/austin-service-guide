@@ -1,0 +1,43 @@
+id: svc-nami
+name: NAMI Central Texas
+slug: nami-central-texas
+provider_name: National Alliance on Mental Illness — Central Texas
+description: Peer-led education, support groups, and advocacy for people living with mental illness and
+  their families. Programs include Family-to-Family, Peer-to-Peer, and Ending the Silence.
+eligibility_summary: Open to anyone affected by mental illness — individuals, family members, and caregivers.
+how_to_apply: Call 512-420-9810 or register for classes at namicentraltx.org.
+cost: Free
+cost_type: free
+website_url: https://namicentraltx.org
+phone: 512-420-9810
+email: info@namicentraltx.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Virtual programs available
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-nami-1
+  service_id: svc-nami
+  name: NAMI Central Texas Office
+  address: 4110 Guadalupe St, Bldg 781
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.306
+  longitude: -97.732
+  phone: 512-420-9810
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

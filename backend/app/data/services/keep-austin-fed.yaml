@@ -1,0 +1,41 @@
+id: svc-keepaustinfed
+name: Keep Austin Fed
+slug: keep-austin-fed
+provider_name: Keep Austin Fed
+description: Volunteer-run food rescue program redirecting surplus prepared food from restaurants and
+  grocers to dozens of partner shelters and meal programs across Austin.
+eligibility_summary: Partners are vetted nonprofits serving food-insecure populations; individuals receive
+  food through partner agencies.
+how_to_apply: Find a partner site at keepaustinfed.org or call 512-298-2387.
+cost: Free
+cost_type: free
+website_url: https://www.keepaustinfed.org
+phone: 512-298-2387
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- food
+locations:
+- id: loc-kaf-1
+  service_id: svc-keepaustinfed
+  name: Operations Office
+  address: 3300 N IH-35
+  city: Austin
+  state: TX
+  zip_code: '78705'
+  latitude: 30.292
+  longitude: -97.7236
+  phone: 512-298-2387
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

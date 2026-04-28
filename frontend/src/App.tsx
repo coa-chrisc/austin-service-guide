@@ -8,6 +8,7 @@ import ServiceDirectory from "@/pages/ServiceDirectory";
 import ServiceDetail from "@/pages/ServiceDetail";
 import MapView from "@/pages/MapView";
 import Login from "@/pages/Login";
+import DemoIntake from "@/pages/DemoIntake";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminResidents from "@/pages/admin/AdminResidents";
 import AdminResidentDetail from "@/pages/admin/AdminResidentDetail";
@@ -21,6 +22,7 @@ import AdminStaff from "@/pages/admin/AdminStaff";
 import AdminEligibility from "@/pages/admin/AdminEligibility";
 import AdminDemandMap from "@/pages/admin/AdminDemandMap";
 import AdminReports from "@/pages/admin/AdminReports";
+import AdminPartnerGaps from "@/pages/admin/AdminPartnerGaps";
 import Box from "@mui/material/Box";
 
 export default function App() {
@@ -40,6 +42,7 @@ export default function App() {
         <Route path="equity" element={<AdminEquity />} />
         <Route path="languages" element={<AdminLanguages />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="partner-gaps" element={<AdminPartnerGaps />} />
         <Route path="audit" element={<AdminAuditLog />} />
         <Route path="staff" element={<AdminStaff />} />
       </Route>
@@ -65,6 +68,7 @@ export default function App() {
                 <Route path="/services/:slug" element={<ServiceDetail />} />
                 <Route path="/map" element={<MapView />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/demo/:sessionId" element={<DemoIntake />} />
               </Routes>
             </Box>
           </Box>

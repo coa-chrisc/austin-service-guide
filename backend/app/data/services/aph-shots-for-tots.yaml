@@ -1,0 +1,72 @@
+id: svc-aph-shots
+name: Austin Public Health Shots for Tots & Big Shots
+slug: aph-shots-for-tots
+provider_name: Austin Public Health
+description: Low-cost immunizations for uninsured and underinsured children, teens, and adults at Austin
+  Public Health neighborhood clinics.
+eligibility_summary: Children and adults who are uninsured, underinsured, Medicaid-eligible, or American
+  Indian/Alaska Native.
+how_to_apply: Call 512-972-5520 to schedule an appointment.
+cost: $10-$15 administration fee per shot
+cost_type: flat_fee
+website_url: https://www.austintexas.gov/department/shots-tots-big-shots
+phone: 512-972-5520
+email: ''
+languages_offered:
+- en
+- es
+- vi
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-shots-1
+  service_id: svc-aph-shots
+  name: Far South Clinic
+  address: 405 W Stassney Ln
+  city: Austin
+  state: TX
+  zip_code: '78745'
+  latitude: 30.2086
+  longitude: -97.7768
+  phone: 512-972-5520
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-shots-2
+  service_id: svc-aph-shots
+  name: RBJ Health Center
+  address: 15 Waller St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2611
+  longitude: -97.7333
+  phone: 512-972-5520
+  is_primary: false
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Shot record
+  description: Previous immunization history
+  is_required: false
+- name: Insurance card
+  description: If applicable
+  is_required: false

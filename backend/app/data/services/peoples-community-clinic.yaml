@@ -1,0 +1,51 @@
+id: svc-pcc
+name: People's Community Clinic
+slug: peoples-community-clinic
+provider_name: People's Community Clinic
+description: Nonprofit clinic providing comprehensive primary care, pediatrics, dental care, OB/GYN, and
+  behavioral health services on a sliding-fee basis.
+eligibility_summary: Open to all, with priority for low-income uninsured and underinsured patients. Income
+  ≤200% FPL qualifies for reduced fees.
+how_to_apply: Call 512-478-4939 to schedule a new patient appointment.
+cost: Sliding scale from $15
+cost_type: sliding_scale
+website_url: https://www.austinpcc.org
+phone: 512-478-4939
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-pcc-1
+  service_id: svc-pcc
+  name: Main Clinic
+  address: 2909 N IH-35
+  city: Austin
+  state: TX
+  zip_code: '78722'
+  latitude: 30.287
+  longitude: -97.7184
+  phone: 512-478-4939
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: false
+- name: Proof of income
+  description: For sliding-fee scale
+  is_required: false

@@ -1,0 +1,40 @@
+id: svc-mlf-truck
+name: Mobile Loaves & Fishes Truck Ministry
+slug: mobile-loaves-fishes-truck-ministry
+provider_name: Mobile Loaves & Fishes
+description: Volunteer-run catering trucks deliver hot meals, clothing, and hygiene supplies to people
+  experiencing homelessness on the streets of Austin every evening of the year.
+eligibility_summary: Open to anyone in need. No documentation or registration required.
+how_to_apply: No application needed — meet a truck on its route. Route schedule at mlf.org.
+cost: Free
+cost_type: free
+website_url: https://mlf.org
+phone: 512-328-7299
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- food
+locations:
+- id: loc-mlft-1
+  service_id: svc-mlf-truck
+  name: Truck Ministry Dispatch
+  address: 903 S Capital of Texas Hwy
+  city: Austin
+  state: TX
+  zip_code: '78746'
+  latitude: 30.278
+  longitude: -97.8197
+  phone: 512-328-7299
+  is_primary: true
+  hours:
+    monday: 5:30 PM – 8:00 PM
+    tuesday: 5:30 PM – 8:00 PM
+    wednesday: 5:30 PM – 8:00 PM
+    thursday: 5:30 PM – 8:00 PM
+    friday: 5:30 PM – 8:00 PM
+    saturday: 5:30 PM – 8:00 PM
+    sunday: 5:30 PM – 8:00 PM
+  hours_verified: false

@@ -14,9 +14,11 @@ from app.services.ai import (
     get_application_order,
     get_session,
     process_message,
+    start_persona_session,
     start_session,
 )
 from app.services.notify import send_email, send_sms
+from app.services.personas import list_personas
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
 
@@ -27,12 +29,59 @@ class ShareRequest(BaseModel):
     language: str = "en"
 
 
+class LoadPersonaRequest(BaseModel):
+    persona_id: str = Field(min_length=1, max_length=100)
+
+
+@router.get("/personas")
+async def get_personas():
+    """List available demo personas for the ?demo=1 launcher."""
+    return {"personas": list_personas()}
+
+
+@router.post("/load-persona")
+async def load_persona(body: LoadPersonaRequest):
+    """Create a session pre-seeded by a demo persona and return its id.
+
+    The frontend should route to /intake/{session_id} after this call —
+    the seeded profile is a hypothesis the LLM can refine through normal
+    conversation.
+    """
+    session = await start_persona_session(body.persona_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail=f"Unknown persona: {body.persona_id}")
+    last = session.conversation[-1] if session.conversation else None
+    from app.services.personas import get_persona
+    persona = get_persona(body.persona_id)
+    script = []
+    opening_message = ""
+    if persona is not None:
+        opening_message = persona.opening_message
+        script = [
+            {"role": t.role, "content": t.content, "delay_ms": t.delay_ms}
+            for t in persona.script
+        ]
+    return {
+        "session_id": session.id,
+        "language": session.language,
+        "entry_source": session.entry_source,
+        "status": session.status.value,
+        "conversation": [m.model_dump() for m in session.conversation],
+        "last_message": last.model_dump() if last else None,
+        "opening_message": opening_message,
+        "script": script,
+    }
+
+
 @router.post("/start")
 async def start_intake(body: IntakeStartRequest | None = None):
     """Create a new intake session and return the greeting."""
     language = body.language if body else "en"
     life_event = body.life_event if body else None
-    session = await start_session(language=language, life_event=life_event)
+    focus = body.focus if body else None
+    session = await start_session(
+        language=language, life_event=life_event, focus=focus
+    )
     return {
         "session_id": session.id,
         "language": session.language,
@@ -65,6 +114,13 @@ async def get_results(session_id: str):
         raise HTTPException(status_code=404, detail="Session not found")
 
     from app.services.matching import calculate_benefits
+    from app.services.i18n import (
+        translate_match_reasoning,
+        translate_service_description,
+        translate_sequence_reason,
+        translate_risk_flag,
+        PLAN_SUMMARY_I18N,
+    )
 
     benefits = {}
     sequencing: list[dict] = []
@@ -77,12 +133,44 @@ async def get_results(session_id: str):
         plan_synthesis = plan["summary"]
         plan_ai_generated = plan["ai_generated"]
 
+    lang = session.language or "en"
+    matches_payload = [m.model_dump() for m in session.matches]
+    risk_flags_payload = [r.model_dump() for r in session.risk_flags]
+
+    if lang != "en":
+        # Localize service descriptions + match reasoning so the plan reads
+        # in the resident's language. Untranslated services fall through
+        # to English.
+        for m in matches_payload:
+            sid = m["service"].get("id")
+            translated_desc = translate_service_description(sid, lang) if sid else None
+            if translated_desc:
+                m["service"]["description"] = translated_desc
+            m["match_reasoning"] = translate_match_reasoning(
+                m.get("match_reasoning", ""), lang
+            )
+
+        for item in sequencing:
+            translated_reason = translate_sequence_reason(item.get("category", ""), lang)
+            if translated_reason:
+                item["reason"] = translated_reason
+
+        for rf in risk_flags_payload:
+            translated_rf = translate_risk_flag(rf.get("risk_type", ""), lang)
+            if translated_rf:
+                rf["description"] = translated_rf["description"]
+                rf["label"] = translated_rf["label"]
+
+        if not plan_synthesis:
+            plan_synthesis = PLAN_SUMMARY_I18N.get(lang, "")
+
     return {
         "session_id": session_id,
         "status": session.status.value,
+        "language": lang,
         "profile": session.extracted_profile.model_dump(),
-        "matches": [m.model_dump() for m in session.matches],
-        "risk_flags": [r.model_dump() for r in session.risk_flags],
+        "matches": matches_payload,
+        "risk_flags": risk_flags_payload,
         "benefits_estimate": benefits,
         "application_order": sequencing,
         "plan_synthesis": plan_synthesis,

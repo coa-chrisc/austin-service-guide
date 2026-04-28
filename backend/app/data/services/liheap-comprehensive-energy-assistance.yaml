@@ -1,0 +1,50 @@
+id: svc-liheap
+name: LIHEAP / Comprehensive Energy Assistance
+slug: liheap-comprehensive-energy-assistance
+provider_name: Texas Department of Housing and Community Affairs
+description: Federally funded utility assistance covering past-due bills, deposits, and weatherization
+  for low-income households across Texas, administered locally through partner agencies.
+eligibility_summary: Households at or below 150% FPL, or receiving SNAP, TANF, or SSI.
+how_to_apply: Call 2-1-1 or apply through a local sub-recipient agency.
+cost: Free
+cost_type: free
+website_url: https://www.tdhca.state.tx.us/community-affairs/ceap
+phone: 2-1-1
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- utilities
+locations:
+- id: loc-liheap-1
+  service_id: svc-liheap
+  name: Travis County Sub-Recipient
+  address: 502 E Highland Mall Blvd
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.327
+  longitude: -97.711
+  phone: 512-854-4100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: Last 30 days
+  is_required: true
+- name: Utility bill
+  description: Most recent bill
+  is_required: true

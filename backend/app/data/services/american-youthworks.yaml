@@ -1,0 +1,51 @@
+id: svc-ayw
+name: American YouthWorks
+slug: american-youthworks
+provider_name: American YouthWorks
+description: Education and workforce programs for young people 16-28, including a charter school, conservation
+  corps service-learning, and construction-trades training leading to nationally recognized credentials.
+eligibility_summary: Young adults ages 16-28 from low-income households or facing barriers to education
+  and employment.
+how_to_apply: Call 512-744-1900 or attend an information session.
+cost: Free; participants earn a stipend
+cost_type: free
+website_url: https://www.americanyouthworks.org
+phone: 512-744-1900
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- employment
+- education
+locations:
+- id: loc-ayw-1
+  service_id: svc-ayw
+  name: Main Campus
+  address: 1901 E 51st St
+  city: Austin
+  state: TX
+  zip_code: '78723'
+  latitude: 30.3092
+  longitude: -97.7019
+  phone: 512-744-1900
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: true
+- name: Proof of income
+  description: Household income verification
+  is_required: true

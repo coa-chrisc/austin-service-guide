@@ -1,0 +1,65 @@
+id: svc-parks
+name: Austin Parks & Recreation Programs
+slug: austin-parks-recreation-programs
+provider_name: City of Austin Parks and Recreation
+description: Year-round programs including after-school care, summer camps, senior fitness, adaptive recreation
+  for people with disabilities, aquatics, and community events across 300+ parks.
+eligibility_summary: Open to all Austin residents. Fee waivers available for low-income households (≤200%
+  FPL).
+how_to_apply: Register online at austintexas.gov/parks or at any recreation center.
+cost: $0-$150 per session (fee waivers available)
+cost_type: sliding_scale
+website_url: https://www.austintexas.gov/parks
+phone: 512-974-6700
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Adaptive programs available
+- ADA-accessible facilities
+status: active
+categories:
+- childcare
+- senior
+locations:
+- id: loc-parks-1
+  service_id: svc-parks
+  name: Dittmar Recreation Center
+  address: 1009 W Dittmar Rd
+  city: Austin
+  state: TX
+  zip_code: '78745'
+  latitude: 30.2058
+  longitude: -97.7707
+  phone: 512-974-6700
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-parks-2
+  service_id: svc-parks
+  name: Turner-Roberts Recreation Center
+  address: 7201 Colony Loop Dr
+  city: Austin
+  state: TX
+  zip_code: '78724'
+  latitude: 30.2964
+  longitude: -97.6455
+  phone: 512-978-2320
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false

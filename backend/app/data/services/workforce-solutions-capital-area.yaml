@@ -1,0 +1,71 @@
+id: svc-wfsa
+name: Workforce Solutions Capital Area
+slug: workforce-solutions-capital-area
+provider_name: Workforce Solutions Capital Area
+description: Free employment services including job search assistance, resume workshops, skills training,
+  career coaching, and childcare financial assistance for working families.
+eligibility_summary: Open to all job seekers in the Austin/Travis County area. Childcare assistance has
+  income requirements.
+how_to_apply: Register at WorkInTexas.com and visit a career center.
+cost: Free
+cost_type: free
+website_url: https://www.wfsca.org
+phone: 512-597-7100
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Assistive technology available
+status: active
+categories:
+- employment
+locations:
+- id: loc-wf-1
+  service_id: svc-wfsa
+  name: North Career Center
+  address: 6505 Airport Blvd, Ste 101
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.3319
+  longitude: -97.7117
+  phone: 512-597-7100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-wf-2
+  service_id: svc-wfsa
+  name: South Career Center
+  address: 4175 Freidrich Ln, Ste 100
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.2003
+  longitude: -97.744
+  phone: 512-597-7100
+  is_primary: false
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Social Security card
+  description: Or proof of work eligibility
+  is_required: true

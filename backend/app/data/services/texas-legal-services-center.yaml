@@ -1,0 +1,45 @@
+id: svc-tlsc
+name: Texas Legal Services Center
+slug: texas-legal-services-center
+provider_name: Texas Legal Services Center
+description: Statewide legal hotlines and direct representation in benefits, healthcare, crime victim,
+  and consumer matters, including a dedicated hotline for older Texans.
+eligibility_summary: Texas residents — eligibility varies by hotline. The Legal Hotline for Older Texans
+  serves anyone 60+.
+how_to_apply: Call 1-800-622-2520 (Older Texans) or 512-477-6000 for general intake.
+cost: Free
+cost_type: free
+website_url: https://www.tlsc.org
+phone: 512-477-6000
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- TTY available
+- Interpreter services
+status: active
+categories:
+- legal
+- senior
+locations:
+- id: loc-tlsc-1
+  service_id: svc-tlsc
+  name: TLSC Headquarters
+  address: 2207 S IH-35, Ste 200
+  city: Austin
+  state: TX
+  zip_code: '78741'
+  latitude: 30.24
+  longitude: -97.729
+  phone: 512-477-6000
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

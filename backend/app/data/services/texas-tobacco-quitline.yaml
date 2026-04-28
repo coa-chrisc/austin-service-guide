@@ -1,0 +1,47 @@
+id: svc-yes-quit
+name: Texas Tobacco Quitline (Yes Quit)
+slug: texas-tobacco-quitline
+provider_name: Texas Department of State Health Services
+description: Free coaching, nicotine replacement therapy, and a personalized quit plan delivered by phone,
+  text, or web. Available in English and Spanish, with a teen-specific track and a Medicaid track that
+  ships NRT directly to participants.
+eligibility_summary: Texas residents age 13+ who use any tobacco or nicotine product, including vapes.
+  No insurance required.
+how_to_apply: Call 1-877-YES-QUIT (1-877-937-7848) or enroll online at yesquit.org. Coaches respond within
+  one business day.
+cost: Free
+cost_type: free
+website_url: https://www.yesquit.org
+phone: 1-877-937-7848
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- TTY 1-877-777-6534
+- Phone, text, and web channels
+status: active
+categories:
+- smoking_cessation
+- healthcare
+locations:
+- id: loc-yq-1
+  service_id: svc-yes-quit
+  name: Statewide Quitline
+  address: Statewide call center
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2672
+  longitude: -97.7431
+  phone: 1-877-937-7848
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false

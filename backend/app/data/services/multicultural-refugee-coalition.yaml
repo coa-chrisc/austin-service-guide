@@ -1,0 +1,53 @@
+id: svc-multicultural-refugee
+name: Multicultural Refugee Coalition
+slug: multicultural-refugee-coalition
+provider_name: Multicultural Refugee Coalition
+description: Long-term integration support for refugee and immigrant families past their initial resettlement
+  window. Programs include New Leaf Agriculture (paid farm training), women's wellness circles, youth
+  mentoring, and a sewing co-op. Acts as a 'soft landing' partner when official case-management timelines
+  run out.
+eligibility_summary: Refugee, asylee, immigrant, or other newcomer status. Open to families who have aged
+  out of formal resettlement support.
+how_to_apply: Stop by the office or call 512-953-5184 — staff will route you to the right program.
+cost: Free
+cost_type: free
+website_url: https://mrcaustin.org
+phone: 512-953-5184
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- fa
+- ps
+- sw
+- fr
+accessibility_features:
+- Bilingual staff
+- On-site childcare
+status: active
+categories:
+- refugee
+- employment
+- education
+locations:
+- id: loc-mrc-1
+  service_id: svc-multicultural-refugee
+  name: MRC Austin
+  address: 908 Kramer Ln, Suite 100
+  city: Austin
+  state: TX
+  zip_code: '78758'
+  latitude: 30.3815
+  longitude: -97.705
+  phone: 512-953-5184
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

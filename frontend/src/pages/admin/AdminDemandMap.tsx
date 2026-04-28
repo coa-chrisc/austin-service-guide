@@ -7,7 +7,10 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Skeleton from "@mui/material/Skeleton";
 import Grid from "@mui/material/Grid";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import MapIcon from "@mui/icons-material/Map";
+import WhatshotIcon from "@mui/icons-material/Whatshot";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 
 import { getAdminDemandMap, type DemandMapPoint } from "../../lib/api";
@@ -21,15 +24,27 @@ const INTENSITY_COLOR: Record<DemandMapPoint["intensity"], string> = {
   low: "#43A047",
 };
 
+const HEAT_COLOR: Record<
+  NonNullable<DemandMapPoint["heat_intensity"]>,
+  string
+> = {
+  high: "#B71C1C",
+  medium: "#F57C00",
+  low: "#FFB74D",
+};
+
 const INTENSITY_ORDER: DemandMapPoint["intensity"][] = [
   "high",
   "medium",
   "low",
 ];
 
+type Layer = "demand" | "heat";
+
 export default function AdminDemandMap() {
   const [points, setPoints] = useState<DemandMapPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [layer, setLayer] = useState<Layer>("demand");
 
   useEffect(() => {
     let cancelled = false;
@@ -58,8 +73,30 @@ export default function AdminDemandMap() {
       }),
       {} as Record<DemandMapPoint["intensity"], number>,
     );
-    return { sumSessions, counts };
+    const heatVulnerable = points.reduce(
+      (s, p) => s + (p.heat_vulnerable_sessions ?? 0),
+      0,
+    );
+    const highHeatZips = points.filter(
+      (p) => p.heat_intensity === "high",
+    ).length;
+    return { sumSessions, counts, heatVulnerable, highHeatZips };
   }, [points]);
+
+  const colorFor = (p: DemandMapPoint) =>
+    layer === "heat"
+      ? (HEAT_COLOR[p.heat_intensity ?? "low"] ?? HEAT_COLOR.low)
+      : INTENSITY_COLOR[p.intensity];
+
+  const radiusForHeat = (heatVulnerable: number) => {
+    const max = points.reduce(
+      (m, p) => Math.max(m, p.heat_vulnerable_sessions ?? 0),
+      1,
+    );
+    if (max === 0) return 8;
+    const t = heatVulnerable / max;
+    return 8 + t * 22;
+  };
 
   const ranked = useMemo(
     () => [...points].sort((a, b) => b.sessions - a.sessions),
@@ -83,10 +120,31 @@ export default function AdminDemandMap() {
           Demand Map
         </Typography>
       </Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Where residents are starting intake sessions, by ZIP. Marker size scales
-        with session volume; color shows demand intensity.
+        with session volume; color shows demand intensity. Switch to the heat
+        layer to overlay heat-vulnerability and heat-flagged sessions.
       </Typography>
+
+      {/* -- layer toggle --------------------------------------------- */}
+      <ToggleButtonGroup
+        value={layer}
+        exclusive
+        size="small"
+        onChange={(_, v: Layer | null) => {
+          if (v) setLayer(v);
+        }}
+        sx={{ mb: 3 }}
+      >
+        <ToggleButton value="demand">
+          <MapIcon fontSize="small" sx={{ mr: 0.5 }} />
+          Demand
+        </ToggleButton>
+        <ToggleButton value="heat">
+          <WhatshotIcon fontSize="small" sx={{ mr: 0.5 }} />
+          Heat
+        </ToggleButton>
+      </ToggleButtonGroup>
 
       {/* -- summary chips -------------------------------------------- */}
       <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
@@ -114,28 +172,70 @@ export default function AdminDemandMap() {
             </Typography>
           </CardContent>
         </Card>
-        {INTENSITY_ORDER.map((key) => (
-          <Card key={key} sx={{ flex: 1, minWidth: 180 }}>
-            <CardContent>
-              <Typography variant="overline" color="text.secondary">
-                {key} demand
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    bgcolor: INTENSITY_COLOR[key],
-                  }}
-                />
-                <Typography variant="h4" fontWeight={700}>
-                  {loading ? <Skeleton width={40} /> : totals.counts[key]}
+        {layer === "demand" &&
+          INTENSITY_ORDER.map((key) => (
+            <Card key={key} sx={{ flex: 1, minWidth: 180 }}>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  {key} demand
                 </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      bgcolor: INTENSITY_COLOR[key],
+                    }}
+                  />
+                  <Typography variant="h4" fontWeight={700}>
+                    {loading ? <Skeleton width={40} /> : totals.counts[key]}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        {layer === "heat" && (
+          <>
+            <Card sx={{ flex: 1, minWidth: 180 }}>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  Heat-vulnerable sessions
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <WhatshotIcon sx={{ color: HEAT_COLOR.high }} />
+                  <Typography variant="h4" fontWeight={700}>
+                    {loading ? (
+                      <Skeleton width={60} />
+                    ) : (
+                      totals.heatVulnerable.toLocaleString()
+                    )}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+            <Card sx={{ flex: 1, minWidth: 180 }}>
+              <CardContent>
+                <Typography variant="overline" color="text.secondary">
+                  High-heat ZIPs
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    sx={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      bgcolor: HEAT_COLOR.high,
+                    }}
+                  />
+                  <Typography variant="h4" fontWeight={700}>
+                    {loading ? <Skeleton width={40} /> : totals.highHeatZips}
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </Stack>
 
       <Grid container spacing={2}>
@@ -154,37 +254,62 @@ export default function AdminDemandMap() {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {points.map((p) => (
-                  <CircleMarker
-                    key={p.zip}
-                    center={[p.lat, p.lng]}
-                    radius={radiusFor(p.sessions)}
-                    pathOptions={{
-                      color: INTENSITY_COLOR[p.intensity],
-                      fillColor: INTENSITY_COLOR[p.intensity],
-                      fillOpacity: 0.55,
-                      weight: 2,
-                    }}
-                  >
-                    <Tooltip direction="top" offset={[0, -4]}>
-                      <Box sx={{ minWidth: 160 }}>
-                        <Typography variant="body2" fontWeight={700}>
-                          ZIP {p.zip}
-                        </Typography>
-                        <Typography variant="caption" display="block">
-                          {p.sessions} sessions
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          sx={{ textTransform: "capitalize", mt: 0.5 }}
-                        >
-                          Top: {p.top_categories.slice(0, 3).join(", ")}
-                        </Typography>
-                      </Box>
-                    </Tooltip>
-                  </CircleMarker>
-                ))}
+                {points.map((p) => {
+                  const c = colorFor(p);
+                  const r =
+                    layer === "heat"
+                      ? radiusForHeat(p.heat_vulnerable_sessions ?? 0)
+                      : radiusFor(p.sessions);
+                  return (
+                    <CircleMarker
+                      key={p.zip}
+                      center={[p.lat, p.lng]}
+                      radius={r}
+                      pathOptions={{
+                        color: c,
+                        fillColor: c,
+                        fillOpacity: 0.55,
+                        weight: 2,
+                      }}
+                    >
+                      <Tooltip direction="top" offset={[0, -4]}>
+                        <Box sx={{ minWidth: 160 }}>
+                          <Typography variant="body2" fontWeight={700}>
+                            ZIP {p.zip}
+                          </Typography>
+                          {layer === "demand" ? (
+                            <>
+                              <Typography variant="caption" display="block">
+                                {p.sessions} sessions
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{ textTransform: "capitalize", mt: 0.5 }}
+                              >
+                                Top: {p.top_categories.slice(0, 3).join(", ")}
+                              </Typography>
+                            </>
+                          ) : (
+                            <>
+                              <Typography variant="caption" display="block">
+                                {p.heat_vulnerable_sessions ?? 0} heat-flagged
+                                sessions
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{ textTransform: "capitalize", mt: 0.5 }}
+                              >
+                                Heat intensity: {p.heat_intensity ?? "low"}
+                              </Typography>
+                            </>
+                          )}
+                        </Box>
+                      </Tooltip>
+                    </CircleMarker>
+                  );
+                })}
               </MapContainer>
             )}
           </Card>

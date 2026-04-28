@@ -1,0 +1,47 @@
+id: svc-wfsa-east
+name: Workforce Solutions East Career Center
+slug: workforce-solutions-east-career-center
+provider_name: Workforce Solutions Capital Area
+description: East Austin career center offering job-search assistance, on-site computer lab, resume coaching,
+  and access to skills-training scholarships and the Texas Workforce Commission's WIOA programs.
+eligibility_summary: Open to all job seekers in the Austin/Travis County area.
+how_to_apply: Walk in or register at WorkInTexas.com.
+cost: Free
+cost_type: free
+website_url: https://www.wfsca.org
+phone: 512-223-5400
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Assistive technology available
+status: active
+categories:
+- employment
+locations:
+- id: loc-wfe-1
+  service_id: svc-wfsa-east
+  name: East Career Center
+  address: 3401 Webberville Rd
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2796
+  longitude: -97.6925
+  phone: 512-223-5400
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

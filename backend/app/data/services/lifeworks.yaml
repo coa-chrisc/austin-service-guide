@@ -1,0 +1,42 @@
+id: svc-lifeworks
+name: LifeWorks
+slug: lifeworks
+provider_name: LifeWorks
+description: Youth and family services including emergency shelter for youth ages 17-24, transitional
+  living, street outreach, counseling, and workforce programs for young people experiencing homelessness.
+eligibility_summary: Youth ages 17-24 experiencing homelessness or housing instability. Some programs
+  serve ages 0-17 with families.
+how_to_apply: Call 512-735-2400 or walk in to the Youth Resource Center.
+cost: Free
+cost_type: free
+website_url: https://www.lifeworksaustin.org
+phone: 512-735-2400
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- housing
+- employment
+locations:
+- id: loc-lw-1
+  service_id: svc-lifeworks
+  name: Youth Resource Center
+  address: 835 N Pleasant Valley Rd
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2622
+  longitude: -97.7051
+  phone: 512-735-2400
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false

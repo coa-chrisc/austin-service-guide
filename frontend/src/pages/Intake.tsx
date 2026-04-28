@@ -33,6 +33,13 @@ export default function Intake() {
   const [confirmStartOver, setConfirmStartOver] = useState(false);
 
   const lifeEvent = searchParams.get("event") || undefined;
+  const focusParam = searchParams.get("focus") || undefined;
+  const focus = focusParam
+    ? focusParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
   const skipRecovery = !!lifeEvent || searchParams.get("fresh") === "1";
 
   useEffect(() => {
@@ -71,7 +78,7 @@ export default function Intake() {
   const beginNewIntake = () => {
     setPhase("starting");
     const language = getStoredLanguage();
-    startIntake(language, lifeEvent)
+    startIntake(language, lifeEvent, focus)
       .then((s) => {
         setSession(s);
         setPhase("ready");

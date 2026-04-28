@@ -89,6 +89,12 @@ export interface IntakeMessage {
   crisis_detected: boolean;
 }
 
+export interface SchoolAgeChild {
+  grade: string;
+  district: string;
+  concerns: string[];
+}
+
 export interface ResidentProfile {
   age_range: string;
   household_size: number | null;
@@ -103,6 +109,12 @@ export interface ResidentProfile {
   immediate_needs: string[];
   languages_spoken: string[];
   crisis_indicators: string[];
+  is_outdoor_worker?: boolean | null;
+  has_ac?: boolean | null;
+  has_chronic_conditions?: boolean | null;
+  school_age_children?: SchoolAgeChild[];
+  is_refugee_or_immigrant?: boolean | null;
+  primary_language?: string;
 }
 
 export interface RiskFlag {

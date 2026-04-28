@@ -1,0 +1,62 @@
+id: svc-refugee-services-tx
+name: Refugee Services of Texas — Austin
+slug: refugee-services-of-texas-austin
+provider_name: Refugee Services of Texas
+description: Resettlement case management for refugees, asylees, and SIVs (Special Immigrant Visa holders)
+  in their first 3-5 years in Austin. Wraparound services include housing setup, school enrollment, employment
+  coaching, ESL classes, and benefits navigation. Bilingual case managers in Arabic, Dari, Pashto, Swahili,
+  French, and Spanish.
+eligibility_summary: Refugee, asylee, SIV, parolee, or Cuban/Haitian entrant status, residing in Travis
+  or Williamson County. Most case-management services time-bounded to first 5 years post-arrival; one-off
+  services (interpretation, advocacy) available longer.
+how_to_apply: Walk-in welcome at the Austin office, or call 512-472-9472. New-arrival referrals typically
+  come from your sponsoring resettlement agency.
+cost: Free
+cost_type: free
+website_url: https://rstx.org
+phone: 512-472-9472
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- fa
+- ps
+- fr
+- sw
+accessibility_features:
+- On-site interpreters
+- Home visits available
+status: active
+categories:
+- refugee
+- immigration
+- employment
+locations:
+- id: loc-rstx-1
+  service_id: svc-refugee-services-tx
+  name: RST Austin Office
+  address: 3000 S IH-35, Suite 235
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2386
+  longitude: -97.751
+  phone: 512-472-9472
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: I-94 or refugee documentation
+  description: Proof of refugee/asylee/SIV status
+  is_required: true
+- name: Photo ID
+  description: Any government-issued ID
+  is_required: true

@@ -77,11 +77,21 @@ _DEMO_STEPS: list[dict[str, Any]] = [
 async def start_session(
     language: str = "en",
     life_event: str | None = None,
+    focus: list[str] | None = None,
 ) -> IntakeSession:
-    """Create a new intake session and seed the greeting."""
+    """Create a new intake session and seed the greeting.
+
+    `focus` narrows the initial need list to a specific subset of category
+    slugs — used by external entry points (e.g. the lifespan calculator)
+    that already know which categories matter for this resident.
+    """
     session = IntakeSession(language=language)
     if life_event:
         session.extracted_profile.immediate_needs = _needs_from_life_event(life_event)
+    if focus:
+        cleaned = [c.strip() for c in focus if c and c.strip()]
+        if cleaned:
+            session.extracted_profile.immediate_needs = cleaned
     _sessions[session.id] = session
 
     settings = get_settings()
@@ -165,6 +175,49 @@ async def process_message(
 
 def get_session(session_id: str) -> IntakeSession | None:
     return _sessions.get(session_id)
+
+
+async def start_persona_session(persona_id: str) -> IntakeSession | None:
+    """Create an intake session pre-seeded by a demo persona.
+
+    Hybrid flow: the seeded profile is a hypothesis, not a fact. The
+    persona's opening_message is injected as the first user turn, the
+    live LLM responds in character, and the model can call
+    extract_profile to overwrite seeds based on what the resident
+    actually says next. Falls back to the scripted demo flow when
+    live AI is disabled.
+    """
+    from copy import deepcopy
+
+    from app.services.personas import get_persona
+
+    persona = get_persona(persona_id)
+    if persona is None:
+        return None
+
+    session = IntakeSession(language=persona.language)
+    session.extracted_profile = deepcopy(persona.seed_profile)
+    session.persona_note = persona.persona_note
+    session.entry_source = f"persona:{persona.id}"
+    _sessions[session.id] = session
+
+    # Surface the opening message in the visible chat transcript.
+    session.conversation.append(IntakeMessage(
+        role=MessageRole.user,
+        content=persona.opening_message,
+    ))
+
+    # Demo personas are deterministic: seed the profile, run matching,
+    # mark completed, and return immediately. The frontend replays the
+    # persona's scripted conversation client-side, then routes to the
+    # populated /results page. We never await the live LLM here — that's
+    # what the regular "Get Started" flow is for.
+    profile = session.extracted_profile
+    profile.languages_spoken = [session.language] if session.language != "en" else ["en"]
+    session.matches = match_services(profile)
+    session.risk_flags = assess_risks(profile)
+    session.status = IntakeStatus.completed
+    return session
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -270,12 +323,53 @@ _TOOL_SCHEMAS: list[dict[str, Any]] = [
                     "items": {"type": "string"},
                     "description": "Lower-case English need keywords e.g. ['food', 'housing'].",
                 },
+                "is_outdoor_worker": {
+                    "type": ["boolean", "null"],
+                    "description": "True if the resident or someone in the household works primarily outdoors (construction, landscaping, agriculture, delivery on foot/bike, etc.).",
+                },
+                "has_ac": {
+                    "type": ["boolean", "null"],
+                    "description": "True if the home has working air conditioning.",
+                },
+                "has_chronic_conditions": {
+                    "type": ["boolean", "null"],
+                    "description": "True if the resident has chronic conditions that compound heat risk (cardiovascular, respiratory, diabetes, kidney, pregnancy, age 65+).",
+                },
+                "is_refugee_or_immigrant": {
+                    "type": ["boolean", "null"],
+                    "description": "True if the resident self-identifies as a refugee, asylee, or recent immigrant.",
+                },
+                "primary_language": {
+                    "type": ["string", "null"],
+                    "description": "ISO code of the resident's primary spoken language (e.g. 'es', 'ar', 'vi'). May differ from the conversation language.",
+                },
+                "school_age_children": {
+                    "type": ["array", "null"],
+                    "description": "K-12 children in the household. Populate when the resident mentions school, grade level, or concerns about a child.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "grade": {"type": "string", "description": "Grade level e.g. 'K', '7', '10'."},
+                            "district": {"type": "string", "description": "School district e.g. 'AISD', 'Del Valle ISD'."},
+                            "concerns": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Lower-case concern tags e.g. ['anxiety', 'attendance', 'behavior', 'bullying'].",
+                            },
+                        },
+                        "required": ["grade", "district", "concerns"],
+                        "additionalProperties": False,
+                    },
+                },
             },
             "required": [
                 "household_size", "zip_code", "housing_situation",
                 "employment_status", "income_bracket", "insurance_status",
                 "has_children", "veteran_status", "has_disability",
                 "immediate_needs",
+                "is_outdoor_worker", "has_ac", "has_chronic_conditions",
+                "is_refugee_or_immigrant", "primary_language",
+                "school_age_children",
             ],
             "additionalProperties": False,
         },
@@ -348,12 +442,29 @@ def _build_instructions(session: IntakeSession) -> str:
         known.append(f"insurance={profile.insurance_status}")
     if profile.immediate_needs:
         known.append(f"needs={profile.immediate_needs}")
+    if profile.is_outdoor_worker:
+        known.append("outdoor_worker=true")
+    if profile.has_ac is False:
+        known.append("has_ac=false")
+    if profile.has_chronic_conditions:
+        known.append("chronic_conditions=true")
+    if profile.is_refugee_or_immigrant:
+        known.append("refugee_or_immigrant=true")
+    if profile.primary_language:
+        known.append(f"primary_language={profile.primary_language}")
+    if profile.school_age_children:
+        known.append(
+            "school_age_children=" + ", ".join(
+                f"grade {c.grade}/{c.district or '?'}/concerns={c.concerns or '[]'}"
+                for c in profile.school_age_children
+            )
+        )
     profile_note = (
         f"Currently known about the resident: {', '.join(known)}." if known
         else "Nothing is known about the resident yet."
     )
 
-    return (
+    base = (
         "You are the intake assistant for the Austin Service Guide, a "
         "City of Austin / Austin Public Health portal that helps residents "
         "discover social services and benefits they may qualify for.\n\n"
@@ -372,7 +483,17 @@ def _build_instructions(session: IntakeSession) -> str:
         "  - set_language: switch language codes mid-conversation\n"
         "  - complete_intake: finalize and produce the summary\n\n"
         "Rules:\n"
-        "  - Call extract_profile every time you learn a new fact.\n"
+        "  - Call extract_profile every time you learn a new fact. "
+        "When the resident describes someone else's situation (parent of a "
+        "student, child of an outdoor worker, caller on behalf of a "
+        "neighbor), still capture facts about the affected person — that's "
+        "who matching is for.\n"
+        "  - Listen for these specific signals and capture them when "
+        "present: outdoor work + heat exposure (is_outdoor_worker, has_ac, "
+        "has_chronic_conditions); K-12 children with mental-health, "
+        "attendance, or behavior concerns (school_age_children); refugee "
+        "or recent-immigrant status with coordination/language barriers "
+        "(is_refugee_or_immigrant, primary_language).\n"
         "  - When you've gathered enough (household, zip, housing, "
         "employment, income, insurance, plus stated needs), call "
         "complete_intake and weave the returned summary into a warm "
@@ -383,6 +504,11 @@ def _build_instructions(session: IntakeSession) -> str:
         "  - Never invent services not returned by your tools.\n\n"
         f"{lang_note}\n{profile_note}"
     )
+
+    if session.persona_note:
+        base += "\n\n--- Persona context ---\n" + session.persona_note
+
+    return base
 
 
 async def _live_greeting(session: IntakeSession) -> str:
@@ -606,17 +732,21 @@ def _tool_get_crisis_resources(session: IntakeSession, args: dict[str, Any]) -> 
 
 
 def _tool_extract_profile(session: IntakeSession, args: dict[str, Any]) -> str:
+    from app.models import SchoolAgeChild
+
     profile = session.extracted_profile
     applied: dict[str, Any] = {}
     for key in (
         "household_size", "zip_code", "housing_situation",
         "employment_status", "income_bracket", "insurance_status",
         "has_children", "veteran_status", "has_disability",
+        "is_outdoor_worker", "has_ac", "has_chronic_conditions",
+        "is_refugee_or_immigrant", "primary_language",
     ):
         val = args.get(key)
         if val is None:
             continue
-        if key == "zip_code" and not str(val).strip():
+        if key in ("zip_code", "primary_language") and not str(val).strip():
             continue
         setattr(profile, key, val)
         applied[key] = val
@@ -626,6 +756,19 @@ def _tool_extract_profile(session: IntakeSession, args: dict[str, Any]) -> str:
         merged = list({*profile.immediate_needs, *[n.lower() for n in needs]})
         profile.immediate_needs = merged
         applied["immediate_needs"] = merged
+
+    children = args.get("school_age_children")
+    if children:
+        # Overwrite (not merge) — the model has the latest picture.
+        profile.school_age_children = [
+            SchoolAgeChild(
+                grade=str(c.get("grade") or "").strip(),
+                district=str(c.get("district") or "").strip(),
+                concerns=[str(x).lower() for x in (c.get("concerns") or [])],
+            )
+            for c in children
+        ]
+        applied["school_age_children"] = [c.model_dump() for c in profile.school_age_children]
 
     return json.dumps({"applied": applied, "profile_complete": _profile_completeness(profile)})
 
@@ -757,6 +900,7 @@ def _needs_from_life_event(life_event: str) -> list[str]:
         "transportation": ["transportation"],
         "back-to-school": ["education"],
         "new-to-austin": ["food", "housing", "healthcare"],
+        "healthspan": ["healthcare", "smoking_cessation", "nutrition", "physical_activity", "mental_health"],
     }
     if slug in mapping:
         return mapping[slug]

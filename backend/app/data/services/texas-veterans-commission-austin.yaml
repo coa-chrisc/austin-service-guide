@@ -1,0 +1,50 @@
+id: svc-tvc
+name: Texas Veterans Commission Austin
+slug: texas-veterans-commission-austin
+provider_name: Texas Veterans Commission
+description: State agency providing claims representation, employment services, education benefits assistance,
+  and entrepreneur support for Texas veterans and their families.
+eligibility_summary: Texas veterans, eligible dependents, and surviving spouses.
+how_to_apply: Call 512-463-6564 or visit tvc.texas.gov.
+cost: Free
+cost_type: free
+website_url: https://www.tvc.texas.gov
+phone: 512-463-6564
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- veterans
+- employment
+locations:
+- id: loc-tvc-1
+  service_id: svc-tvc
+  name: Stephen F. Austin Building
+  address: 1700 N Congress Ave, Ste 800
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.279
+  longitude: -97.7404
+  phone: 512-463-6564
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: DD-214
+  description: Discharge papers
+  is_required: true
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

@@ -78,6 +78,18 @@ _NEED_TO_CATEGORIES: dict[str, list[str]] = {
     "domestic violence": ["emergency"],
     "abuse": ["emergency"],
     "unsafe": ["emergency"],
+    "cooling": ["cooling"],
+    "heat": ["cooling", "utilities"],
+    "ac": ["cooling", "utilities"],
+    "air conditioning": ["cooling", "utilities"],
+    "heat stroke": ["cooling", "healthcare", "emergency"],
+}
+
+# Zips with elevated heat-vulnerability (urban heat island, low tree canopy,
+# lower AC penetration). Used by the heat-vulnerable rule below.
+_HIGH_HEAT_ZIPS: set[str] = {
+    "78741", "78744", "78753", "78758", "78617",
+    "78702", "78721", "78724", "78754", "78722", "78723", "78745",
 }
 
 
@@ -110,6 +122,36 @@ def _matching_categories(profile: ResidentProfile) -> set[str]:
         cats.add("healthcare")
     if profile.crisis_indicators:
         cats.add("emergency")
+
+    # Heat vulnerability — outdoor work, no AC, or chronic conditions in a
+    # high-heat zip all push cooling-related services up the list.
+    if (
+        profile.is_outdoor_worker
+        or profile.has_ac is False
+        or (profile.has_chronic_conditions and profile.zip_code in _HIGH_HEAT_ZIPS)
+    ):
+        cats.add("cooling")
+        cats.add("utilities")
+
+    # Refugee / immigrant — surface resettlement-aware partners. Coordination
+    # is the gap, so pull food + healthcare alongside refugee/immigration.
+    if profile.is_refugee_or_immigrant:
+        cats.add("refugee")
+        cats.add("immigration")
+        cats.add("food")
+        cats.add("healthcare")
+
+    # School-age children with concerns — surface CIS / school-based
+    # counseling. Mental-health-flavored concerns also pull in healthcare.
+    if profile.school_age_children:
+        cats.add("schools")
+        for child in profile.school_age_children:
+            if any(
+                c.lower() in {"anxiety", "depression", "behavioral", "self-harm", "trauma", "mental health"}
+                for c in (child.concerns or [])
+            ):
+                cats.add("healthcare")
+                break
 
     return cats
 
@@ -294,6 +336,61 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             prevention_services=["AGE of Central Texas", "Meals on Wheels"],
         ))
 
+    # Heat vulnerability — combined risk from outdoor work, no AC, chronic
+    # conditions, and/or high-heat zip.
+    heat_factors: list[str] = []
+    if profile.is_outdoor_worker:
+        heat_factors.append("Outdoor occupation in extreme-heat exposure")
+    if profile.has_ac is False:
+        heat_factors.append("No working AC at home")
+    if profile.has_chronic_conditions:
+        heat_factors.append("Chronic condition compounding heat risk")
+    if profile.zip_code in _HIGH_HEAT_ZIPS:
+        heat_factors.append(f"High-heat zip ({profile.zip_code})")
+
+    # Child mental-health risk — when any school-age child has a flagged
+    # concern in {anxiety, depression, behavioral, self-harm, trauma}.
+    mh_keywords = {"anxiety", "depression", "behavioral", "self-harm", "trauma", "mental health"}
+    flagged_children: list[str] = []
+    severe_concern = False
+    for child in profile.school_age_children:
+        concerns = [c.lower() for c in (child.concerns or [])]
+        if any(c in mh_keywords for c in concerns):
+            grade = child.grade or "?"
+            flagged_children.append(f"Grade {grade}: {', '.join(child.concerns)}")
+        if "self-harm" in concerns or "suicidal" in concerns:
+            severe_concern = True
+    if flagged_children:
+        flags.append(RiskFlag(
+            risk_type="child_mental_health_risk",
+            severity=RiskSeverity.critical if severe_concern else RiskSeverity.high,
+            description="School-age child with mental-health concerns reported by household.",
+            contributing_factors=flagged_children,
+            prevention_services=[
+                "Communities In Schools of Central Texas",
+                "Vida Clinic — School-Based Mental Health",
+                "Integral Care youth services",
+            ],
+        ))
+
+    if len(heat_factors) >= 2:
+        sev = (
+            RiskSeverity.critical
+            if profile.is_outdoor_worker and profile.has_ac is False
+            else RiskSeverity.high
+        )
+        flags.append(RiskFlag(
+            risk_type="heat_vulnerable",
+            severity=sev,
+            description="Elevated risk of heat-related illness during summer heat advisories",
+            contributing_factors=heat_factors,
+            prevention_services=[
+                "Austin–Travis County Cooling Center Network",
+                "Heat Relief & AC Repair Assistance (Family Eldercare)",
+                "Customer Assistance Program (CAP)",
+            ],
+        ))
+
     return flags
 
 
@@ -370,11 +467,14 @@ def calculate_benefits(
 # health, then everything else.
 _SEQUENCE_PRIORITY: dict[str, int] = {
     "emergency": 100,
+    "cooling": 85,
     "food": 80,
     "housing": 75,
+    "refugee": 70,
     "utilities": 65,
     "healthcare": 60,
     "childcare": 55,
+    "schools": 50,
     "employment": 45,
     "veterans": 40,
     "senior": 35,
@@ -387,11 +487,14 @@ _SEQUENCE_PRIORITY: dict[str, int] = {
 
 _SEQUENCE_REASONS: dict[str, str] = {
     "emergency": "Address immediate safety first — these resources answer 24/7.",
+    "cooling": "Heat illness escalates fast — cooling and AC help come before everything else during a heat advisory.",
     "food": "Food assistance often qualifies you for other programs automatically.",
     "housing": "Stabilize where you sleep before tackling longer-term goals.",
+    "refugee": "Resettlement coordination can unlock food, healthcare, and school support in a single intake.",
     "utilities": "Keeping the lights on prevents eviction and protects your deposits.",
     "healthcare": "Get covered before any out-of-pocket bills pile up.",
     "childcare": "Childcare unblocks job search, school, and medical appointments.",
+    "schools": "School-based mental-health support is the fastest way to reach a struggling student.",
     "employment": "Job placement is faster once basic needs are stable.",
     "veterans": "VA benefits stack with most state and local programs.",
     "senior": "Age-based programs are usually fastest to qualify for.",

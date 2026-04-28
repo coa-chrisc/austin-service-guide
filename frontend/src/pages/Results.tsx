@@ -49,6 +49,7 @@ import {
   shareIntakeResults,
   type ApplicationOrderItem,
 } from "@/lib/api";
+import { makeResultsT } from "@/lib/resultsI18n";
 import { setActiveSession } from "@/lib/session";
 import { canNativeShare, nativeShare } from "@/lib/share";
 import type {
@@ -65,6 +66,7 @@ interface ResultsData {
   application_order: ApplicationOrderItem[];
   plan_synthesis: string;
   plan_ai_generated: boolean;
+  language: string;
 }
 
 const formatCurrency = (n: number) =>
@@ -204,11 +206,14 @@ export default function Results() {
           application_order: res.application_order ?? [],
           plan_synthesis: res.plan_synthesis ?? "",
           plan_ai_generated: res.plan_ai_generated ?? false,
+          language: res.language ?? "en",
         });
       })
       .catch((err) => setError(err.message || "Failed to load results"))
       .finally(() => setLoading(false));
   }, [sessionId]);
+
+  const t = makeResultsT(data?.language ?? "en");
 
   if (loading) {
     return (
@@ -241,9 +246,9 @@ export default function Results() {
   if (error || !data) {
     return (
       <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
-        <Alert severity="error">{error || "Session not found"}</Alert>
+        <Alert severity="error">{error || t("session_not_found")}</Alert>
         <Button sx={{ mt: 2 }} onClick={() => navigate("/intake")}>
-          Start New Intake
+          {t("start_new_intake")}
         </Button>
       </Container>
     );
@@ -329,8 +334,8 @@ export default function Results() {
               },
             }}
           >
-            <ToggleButton value="simple">My plan</ToggleButton>
-            <ToggleButton value="all">All matches</ToggleButton>
+            <ToggleButton value="simple">{t("my_plan")}</ToggleButton>
+            <ToggleButton value="all">{t("all_matches")}</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -354,11 +359,12 @@ export default function Results() {
               >
                 <CheckCircleIcon color="success" />
                 <Typography variant="body1" sx={{ fontSize: "1rem" }}>
-                  You may qualify for about{" "}
+                  {t("qualify_prefix")}{" "}
                   <Box component="span" sx={{ fontWeight: 800 }}>
-                    {formatCurrency(benefits.total_monthly_value)}/month
+                    {formatCurrency(benefits.total_monthly_value)}
+                    {t("per_month")}
                   </Box>{" "}
-                  in support.
+                  {t("qualify_suffix")}
                 </Typography>
               </Box>
             )}
@@ -425,7 +431,7 @@ export default function Results() {
                         letterSpacing: 0.5,
                       }}
                     >
-                      Why this order
+                      {t("why_this_order")}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -440,6 +446,7 @@ export default function Results() {
                   matches={matches}
                   sessionId={sessionId}
                   onShowAll={() => setView("all")}
+                  language={data.language}
                 />
                 <Typography
                   variant="caption"
@@ -452,8 +459,8 @@ export default function Results() {
                   }}
                 >
                   {data.plan_ai_generated
-                    ? "AI-suggested order based on what you shared. Double-check eligibility and hours before you go. "
-                    : "Suggested order based on what you shared. Double-check eligibility and hours before you go. "}
+                    ? t("ai_suggested_footer") + " "
+                    : t("suggested_footer") + " "}
                   <Box
                     component="a"
                     onClick={(e: React.MouseEvent) => {
@@ -467,9 +474,9 @@ export default function Results() {
                       textDecoration: "underline",
                     }}
                   >
-                    See all matches
+                    {t("see_all_matches")}
                   </Box>{" "}
-                  if you'd rather pick your own.
+                  {t("see_all_matches_suffix")}
                 </Typography>
               </>
             ) : (
@@ -479,14 +486,14 @@ export default function Results() {
                   color="text.secondary"
                   sx={{ mb: 2 }}
                 >
-                  We couldn't find any matches yet.
+                  {t("no_matches")}
                 </Typography>
                 <Button
                   variant="contained"
                   size="large"
                   onClick={() => navigate("/intake")}
                 >
-                  Start a new intake
+                  {t("start_new_intake")}
                 </Button>
               </Box>
             )}
@@ -508,17 +515,16 @@ export default function Results() {
             >
               <CardContent sx={{ p: { xs: 3, md: 4 } }}>
                 <Typography variant="h4" fontWeight={700} gutterBottom>
-                  We found {matches.length} service
-                  {matches.length !== 1 ? "s" : ""} you may be eligible for
+                  {t("we_found_prefix")} {matches.length}{" "}
+                  {matches.length !== 1 ? t("services") : t("service")}{" "}
+                  {t("we_found_suffix")}
                 </Typography>
                 <Typography
                   variant="body1"
                   sx={{ opacity: 0.9, maxWidth: 700, lineHeight: 1.7 }}
                 >
-                  Based on our conversation, we've matched you with services
-                  across {categories.length} categories. Review each one below
-                  to see eligibility details, documents needed, and how to
-                  apply.
+                  {t("based_on_conversation_prefix")} {categories.length}{" "}
+                  {t("based_on_conversation_suffix")}
                 </Typography>
 
                 {/* Benefits hero band */}
@@ -544,7 +550,7 @@ export default function Results() {
                           textTransform: "uppercase",
                         }}
                       >
-                        Estimated value to you
+                        {t("estimated_value")}
                       </Typography>
                       <Typography
                         variant="h3"
@@ -564,7 +570,9 @@ export default function Results() {
                         variant="body2"
                         sx={{ opacity: 0.85, mt: 0.25 }}
                       >
-                        ≈ {formatCurrency(benefits.total_annual_value)} per year
+                        {t("per_year_prefix")}{" "}
+                        {formatCurrency(benefits.total_annual_value)}{" "}
+                        {t("per_year_suffix")}
                       </Typography>
                     </Box>
                     {benefits.breakdown.length > 0 && (
@@ -573,7 +581,7 @@ export default function Results() {
                           variant="caption"
                           sx={{ opacity: 0.85, display: "block", mb: 0.75 }}
                         >
-                          Top contributors
+                          {t("top_contributors")}
                         </Typography>
                         <Stack
                           direction="row"
@@ -585,7 +593,7 @@ export default function Results() {
                             <Chip
                               key={i}
                               size="small"
-                              label={`${b.service} · ${formatCurrency(b.monthly_value)}/mo`}
+                              label={`${b.service} · ${formatCurrency(b.monthly_value)}${t("per_month")}`}
                               sx={{
                                 bgcolor: "rgba(255,255,255,0.18)",
                                 color: "white",
@@ -613,7 +621,7 @@ export default function Results() {
                       "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
                     }}
                   >
-                    View on Map
+                    {t("view_on_map")}
                   </Button>
                   <Button
                     variant="contained"
@@ -625,7 +633,7 @@ export default function Results() {
                       "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
                     }}
                   >
-                    Save as PDF
+                    {t("save_as_pdf")}
                   </Button>
                   <Button
                     variant="contained"
@@ -637,7 +645,7 @@ export default function Results() {
                       "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
                     }}
                   >
-                    Send to me
+                    {t("send_to_me")}
                   </Button>
                 </Box>
               </CardContent>
@@ -664,10 +672,10 @@ export default function Results() {
                   >
                     <RocketLaunchIcon color="primary" />
                     <Typography variant="h6" fontWeight={700}>
-                      Start here
+                      {t("start_here")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      · suggested order based on what's most urgent
+                      {t("suggested_order_caption")}
                     </Typography>
                   </Box>
                   <Stack spacing={1.25}>
@@ -734,7 +742,7 @@ export default function Results() {
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
                   <VolunteerActivismIcon color="primary" />
-                  Areas Where We Can Help
+                  {t("areas_we_can_help")}
                 </Typography>
                 <Grid container spacing={2}>
                   {data.risk_flags.map((flag: RiskFlag, idx: number) => {
@@ -818,11 +826,11 @@ export default function Results() {
                 color="text.secondary"
                 sx={{ mb: 1 }}
               >
-                Filter by:
+                {t("filter_by")}
               </Typography>
               <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
                 <Chip
-                  label="All"
+                  label={t("all")}
                   onClick={() => {
                     setFilterCategory(null);
                     setFilterConfidence(null);
@@ -848,7 +856,7 @@ export default function Results() {
                   />
                 ))}
                 <Chip
-                  label="Strong Match"
+                  label={t("strong_match")}
                   onClick={() =>
                     setFilterConfidence(
                       filterConfidence === "high" ? null : "high",
@@ -859,7 +867,7 @@ export default function Results() {
                   size="small"
                 />
                 <Chip
-                  label="Likely Match"
+                  label={t("likely_match")}
                   onClick={() =>
                     setFilterConfidence(
                       filterConfidence === "medium" ? null : "medium",
@@ -873,7 +881,7 @@ export default function Results() {
                 />
                 {(filterCategory || filterConfidence) && (
                   <Chip
-                    label="Clear filter"
+                    label={t("clear_filter")}
                     icon={<CloseIcon style={{ fontSize: 14 }} />}
                     onClick={() => {
                       setFilterCategory(null);
@@ -935,7 +943,7 @@ export default function Results() {
             {filteredMatches.length === 0 && (
               <Box sx={{ textAlign: "center", py: 6 }}>
                 <Typography variant="h6" color="text.secondary">
-                  No services match the current filters.
+                  {t("no_services_match")}
                 </Typography>
                 <Button
                   sx={{ mt: 2 }}
@@ -944,7 +952,7 @@ export default function Results() {
                     setFilterConfidence(null);
                   }}
                 >
-                  Clear Filters
+                  {t("clear_filters")}
                 </Button>
               </Box>
             )}
@@ -982,7 +990,7 @@ export default function Results() {
               href={`tel:${topPhone}`}
               sx={{ minHeight: 48, fontWeight: 700, borderRadius: "24px" }}
             >
-              Call
+              {t("call")}
             </Button>
           )}
           <Button
@@ -992,7 +1000,7 @@ export default function Results() {
             onClick={handleShare}
             sx={{ minHeight: 48, fontWeight: 600, borderRadius: "24px" }}
           >
-            Send to me
+            {t("send_to_me")}
           </Button>
         </Paper>
       )}
@@ -1034,10 +1042,10 @@ export default function Results() {
           }}
         >
           <Typography variant="h6" fontWeight={600} gutterBottom>
-            Ask a Follow-up
+            {t("ask_followup")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Have questions about your results? Ask here.
+            {t("ask_followup_intro")}
           </Typography>
           <Box
             sx={{
@@ -1052,12 +1060,11 @@ export default function Results() {
               color="text.disabled"
               textAlign="center"
             >
-              Follow-up chat connects to the same AI assistant that conducted
-              your intake.
+              {t("followup_chat_note")}
             </Typography>
           </Box>
           <Button variant="outlined" onClick={() => setChatOpen(false)}>
-            Close
+            {t("close")}
           </Button>
         </Box>
       </Drawer>
@@ -1071,13 +1078,12 @@ export default function Results() {
         fullScreen={isPhone}
         className="no-print"
       >
-        <DialogTitle>Send your plan</DialogTitle>
+        <DialogTitle>{t("send_your_plan")}</DialogTitle>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}
         >
           <Typography variant="body2" color="text.secondary">
-            We'll send you a list of your matched services with phone numbers
-            and links you can save or share.
+            {t("share_intro")}
           </Typography>
           <ToggleButtonGroup
             value={shareChannel}
@@ -1087,10 +1093,10 @@ export default function Results() {
             size="small"
           >
             <ToggleButton value="sms">
-              <SmsIcon fontSize="small" sx={{ mr: 1 }} /> Text message
+              <SmsIcon fontSize="small" sx={{ mr: 1 }} /> {t("text_message")}
             </ToggleButton>
             <ToggleButton value="email">
-              <EmailIcon fontSize="small" sx={{ mr: 1 }} /> Email
+              <EmailIcon fontSize="small" sx={{ mr: 1 }} /> {t("email")}
             </ToggleButton>
           </ToggleButtonGroup>
           <TextField
@@ -1098,24 +1104,22 @@ export default function Results() {
             fullWidth
             size="small"
             type={shareChannel === "email" ? "email" : "tel"}
-            label={shareChannel === "sms" ? "Phone number" : "Email address"}
+            label={
+              shareChannel === "sms" ? t("phone_number") : t("email_address")
+            }
             placeholder={
               shareChannel === "sms" ? "+1 512 555 1234" : "you@example.com"
             }
             value={shareRecipient}
             onChange={(e) => setShareRecipient(e.target.value)}
-            helperText={
-              shareChannel === "sms"
-                ? "Include country code, e.g. +15125551234"
-                : ""
-            }
+            helperText={shareChannel === "sms" ? t("phone_helper") : ""}
           />
           <Typography
             variant="caption"
             color="text.secondary"
             sx={{ mt: -0.5 }}
           >
-            Want to keep your plan across devices?{" "}
+            {t("save_across_devices")}{" "}
             <Box
               component="a"
               onClick={(e: React.MouseEvent) => {
@@ -1134,18 +1138,18 @@ export default function Results() {
                 textDecoration: "underline",
               }}
             >
-              Sign in
+              {t("sign_in")}
             </Box>
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShareOpen(false)}>Cancel</Button>
+          <Button onClick={() => setShareOpen(false)}>{t("cancel")}</Button>
           <Button
             variant="contained"
             onClick={handleShareSubmit}
             disabled={shareSending || !shareRecipient.trim()}
           >
-            {shareSending ? "Sending…" : "Send"}
+            {shareSending ? t("sending") : t("send")}
           </Button>
         </DialogActions>
       </Dialog>

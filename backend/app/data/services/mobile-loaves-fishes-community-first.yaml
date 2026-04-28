@@ -1,0 +1,40 @@
+id: svc-mlf
+name: Mobile Loaves & Fishes / Community First! Village
+slug: mobile-loaves-fishes-community-first
+provider_name: Mobile Loaves & Fishes
+description: Community First! Village is a 51-acre master-planned community providing affordable, permanent
+  housing and a supportive community for men and women coming out of chronic homelessness.
+eligibility_summary: Adults who have been chronically homeless (homeless for at least 1 year or 4+ episodes
+  in 3 years). Referred through ECHO's coordinated entry system.
+how_to_apply: Referral through Austin's Coordinated Entry system — contact ECHO at 512-234-5780.
+cost: Rent from $225-$430/month
+cost_type: flat_fee
+website_url: https://mlf.org/community-first
+phone: 512-328-7299
+email: ''
+languages_offered:
+- en
+status: active
+categories:
+- housing
+locations:
+- id: loc-mlf-1
+  service_id: svc-mlf
+  name: Community First! Village
+  address: 9301 Hog Eye Rd
+  city: Austin
+  state: TX
+  zip_code: '78724'
+  latitude: 30.3026
+  longitude: -97.6238
+  phone: 512-328-7299
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

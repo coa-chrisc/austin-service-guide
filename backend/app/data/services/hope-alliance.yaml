@@ -1,0 +1,44 @@
+id: svc-hopealliance
+name: Hope Alliance
+slug: hope-alliance
+provider_name: Hope Alliance
+description: Williamson County's domestic-violence and sexual-assault crisis center, operating a 24/7
+  hotline, emergency shelter, counseling, court advocacy, and prevention education.
+eligibility_summary: Survivors of domestic violence, sexual assault, or human trafficking and their children
+  — primarily Williamson County and surrounding areas.
+how_to_apply: Call the 24-hour crisis hotline at 1-800-460-7233.
+cost: Free
+cost_type: free
+website_url: https://www.hopealliancetx.org
+phone: 1-800-460-7233
+email: info@hopealliancetx.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- emergency
+locations:
+- id: loc-hope-1
+  service_id: svc-hopealliance
+  name: Hope Alliance Outreach
+  address: 1011 Gattis School Rd, Ste 102
+  city: Round Rock
+  state: TX
+  zip_code: '78664'
+  latitude: 30.5187
+  longitude: -97.6585
+  phone: 512-255-1212
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false

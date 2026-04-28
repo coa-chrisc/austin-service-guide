@@ -126,6 +126,12 @@ class IntakeMessage(BaseModel):
     crisis_detected: bool = False
 
 
+class SchoolAgeChild(BaseModel):
+    grade: str = ""              # e.g. "7", "10", "K"
+    district: str = ""           # e.g. "AISD", "Del Valle ISD"
+    concerns: list[str] = Field(default_factory=list)  # e.g. ["anxiety", "attendance"]
+
+
 class ResidentProfile(BaseModel):
     age_range: str = ""
     household_size: int | None = None
@@ -140,6 +146,15 @@ class ResidentProfile(BaseModel):
     immediate_needs: list[str] = Field(default_factory=list)
     languages_spoken: list[str] = Field(default_factory=lambda: ["en"])
     crisis_indicators: list[str] = Field(default_factory=list)
+    # Heat / outdoor-work signals
+    is_outdoor_worker: bool | None = None
+    has_ac: bool | None = None
+    has_chronic_conditions: bool | None = None
+    # Schools / mental health
+    school_age_children: list[SchoolAgeChild] = Field(default_factory=list)
+    # Refugee / food coordination
+    is_refugee_or_immigrant: bool | None = None
+    primary_language: str = ""           # ISO code; populated separately from languages_spoken
 
 
 class RiskFlag(BaseModel):
@@ -155,6 +170,9 @@ class ServiceMatch(BaseModel):
     match_confidence: str = "high"  # high | medium | low
     match_reasoning: str = ""
     match_score: float = 0.0
+    # Demo-only: tracks whether a referral has been completed by the partner.
+    # "" | "connected" | "referred" | "no_response"
+    referral_status: str = ""
 
 
 class IntakeSession(BaseModel):
@@ -170,6 +188,12 @@ class IntakeSession(BaseModel):
     # reasoning items, function_calls, function_call_outputs). Replayed
     # verbatim each turn so the model has its own tool-call history.
     responses_input: list[dict[str, Any]] = Field(default_factory=list)
+    # Where this session originated. "" for organic, "life-event:<slug>",
+    # or "persona:<persona_id>" for demo personas. Surfaced in admin views.
+    entry_source: str = ""
+    # Optional persona-specific instructions appended to system prompt.
+    # Set when a session is loaded from a demo persona; empty otherwise.
+    persona_note: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +312,7 @@ class PaginatedResponse(BaseModel):
 class IntakeStartRequest(BaseModel):
     language: str = "en"
     life_event: str | None = None
+    focus: list[str] | None = None
 
 
 class IntakeMessageRequest(BaseModel):

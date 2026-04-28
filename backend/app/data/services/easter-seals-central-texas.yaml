@@ -1,0 +1,51 @@
+id: svc-easter
+name: Easter Seals Central Texas
+slug: easter-seals-central-texas
+provider_name: Easter Seals Central Texas
+description: Comprehensive services for children and adults with disabilities including physical therapy,
+  occupational therapy, speech therapy, day programs, camping, and respite care.
+eligibility_summary: Children and adults with disabilities. Some programs accept Medicaid and private
+  insurance; sliding scale available for others.
+how_to_apply: Call 512-615-6800 to schedule an evaluation.
+cost: Insurance accepted; sliding scale
+cost_type: sliding_scale
+website_url: https://www.easterseals.com/centraltx
+phone: 512-615-6800
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Fully accessible facilities
+- Adaptive equipment
+status: active
+categories:
+- disability
+locations:
+- id: loc-es-1
+  service_id: svc-easter
+  name: Therapy Center
+  address: 8505 Cross Park Dr, Ste 120
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.3669
+  longitude: -97.6681
+  phone: 512-615-6800
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Medical records
+  description: Relevant diagnosis documentation
+  is_required: false
+- name: Insurance card
+  description: If applicable
+  is_required: false

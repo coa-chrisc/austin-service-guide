@@ -1,0 +1,45 @@
+id: svc-pard-fitness
+name: Austin PARD — Free Movement Programs
+slug: austin-pard-movement
+provider_name: Austin Parks and Recreation Department
+description: Drop-in fitness, yoga, dance, and walking programs at recreation centers across Austin. Includes
+  the It's My Park walking groups, free senior strength classes, and adaptive options for adults with
+  disabilities.
+eligibility_summary: Open to all Austin residents. Some classes have age, ability, or skill prerequisites
+  listed in the schedule.
+how_to_apply: Visit austintexas.gov/parks-fitness or call 512-974-6700 to find classes near you.
+cost: Free or low cost
+cost_type: free
+website_url: https://www.austintexas.gov/department/parks-and-recreation
+phone: 512-974-6700
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Adaptive programs
+status: active
+categories:
+- physical_activity
+locations:
+- id: loc-pard-1
+  service_id: svc-pard-fitness
+  name: Town Lake Center
+  address: 721 Barton Springs Rd
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2632
+  longitude: -97.7556
+  phone: 512-974-6700
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

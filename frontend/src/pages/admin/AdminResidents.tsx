@@ -13,6 +13,8 @@ import Alert from "@mui/material/Alert";
 import Skeleton from "@mui/material/Skeleton";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import SchoolIcon from "@mui/icons-material/School";
+import { useSearchParams } from "react-router-dom";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import { getAdminResidents } from "../../lib/api";
@@ -61,6 +63,31 @@ export default function AdminResidents() {
   /* -- active filter chips ------------------------------------------ */
   const [zipFilter, setZipFilter] = useState("");
   const [langFilter, setLangFilter] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const k12mhActive = searchParams.get("filter") === "k12_mh";
+  const toggleK12mh = () => {
+    const next = new URLSearchParams(searchParams);
+    if (k12mhActive) next.delete("filter");
+    else next.set("filter", "k12_mh");
+    setSearchParams(next, { replace: true });
+  };
+
+  const _MH_KEYWORDS = [
+    "anxiety",
+    "depression",
+    "behavioral",
+    "self-harm",
+    "trauma",
+    "mental health",
+  ];
+  const hasK12MentalHealth = (r: DemoResident): boolean => {
+    const kids = r.profile?.school_age_children ?? [];
+    return kids.some((c) =>
+      (c.concerns ?? []).some((concern) =>
+        _MH_KEYWORDS.includes(concern.toLowerCase()),
+      ),
+    );
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,6 +114,7 @@ export default function AdminResidents() {
   const filtered = residents.filter((r) => {
     if (zipFilter && r.zip_code !== zipFilter) return false;
     if (langFilter && r.language !== langFilter) return false;
+    if (k12mhActive && !hasK12MentalHealth(r)) return false;
     return true;
   });
 
@@ -139,6 +167,24 @@ export default function AdminResidents() {
             }}
             sx={{ mb: 2 }}
           />
+
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mr: 1, mt: 0.5 }}
+            >
+              Saved:
+            </Typography>
+            <Chip
+              icon={<SchoolIcon fontSize="small" />}
+              label="K-12 + mental-health flag"
+              size="small"
+              variant={k12mhActive ? "filled" : "outlined"}
+              color={k12mhActive ? "secondary" : "default"}
+              onClick={toggleK12mh}
+            />
+          </Box>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Typography

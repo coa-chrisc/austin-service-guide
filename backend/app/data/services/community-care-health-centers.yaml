@@ -1,0 +1,115 @@
+id: svc-commcare
+name: CommUnity Care Health Centers
+slug: community-care-health-centers
+provider_name: CommUnity Care
+description: Federally Qualified Health Center providing primary care, dental, behavioral health, and
+  pharmacy services on a sliding-fee scale regardless of insurance status or ability to pay.
+eligibility_summary: Open to all. Sliding-fee scale for uninsured patients based on income and household
+  size.
+how_to_apply: Call 512-978-9015 to schedule or walk in at any location.
+cost: Sliding scale from $20
+cost_type: sliding_scale
+website_url: https://communitycaretx.org
+phone: 512-978-9015
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- vi
+- zh
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+- TTY available
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-cc-1
+  service_id: svc-commcare
+  name: East Austin Health Center
+  address: 211 Comal St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2657
+  longitude: -97.7264
+  phone: 512-978-9015
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-cc-2
+  service_id: svc-commcare
+  name: North Central Health Center
+  address: 1210 W Braker Ln
+  city: Austin
+  state: TX
+  zip_code: '78758'
+  latitude: 30.3915
+  longitude: -97.7274
+  phone: 512-978-9015
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-cc-3
+  service_id: svc-commcare
+  name: South Austin Health Center
+  address: 2529 S 1st St
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2389
+  longitude: -97.7604
+  phone: 512-978-9015
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-cc-4
+  service_id: svc-commcare
+  name: Rundberg Health Center
+  address: 1000 E 41st St, Ste 925
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.3017
+  longitude: -97.722
+  phone: 512-978-9015
+  is_primary: false
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any photo identification
+  is_required: false
+- name: Proof of income
+  description: For sliding-fee eligibility
+  is_required: false

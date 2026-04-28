@@ -1,0 +1,43 @@
+id: svc-aph-tb
+name: Austin Public Health TB & STD Clinic
+slug: austin-public-health-tb-std-clinic
+provider_name: Austin Public Health
+description: Free testing and treatment for tuberculosis, HIV, and sexually transmitted infections, plus
+  partner notification and contact tracing services.
+eligibility_summary: Open to all Travis County residents. Confidential, no insurance required.
+how_to_apply: Walk in or call 512-972-5430 to schedule.
+cost: Free
+cost_type: free
+website_url: https://www.austintexas.gov/department/sexual-health-clinic
+phone: 512-972-5430
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-aphtb-1
+  service_id: svc-aph-tb
+  name: RBJ Health Center
+  address: 15 Waller St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2611
+  longitude: -97.7333
+  phone: 512-972-5430
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

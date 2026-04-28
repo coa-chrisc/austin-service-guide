@@ -1,0 +1,48 @@
+id: svc-cap
+name: Customer Assistance Program (CAP)
+slug: customer-assistance-program
+provider_name: City of Austin
+description: Provides discounts on City of Austin utility bills (electric, water, wastewater, trash) for
+  qualifying low-income customers. Discount is approximately 10-15% of the average bill.
+eligibility_summary: City of Austin utility customers with household income ≤200% FPL, or enrolled in
+  certain assistance programs (SNAP, Medicaid, SSI, TANF).
+how_to_apply: Apply online at austinenergy.com/go/cap, by phone, or in person.
+cost: Free to apply; provides monthly bill discount
+cost_type: free
+website_url: https://austinenergy.com/go/cap
+phone: 512-494-9400
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- utilities
+locations:
+- id: loc-cap-1
+  service_id: svc-cap
+  name: Austin Energy Walk-In Center
+  address: 721 Barton Springs Rd
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2613
+  longitude: -97.7526
+  phone: 512-494-9400
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Utility bill
+  description: Most recent City of Austin utility bill
+  is_required: true
+- name: Proof of income
+  description: Or proof of enrollment in SNAP/Medicaid/SSI
+  is_required: true

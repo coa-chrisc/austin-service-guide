@@ -1,0 +1,54 @@
+id: svc-caritas
+name: Caritas of Austin
+slug: caritas-of-austin
+provider_name: Caritas of Austin
+description: Comprehensive social services including emergency financial assistance, housing support,
+  employment readiness, adult education, and a community kitchen. Helps stabilize families experiencing
+  crisis.
+eligibility_summary: Travis County residents experiencing financial hardship. Income verification required
+  for most programs.
+how_to_apply: Call 512-479-4610 for an intake appointment.
+cost: Free
+cost_type: free
+website_url: https://www.caritasofaustin.org
+phone: 512-479-4610
+email: info@caritasofaustin.org
+languages_offered:
+- en
+- es
+status: active
+categories:
+- housing
+- food
+- employment
+locations:
+- id: loc-car-1
+  service_id: svc-caritas
+  name: Main Campus
+  address: 611 Neches St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2672
+  longitude: -97.7377
+  phone: 512-479-4610
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Valid photo ID
+  is_required: true
+- name: Proof of income
+  description: Last 30 days
+  is_required: true
+- name: Proof of Travis County residency
+  description: Utility bill, lease
+  is_required: true

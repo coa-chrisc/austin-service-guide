@@ -1,0 +1,47 @@
+id: svc-salvarmy
+name: The Salvation Army Austin
+slug: salvation-army-austin
+provider_name: The Salvation Army
+description: Emergency services including a shelter, food pantry, seasonal assistance (Christmas, back-to-school),
+  disaster relief, addiction recovery, and social services for families in crisis.
+eligibility_summary: Open to anyone in need. Shelter prioritizes families with children and single women.
+  ID recommended but not required.
+how_to_apply: Walk in for emergency services or call 512-476-1111.
+cost: Free
+cost_type: free
+website_url: https://www.salvationarmyaustin.org
+phone: 512-476-1111
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- emergency
+- food
+- housing
+locations:
+- id: loc-sa-1
+  service_id: svc-salvarmy
+  name: Austin Area Command
+  address: 501 E 8th St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2673
+  longitude: -97.7362
+  phone: 512-476-1111
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Recommended but not required
+  is_required: false

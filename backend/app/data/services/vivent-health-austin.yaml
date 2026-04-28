@@ -1,0 +1,51 @@
+id: svc-vivent
+name: Vivent Health Austin
+slug: vivent-health-austin
+provider_name: Vivent Health
+description: HIV care, prevention, and supportive services including medical and dental care, pharmacy,
+  mental health counseling, food pantry, and case management for people living with HIV.
+eligibility_summary: People living with HIV and people at risk for HIV. Many services free; insurance
+  accepted.
+how_to_apply: Call 512-458-2437 to schedule an intake.
+cost: Free or insurance-billed
+cost_type: free
+website_url: https://viventhealth.org
+phone: 512-458-2437
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-vh-1
+  service_id: svc-vivent
+  name: Austin Office
+  address: 7215 Cameron Rd
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.3361
+  longitude: -97.6996
+  phone: 512-458-2437
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: false
+- name: Insurance card
+  description: If applicable
+  is_required: false

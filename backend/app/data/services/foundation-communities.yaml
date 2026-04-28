@@ -1,0 +1,73 @@
+id: svc-foundation
+name: Foundation Communities
+slug: foundation-communities
+provider_name: Foundation Communities
+description: Award-winning affordable housing provider with 19 communities across Austin. Also offers
+  free tax prep, health screenings, after-school programs, and financial coaching for residents.
+eligibility_summary: Income limits vary by property (typically 30-60% AMI). Most communities accept Housing
+  Choice Vouchers.
+how_to_apply: Apply online at foundcom.org/housing or call 512-610-4022.
+cost: Rent based on income (30-60% AMI)
+cost_type: sliding_scale
+website_url: https://foundcom.org
+phone: 512-610-4022
+email: info@foundcom.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- ADA-compliant units available
+status: active
+categories:
+- housing
+locations:
+- id: loc-fc-1
+  service_id: svc-foundation
+  name: Main Office
+  address: 3036 S 1st St
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2325
+  longitude: -97.763
+  phone: 512-610-4022
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-fc-2
+  service_id: svc-foundation
+  name: Capital Studios
+  address: 2024 E Cesar Chavez St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2534
+  longitude: -97.7192
+  phone: 512-610-4022
+  is_primary: false
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, SSI letter, etc.
+  is_required: true
+- name: Social Security card
+  description: For all household members
+  is_required: true

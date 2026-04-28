@@ -1,0 +1,49 @@
+id: svc-trla
+name: Texas RioGrande Legal Aid
+slug: texas-riogrande-legal-aid
+provider_name: Texas RioGrande Legal Aid
+description: Free civil legal services for low-income Texans in areas including family law, housing/eviction
+  defense, immigration, public benefits, and consumer protection.
+eligibility_summary: Texas residents with income ≤125% FPL. Immigration services may have different eligibility.
+  No criminal cases.
+how_to_apply: Call 1-888-988-9996 for intake.
+cost: Free
+cost_type: free
+website_url: https://www.trla.org
+phone: 1-888-988-9996
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- legal
+- immigration
+locations:
+- id: loc-trla-1
+  service_id: svc-trla
+  name: Austin Office
+  address: 4920 N IH-35
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.315
+  longitude: -97.7171
+  phone: 512-374-2700
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, benefits letter
+  is_required: true

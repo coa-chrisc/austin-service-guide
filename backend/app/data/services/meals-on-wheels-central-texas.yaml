@@ -1,0 +1,42 @@
+id: svc-mow
+name: Meals on Wheels Central Texas
+slug: meals-on-wheels-central-texas
+provider_name: Meals on Wheels Central Texas
+description: Home-delivered nutritious meals and wellness checks for homebound seniors and adults with
+  disabilities throughout the greater Austin area.
+eligibility_summary: Adults 60+ or adults with disabilities who are homebound and unable to prepare meals.
+  No income requirement.
+how_to_apply: Call 512-476-6325 or submit a referral online.
+cost: Free (donations accepted)
+cost_type: free
+website_url: https://www.mealsonwheelscentraltexas.org
+phone: 512-476-6325
+email: info@mealsonwheelscentraltexas.org
+languages_offered:
+- en
+- es
+status: active
+categories:
+- food
+- senior
+locations:
+- id: loc-mow-1
+  service_id: svc-mow
+  name: Main Office
+  address: 3227 E 5th St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2587
+  longitude: -97.7152
+  phone: 512-476-6325
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

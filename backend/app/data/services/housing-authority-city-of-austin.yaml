@@ -1,0 +1,57 @@
+id: svc-hacah
+name: Housing Authority of the City of Austin
+slug: housing-authority-city-of-austin
+provider_name: Housing Authority of the City of Austin
+description: Public housing and Housing Choice Voucher (Section 8) administration for the City of Austin,
+  including project-based vouchers and a path to homeownership.
+eligibility_summary: Households at or below 50% AMI. Voucher waitlist opens periodically; public-housing
+  waitlists vary by property.
+how_to_apply: Apply online at hacanet.org when waitlists open or call 512-477-4488.
+cost: 30% of household income
+cost_type: sliding_scale
+website_url: https://www.hacanet.org
+phone: 512-477-4488
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- ADA-accessible units available
+- Reasonable accommodation process
+status: active
+categories:
+- housing
+locations:
+- id: loc-haca-1
+  service_id: svc-hacah
+  name: HACA Central Office
+  address: 1124 S IH-35
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2536
+  longitude: -97.7415
+  phone: 512-477-4488
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: All household members 18+
+  is_required: true
+- name: Birth certificates
+  description: All household members
+  is_required: true
+- name: Social Security cards
+  description: All household members
+  is_required: true

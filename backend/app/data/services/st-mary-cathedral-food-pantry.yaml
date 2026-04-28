@@ -1,0 +1,35 @@
+id: svc-ctfb-partner-stmary
+name: St. Mary Cathedral Food Pantry
+slug: st-mary-cathedral-food-pantry
+provider_name: Catholic Charities / Central Texas Food Bank Partner
+description: Downtown food pantry partner of the Central Texas Food Bank distributing groceries to families
+  in central Austin twice weekly.
+eligibility_summary: Travis County residents in need. No documentation required.
+how_to_apply: Walk in during distribution hours.
+cost: Free
+cost_type: free
+website_url: https://www.smcaustin.org
+phone: 512-476-6182
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- food
+locations:
+- id: loc-stmary-1
+  service_id: svc-ctfb-partner-stmary
+  name: St. Mary Cathedral
+  address: 203 E 10th St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2729
+  longitude: -97.7406
+  phone: 512-476-6182
+  is_primary: true
+  hours:
+    tuesday: 10:00 AM – 12:00 PM
+    thursday: 10:00 AM – 12:00 PM
+  hours_verified: false

@@ -1,0 +1,45 @@
+id: svc-safe
+name: SAFE Alliance
+slug: safe-alliance
+provider_name: SAFE Alliance
+description: Austin's leading provider of services for survivors of sexual assault, child abuse, and domestic
+  violence. Offers a 24/7 hotline, emergency shelter, counseling, legal advocacy, and children's programs.
+eligibility_summary: Anyone experiencing domestic violence, sexual assault, or child abuse. No documentation
+  required for crisis services.
+how_to_apply: Call the SAFEline 24/7 at 512-267-SAFE (7233). Walk-in crisis services available.
+cost: Free
+cost_type: free
+website_url: https://www.safeaustin.org
+phone: 512-267-7233
+email: info@safeaustin.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Deaf services (VP)
+- Interpreter services
+status: active
+categories:
+- emergency
+locations:
+- id: loc-safe-1
+  service_id: svc-safe
+  name: SAFE Alliance Administration
+  address: 4800 Manor Rd
+  city: Austin
+  state: TX
+  zip_code: '78723'
+  latitude: 30.2808
+  longitude: -97.7003
+  phone: 512-267-7233
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false

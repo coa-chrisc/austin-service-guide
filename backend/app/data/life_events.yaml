@@ -1,0 +1,123 @@
+- id: le-new-austin
+  name: New to Austin
+  slug: new_to_austin
+  description: Just moved to Austin? Find resources to help you settle in, from utilities to healthcare.
+  icon: LocationCity
+  related_categories:
+  - utilities
+  - healthcare
+  - transportation
+  - education
+- id: le-new-baby
+  name: New Baby
+  slug: new_baby
+  description: Growing your family? Connect with prenatal care, WIC, childcare, and parenting support.
+  icon: ChildFriendly
+  related_categories:
+  - healthcare
+  - childcare
+  - food
+- id: le-lost-job
+  name: Lost a Job
+  slug: lost_job
+  description: Between jobs? Access employment services, career training, and financial assistance.
+  icon: WorkOff
+  related_categories:
+  - employment
+  - utilities
+  - food
+- id: le-retiring
+  name: Retiring
+  slug: retiring
+  description: Planning for retirement? Find senior services, healthcare, and community programs.
+  icon: BeachAccess
+  related_categories:
+  - senior
+  - healthcare
+  - transportation
+- id: le-veteran
+  name: Veteran Transition
+  slug: veteran_transition
+  description: Transitioning from military to civilian life? Connect with VA benefits, employment, and
+    housing.
+  icon: MilitaryTech
+  related_categories:
+  - veterans
+  - employment
+  - housing
+  - healthcare
+- id: le-housing
+  name: Housing Crisis
+  slug: housing_crisis
+  description: Facing eviction or homelessness? Get immediate help with shelter, legal aid, and rent assistance.
+  icon: HomeWork
+  related_categories:
+  - housing
+  - emergency
+  - legal
+- id: le-aging
+  name: Aging Parent
+  slug: aging_parent
+  description: Caring for an aging parent? Find caregiver support, senior services, and respite care.
+  icon: Elderly
+  related_categories:
+  - senior
+  - healthcare
+  - transportation
+- id: le-young-adult
+  name: Becoming Independent
+  slug: young_adult
+  description: Starting out on your own? Find housing, education, job training, and life skills programs.
+  icon: School
+  related_categories:
+  - education
+  - employment
+  - housing
+- id: le-divorce
+  name: Going Through Divorce
+  slug: divorce
+  description: Navigating separation? Access legal aid, counseling, and financial planning support.
+  icon: FamilyRestroom
+  related_categories:
+  - legal
+  - healthcare
+  - childcare
+- id: le-death
+  name: Loss of a Family Member
+  slug: family_death
+  description: Dealing with loss? Find grief counseling, legal help with estates, and financial assistance.
+  icon: Favorite
+  related_categories:
+  - healthcare
+  - legal
+- id: le-disability
+  name: New Disability
+  slug: new_disability
+  description: Adjusting to a disability? Connect with assistive services, benefits, and support groups.
+  icon: Accessible
+  related_categories:
+  - disability
+  - healthcare
+  - employment
+  - legal
+- id: le-unsafe
+  name: Unsafe Situation
+  slug: unsafe_situation
+  description: If you or someone you know is in danger, connect with crisis services and safe shelter.
+  icon: Shield
+  related_categories:
+  - emergency
+  - legal
+  - housing
+- id: le-healthspan
+  name: Adding Healthy Years
+  slug: healthspan
+  description: Used a lifespan calculator and want to act on the results? Connect with smoking cessation,
+    nutrition, movement, and mental-health programs in Austin.
+  icon: Favorite
+  related_categories:
+  - smoking_cessation
+  - nutrition
+  - physical_activity
+  - mental_health
+  - healthcare

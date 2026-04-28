@@ -31,6 +31,7 @@ from app.services.seed_data import (
     generate_eligibility_rules,
     generate_equity_data,
     generate_language_usage,
+    generate_partner_gaps,
     generate_reports,
     generate_service_demand,
 )
@@ -233,6 +234,12 @@ async def eligibility_rules(x_staff_role: Optional[str] = Header(None)):
 async def reports(x_staff_role: Optional[str] = Header(None)):
     _check_staff_role(x_staff_role)
     return generate_reports()
+
+
+@router.get("/partner-gaps")
+async def partner_gaps(x_staff_role: Optional[str] = Header(None)):
+    _check_staff_role(x_staff_role)
+    return generate_partner_gaps()
 
 
 # ── Audit Log ─────────────────────────────────────────────────────────

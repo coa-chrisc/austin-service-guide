@@ -1,0 +1,50 @@
+id: svc-aph-dental
+name: Austin Public Health Dental Clinic
+slug: austin-public-health-dental-clinic
+provider_name: Austin Public Health
+description: Low-cost dental cleanings, exams, fillings, and extractions for uninsured Travis County residents
+  at the Rosewood-Zaragosa Neighborhood Center.
+eligibility_summary: Travis County residents without dental insurance. Sliding-fee scale based on income.
+how_to_apply: Call 512-972-4942 to schedule. Walk-ins for emergency pain only.
+cost: $25-$150 per visit (sliding scale)
+cost_type: sliding_scale
+website_url: https://www.austintexas.gov/department/dental-services
+phone: 512-972-4942
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-aphd-1
+  service_id: svc-aph-dental
+  name: Rosewood-Zaragosa Dental
+  address: 2800 Webberville Rd
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.262
+  longitude: -97.7104
+  phone: 512-972-4942
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: For sliding-fee eligibility
+  is_required: true

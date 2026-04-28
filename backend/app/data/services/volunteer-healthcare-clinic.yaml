@@ -1,0 +1,53 @@
+id: svc-visioncare
+name: Volunteer Healthcare Clinic
+slug: volunteer-healthcare-clinic
+provider_name: Volunteer Healthcare Clinic
+description: Free primary care, vision, and women's health services for uninsured adults, run entirely
+  by volunteer physicians, nurses, and pharmacists.
+eligibility_summary: Uninsured adults living in Travis County with household income ≤200% FPL.
+how_to_apply: Call 512-459-6002 during eligibility-screening hours.
+cost: Free
+cost_type: free
+website_url: https://www.volclinic.org
+phone: 512-459-6002
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-vhc-1
+  service_id: svc-visioncare
+  name: Main Clinic
+  address: 4215 Medical Pkwy
+  city: Austin
+  state: TX
+  zip_code: '78756'
+  latitude: 30.3209
+  longitude: -97.7395
+  phone: 512-459-6002
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: For eligibility
+  is_required: true
+- name: Proof of Travis County residency
+  description: Utility bill or lease
+  is_required: true

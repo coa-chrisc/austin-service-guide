@@ -1,0 +1,51 @@
+id: svc-sa-shelter
+name: Salvation Army Rathgeber Center
+slug: salvation-army-rathgeber-center
+provider_name: The Salvation Army
+description: Emergency family shelter for women with children and two-parent families experiencing homelessness,
+  providing meals, case management, and rapid rehousing services.
+eligibility_summary: Families with at least one minor child experiencing homelessness in Travis County.
+how_to_apply: Call the Salvation Army intake line at 512-933-0600.
+cost: Free
+cost_type: free
+website_url: https://salvationarmyaustin.org
+phone: 512-933-0600
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- ADA family units
+status: active
+categories:
+- housing
+- emergency
+locations:
+- id: loc-sar-1
+  service_id: svc-sa-shelter
+  name: Rathgeber Center
+  address: 4613 Tannehill Ln
+  city: Austin
+  state: TX
+  zip_code: '78721'
+  latitude: 30.2802
+  longitude: -97.6798
+  phone: 512-933-0600
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: For each adult
+  is_required: false
+- name: Children's birth certificates
+  description: Or other proof of guardianship
+  is_required: false

@@ -1,0 +1,51 @@
+id: svc-lonestar
+name: Lone Star Circle of Care
+slug: lone-star-circle-of-care
+provider_name: Lone Star Circle of Care
+description: Federally Qualified Health Center providing primary care, pediatrics, OB/GYN, behavioral
+  health, dental, and vision services across Central Texas on a sliding-fee scale.
+eligibility_summary: Open to all patients regardless of insurance. Sliding-fee discounts for patients
+  ≤200% FPL.
+how_to_apply: Call 877-800-5722 to schedule.
+cost: Sliding scale
+cost_type: sliding_scale
+website_url: https://www.lscctx.org
+phone: 877-800-5722
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-lscc-1
+  service_id: svc-lonestar
+  name: Pflugerville Clinic
+  address: 15803 Windermere Dr
+  city: Pflugerville
+  state: TX
+  zip_code: '78660'
+  latitude: 30.4391
+  longitude: -97.63
+  phone: 877-800-5722
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: false
+- name: Proof of income
+  description: For sliding-fee scale
+  is_required: false

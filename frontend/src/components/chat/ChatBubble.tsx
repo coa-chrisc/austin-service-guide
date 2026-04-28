@@ -71,6 +71,7 @@ export default function ChatBubble({
           {isUser ? (
             <Typography
               variant="body1"
+              dir="auto"
               sx={{
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
@@ -82,6 +83,7 @@ export default function ChatBubble({
             </Typography>
           ) : (
             <Box
+              dir="auto"
               sx={{
                 fontSize: "0.95rem",
                 lineHeight: 1.6,

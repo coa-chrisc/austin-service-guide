@@ -8,8 +8,10 @@ import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { LineChart } from "@mui/x-charts/LineChart";
+import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import { getAdminEquity } from "../../lib/api";
@@ -121,6 +123,17 @@ export default function AdminEquity() {
       status: string;
     }>;
     trend?: Array<{ week: string; score: number }>;
+    disparity_alerts?: Array<{
+      zip: string;
+      council_district: string;
+      label: string;
+      match_rate: number;
+      baseline: number;
+      delta: number;
+      severity: "critical" | "high" | "medium";
+      note: string;
+      sparkline: number[];
+    }>;
   } | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -269,6 +282,107 @@ export default function AdminEquity() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* -- disparity alerts ----------------------------------------- */}
+      {(extended?.disparity_alerts ?? []).length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 3 }}>
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+            >
+              <WarningAmberIcon sx={{ color: "error.main" }} />
+              <Typography variant="h6" fontWeight={600}>
+                Disparity Alerts
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Zips where match-rate has dropped meaningfully below the citywide
+              baseline ({(extended?.disparity_alerts ?? [])[0]?.baseline ?? 62}
+              %). Each sparkline is the trailing 8-week trend.
+            </Typography>
+            <Grid container spacing={2}>
+              {(extended?.disparity_alerts ?? []).map((a) => {
+                const sevColor =
+                  a.severity === "critical"
+                    ? "error.main"
+                    : a.severity === "high"
+                      ? "warning.main"
+                      : "info.main";
+                return (
+                  <Grid key={a.zip} size={{ xs: 12, md: 6 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 2,
+                        p: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        borderLeft: "4px solid",
+                        borderLeftColor: sevColor,
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "baseline",
+                            gap: 1,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <Typography variant="body1" fontWeight={700}>
+                            ZIP {a.zip}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            District {a.council_district} · {a.label}
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "baseline",
+                            gap: 1,
+                            mt: 0.5,
+                          }}
+                        >
+                          <Typography
+                            variant="h5"
+                            fontWeight={700}
+                            color={sevColor}
+                          >
+                            {a.match_rate.toFixed(0)}%
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            match rate ({a.delta > 0 ? "+" : ""}
+                            {a.delta.toFixed(0)} vs baseline)
+                          </Typography>
+                        </Box>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.75 }}
+                        >
+                          {a.note}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ width: 120, flexShrink: 0 }}>
+                        <SparkLineChart
+                          data={a.sparkline}
+                          height={56}
+                          showHighlight
+                          showTooltip
+                          colors={["#D32F2F"]}
+                        />
+                      </Box>
+                    </Box>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       {/* -- race comparison bar chart -------------------------------- */}
       <Card sx={{ mb: 3 }}>

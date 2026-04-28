@@ -1,0 +1,44 @@
+id: svc-elbuen
+name: El Buen Samaritano Food Pantry
+slug: el-buen-samaritano-food-pantry
+provider_name: El Buen Samaritano
+description: Choice-model food pantry serving Latino and immigrant families in South Austin, paired with
+  health, education, and financial empowerment programming.
+eligibility_summary: Travis County residents experiencing food insecurity. No documentation required for
+  the food pantry.
+how_to_apply: Walk in during pantry hours or call 512-439-0700 to schedule.
+cost: Free
+cost_type: free
+website_url: https://www.elbuen.org
+phone: 512-439-0700
+email: info@elbuen.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- food
+locations:
+- id: loc-ebs-1
+  service_id: svc-elbuen
+  name: Main Campus Pantry
+  address: 7000 Woodhue Dr
+  city: Austin
+  state: TX
+  zip_code: '78745'
+  latitude: 30.1908
+  longitude: -97.8128
+  phone: 512-439-0700
+  is_primary: true
+  hours:
+    tuesday: 9:00 AM – 12:00 PM
+    thursday: 9:00 AM – 12:00 PM
+    saturday: 9:00 AM – 12:00 PM
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any photo identification
+  is_required: false

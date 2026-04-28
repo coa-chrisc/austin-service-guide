@@ -1,0 +1,52 @@
+id: svc-fameld
+name: Family Eldercare Housing
+slug: family-eldercare-housing
+provider_name: Family Eldercare
+description: Permanent supportive housing and money-management services for low-income older adults and
+  adults with disabilities, including the Lyons Gardens and Sherman Apartments communities.
+eligibility_summary: Adults 50+ or adults with disabilities at or below 50% AMI. Some programs prioritize
+  chronic homelessness.
+how_to_apply: Call 512-450-0844 or apply through ECHO coordinated entry.
+cost: 30% of household income
+cost_type: sliding_scale
+website_url: https://www.familyeldercare.org
+phone: 512-450-0844
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- ADA-compliant units
+- Service coordination on-site
+status: active
+categories:
+- housing
+- senior
+locations:
+- id: loc-fe-1
+  service_id: svc-fameld
+  name: Family Eldercare Main Office
+  address: 1700 Rutherford Ln
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.353
+  longitude: -97.6878
+  phone: 512-450-0844
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, SSI, pension
+  is_required: true

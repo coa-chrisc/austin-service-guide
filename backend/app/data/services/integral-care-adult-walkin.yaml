@@ -1,0 +1,48 @@
+id: svc-integral-care-stress
+name: Integral Care — Adult Mental Health Walk-In
+slug: integral-care-adult-walkin
+provider_name: Integral Care (Travis County MHMR)
+description: Same-day mental health walk-in clinics for adults experiencing chronic stress, anxiety, depression,
+  sleep problems, or substance-use concerns. Triage in person or by phone, then connect to ongoing therapy
+  and medication services on a sliding-scale basis.
+eligibility_summary: Travis County adults age 18+. No insurance required. Crisis support available 24/7
+  at 512-472-4357.
+how_to_apply: Walk in during clinic hours or call the helpline at 512-472-4357. Telehealth intake also
+  available.
+cost: Sliding scale
+cost_type: sliding_scale
+website_url: https://integralcare.org
+phone: 512-472-4357
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Telehealth
+- Interpreter services
+status: active
+categories:
+- mental_health
+- healthcare
+locations:
+- id: loc-ic-stress-1
+  service_id: svc-integral-care-stress
+  name: Integral Care Adult Walk-In
+  address: 1631 E 2nd St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2599
+  longitude: -97.7264
+  phone: 512-472-4357
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

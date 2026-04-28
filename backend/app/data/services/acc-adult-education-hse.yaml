@@ -1,0 +1,68 @@
+id: svc-acc-aed
+name: ACC Adult Education & High School Equivalency
+slug: acc-adult-education-hse
+provider_name: Austin Community College
+description: Free classes preparing adults for the GED/HSE exam, English as a Second Language (ESL), workforce
+  literacy, and college transition across ACC campuses and community sites.
+eligibility_summary: Adults 17+ who are out of school and need a high-school credential, ESL, or basic-skills
+  upgrade.
+how_to_apply: Attend an information session — schedule at austincc.edu/aelhse.
+cost: Free
+cost_type: free
+website_url: https://www.austincc.edu/aelhse
+phone: 512-223-7022
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Disability accommodations available
+status: active
+categories:
+- education
+locations:
+- id: loc-acc-1
+  service_id: svc-acc-aed
+  name: ACC Highland Campus
+  address: 6101 Highland Campus Dr
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.3275
+  longitude: -97.7156
+  phone: 512-223-7022
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-acc-2
+  service_id: svc-acc-aed
+  name: ACC Riverside Campus
+  address: 1020 Grove Blvd
+  city: Austin
+  state: TX
+  zip_code: '78741'
+  latitude: 30.2275
+  longitude: -97.7185
+  phone: 512-223-6000
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

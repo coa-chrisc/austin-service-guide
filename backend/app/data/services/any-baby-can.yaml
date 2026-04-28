@@ -1,0 +1,51 @@
+id: svc-abc
+name: Any Baby Can
+slug: any-baby-can
+provider_name: Any Baby Can
+description: Supports families raising children with disabilities or special healthcare needs through
+  home-visiting, therapy services, parent education, and developmental screenings.
+eligibility_summary: Families with children ages 0-18 who have disabilities, developmental delays, or
+  special healthcare needs. Some programs income-based.
+how_to_apply: Call 512-454-3743 for a free consultation.
+cost: Free or sliding scale
+cost_type: sliding_scale
+website_url: https://www.anybabycan.org
+phone: 512-454-3743
+email: info@anybabycan.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Home-based services available
+status: active
+categories:
+- childcare
+- disability
+locations:
+- id: loc-abc-1
+  service_id: svc-abc
+  name: Main Office
+  address: 1121 E 7th St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.263
+  longitude: -97.7254
+  phone: 512-454-3743
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Child's medical records
+  description: If available
+  is_required: false
+- name: Proof of income
+  description: For sliding-scale programs
+  is_required: false

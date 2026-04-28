@@ -1,0 +1,53 @@
+id: svc-ccct
+name: Catholic Charities of Central Texas
+slug: catholic-charities-of-central-texas
+provider_name: Catholic Charities of Central Texas
+description: Immigration legal services (DACA, citizenship, family petitions), refugee resettlement, financial-stability
+  counseling, food pantry, and disaster recovery for residents of all faiths.
+eligibility_summary: Open to all regardless of faith. Some programs have income or status eligibility.
+how_to_apply: Call 512-651-6100 to schedule an intake.
+cost: Free or sliding scale
+cost_type: sliding_scale
+website_url: https://ccctx.org
+phone: 512-651-6100
+email: ''
+languages_offered:
+- en
+- es
+- ar
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- immigration
+- legal
+- food
+locations:
+- id: loc-ccct-1
+  service_id: svc-ccct
+  name: Catholic Charities Main Office
+  address: 1625 Rutherford Ln, Bldg C
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.353
+  longitude: -97.689
+  phone: 512-651-6100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID or passport
+  description: Any identification
+  is_required: false
+- name: Immigration paperwork
+  description: USCIS or court papers
+  is_required: false

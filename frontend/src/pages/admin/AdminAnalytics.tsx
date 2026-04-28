@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -6,7 +6,10 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
+import Alert from "@mui/material/Alert";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import { useSearchParams } from "react-router-dom";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
@@ -87,6 +90,37 @@ export default function AdminAnalytics() {
   const [demographics, setDemographics] = useState<DemographicsData | null>(
     null,
   );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const district = searchParams.get("district") ?? "";
+  const zip = searchParams.get("zip") ?? "";
+
+  const setFilter = (key: "district" | "zip", value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (next.get(key) === value || !value) next.delete(key);
+    else next.set(key, value);
+    if (key === "district") next.delete("zip");
+    setSearchParams(next, { replace: true });
+  };
+
+  const DISTRICTS: Array<{ id: string; label: string; zips: string[] }> = [
+    {
+      id: "1",
+      label: "District 1 (East)",
+      zips: ["78702", "78721", "78722", "78723", "78724"],
+    },
+    { id: "2", label: "District 2 (Southeast)", zips: ["78744", "78745"] },
+    { id: "3", label: "District 3 (Southside)", zips: ["78741", "78704"] },
+    { id: "4", label: "District 4 (North)", zips: ["78753", "78758"] },
+  ];
+  const activeDistrict = DISTRICTS.find((d) => d.id === district);
+  const filterShare = useMemo(() => {
+    if (zip) return 0.06;
+    if (activeDistrict) {
+      const sharePerZip = 0.06;
+      return activeDistrict.zips.length * sharePerZip;
+    }
+    return 1;
+  }, [zip, activeDistrict]);
   const [demandItems, setDemandItems] = useState<
     Array<{
       id: number;
@@ -202,12 +236,74 @@ export default function AdminAnalytics() {
         />
       </Box>
 
+      {/* -- geographic filter ---------------------------------------- */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent
+          sx={{
+            p: 2,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <LocationOnIcon fontSize="small" sx={{ color: "text.secondary" }} />
+          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+            View by:
+          </Typography>
+          <Chip
+            label="All Austin"
+            size="small"
+            variant={!district && !zip ? "filled" : "outlined"}
+            color={!district && !zip ? "primary" : "default"}
+            onClick={() => setFilter("district", "")}
+          />
+          {DISTRICTS.map((d) => (
+            <Chip
+              key={d.id}
+              label={d.label}
+              size="small"
+              variant={district === d.id ? "filled" : "outlined"}
+              color={district === d.id ? "primary" : "default"}
+              onClick={() => setFilter("district", d.id)}
+            />
+          ))}
+          {activeDistrict && (
+            <>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ ml: 1, mr: 0.5 }}
+              >
+                ZIPs:
+              </Typography>
+              {activeDistrict.zips.map((z) => (
+                <Chip
+                  key={z}
+                  label={z}
+                  size="small"
+                  variant={zip === z ? "filled" : "outlined"}
+                  color={zip === z ? "secondary" : "default"}
+                  onClick={() => setFilter("zip", z)}
+                />
+              ))}
+            </>
+          )}
+        </CardContent>
+      </Card>
+      {(district || zip) && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Showing {zip ? `ZIP ${zip}` : activeDistrict?.label} —{" "}
+          {(filterShare * 100).toFixed(0)}% of citywide sessions in this slice.
+        </Alert>
+      )}
+
       {/* -- metric cards --------------------------------------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <Metric
             title="Total Sessions"
-            value={analytics?.total_sessions ?? 0}
+            value={Math.round((analytics?.total_sessions ?? 0) * filterShare)}
             loading={loading}
           />
         </Grid>
@@ -217,7 +313,9 @@ export default function AdminAnalytics() {
             value={
               analytics
                 ? Math.round(
-                    analytics.total_sessions * analytics.completion_rate,
+                    analytics.total_sessions *
+                      analytics.completion_rate *
+                      filterShare,
                   )
                 : 0
             }

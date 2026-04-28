@@ -1,0 +1,44 @@
+id: svc-echo
+name: ECHO Coordinated Entry
+slug: echo-coordinated-entry
+provider_name: Ending Community Homelessness Coalition (ECHO)
+description: The single front door to Austin's homelessness response system, conducting assessments and
+  matching people experiencing homelessness with the most appropriate housing program.
+eligibility_summary: Anyone in Travis County experiencing homelessness or fleeing domestic violence.
+how_to_apply: Call 512-234-5780 or visit a Coordinated Assessment site.
+cost: Free
+cost_type: free
+website_url: https://www.austinecho.org
+phone: 512-234-5780
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- housing
+- emergency
+locations:
+- id: loc-echo-1
+  service_id: svc-echo
+  name: ECHO Office
+  address: 1108 Lavaca St, Ste 110-261
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2752
+  longitude: -97.744
+  phone: 512-234-5780
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

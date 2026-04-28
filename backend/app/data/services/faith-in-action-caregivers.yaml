@@ -1,0 +1,42 @@
+id: svc-faithinaction
+name: Faith in Action Caregivers
+slug: faith-in-action-caregivers
+provider_name: Faith in Action Caregivers
+description: Volunteer caregivers offer free transportation, friendly visits, errands, and respite for
+  seniors and adults with disabilities in the Hill Country and northwest Austin area.
+eligibility_summary: Adults 60+ or adults with disabilities living in the service area (NW Travis, Lago
+  Vista, Bee Cave).
+how_to_apply: Call 512-265-2280 to register.
+cost: Free
+cost_type: free
+website_url: https://www.fiacaregivers.org
+phone: 512-265-2280
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- transportation
+- senior
+locations:
+- id: loc-fia-1
+  service_id: svc-faithinaction
+  name: Faith in Action Office
+  address: 2600 Lake Austin Blvd
+  city: Austin
+  state: TX
+  zip_code: '78703'
+  latitude: 30.2845
+  longitude: -97.7757
+  phone: 512-265-2280
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

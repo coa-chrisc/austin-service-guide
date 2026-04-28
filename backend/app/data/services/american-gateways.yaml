@@ -1,0 +1,54 @@
+id: svc-amgateways
+name: American Gateways
+slug: american-gateways
+provider_name: American Gateways
+description: Free and low-cost legal services for low-income immigrants and refugees, including asylum,
+  citizenship, family-based petitions, VAWA, U-visas, and detention representation.
+eligibility_summary: Immigrants and refugees in Central Texas, with priority for survivors of violence
+  and detained individuals.
+how_to_apply: Call 512-478-0546 to schedule a legal screening.
+cost: Free or low cost
+cost_type: sliding_scale
+website_url: https://www.americangateways.org
+phone: 512-478-0546
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- fr
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- immigration
+- legal
+locations:
+- id: loc-ag-1
+  service_id: svc-amgateways
+  name: Austin Office
+  address: 314 E Highland Mall Blvd, Ste 501
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.327
+  longitude: -97.71
+  phone: 512-478-0546
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID or passport
+  description: Any identification
+  is_required: false
+- name: Immigration paperwork
+  description: USCIS, ICE, or court papers
+  is_required: false

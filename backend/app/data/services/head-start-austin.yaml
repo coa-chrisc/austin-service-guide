@@ -1,0 +1,56 @@
+id: svc-headstart
+name: Head Start Austin / Travis County
+slug: head-start-austin
+provider_name: Austin Independent School District / Child Inc.
+description: Free early childhood education program for children ages 3-5 from low-income families. Includes
+  health screenings, nutritious meals, parent engagement activities, and school readiness support.
+eligibility_summary: Children ages 3-5 with family income ≤100% FPL, children in foster care, children
+  experiencing homelessness, or children receiving TANF/SSI.
+how_to_apply: Apply through Child Inc. at 512-451-7361 or AISD early childhood office.
+cost: Free
+cost_type: free
+website_url: https://www.childinc.org
+phone: 512-451-7361
+email: ''
+languages_offered:
+- en
+- es
+- vi
+accessibility_features:
+- Inclusive classrooms
+- Special education services
+status: active
+categories:
+- childcare
+- education
+locations:
+- id: loc-hs-1
+  service_id: svc-headstart
+  name: Child Inc. Administrative Office
+  address: 6400 Steck Ave
+  city: Austin
+  state: TX
+  zip_code: '78757'
+  latitude: 30.367
+  longitude: -97.7467
+  phone: 512-451-7361
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Child's birth certificate
+  description: Or hospital records
+  is_required: true
+- name: Proof of income
+  description: Tax return or pay stubs
+  is_required: true
+- name: Immunization records
+  description: Child's shot record
+  is_required: true

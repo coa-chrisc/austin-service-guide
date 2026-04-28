@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import {
+  useNavigate,
+  Link as RouterLink,
+  useSearchParams,
+} from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -26,8 +30,37 @@ import RestaurantIcon from "@mui/icons-material/Restaurant";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import PublicIcon from "@mui/icons-material/Public";
-import { getLifeEvents } from "@/lib/api";
+import {
+  getLifeEvents,
+  getPersonas,
+  loadPersona,
+  type PersonaSummary,
+} from "@/lib/api";
 import type { LifeEvent } from "@/types";
+
+const PERSONA_ICONS: Record<string, React.ReactNode> = {
+  "heat-outdoor-worker": <PsychologyIcon sx={{ fontSize: 28 }} />,
+  "schools-anxious-student": <SchoolIcon sx={{ fontSize: 28 }} />,
+  "equity-east-austin": <HomeWorkIcon sx={{ fontSize: 28 }} />,
+  "refugee-food": <PublicIcon sx={{ fontSize: 28 }} />,
+};
+
+function iconForPersonaId(id: string): React.ReactNode {
+  // Match longest base id; strips trailing language suffixes like -vi/-es/-zh/-ar.
+  const base = id.replace(/-[a-z]{2}(?:-[a-zA-Z]{2,4})?$/, "");
+  return (
+    PERSONA_ICONS[id] ??
+    PERSONA_ICONS[base] ?? <PublicIcon sx={{ fontSize: 28 }} />
+  );
+}
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  es: "Español",
+  vi: "Tiếng Việt",
+  zh: "中文",
+  ar: "العربية",
+};
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   family: <FamilyRestroomIcon sx={{ fontSize: 36 }} />,
@@ -193,8 +226,12 @@ const FOOTER_LINKS = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const demoMode = searchParams.get("demo") === "1";
   const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [personas, setPersonas] = useState<PersonaSummary[]>([]);
+  const [launchingId, setLaunchingId] = useState<string | null>(null);
 
   useEffect(() => {
     getLifeEvents()
@@ -202,6 +239,43 @@ export default function Landing() {
       .catch(() => setLifeEvents(FALLBACK_EVENTS))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!demoMode) return;
+    getPersonas()
+      .then((res) => setPersonas(res.personas))
+      .catch((err) => console.error("Failed to load personas", err));
+  }, [demoMode]);
+
+  // When the Demo nav button drops the user on /?demo=1, scroll the
+  // launcher into view so they don't have to hunt for it past the hero.
+  useEffect(() => {
+    if (!demoMode) return;
+    const t = setTimeout(() => {
+      document
+        .getElementById("demo-launcher")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => clearTimeout(t);
+  }, [demoMode]);
+
+  const handleLaunchPersona = async (id: string) => {
+    setLaunchingId(id);
+    try {
+      const res = await loadPersona(id);
+      const personaLabel = personas.find((p) => p.id === id)?.label;
+      navigate(`/demo/${res.session_id}`, {
+        state: {
+          openingMessage: res.opening_message,
+          script: res.script,
+          personaLabel,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to load persona", err);
+      setLaunchingId(null);
+    }
+  };
 
   const displayEvents = lifeEvents.length > 0 ? lifeEvents : FALLBACK_EVENTS;
 
@@ -285,6 +359,82 @@ export default function Landing() {
           </Typography>
         </Container>
       </Box>
+
+      {/* Demo persona launcher (?demo=1) */}
+      {demoMode && (
+        <Box
+          id="demo-launcher"
+          sx={{ bgcolor: "#fff7e6", borderBottom: "1px solid #f0d8a8" }}
+        >
+          <Container maxWidth="lg" sx={{ py: 4 }}>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="overline" sx={{ color: "warning.dark" }}>
+                Demo mode
+              </Typography>
+              <Typography variant="h6" fontWeight={700}>
+                Launch a scripted resident scenario
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Each persona seeds a baseline profile and a realistic opening
+                message — the live AI takes over from there. Click one to jump
+                straight to the matched-services result.
+              </Typography>
+            </Box>
+            <Grid container spacing={2}>
+              {personas.map((p) => (
+                <Grid key={p.id} size={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card>
+                    <CardActionArea
+                      onClick={() => handleLaunchPersona(p.id)}
+                      disabled={launchingId !== null}
+                      sx={{ p: 2.25, height: "100%" }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.25,
+                          mb: 1,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: "warning.light",
+                            color: "warning.dark",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {iconForPersonaId(p.id) ?? (
+                            <ChatIcon sx={{ fontSize: 24 }} />
+                          )}
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">
+                          {LANGUAGE_LABELS[p.language] ?? p.language}
+                        </Typography>
+                      </Box>
+                      <Typography variant="subtitle2" fontWeight={700}>
+                        {p.label}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mt: 0.5 }}
+                      >
+                        {launchingId === p.id ? "Launching…" : "Click to load"}
+                      </Typography>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Container>
+        </Box>
+      )}
 
       {/* How It Works */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>

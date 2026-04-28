@@ -62,12 +62,46 @@ async function apiRequest<T>(
 /*  Resident-facing endpoints                                          */
 /* ------------------------------------------------------------------ */
 
+export interface PersonaSummary {
+  id: string;
+  label: string;
+  language: string;
+}
+
+export function getPersonas() {
+  return apiRequest<{ personas: PersonaSummary[] }>(
+    "GET",
+    "/api/v1/intake/personas",
+  );
+}
+
+export interface PersonaScriptTurn {
+  role: "user" | "assistant";
+  content: string;
+  delay_ms: number;
+}
+
+export function loadPersona(personaId: string) {
+  return apiRequest<{
+    session_id: string;
+    language: string;
+    entry_source: string;
+    status: string;
+    conversation: IntakeMessage[];
+    last_message: IntakeMessage | null;
+    opening_message: string;
+    script: PersonaScriptTurn[];
+  }>("POST", "/api/v1/intake/load-persona", { persona_id: personaId });
+}
+
 export async function startIntake(
   language = "en",
   lifeEvent?: string,
+  focus?: string[],
 ): Promise<IntakeSession> {
-  const body: Record<string, string> = { language };
+  const body: Record<string, string | string[]> = { language };
   if (lifeEvent) body.life_event = lifeEvent;
+  if (focus && focus.length > 0) body.focus = focus;
 
   const raw = await apiRequest<{
     session_id: string;
@@ -127,6 +161,7 @@ export function getIntakeResults(sessionId: string) {
   return apiRequest<{
     session_id: string;
     status: string;
+    language: string;
     profile: import("@/types").ResidentProfile;
     matches: import("@/types").ServiceMatch[];
     risk_flags: import("@/types").RiskFlag[];
@@ -323,6 +358,8 @@ export interface DemandMapPoint {
   sessions: number;
   top_categories: string[];
   intensity: "high" | "medium" | "low";
+  heat_intensity?: "high" | "medium" | "low";
+  heat_vulnerable_sessions?: number;
 }
 
 export interface AdminReport {
@@ -353,4 +390,29 @@ export function getAdminDemandMap() {
 
 export function getAdminReports() {
   return apiRequest<AdminReport[]>("GET", "/api/v1/admin/reports");
+}
+
+export interface PartnerGap {
+  partner: string;
+  category: string;
+  referrals: number;
+  connections: number;
+  gap: number;
+  primary_languages: string[];
+  top_reasons: string[];
+  trend: number[];
+}
+
+export interface PartnerGapsResponse {
+  totals: {
+    referrals: number;
+    connections: number;
+    gap: number;
+    connection_rate: number;
+  };
+  partners: PartnerGap[];
+}
+
+export function getAdminPartnerGaps() {
+  return apiRequest<PartnerGapsResponse>("GET", "/api/v1/admin/partner-gaps");
 }

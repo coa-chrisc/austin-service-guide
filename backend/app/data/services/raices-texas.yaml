@@ -1,0 +1,54 @@
+id: svc-raices
+name: RAICES Texas
+slug: raices-texas
+provider_name: Refugee and Immigrant Center for Education and Legal Services
+description: Legal services for immigrants and refugees including asylum representation, family-based
+  petitions, DACA renewals, U-visa and T-visa applications, citizenship assistance, and bond fund for
+  detained immigrants.
+eligibility_summary: Immigrants and refugees in Texas. Free legal screenings; some services have income
+  eligibility.
+how_to_apply: Call 512-354-7798 for a legal screening appointment.
+cost: Free to sliding scale
+cost_type: sliding_scale
+website_url: https://www.raicestexas.org
+phone: 512-354-7798
+email: ''
+languages_offered:
+- en
+- es
+- ar
+- zh
+- hi
+- fr
+status: active
+categories:
+- immigration
+- legal
+locations:
+- id: loc-raices-1
+  service_id: svc-raices
+  name: Austin Office
+  address: 1910 E Riverside Dr, Ste 200
+  city: Austin
+  state: TX
+  zip_code: '78741'
+  latitude: 30.2414
+  longitude: -97.7221
+  phone: 512-354-7798
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID or passport
+  description: Any identification from any country
+  is_required: false
+- name: Immigration documents
+  description: Any papers from USCIS, ICE, or court
+  is_required: false

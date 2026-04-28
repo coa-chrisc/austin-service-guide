@@ -1,0 +1,48 @@
+id: svc-ae-assist
+name: Austin Energy Bill Assistance
+slug: austin-energy-bill-assistance
+provider_name: Austin Energy
+description: Plus 1 utility assistance fund that helps customers who have fallen behind on their electric
+  bills. Funded by voluntary customer donations and Austin Energy contributions.
+eligibility_summary: City of Austin utility customers experiencing financial hardship. Must have a past-due
+  balance.
+how_to_apply: Contact Austin Energy at 512-494-9400 or apply through partner agencies.
+cost: Free
+cost_type: free
+website_url: https://austinenergy.com
+phone: 512-494-9400
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- utilities
+locations:
+- id: loc-ae-1
+  service_id: svc-ae-assist
+  name: Austin Energy HQ
+  address: 721 Barton Springs Rd
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2613
+  longitude: -97.7526
+  phone: 512-494-9400
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Utility bill
+  description: Showing past-due balance
+  is_required: true
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

@@ -1,0 +1,51 @@
+id: svc-apl-literacy
+name: Austin Public Library Adult Learning
+slug: austin-public-library-adult-learning
+provider_name: Austin Public Library
+description: Free one-on-one adult literacy tutoring, conversational English (Talk Time), and citizenship
+  test preparation at branch libraries throughout Austin.
+eligibility_summary: Adults 18+ with an Austin Public Library card (free for residents).
+how_to_apply: Sign up at any branch or library.austintexas.gov/adult-literacy.
+cost: Free
+cost_type: free
+website_url: https://library.austintexas.gov
+phone: 512-974-7400
+email: ''
+languages_offered:
+- en
+- es
+- vi
+- zh
+- ar
+accessibility_features:
+- Wheelchair accessible
+- Assistive listening devices
+status: active
+categories:
+- education
+- immigration
+locations:
+- id: loc-apl-1
+  service_id: svc-apl-literacy
+  name: Central Library
+  address: 710 W Cesar Chavez St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.267
+  longitude: -97.753
+  phone: 512-974-7400
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Library card
+  description: Free for Austin residents
+  is_required: false

@@ -1,0 +1,56 @@
+id: svc-aisd-prek
+name: AISD Pre-K & Early Childhood
+slug: aisd-prek-early-childhood
+provider_name: Austin Independent School District
+description: Free full-day pre-K for eligible 3- and 4-year-olds at AISD elementary schools, plus early
+  childhood special education and dual-language pre-K classrooms.
+eligibility_summary: 3- and 4-year-olds who are economically disadvantaged, English learners, in foster
+  care, homeless, or children of active-duty military.
+how_to_apply: Enroll online at austinisd.org/enroll or at any AISD enrollment center.
+cost: Free
+cost_type: free
+website_url: https://www.austinisd.org/academics/early-childhood
+phone: 512-414-1700
+email: ''
+languages_offered:
+- en
+- es
+- vi
+accessibility_features:
+- Inclusive classrooms
+- Special education services
+status: active
+categories:
+- childcare
+- education
+locations:
+- id: loc-aisd-1
+  service_id: svc-aisd-prek
+  name: AISD Enrollment Center
+  address: 1111 W 6th St
+  city: Austin
+  state: TX
+  zip_code: '78703'
+  latitude: 30.2722
+  longitude: -97.7541
+  phone: 512-414-1700
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Child's birth certificate
+  description: Proof of age
+  is_required: true
+- name: Immunization records
+  description: Up-to-date shots
+  is_required: true
+- name: Proof of residency
+  description: Lease or utility bill
+  is_required: true

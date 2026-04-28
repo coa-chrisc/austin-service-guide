@@ -1,0 +1,53 @@
+id: svc-jcfs
+name: Jeremiah Program Austin
+slug: jeremiah-program-austin
+provider_name: Jeremiah Program
+description: Two-generation program supporting single mothers pursuing post-secondary education, providing
+  housing, on-site early childhood education, life-skills coaching, and empowerment training.
+eligibility_summary: Single mothers with one or more children under 5, enrolled in or pursuing a college
+  degree, with low income.
+how_to_apply: Attend an information meeting; sign up at jeremiahprogram.org/austin.
+cost: Subsidized housing & childcare
+cost_type: sliding_scale
+website_url: https://jeremiahprogram.org/austin
+phone: 512-957-7775
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- childcare
+- housing
+- education
+locations:
+- id: loc-jp-1
+  service_id: svc-jcfs
+  name: Austin Campus
+  address: 1200 E 11th St
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2733
+  longitude: -97.7286
+  phone: 512-957-7775
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Children's birth certificates
+  description: For each child
+  is_required: true
+- name: College enrollment proof
+  description: Acceptance or transcript
+  is_required: true

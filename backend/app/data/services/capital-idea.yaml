@@ -1,0 +1,53 @@
+id: svc-capidea
+name: Capital IDEA
+slug: capital-idea
+provider_name: Capital IDEA
+description: A nationally recognized workforce program that provides full scholarships and support services
+  for low-income adults pursuing in-demand healthcare, technology, and skilled trades careers through
+  Austin Community College.
+eligibility_summary: Low-income adults (≤200% FPL) in Travis, Williamson, or Hays county. Must be committed
+  to a 2-3 year program.
+how_to_apply: Attend an orientation session — schedule at capitalidea.org.
+cost: Free (full scholarship)
+cost_type: free
+website_url: https://www.capitalidea.org
+phone: 512-457-8610
+email: info@capitalidea.org
+languages_offered:
+- en
+- es
+status: active
+categories:
+- education
+- employment
+locations:
+- id: loc-ci-1
+  service_id: svc-capidea
+  name: Main Office
+  address: 2211 S IH-35, Ste 200
+  city: Austin
+  state: TX
+  zip_code: '78741'
+  latitude: 30.239
+  longitude: -97.7293
+  phone: 512-457-8610
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Proof of income
+  description: For eligibility screening
+  is_required: true
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: High school diploma or GED
+  description: Or willingness to obtain GED first
+  is_required: true

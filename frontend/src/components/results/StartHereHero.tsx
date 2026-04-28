@@ -14,19 +14,23 @@ import { useNavigate } from "react-router-dom";
 import { openStatusLabel } from "@/lib/hours";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
+import { makeResultsT } from "@/lib/resultsI18n";
 
 interface StartHereHeroProps {
   topItem: ApplicationOrderItem;
   topMatch?: ServiceMatch;
   sessionId?: string;
+  language?: string;
 }
 
 export default function StartHereHero({
   topItem,
   topMatch,
   sessionId,
+  language,
 }: StartHereHeroProps) {
   const navigate = useNavigate();
+  const t = makeResultsT(language);
   const service = topMatch?.service;
   const primaryLocation =
     service?.locations?.find((l) => l.is_primary) ?? service?.locations?.[0];
@@ -67,7 +71,7 @@ export default function StartHereHero({
             fontWeight={700}
             sx={{ letterSpacing: 1 }}
           >
-            Start here
+            {t("start_here")}
           </Typography>
         </Box>
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
@@ -111,7 +115,7 @@ export default function StartHereHero({
                   flex: 1,
                 }}
               >
-                Call now
+                {t("call_now")}
               </Button>
             )}
             {directionsUrl && (
@@ -131,7 +135,7 @@ export default function StartHereHero({
                   flex: 1,
                 }}
               >
-                Get directions
+                {t("get_directions")}
               </Button>
             )}
             <Button
@@ -152,7 +156,7 @@ export default function StartHereHero({
                 flex: 1,
               }}
             >
-              View details
+              {t("view_details")}
             </Button>
           </Stack>
 
@@ -176,7 +180,7 @@ export default function StartHereHero({
               const status = openStatusLabel(primaryLocation);
               return (
                 <Chip
-                  label={status.open ? "Open now" : status.label}
+                  label={status.open ? t("open_now") : status.label}
                   size="small"
                   variant={status.open ? "filled" : "outlined"}
                   sx={{
@@ -210,7 +214,7 @@ export default function StartHereHero({
                 sx={{ display: "flex", alignItems: "center", gap: 1 }}
               >
                 <CheckIcon fontSize="small" color="primary" />
-                What to bring
+                {t("what_to_bring")}
               </Typography>
               <Stack spacing={1} sx={{ mt: 1 }}>
                 {service.documents.map((d) => (
@@ -242,7 +246,7 @@ export default function StartHereHero({
                         </Typography>
                         {!d.is_required && (
                           <Chip
-                            label="Optional"
+                            label={t("optional")}
                             size="small"
                             variant="outlined"
                             sx={{ height: 18, fontSize: 10 }}

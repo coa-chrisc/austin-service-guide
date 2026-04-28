@@ -1,0 +1,44 @@
+id: svc-age
+name: AGE of Central Texas
+slug: age-of-central-texas
+provider_name: AGE of Central Texas
+description: Programs for older adults including adult day health care, caregiver support, social engagement
+  activities, and memory care. Helps seniors stay connected and supported in the community.
+eligibility_summary: Adults 50+ and their caregivers. Adult Day Health Care serves adults with physical
+  or cognitive impairments.
+how_to_apply: Call 512-451-4611 or visit ageofcentraltx.org.
+cost: Sliding scale for day programs
+cost_type: sliding_scale
+website_url: https://www.ageofcentraltx.org
+phone: 512-451-4611
+email: info@ageofcentraltx.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Dementia-friendly environment
+status: active
+categories:
+- senior
+locations:
+- id: loc-age-1
+  service_id: svc-age
+  name: Main Campus
+  address: 3710 Cedar St
+  city: Austin
+  state: TX
+  zip_code: '78705'
+  latitude: 30.2965
+  longitude: -97.744
+  phone: 512-451-4611
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

@@ -1,0 +1,46 @@
+id: svc-capmetro
+name: Capital Metro Transit
+slug: capital-metro-transit
+provider_name: Capital Metro
+description: Austin's public transit system with bus, MetroRail, MetroRapid, and MetroAccess paratransit
+  services. Reduced-fare passes available for seniors, people with disabilities, students, and low-income
+  riders.
+eligibility_summary: 'Open to all. Reduced fares: seniors 65+, Medicare cardholders, persons with disabilities,
+  students.'
+how_to_apply: Purchase passes at capmetro.org, the CapMetro app, or transit stores.
+cost: $1.25 single ride / $2.50 day pass (half fare for eligible)
+cost_type: flat_fee
+website_url: https://www.capmetro.org
+phone: 512-474-1200
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- 100% wheelchair accessible fleet
+- Real-time audio announcements
+- MetroAccess paratransit
+status: active
+categories:
+- transportation
+locations:
+- id: loc-cm-1
+  service_id: svc-capmetro
+  name: Transit Store Downtown
+  address: 209 W 9th St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2713
+  longitude: -97.7468
+  phone: 512-474-1200
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

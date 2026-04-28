@@ -1,0 +1,45 @@
+id: svc-aph-tobacco
+name: Austin Public Health Tobacco-Free Living
+slug: aph-tobacco-free-living
+provider_name: Austin Public Health
+description: In-person and virtual cessation classes, free nicotine replacement therapy starter kits,
+  and group support cohorts. Partners with Travis County clinics for warm hand-offs after a positive smoking
+  screen.
+eligibility_summary: Travis County residents who use tobacco or vape products. Open to people not yet
+  ready to quit.
+how_to_apply: Call 512-972-5470 to be added to the next cohort, or ask your APH provider for a referral.
+cost: Free
+cost_type: free
+website_url: https://www.austintexas.gov/department/health
+phone: 512-972-5470
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Telehealth option
+status: active
+categories:
+- smoking_cessation
+locations:
+- id: loc-aph-tob-1
+  service_id: svc-aph-tobacco
+  name: APH Chronic Disease Prevention
+  address: 7201 Levander Loop, Bldg E
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2745
+  longitude: -97.6873
+  phone: 512-972-5470
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

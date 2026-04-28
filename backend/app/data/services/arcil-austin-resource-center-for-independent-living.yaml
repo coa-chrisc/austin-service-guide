@@ -1,0 +1,44 @@
+id: svc-arcil
+name: ARCIL — Austin Resource Center for Independent Living
+slug: arcil-austin-resource-center-for-independent-living
+provider_name: Austin Resource Center for Independent Living
+description: Consumer-controlled, cross-disability center promoting independent living through peer support,
+  advocacy, skills training, information & referral, and youth transition services.
+eligibility_summary: People of any age with any type of disability living in 10 surrounding counties.
+how_to_apply: Call 512-832-6349 to speak with an Independent Living Specialist.
+cost: Free
+cost_type: free
+website_url: https://www.arcil.com
+phone: 512-832-6349
+email: austin@arcil.com
+languages_offered:
+- en
+- es
+accessibility_features:
+- Fully accessible facility
+- ASL interpreters available
+- Materials in alternate formats
+status: active
+categories:
+- disability
+locations:
+- id: loc-arcil-1
+  service_id: svc-arcil
+  name: ARCIL Austin Office
+  address: 825 E Rundberg Ln, Ste E-6
+  city: Austin
+  state: TX
+  zip_code: '78753'
+  latitude: 30.3617
+  longitude: -97.7012
+  phone: 512-832-6349
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

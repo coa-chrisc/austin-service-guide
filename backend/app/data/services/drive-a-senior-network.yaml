@@ -1,0 +1,44 @@
+id: svc-drivesenior
+name: Drive a Senior Network
+slug: drive-a-senior-network
+provider_name: Drive a Senior Network
+description: Volunteer drivers provide free door-to-door transportation for older adults to medical appointments,
+  grocery stores, pharmacies, and social activities across multiple Austin neighborhoods.
+eligibility_summary: Adults 60+ who can no longer drive themselves. Each chapter serves a defined service
+  area.
+how_to_apply: Find your neighborhood chapter at driveasenior.org and call to register.
+cost: Free
+cost_type: free
+website_url: https://www.driveasenior.org
+phone: 512-472-6339
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair-accessible vehicles available in some chapters
+status: active
+categories:
+- senior
+- transportation
+locations:
+- id: loc-ds-1
+  service_id: svc-drivesenior
+  name: Network Coordinating Office
+  address: 3710 Cedar St, Box 14
+  city: Austin
+  state: TX
+  zip_code: '78705'
+  latitude: 30.2965
+  longitude: -97.744
+  phone: 512-472-6339
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

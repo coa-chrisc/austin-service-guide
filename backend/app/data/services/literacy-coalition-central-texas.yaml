@@ -1,0 +1,46 @@
+id: svc-litcoalition
+name: Literacy Coalition of Central Texas
+slug: literacy-coalition-central-texas
+provider_name: Literacy Coalition of Central Texas
+description: Adult literacy, ESL, digital literacy, and financial literacy classes through community partners
+  across Central Texas, plus the 1-800-VISITOR information line.
+eligibility_summary: Adults 18+ seeking to improve reading, writing, English, or digital skills.
+how_to_apply: Call 512-326-8655 or use the program finder at willread.org.
+cost: Free
+cost_type: free
+website_url: https://www.willread.org
+phone: 512-326-8655
+email: info@willread.org
+languages_offered:
+- en
+- es
+- vi
+- ar
+- zh
+accessibility_features:
+- Interpreter services
+- Wheelchair accessible
+status: active
+categories:
+- education
+locations:
+- id: loc-lit-1
+  service_id: svc-litcoalition
+  name: Coalition Office
+  address: 2222 Western Trails Blvd, Ste 100
+  city: Austin
+  state: TX
+  zip_code: '78745'
+  latitude: 30.223
+  longitude: -97.8
+  phone: 512-326-8655
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

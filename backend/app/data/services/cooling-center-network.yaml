@@ -1,0 +1,86 @@
+id: svc-cool-network
+name: Austin–Travis County Cooling Center Network
+slug: cooling-center-network
+provider_name: City of Austin & Austin Public Library
+description: During heat advisories, libraries, recreation centers, and senior centers across Austin operate
+  as drop-in cooling centers — free, no ID required, water provided. Especially important for outdoor
+  workers, residents without home AC, and people with chronic conditions that compound heat risk.
+eligibility_summary: Open to all — no ID, address, or income check.
+how_to_apply: Walk in to any participating library, rec center, or senior center during operating hours.
+  Call 3-1-1 for current open locations during a heat advisory.
+cost: Free
+cost_type: free
+website_url: https://www.austintexas.gov/cooling-centers
+phone: 3-1-1
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Pet-friendly at select locations
+status: active
+categories:
+- cooling
+- emergency
+locations:
+- id: loc-cool-1
+  service_id: svc-cool-network
+  name: Dove Springs Recreation Center
+  address: 5801 Ainez Dr
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.1804
+  longitude: -97.756
+  phone: 512-972-7400
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-cool-2
+  service_id: svc-cool-network
+  name: Ruiz Branch Library
+  address: 1600 Grove Blvd
+  city: Austin
+  state: TX
+  zip_code: '78741'
+  latitude: 30.2226
+  longitude: -97.727
+  phone: 512-974-7500
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+- id: loc-cool-3
+  service_id: svc-cool-network
+  name: Gus Garcia Recreation Center
+  address: 1201 E Rundberg Ln
+  city: Austin
+  state: TX
+  zip_code: '78753'
+  latitude: 30.3631
+  longitude: -97.6843
+  phone: 512-972-1640
+  is_primary: false
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false

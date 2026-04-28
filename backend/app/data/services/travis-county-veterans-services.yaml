@@ -1,0 +1,49 @@
+id: svc-tcvs
+name: Travis County Veterans Services
+slug: travis-county-veterans-services
+provider_name: Travis County
+description: Assists veterans and their dependents in obtaining VA benefits including disability compensation,
+  pension, healthcare enrollment, education benefits (GI Bill), and burial benefits.
+eligibility_summary: Veterans and their dependents/survivors who live in Travis County.
+how_to_apply: Call 512-854-9457 for an appointment with a Veterans Service Officer.
+cost: Free
+cost_type: free
+website_url: https://www.traviscountytx.gov/veterans-services
+phone: 512-854-9457
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- veterans
+locations:
+- id: loc-tcvs-1
+  service_id: svc-tcvs
+  name: Travis County Veterans Services
+  address: 5555 Airport Blvd
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.3134
+  longitude: -97.7147
+  phone: 512-854-9457
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: DD-214
+  description: Discharge papers
+  is_required: true
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true

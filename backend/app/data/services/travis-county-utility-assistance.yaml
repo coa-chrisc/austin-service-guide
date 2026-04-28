@@ -1,0 +1,54 @@
+id: svc-tchhs-util
+name: Travis County Utility Assistance
+slug: travis-county-utility-assistance
+provider_name: Travis County Health & Human Services
+description: One-time emergency utility-bill assistance for low-income county residents to prevent disconnection
+  of electric, water, or gas service. Funded by CSBG and county dollars.
+eligibility_summary: Travis County residents at or below 150% FPL with a past-due utility notice or disconnection
+  threat.
+how_to_apply: Call 512-854-4100 to schedule an intake.
+cost: Free
+cost_type: free
+website_url: https://www.traviscountytx.gov/health-human-services
+phone: 512-854-4100
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- utilities
+locations:
+- id: loc-tcu-1
+  service_id: svc-tchhs-util
+  name: Travis County HHS
+  address: 502 E Highland Mall Blvd
+  city: Austin
+  state: TX
+  zip_code: '78752'
+  latitude: 30.327
+  longitude: -97.711
+  phone: 512-854-4100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: Last 30 days for all adults
+  is_required: true
+- name: Disconnection notice
+  description: Or current past-due bill
+  is_required: true

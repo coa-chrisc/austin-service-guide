@@ -1,0 +1,46 @@
+id: svc-goodwill
+name: Goodwill Central Texas
+slug: goodwill-central-texas
+provider_name: Goodwill Central Texas
+description: Career services including job readiness classes, computer training, career counseling, and
+  the Goodwill Excel Center — a tuition-free high school for adults 18-50.
+eligibility_summary: Open to all Central Texas residents seeking employment. Excel Center is for adults
+  18-50 who have not completed high school.
+how_to_apply: Call 512-637-7100 or visit the career center. For Excel Center, apply online.
+cost: Free
+cost_type: free
+website_url: https://www.goodwillcentraltexas.org
+phone: 512-637-7100
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- employment
+- education
+locations:
+- id: loc-gw-1
+  service_id: svc-goodwill
+  name: Career & Technical Academy
+  address: 1015 Norwood Park Blvd
+  city: Austin
+  state: TX
+  zip_code: '78753'
+  latitude: 30.3653
+  longitude: -97.6985
+  phone: 512-637-7100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: false

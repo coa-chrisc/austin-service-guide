@@ -1,0 +1,53 @@
+id: svc-cm-access
+name: CapMetro Access Paratransit
+slug: capmetro-access-paratransit
+provider_name: Capital Metro
+description: ADA-complementary paratransit service providing curb-to-curb shared rides for people whose
+  disability prevents them from using the fixed-route bus and rail system.
+eligibility_summary: Individuals certified through CapMetro's Eligibility Center as unable to use fixed-route
+  service due to a disability.
+how_to_apply: Call 512-369-6010 to begin the eligibility process and schedule an in-person assessment.
+cost: $1.75 per one-way trip
+cost_type: flat_fee
+website_url: https://www.capmetro.org/access
+phone: 512-369-6010
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair-accessible vehicles
+- TTY available
+- PCA rides free
+status: active
+categories:
+- transportation
+- disability
+locations:
+- id: loc-cma-1
+  service_id: svc-cm-access
+  name: MetroAccess Eligibility Center
+  address: 507 Calles St, Ste 102
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2569
+  longitude: -97.7281
+  phone: 512-369-6010
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Medical verification form
+  description: Completed by healthcare provider
+  is_required: false

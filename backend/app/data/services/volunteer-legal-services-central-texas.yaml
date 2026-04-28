@@ -1,0 +1,50 @@
+id: svc-vlsoct
+name: Volunteer Legal Services of Central Texas
+slug: volunteer-legal-services-central-texas
+provider_name: Volunteer Legal Services of Central Texas
+description: Free legal advice and representation through pro bono attorneys for low-income Central Texans
+  in family law, probate, consumer issues, and self-help legal clinics.
+eligibility_summary: Residents of Travis or surrounding counties at or below 200% FPL.
+how_to_apply: Call 512-476-5550 for an intake or sign up for a self-help clinic.
+cost: Free
+cost_type: free
+website_url: https://www.vlsoct.org
+phone: 512-476-5550
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- legal
+locations:
+- id: loc-vlsoct-1
+  service_id: svc-vlsoct
+  name: VLSOCT Office
+  address: 1414 Colorado St, Ste 305
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2725
+  longitude: -97.7427
+  phone: 512-476-5550
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Any identification
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, benefits letter
+  is_required: true

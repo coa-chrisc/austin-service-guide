@@ -1,0 +1,49 @@
+id: svc-skillpoint
+name: Skillpoint Alliance
+slug: skillpoint-alliance
+provider_name: Skillpoint Alliance
+description: Short-term tuition-free workforce training programs in skilled trades (electrical, HVAC,
+  plumbing, manufacturing) leading to industry-recognized certifications and direct employer connections.
+eligibility_summary: Adults 18+ in Central Texas, prioritizing low-income, underemployed, and underrepresented
+  job seekers.
+how_to_apply: Apply at skillpointalliance.org or call 512-323-6773.
+cost: Free
+cost_type: free
+website_url: https://www.skillpointalliance.org
+phone: 512-323-6773
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- employment
+- education
+locations:
+- id: loc-sp-1
+  service_id: svc-skillpoint
+  name: Skillpoint Alliance HQ
+  address: 2900 W Anderson Ln, Ste 200
+  city: Austin
+  state: TX
+  zip_code: '78757'
+  latitude: 30.354
+  longitude: -97.7395
+  phone: 512-323-6773
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of income
+  description: If applicable for scholarships
+  is_required: false

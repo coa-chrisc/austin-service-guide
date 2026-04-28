@@ -1,0 +1,51 @@
+id: svc-gw-excel
+name: Goodwill Excel Center
+slug: goodwill-excel-center
+provider_name: Goodwill Central Texas
+description: Tuition-free public charter high school for adults 18-50 to earn an accredited Texas high-school
+  diploma plus an industry credential, with on-site childcare and life coaches.
+eligibility_summary: Adults 18-50 who have not completed high school. Texas residents only.
+how_to_apply: Attend an info session or apply at goodwillcentraltexas.org/excel-center.
+cost: Free (includes books, transportation, childcare)
+cost_type: free
+website_url: https://www.goodwillcentraltexas.org/excel-center
+phone: 512-637-7100
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- On-site childcare
+status: active
+categories:
+- education
+- employment
+locations:
+- id: loc-gwx-1
+  service_id: svc-gw-excel
+  name: Excel Center South
+  address: 1015 Norwood Park Blvd
+  city: Austin
+  state: TX
+  zip_code: '78753'
+  latitude: 30.3653
+  longitude: -97.6985
+  phone: 512-637-7100
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Proof of Texas residency
+  description: Lease or utility bill
+  is_required: true

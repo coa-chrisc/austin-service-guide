@@ -1,0 +1,43 @@
+id: svc-arch
+name: Austin Resource Center for the Homeless (ARCH)
+slug: austin-resource-center-for-the-homeless
+provider_name: Front Steps
+description: Downtown homeless services facility offering overnight emergency shelter for adult men, day-resource
+  services, mail, showers, and case management.
+eligibility_summary: Adults experiencing homelessness. Overnight shelter beds reserved for adult men.
+how_to_apply: Walk in to the day resource center or call 512-305-4100.
+cost: Free
+cost_type: free
+website_url: https://www.frontsteps.org
+phone: 512-305-4100
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- housing
+- emergency
+locations:
+- id: loc-arch-1
+  service_id: svc-arch
+  name: ARCH Day Resource Center
+  address: 500 E 7th St
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.268
+  longitude: -97.7376
+  phone: 512-305-4100
+  is_primary: true
+  hours:
+    monday: 24 hours
+    tuesday: 24 hours
+    wednesday: 24 hours
+    thursday: 24 hours
+    friday: 24 hours
+    saturday: 24 hours
+    sunday: 24 hours
+  hours_verified: false

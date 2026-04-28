@@ -1,0 +1,54 @@
+id: svc-snap
+name: SNAP Enrollment Assistance
+slug: snap-enrollment-assistance
+provider_name: Texas Health and Human Services
+description: Help applying for the Supplemental Nutrition Assistance Program (SNAP/food stamps). Provides
+  monthly benefits on a Lone Star Card for purchasing groceries.
+eligibility_summary: Texas residents with gross household income ≤130% FPL. Elderly/disabled households
+  may qualify at higher income levels.
+how_to_apply: Apply online at YourTexasBenefits.com, by phone at 2-1-1, or in person at an HHS office.
+cost: Free
+cost_type: free
+website_url: https://www.yourtexasbenefits.com
+phone: 2-1-1
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- food
+locations:
+- id: loc-snap-1
+  service_id: svc-snap
+  name: Travis County HHS Office
+  address: 1601 Rutherford Ln, Bldg 2
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.3521
+  longitude: -97.6903
+  phone: 512-834-3117
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued photo ID
+  is_required: true
+- name: Social Security card
+  description: For all household members
+  is_required: true
+- name: Proof of income
+  description: Pay stubs for last 30 days
+  is_required: true
+- name: Proof of address
+  description: Utility bill or lease
+  is_required: true

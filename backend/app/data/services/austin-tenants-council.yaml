@@ -1,0 +1,46 @@
+id: svc-atc
+name: Austin Tenants' Council
+slug: austin-tenants-council
+provider_name: Austin Tenants' Council
+description: Free information, counseling, and mediation services on landlord-tenant issues. Helps renters
+  understand their rights under Texas law, resolves disputes, and investigates fair housing complaints.
+eligibility_summary: Any renter in the Austin area. Fair housing services available to anyone who believes
+  they experienced housing discrimination.
+how_to_apply: Call 512-474-1961 or visit during walk-in hours.
+cost: Free
+cost_type: free
+website_url: https://www.housing-rights.org
+phone: 512-474-1961
+email: atcmail@housing-rights.org
+languages_offered:
+- en
+- es
+status: active
+categories:
+- legal
+- housing
+locations:
+- id: loc-atc-1
+  service_id: svc-atc
+  name: Main Office
+  address: 1640 E 2nd St, Ste 150
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.2565
+  longitude: -97.7199
+  phone: 512-474-1961
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Lease agreement
+  description: Copy of your current lease
+  is_required: false

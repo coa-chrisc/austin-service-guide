@@ -1,0 +1,42 @@
+id: svc-cfr
+name: Communities for Recovery
+slug: communities-for-recovery
+provider_name: Communities for Recovery
+description: Peer-led recovery support services for people experiencing substance use and mental health
+  challenges — including recovery coaching, employment support, and sober social activities.
+eligibility_summary: Adults 18+ in recovery from substance use or co-occurring mental health conditions.
+how_to_apply: Call 512-358-1014 or walk in to the Recovery Resource Center.
+cost: Free
+cost_type: free
+website_url: https://cforr.org
+phone: 512-358-1014
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-cfr-1
+  service_id: svc-cfr
+  name: Recovery Resource Center
+  address: 4110 Guadalupe St, Bldg 636
+  city: Austin
+  state: TX
+  zip_code: '78751'
+  latitude: 30.306
+  longitude: -97.732
+  phone: 512-358-1014
+  is_primary: true
+  hours:
+    monday: 7:00 AM – 7:00 PM
+    tuesday: 7:00 AM – 7:00 PM
+    wednesday: 7:00 AM – 7:00 PM
+    thursday: 7:00 AM – 7:00 PM
+    friday: 7:00 AM – 5:00 PM
+    saturday: 9:00 AM – 1:00 PM
+    sunday: Closed
+  hours_verified: false

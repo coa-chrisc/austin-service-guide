@@ -1,0 +1,54 @@
+id: svc-medicaid
+name: Medicaid Enrollment Assistance
+slug: medicaid-enrollment-assistance
+provider_name: Texas Health and Human Services
+description: Assistance enrolling in Texas Medicaid, which provides health coverage for eligible low-income
+  adults, children, pregnant women, elderly, and people with disabilities.
+eligibility_summary: 'Eligibility varies by category: children under 19 (≤200% FPL), pregnant women (≤198%
+  FPL), parents (≤14% FPL), elderly/disabled (≤74% FPL with limited resources).'
+how_to_apply: Apply online at YourTexasBenefits.com or call 2-1-1.
+cost: Free
+cost_type: free
+website_url: https://www.yourtexasbenefits.com
+phone: 2-1-1
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- healthcare
+locations:
+- id: loc-med-1
+  service_id: svc-medicaid
+  name: Travis County HHS Office
+  address: 1601 Rutherford Ln, Bldg 2
+  city: Austin
+  state: TX
+  zip_code: '78754'
+  latitude: 30.3521
+  longitude: -97.6903
+  phone: 512-834-3117
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued ID
+  is_required: true
+- name: Social Security numbers
+  description: All household members
+  is_required: true
+- name: Proof of income
+  description: Last 30 days
+  is_required: true
+- name: Proof of Texas residency
+  description: Utility bill or lease
+  is_required: true

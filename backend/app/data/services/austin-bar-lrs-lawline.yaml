@@ -1,0 +1,40 @@
+id: svc-austinbar
+name: Austin Bar LRS & LawLine
+slug: austin-bar-lrs-lawline
+provider_name: Austin Bar Association
+description: Lawyer Referral Service connects callers with screened attorneys for a low-cost initial consultation,
+  plus the monthly LawLine offering free brief telephone legal advice.
+eligibility_summary: Open to anyone in Central Texas. LawLine free; LRS consultations $20 for 30 minutes.
+how_to_apply: Call 512-472-8303 weekdays or attend a LawLine evening.
+cost: $20 LRS consult / Free LawLine
+cost_type: flat_fee
+website_url: https://www.austinlrs.com
+phone: 512-472-8303
+email: ''
+languages_offered:
+- en
+- es
+status: active
+categories:
+- legal
+locations:
+- id: loc-ab-1
+  service_id: svc-austinbar
+  name: Austin Bar Association
+  address: 816 Congress Ave, Ste 700
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.27
+  longitude: -97.7427
+  phone: 512-472-8303
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

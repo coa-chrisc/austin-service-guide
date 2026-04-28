@@ -1,0 +1,147 @@
+- id: cat-healthcare
+  name: Healthcare
+  slug: healthcare
+  description: Medical, dental, vision, and mental health services
+  icon: LocalHospital
+  color: '#E53935'
+  service_count: 0
+- id: cat-housing
+  name: Housing
+  slug: housing
+  description: Affordable housing, shelters, and rental assistance
+  icon: Home
+  color: '#1E88E5'
+  service_count: 0
+- id: cat-food
+  name: Food Assistance
+  slug: food
+  description: Food banks, pantries, SNAP, and nutrition programs
+  icon: Restaurant
+  color: '#43A047'
+  service_count: 0
+- id: cat-employment
+  name: Employment
+  slug: employment
+  description: Job training, placement, and career services
+  icon: Work
+  color: '#FB8C00'
+  service_count: 0
+- id: cat-childcare
+  name: Childcare & Family
+  slug: childcare
+  description: Childcare, early education, and family support
+  icon: ChildCare
+  color: '#8E24AA'
+  service_count: 0
+- id: cat-senior
+  name: Senior Services
+  slug: senior
+  description: Programs for older adults and caregivers
+  icon: Elderly
+  color: '#5D4037'
+  service_count: 0
+- id: cat-veterans
+  name: Veterans
+  slug: veterans
+  description: Benefits, healthcare, and transition support for veterans
+  icon: MilitaryTech
+  color: '#546E7A'
+  service_count: 0
+- id: cat-utilities
+  name: Utilities
+  slug: utilities
+  description: Utility bill assistance and weatherization
+  icon: ElectricBolt
+  color: '#00ACC1'
+  service_count: 0
+- id: cat-transportation
+  name: Transportation
+  slug: transportation
+  description: Public transit, reduced-fare, and ride programs
+  icon: DirectionsBus
+  color: '#3949AB'
+  service_count: 0
+- id: cat-legal
+  name: Legal Aid
+  slug: legal
+  description: Free and low-cost legal help
+  icon: Gavel
+  color: '#6D4C41'
+  service_count: 0
+- id: cat-disability
+  name: Disability Services
+  slug: disability
+  description: Accessibility, assistive technology, and support
+  icon: Accessible
+  color: '#7CB342'
+  service_count: 0
+- id: cat-immigration
+  name: Immigration
+  slug: immigration
+  description: Immigration legal aid, citizenship, and refugee services
+  icon: Public
+  color: '#EC407A'
+  service_count: 0
+- id: cat-education
+  name: Education
+  slug: education
+  description: Adult education, GED, ESL, and digital literacy
+  icon: School
+  color: '#26A69A'
+  service_count: 0
+- id: cat-emergency
+  name: Emergency & Crisis
+  slug: emergency
+  description: Crisis intervention, DV shelters, and disaster relief
+  icon: Warning
+  color: '#D32F2F'
+  service_count: 0
+- id: cat-cooling
+  name: Heat Relief & Cooling
+  slug: cooling
+  description: Cooling centers, heat-relief programs, and AC assistance during extreme heat.
+  icon: AcUnit
+  color: '#0288D1'
+  service_count: 0
+- id: cat-schools
+  name: Schools & Youth Mental Health
+  slug: schools
+  description: School-based counseling, CIS, and youth mental-health programs.
+  icon: School
+  color: '#5E35B1'
+  service_count: 0
+- id: cat-refugee
+  name: Refugee & Resettlement
+  slug: refugee
+  description: Resettlement case management, refugee health, and partner coordination.
+  icon: Public
+  color: '#00897B'
+  service_count: 0
+- id: cat-smoking-cessation
+  name: Smoking Cessation
+  slug: smoking_cessation
+  description: Tobacco quit lines, nicotine replacement, and behavioral support to stop smoking or vaping.
+  icon: SmokeFree
+  color: '#6A1B9A'
+  service_count: 0
+- id: cat-nutrition
+  name: Nutrition & Healthy Eating
+  slug: nutrition
+  description: Nutrition education, healthy meal programs, weight management, and dietitian referrals.
+  icon: LocalDining
+  color: '#2E7D32'
+  service_count: 0
+- id: cat-physical-activity
+  name: Physical Activity
+  slug: physical_activity
+  description: Free and low-cost fitness classes, walking groups, parks programs, and movement-based wellness.
+  icon: DirectionsRun
+  color: '#EF6C00'
+  service_count: 0
+- id: cat-mental-health
+  name: Mental Health & Stress
+  slug: mental_health
+  description: Counseling, peer support, mindfulness, sleep clinics, and stress management resources.
+  icon: SelfImprovement
+  color: '#283593'
+  service_count: 0

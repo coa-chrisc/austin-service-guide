@@ -1,0 +1,78 @@
+id: svc-wic
+name: Austin Public Health WIC Program
+slug: austin-public-health-wic
+provider_name: Austin Public Health
+description: The Women, Infants, and Children (WIC) program provides nutritious foods, nutrition education,
+  breastfeeding support, and referrals to healthcare and community services.
+eligibility_summary: Pregnant, postpartum, or breastfeeding women; infants and children under age 5. Must
+  meet income guidelines (≤185% FPL).
+how_to_apply: Call 512-972-5100 to schedule an appointment. Walk-ins accepted at some clinics.
+cost: Free
+cost_type: free
+website_url: https://www.austintexas.gov/department/wic
+phone: 512-972-5100
+email: ''
+languages_offered:
+- en
+- es
+- vi
+- zh
+- ar
+accessibility_features:
+- Wheelchair accessible
+- Interpreter services
+status: active
+categories:
+- food
+- healthcare
+locations:
+- id: loc-wic-1
+  service_id: svc-wic
+  name: Rosewood-Zaragosa WIC Clinic
+  address: 2800 Webberville Rd, Ste 110
+  city: Austin
+  state: TX
+  zip_code: '78702'
+  latitude: 30.262
+  longitude: -97.7104
+  phone: 512-972-5100
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-wic-2
+  service_id: svc-wic
+  name: South Austin WIC Clinic
+  address: 2529 S 1st St
+  city: Austin
+  state: TX
+  zip_code: '78704'
+  latitude: 30.2389
+  longitude: -97.7604
+  phone: 512-972-5100
+  is_primary: false
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+documents:
+- name: Proof of identity
+  description: ID for applicant
+  is_required: true
+- name: Proof of income
+  description: Pay stubs, tax return, or benefit letter
+  is_required: true
+- name: Proof of address
+  description: Utility bill or lease
+  is_required: true

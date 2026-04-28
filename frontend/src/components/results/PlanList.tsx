@@ -11,6 +11,7 @@ import StartHereHero from "./StartHereHero";
 import PlanItemRow from "./PlanItemRow";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
+import { makeResultsT } from "@/lib/resultsI18n";
 
 // Display caps. ≤5 in the primary plan matches working-memory limits for
 // residents in scarcity (Cowan 2001 ~4±1 chunks; Iyengar & Lepper 2000
@@ -24,6 +25,7 @@ interface PlanListProps {
   matches: ServiceMatch[];
   sessionId?: string;
   onShowAll: () => void;
+  language?: string;
 }
 
 export default function PlanList({
@@ -31,8 +33,10 @@ export default function PlanList({
   matches,
   sessionId,
   onShowAll,
+  language,
 }: PlanListProps) {
   const [extendedOpen, setExtendedOpen] = useState(false);
+  const t = makeResultsT(language);
 
   const topItem = items[0];
   const topMatch = topItem
@@ -51,6 +55,7 @@ export default function PlanList({
         topItem={topItem}
         topMatch={topMatch}
         sessionId={sessionId}
+        language={language}
       />
 
       {primary.length > 0 && (
@@ -65,7 +70,7 @@ export default function PlanList({
               mb: 1,
             }}
           >
-            Then these
+            {t("then_these")}
           </Typography>
           <Stack spacing={1}>
             {primary.map((item, idx) => (
@@ -96,8 +101,8 @@ export default function PlanList({
             }}
           >
             {extendedOpen
-              ? "Show fewer options"
-              : `See ${extended.length} more option${extended.length !== 1 ? "s" : ""}`}
+              ? t("show_fewer")
+              : t("see_n_more", { n: extended.length })}
           </Button>
           <Collapse in={extendedOpen} unmountOnExit>
             <Stack spacing={1} sx={{ mt: 1.5 }}>
@@ -123,15 +128,14 @@ export default function PlanList({
               color="text.secondary"
               sx={{ display: "block", mb: 1 }}
             >
-              {beyondExtended} more service{beyondExtended !== 1 ? "s" : ""}{" "}
-              matched
+              {t("n_more_matched", { n: beyondExtended })}
             </Typography>
             <Button
               size="small"
               onClick={onShowAll}
               sx={{ fontWeight: 600, textTransform: "none" }}
             >
-              Browse all matches
+              {t("browse_all")}
             </Button>
           </Box>
         </>

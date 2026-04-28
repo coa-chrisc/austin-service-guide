@@ -1,0 +1,44 @@
+id: svc-afn
+name: Austin Free-Net
+slug: austin-free-net
+provider_name: Austin Free-Net
+description: Digital literacy and workforce readiness programs including free computer classes, internet
+  access, and technology support. Offers bilingual instruction and individualized coaching.
+eligibility_summary: Open to all Austin residents. Priority for low-income individuals and those with
+  limited digital skills.
+how_to_apply: Register at austinfree.net or call 512-236-8750.
+cost: Free
+cost_type: free
+website_url: https://austinfree.net
+phone: 512-236-8750
+email: ''
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Screen reader-compatible training materials
+status: active
+categories:
+- education
+locations:
+- id: loc-afn-1
+  service_id: svc-afn
+  name: Main Office
+  address: 1705 Guadalupe St, Ste 300
+  city: Austin
+  state: TX
+  zip_code: '78701'
+  latitude: 30.2759
+  longitude: -97.7461
+  phone: 512-236-8750
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false

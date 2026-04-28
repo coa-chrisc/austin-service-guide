@@ -1,0 +1,76 @@
+id: svc-ctfb
+name: Central Texas Food Bank
+slug: central-texas-food-bank
+provider_name: Central Texas Food Bank
+description: The largest hunger-relief organization in Central Texas, distributing food to families through
+  a network of partner agencies and mobile pantry sites across Travis County.
+eligibility_summary: Open to any Central Texas resident experiencing food insecurity. No documentation
+  required at mobile pantries.
+how_to_apply: Visit any mobile pantry site — no registration needed. For home delivery, call 512-282-2111.
+cost: Free
+cost_type: free
+website_url: https://www.centraltexasfoodbank.org
+phone: 512-282-2111
+email: info@centraltexasfoodbank.org
+languages_offered:
+- en
+- es
+accessibility_features:
+- Wheelchair accessible
+- Drive-through available
+status: active
+categories:
+- food
+locations:
+- id: loc-ctfb-1
+  service_id: svc-ctfb
+  name: Main Warehouse
+  address: 6500 Metropolis Dr
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.1975
+  longitude: -97.7566
+  phone: 512-282-2111
+  is_primary: true
+  hours:
+    monday: 8:00 AM – 5:00 PM
+    tuesday: 8:00 AM – 5:00 PM
+    wednesday: 8:00 AM – 5:00 PM
+    thursday: 8:00 AM – 5:00 PM
+    friday: 8:00 AM – 5:00 PM
+    saturday: Closed
+    sunday: Closed
+  hours_verified: false
+- id: loc-ctfb-2
+  service_id: svc-ctfb
+  name: Del Valle Mobile Pantry
+  address: 3518 FM 973
+  city: Del Valle
+  state: TX
+  zip_code: '78617'
+  latitude: 30.1744
+  longitude: -97.6269
+  phone: 512-282-2111
+  is_primary: false
+  hours:
+    saturday: 9:00 AM – 11:00 AM
+  hours_verified: false
+- id: loc-ctfb-3
+  service_id: svc-ctfb
+  name: Dove Springs Distribution
+  address: 5106 Village Square Dr
+  city: Austin
+  state: TX
+  zip_code: '78744'
+  latitude: 30.185
+  longitude: -97.735
+  phone: 512-282-2111
+  is_primary: false
+  hours:
+    wednesday: 3:00 PM – 5:00 PM
+  hours_verified: false
+documents:
+- name: Photo ID
+  description: Government-issued photo ID
+  is_required: false
