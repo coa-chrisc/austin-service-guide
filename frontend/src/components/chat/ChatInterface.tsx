@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
@@ -8,7 +8,11 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
+import Tooltip from "@mui/material/Tooltip";
 import SendIcon from "@mui/icons-material/Send";
+import MicIcon from "@mui/icons-material/Mic";
+import MicOffIcon from "@mui/icons-material/MicOff";
+import CallEndIcon from "@mui/icons-material/CallEnd";
 import PhoneIcon from "@mui/icons-material/Phone";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
@@ -16,7 +20,11 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChatBubble from "./ChatBubble";
 import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
-import { getStoredLanguage } from "@/components/common/LanguageSelector";
+import { useRealtimeVoiceSession } from "@/hooks/useRealtimeVoiceSession";
+import {
+  getLanguageLabel,
+  getStoredLanguage,
+} from "@/components/common/LanguageSelector";
 import type { IntakeMessage, IntakeSession, CrisisResource } from "@/types";
 
 interface ChatInterfaceProps {
@@ -40,6 +48,61 @@ export default function ChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const loadCrisisResources = useCallback(async () => {
+    if (crisisDetected) return;
+    setCrisisDetected(true);
+    try {
+      const resources = await getCrisisResources();
+      setCrisisResources(resources);
+    } catch {
+      /* best effort */
+    }
+  }, [crisisDetected]);
+
+  const handleVoiceTranscriptSync = useCallback(
+    (result: {
+      messages: IntakeMessage[];
+      progress_percent: number;
+      is_complete: boolean;
+      crisis_detected: boolean;
+    }) => {
+      if (result.messages.length > 0) {
+        setMessages((prev) => [...prev, ...result.messages]);
+      }
+      setProgress(result.progress_percent);
+      if (result.crisis_detected) {
+        void loadCrisisResources();
+      }
+      if (result.is_complete) {
+        setIsComplete(true);
+      }
+    },
+    [loadCrisisResources],
+  );
+
+  const handleVoiceToolResult = useCallback(
+    (result: {
+      progress_percent: number;
+      is_complete: boolean;
+      crisis_detected: boolean;
+    }) => {
+      setProgress(result.progress_percent);
+      if (result.crisis_detected) {
+        void loadCrisisResources();
+      }
+      if (result.is_complete) {
+        setIsComplete(true);
+      }
+    },
+    [loadCrisisResources],
+  );
+
+  const voice = useRealtimeVoiceSession({
+    sessionId: session.id,
+    onTranscriptSync: handleVoiceTranscriptSync,
+    onToolResult: handleVoiceToolResult,
+  });
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
@@ -62,6 +125,10 @@ export default function ChatInterface({
       setProgress(last.progress_percent);
     }
   }, [session]);
+
+  useEffect(() => {
+    return () => voice.stop();
+  }, [voice.stop]);
 
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -90,13 +157,7 @@ export default function ChatInterface({
       setProgress(response.progress_percent);
 
       if (response.crisis_detected && !crisisDetected) {
-        setCrisisDetected(true);
-        try {
-          const resources = await getCrisisResources();
-          setCrisisResources(resources);
-        } catch {
-          /* best effort */
-        }
+        await loadCrisisResources();
       }
 
       if (response.is_complete) {
@@ -127,6 +188,64 @@ export default function ChatInterface({
   const handleButtonClick = (value: string) => {
     handleSend(value);
   };
+
+  const handleVoiceStart = () => {
+    const language = getStoredLanguage();
+    voice.start(language, messages, getLanguageLabel(language));
+  };
+
+  const voiceLabel = (() => {
+    switch (voice.status) {
+      case "connecting":
+        return "Connecting voice";
+      case "listening":
+        return "Listening";
+      case "thinking":
+        return "Thinking";
+      case "speaking":
+        return "Assistant speaking";
+      case "connected":
+        return "Voice connected";
+      case "error":
+        return "Voice unavailable";
+      default:
+        return "Start voice chat";
+    }
+  })();
+  const voicePulseColor =
+    voice.status === "speaking"
+      ? "secondary.main"
+      : voice.status === "thinking"
+        ? "warning.main"
+        : voice.status === "error"
+          ? "error.main"
+          : "primary.main";
+  const voiceBarsActive =
+    voice.status === "listening" ||
+    voice.status === "speaking" ||
+    voice.status === "thinking";
+  const voiceDetail = (() => {
+    if (voice.status === "error") {
+      return voice.error || "Voice chat is unavailable.";
+    }
+    if (voice.liveTranscript) {
+      return voice.liveTranscript;
+    }
+    switch (voice.status) {
+      case "connecting":
+        return "Opening secure voice session";
+      case "listening":
+        return "Listening now";
+      case "thinking":
+        return "Preparing response";
+      case "speaking":
+        return "Playing response";
+      case "connected":
+        return "Voice session active";
+      default:
+        return "";
+    }
+  })();
 
   return (
     <Box
@@ -390,7 +509,239 @@ export default function ChatInterface({
           bgcolor: "background.paper",
         }}
       >
+        {(voice.isActive || voice.status === "error") && (
+          <Box
+            role="status"
+            aria-label={voiceLabel}
+            sx={{
+              mb: 1.25,
+              px: { xs: 1.25, sm: 1.5 },
+              py: 1.25,
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor:
+                voice.status === "error"
+                  ? "rgba(248, 49, 37, 0.28)"
+                  : "rgba(68, 73, 156, 0.18)",
+              bgcolor: "background.paper",
+              boxShadow:
+                voice.status === "error"
+                  ? "0 4px 14px rgba(248, 49, 37, 0.08)"
+                  : "0 4px 14px rgba(34, 37, 78, 0.08)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: voicePulseColor,
+                position: "relative",
+                flexShrink: 0,
+                boxShadow: "0 2px 8px rgba(34, 37, 78, 0.16)",
+                "&::before": voice.isActive
+                  ? {
+                      content: '""',
+                      position: "absolute",
+                      inset: -6,
+                      borderRadius: "50%",
+                      border: "2px solid",
+                      borderColor: voicePulseColor,
+                      opacity: 0.28,
+                      "@media (prefers-reduced-motion: no-preference)": {
+                        animation: "voicePulse 1.8s ease-out infinite",
+                        "@keyframes voicePulse": {
+                          "0%": {
+                            transform: "scale(0.9)",
+                            opacity: 0.32,
+                          },
+                          "70%": {
+                            transform: "scale(1.28)",
+                            opacity: 0,
+                          },
+                          "100%": {
+                            transform: "scale(1.28)",
+                            opacity: 0,
+                          },
+                        },
+                      },
+                    }
+                  : undefined,
+              }}
+            >
+              {voice.isMuted ? (
+                <MicOffIcon sx={{ fontSize: 18 }} />
+              ) : (
+                <MicIcon sx={{ fontSize: 18 }} />
+              )}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  minWidth: 0,
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 0.75,
+                    py: 0.25,
+                    borderRadius: 1,
+                    bgcolor:
+                      voice.status === "error"
+                        ? "rgba(248, 49, 37, 0.08)"
+                        : "rgba(68, 73, 156, 0.08)",
+                    color:
+                      voice.status === "error" ? "error.main" : "primary.dark",
+                    minWidth: 0,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    fontWeight={800}
+                    sx={{ display: "block", lineHeight: 1.35 }}
+                    noWrap
+                  >
+                    {voiceLabel}
+                  </Typography>
+                </Box>
+                {voiceBarsActive && (
+                  <Box
+                    aria-hidden="true"
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3px",
+                      height: 20,
+                      px: 0.75,
+                      borderRadius: 1,
+                      bgcolor:
+                        voice.status === "speaking"
+                          ? "rgba(0, 159, 77, 0.08)"
+                          : "rgba(68, 73, 156, 0.06)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {[0, 1, 2, 3].map((i) => (
+                      <Box
+                        key={i}
+                        sx={{
+                          width: 3,
+                          height: voice.status === "thinking" ? 5 : 10 + (i % 2) * 5,
+                          borderRadius: 2,
+                          bgcolor: voicePulseColor,
+                          opacity: voice.status === "thinking" ? 0.55 : 0.85,
+                          "@media (prefers-reduced-motion: no-preference)": {
+                            animation:
+                              voice.status === "thinking"
+                                ? "voiceDots 1.1s ease-in-out infinite"
+                                : "voiceWave 0.9s ease-in-out infinite",
+                            animationDelay: `${i * 0.12}s`,
+                            "@keyframes voiceWave": {
+                              "0%, 100%": { transform: "scaleY(0.55)" },
+                              "50%": { transform: "scaleY(1.35)" },
+                            },
+                            "@keyframes voiceDots": {
+                              "0%, 100%": {
+                                transform: "translateY(0)",
+                                opacity: 0.4,
+                              },
+                              "50%": {
+                                transform: "translateY(-3px)",
+                                opacity: 1,
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </Box>
+              <Typography
+                variant="caption"
+                color={voice.status === "error" ? "error.main" : "text.secondary"}
+                sx={{
+                  display: "block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  mt: 0.25,
+                }}
+              >
+                {voiceDetail}
+              </Typography>
+            </Box>
+            {voice.isActive && (
+              <>
+                <Tooltip title={voice.isMuted ? "Unmute microphone" : "Mute microphone"}>
+                  <IconButton
+                    size="small"
+                    onClick={voice.toggleMute}
+                    aria-label={voice.isMuted ? "Unmute microphone" : "Mute microphone"}
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "background.paper",
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    {voice.isMuted ? <MicOffIcon /> : <MicIcon />}
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="End voice chat">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={voice.stop}
+                    aria-label="End voice chat"
+                    sx={{
+                      border: "1px solid",
+                      borderColor: "rgba(248, 49, 37, 0.22)",
+                      bgcolor: "rgba(248, 49, 37, 0.06)",
+                      width: 34,
+                      height: 34,
+                    }}
+                  >
+                    <CallEndIcon />
+                  </IconButton>
+                </Tooltip>
+              </>
+            )}
+          </Box>
+        )}
         <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+          <Tooltip title={voice.isActive ? "Voice chat active" : "Start voice chat"}>
+            <span>
+              <IconButton
+                color={voice.isActive ? "secondary" : "primary"}
+                onClick={handleVoiceStart}
+                disabled={isLoading || isComplete || voice.isActive}
+                aria-label="Start voice chat"
+                sx={{
+                  bgcolor: voice.isActive ? "secondary.main" : "grey.100",
+                  color: voice.isActive ? "white" : "primary.main",
+                  width: 44,
+                  height: 44,
+                  "&:hover": {
+                    bgcolor: voice.isActive ? "secondary.dark" : "grey.200",
+                  },
+                  "&:disabled": { bgcolor: "grey.200", color: "grey.500" },
+                }}
+              >
+                {voice.status === "connecting" ? (
+                  <CircularProgress size={20} />
+                ) : (
+                  <MicIcon sx={{ fontSize: 20 }} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
           <TextField
             inputRef={inputRef}
             fullWidth

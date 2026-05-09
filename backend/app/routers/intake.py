@@ -2,18 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest
 from app.services.ai import (
+    build_realtime_session_config,
+    execute_realtime_tool,
     generate_plan_summary,
     get_application_order,
     get_session,
     process_message,
+    record_realtime_transcript,
     start_persona_session,
     start_session,
 )
@@ -31,6 +35,21 @@ class ShareRequest(BaseModel):
 
 class LoadPersonaRequest(BaseModel):
     persona_id: str = Field(min_length=1, max_length=100)
+
+
+class RealtimeSecretRequest(BaseModel):
+    language: str = "en"
+
+
+class RealtimeToolRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    call_id: str = ""
+
+
+class RealtimeTranscriptRequest(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=5000)
 
 
 @router.get("/personas")
@@ -103,6 +122,93 @@ async def send_message(session_id: str, body: IntakeMessageRequest):
         "session_id": session_id,
         "response": response.model_dump(),
         "status": session.status.value,
+    }
+
+
+@router.post("/{session_id}/realtime/client-secret")
+async def create_realtime_client_secret(
+    session_id: str,
+    body: RealtimeSecretRequest | None = None,
+):
+    """Create an ephemeral Realtime client secret for browser voice intake."""
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.status.value == "completed":
+        raise HTTPException(status_code=400, detail="Session already completed")
+
+    settings = get_settings()
+    if not settings.use_live_ai:
+        raise HTTPException(
+            status_code=400,
+            detail="Realtime voice requires OPENAI_API_KEY and DEMO_MODE=false.",
+        )
+
+    if body and body.language and body.language != session.language:
+        session.language = body.language
+
+    payload = {
+        "expires_after": {
+            "anchor": "created_at",
+            "seconds": settings.openai_realtime_secret_ttl_seconds,
+        },
+        "session": build_realtime_session_config(session),
+    }
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            res = await client.post(
+                "https://api.openai.com/v1/realtime/client_secrets",
+                headers={
+                    "Authorization": f"Bearer {settings.openai_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            res.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        detail = exc.response.text or "OpenAI Realtime client secret failed"
+        raise HTTPException(status_code=502, detail=detail) from exc
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"OpenAI Realtime client secret failed: {type(exc).__name__}",
+        ) from exc
+
+    data = res.json()
+    return {
+        "session_id": session_id,
+        "model": settings.openai_realtime_model,
+        "client_secret": data,
+    }
+
+
+@router.post("/{session_id}/realtime/tool")
+async def run_realtime_tool(session_id: str, body: RealtimeToolRequest):
+    """Execute a Realtime tool call against the current intake session."""
+    session = get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    result = execute_realtime_tool(session_id, body.name, body.arguments)
+    return {
+        "session_id": session_id,
+        "call_id": body.call_id,
+        **result,
+    }
+
+
+@router.post("/{session_id}/realtime/transcript")
+async def sync_realtime_transcript(
+    session_id: str,
+    body: RealtimeTranscriptRequest,
+):
+    """Persist a committed Realtime transcript message into chat history."""
+    result = record_realtime_transcript(session_id, body.role, body.content)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {
+        "session_id": session_id,
+        **result,
     }
 
 
