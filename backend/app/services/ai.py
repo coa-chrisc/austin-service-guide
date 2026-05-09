@@ -765,6 +765,16 @@ def execute_realtime_tool(
             "crisis_detected": False,
         }
 
+    if session.status == IntakeStatus.completed:
+        return {
+            "output": json.dumps({"error": "session already completed"}),
+            "status": session.status.value,
+            "progress_percent": 100,
+            "is_complete": True,
+            "crisis_detected": False,
+            "match_count": len(session.matches),
+        }
+
     allowed = {schema["name"] for schema in _TOOL_SCHEMAS}
     if name not in allowed:
         return {
@@ -776,6 +786,11 @@ def execute_realtime_tool(
         }
 
     output, crisis_detected = _dispatch_tool(session, name, args or {})
+    _append_responses_context(
+        session,
+        "assistant",
+        f"[Realtime tool {name} returned] {output[:1200]}",
+    )
     return {
         "output": output,
         "status": session.status.value,
@@ -787,6 +802,18 @@ def execute_realtime_tool(
         "crisis_detected": crisis_detected,
         "match_count": len(session.matches),
     }
+
+
+def _append_responses_context(
+    session: IntakeSession,
+    role: str,
+    content: str,
+) -> None:
+    """Mirror voice-mode context into the text agent's rolling input."""
+    text = content.strip()
+    if not text:
+        return
+    session.responses_input.append({"role": role, "content": text})
 
 
 def record_realtime_transcript(
@@ -801,14 +828,38 @@ def record_realtime_transcript(
 
     normalized_role = MessageRole.user if role == "user" else MessageRole.assistant
     text = content.strip()
+    completed = session.status == IntakeStatus.completed
+    if completed and normalized_role == MessageRole.user:
+        return {
+            "messages": [],
+            "status": session.status.value,
+            "progress_percent": 100,
+            "is_complete": True,
+            "crisis_detected": False,
+            "error": "session already completed",
+        }
+
     if not text:
         return {
             "messages": [],
             "status": session.status.value,
-            "progress_percent": _estimate_progress(session.extracted_profile),
+            "progress_percent": (
+                100 if completed else _estimate_progress(session.extracted_profile)
+            ),
             "is_complete": session.status == IntakeStatus.completed,
             "crisis_detected": False,
         }
+
+    if completed and normalized_role == MessageRole.assistant:
+        last = session.conversation[-1] if session.conversation else None
+        if last and last.role == MessageRole.assistant and last.content.strip() == text:
+            return {
+                "messages": [],
+                "status": session.status.value,
+                "progress_percent": 100,
+                "is_complete": True,
+                "crisis_detected": False,
+            }
 
     progress = (
         100 if session.status == IntakeStatus.completed
@@ -822,6 +873,7 @@ def record_realtime_transcript(
         crisis_detected=False,
     )
     session.conversation.append(msg)
+    _append_responses_context(session, normalized_role.value, text)
 
     crisis_msg: IntakeMessage | None = None
     crisis_detected = False
@@ -831,6 +883,7 @@ def record_realtime_transcript(
             crisis_detected = True
             session.extracted_profile.crisis_indicators.append(crisis_kind)
             crisis_msg = _crisis_response(session)
+            _append_responses_context(session, crisis_msg.role.value, crisis_msg.content)
 
     messages = [msg.model_dump()]
     if crisis_msg is not None:

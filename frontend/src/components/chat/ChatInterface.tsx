@@ -131,7 +131,7 @@ export default function ChatInterface({
   }, [voice.stop]);
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || voice.isActive) return;
 
     const userMsg: IntakeMessage = {
       role: "user",
@@ -748,12 +748,16 @@ export default function ChatInterface({
             multiline
             maxRows={4}
             placeholder={
-              isComplete ? "Intake complete" : "Type your message..."
+              isComplete
+                ? "Intake complete"
+                : voice.isActive
+                  ? "Voice chat active"
+                  : "Type your message..."
             }
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isLoading || isComplete}
+            disabled={isLoading || isComplete || voice.isActive}
             variant="outlined"
             size="small"
             sx={{
@@ -766,7 +770,9 @@ export default function ChatInterface({
           <IconButton
             color="primary"
             onClick={() => handleSend(inputValue)}
-            disabled={!inputValue.trim() || isLoading || isComplete}
+            disabled={
+              !inputValue.trim() || isLoading || isComplete || voice.isActive
+            }
             aria-label="Send message"
             sx={{
               bgcolor: "primary.main",
