@@ -148,6 +148,66 @@ export async function sendIntakeMessage(
   return raw.response;
 }
 
+export interface RealtimeClientSecretResponse {
+  session_id: string;
+  model: string;
+  client_secret: {
+    value: string;
+    expires_at: number;
+    session: { id: string };
+  };
+}
+
+export function createRealtimeClientSecret(sessionId: string, language = "en") {
+  return apiRequest<RealtimeClientSecretResponse>(
+    "POST",
+    `/api/v1/intake/${sessionId}/realtime/client-secret`,
+    { language },
+  );
+}
+
+export interface RealtimeToolResult {
+  session_id: string;
+  call_id: string;
+  output: string;
+  status: string;
+  progress_percent: number;
+  is_complete: boolean;
+  crisis_detected: boolean;
+  match_count?: number;
+}
+
+export function executeRealtimeTool(
+  sessionId: string,
+  body: { name: string; arguments: Record<string, unknown>; call_id: string },
+) {
+  return apiRequest<RealtimeToolResult>(
+    "POST",
+    `/api/v1/intake/${sessionId}/realtime/tool`,
+    body,
+  );
+}
+
+export interface RealtimeTranscriptResult {
+  session_id: string;
+  messages: IntakeMessage[];
+  status: string;
+  progress_percent: number;
+  is_complete: boolean;
+  crisis_detected: boolean;
+}
+
+export function syncRealtimeTranscript(
+  sessionId: string,
+  body: { role: "user" | "assistant"; content: string },
+) {
+  return apiRequest<RealtimeTranscriptResult>(
+    "POST",
+    `/api/v1/intake/${sessionId}/realtime/transcript`,
+    body,
+  );
+}
+
 export interface ApplicationOrderItem {
   rank: number;
   service_id: string;

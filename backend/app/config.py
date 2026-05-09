@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5.5-2026-04-23"
     openai_reasoning_effort: str = "medium"  # minimal | low | medium | high
     openai_max_tool_iterations: int = 6
+    openai_realtime_model: str = "gpt-realtime-2"
+    openai_realtime_voice: str = "marin"
+    openai_realtime_transcription_model: str = "gpt-4o-mini-transcribe"
+    openai_realtime_secret_ttl_seconds: int = 600
 
     # ── Azure OpenAI (legacy / optional) ───────────────────────────
     azure_openai_endpoint: str = ""

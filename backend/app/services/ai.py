@@ -41,6 +41,18 @@ _plan_tasks: dict[str, "asyncio.Task[dict]"] = {}
 _plan_cache: dict[str, dict] = {}
 
 
+_LANGUAGE_NAMES: dict[str, str] = {
+    "en": "English",
+    "es": "Spanish",
+    "zh": "Mandarin Chinese",
+    "hi": "Hindi",
+    "ar": "Arabic",
+    "vi": "Vietnamese",
+    "fr": "French",
+    "ko": "Korean",
+}
+
+
 # ── Demo conversation steps (used when no API key) ───────────────────
 
 _DEMO_STEPS: list[dict[str, Any]] = [
@@ -418,12 +430,24 @@ _TOOL_SCHEMAS: list[dict[str, Any]] = [
 ]
 
 
+def get_realtime_tool_schemas() -> list[dict[str, Any]]:
+    """Return tool schemas in the shape accepted by Realtime sessions."""
+    return [
+        {k: v for k, v in schema.items() if k != "strict"}
+        for schema in _TOOL_SCHEMAS
+    ]
+
+
 def _build_instructions(session: IntakeSession) -> str:
     """System instructions sent every Responses API call."""
+    lang_code = (session.language or "en").split("-")[0].lower()
+    lang_name = _LANGUAGE_NAMES.get(lang_code, session.language or "English")
     lang_note = (
-        f"The resident's preferred language is '{session.language}'. "
-        "Always respond in that language. If they switch languages mid-"
-        "conversation, call set_language and switch with them."
+        f"The resident's selected language is {lang_name} "
+        f"(ISO code '{session.language or 'en'}'). Always greet and respond "
+        "in that language unless the resident clearly uses or asks for a "
+        "different language. If they switch languages mid-conversation, call "
+        "set_language and switch with them."
     )
 
     profile = session.extracted_profile
@@ -509,6 +533,65 @@ def _build_instructions(session: IntakeSession) -> str:
         base += "\n\n--- Persona context ---\n" + session.persona_note
 
     return base
+
+
+def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
+    """Build a Realtime session config that mirrors the text intake agent."""
+    settings = get_settings()
+    instructions = (
+        _build_instructions(session)
+        + "\n\n--- Voice mode ---\n"
+        "You are speaking with the resident in a live voice conversation. "
+        "Keep spoken replies concise and natural, usually one or two short "
+        "sentences before asking the next question. Use tools silently as "
+        "facts become available. When you have enough information, call "
+        "complete_intake, then tell the resident their plan is ready and "
+        "that they can review it on screen. When voice mode starts, give a "
+        "brief spoken greeting in the resident's selected language and invite "
+        "them to say what they need help with."
+    )
+    lang = (session.language or "en").split("-")[0].lower()
+    transcription: dict[str, Any] = {
+        "model": settings.openai_realtime_transcription_model,
+        "prompt": (
+            "Austin Service Guide intake conversation. Residents may discuss "
+            "housing, food, healthcare, employment, childcare, legal help, "
+            "transportation, benefits, zip codes, income, and household size."
+        ),
+    }
+    if lang and lang != "en":
+        transcription["language"] = lang
+
+    return {
+        "type": "realtime",
+        "model": settings.openai_realtime_model,
+        "instructions": instructions,
+        "audio": {
+            "input": {
+                "noise_reduction": {"type": "near_field"},
+                "transcription": transcription,
+                "turn_detection": {
+                    "type": "server_vad",
+                    "create_response": True,
+                    "interrupt_response": True,
+                    "threshold": 0.5,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 500,
+                },
+            },
+            "output": {
+                "voice": settings.openai_realtime_voice,
+            },
+        },
+        "output_modalities": ["audio"],
+        "tools": get_realtime_tool_schemas(),
+        "tool_choice": "auto",
+        "max_output_tokens": 1200,
+        "tracing": {
+            "workflow_name": "Austin Service Guide voice intake",
+            "group_id": session.id,
+        },
+    }
 
 
 async def _live_greeting(session: IntakeSession) -> str:
@@ -664,6 +747,155 @@ def _dispatch_tool(
     except Exception as exc:  # noqa: BLE001
         log.exception("Tool %s failed", name)
         return json.dumps({"error": f"{type(exc).__name__}: {exc}"}), False
+
+
+def execute_realtime_tool(
+    session_id: str,
+    name: str,
+    args: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Execute a Realtime tool call against the same session state as text chat."""
+    session = _sessions.get(session_id)
+    if not session:
+        return {
+            "output": json.dumps({"error": "session not found"}),
+            "status": "not_found",
+            "progress_percent": 0,
+            "is_complete": True,
+            "crisis_detected": False,
+        }
+
+    if session.status == IntakeStatus.completed:
+        return {
+            "output": json.dumps({"error": "session already completed"}),
+            "status": session.status.value,
+            "progress_percent": 100,
+            "is_complete": True,
+            "crisis_detected": False,
+            "match_count": len(session.matches),
+        }
+
+    allowed = {schema["name"] for schema in _TOOL_SCHEMAS}
+    if name not in allowed:
+        return {
+            "output": json.dumps({"error": f"unknown tool: {name}"}),
+            "status": session.status.value,
+            "progress_percent": _estimate_progress(session.extracted_profile),
+            "is_complete": session.status == IntakeStatus.completed,
+            "crisis_detected": False,
+        }
+
+    output, crisis_detected = _dispatch_tool(session, name, args or {})
+    _append_responses_context(
+        session,
+        "assistant",
+        f"[Realtime tool {name} returned] {output[:1200]}",
+    )
+    return {
+        "output": output,
+        "status": session.status.value,
+        "progress_percent": (
+            100 if session.status == IntakeStatus.completed
+            else _estimate_progress(session.extracted_profile)
+        ),
+        "is_complete": session.status == IntakeStatus.completed,
+        "crisis_detected": crisis_detected,
+        "match_count": len(session.matches),
+    }
+
+
+def _append_responses_context(
+    session: IntakeSession,
+    role: str,
+    content: str,
+) -> None:
+    """Mirror voice-mode context into the text agent's rolling input."""
+    text = content.strip()
+    if not text:
+        return
+    session.responses_input.append({"role": role, "content": text})
+
+
+def record_realtime_transcript(
+    session_id: str,
+    role: str,
+    content: str,
+) -> dict[str, Any] | None:
+    """Persist a committed Realtime transcript turn into visible chat history."""
+    session = _sessions.get(session_id)
+    if not session:
+        return None
+
+    normalized_role = MessageRole.user if role == "user" else MessageRole.assistant
+    text = content.strip()
+    completed = session.status == IntakeStatus.completed
+    if completed and normalized_role == MessageRole.user:
+        return {
+            "messages": [],
+            "status": session.status.value,
+            "progress_percent": 100,
+            "is_complete": True,
+            "crisis_detected": False,
+            "error": "session already completed",
+        }
+
+    if not text:
+        return {
+            "messages": [],
+            "status": session.status.value,
+            "progress_percent": (
+                100 if completed else _estimate_progress(session.extracted_profile)
+            ),
+            "is_complete": session.status == IntakeStatus.completed,
+            "crisis_detected": False,
+        }
+
+    if completed and normalized_role == MessageRole.assistant:
+        last = session.conversation[-1] if session.conversation else None
+        if last and last.role == MessageRole.assistant and last.content.strip() == text:
+            return {
+                "messages": [],
+                "status": session.status.value,
+                "progress_percent": 100,
+                "is_complete": True,
+                "crisis_detected": False,
+            }
+
+    progress = (
+        100 if session.status == IntakeStatus.completed
+        else _estimate_progress(session.extracted_profile)
+    )
+    msg = IntakeMessage(
+        role=normalized_role,
+        content=text,
+        progress_percent=progress,
+        is_complete=session.status == IntakeStatus.completed,
+        crisis_detected=False,
+    )
+    session.conversation.append(msg)
+    _append_responses_context(session, normalized_role.value, text)
+
+    crisis_msg: IntakeMessage | None = None
+    crisis_detected = False
+    if normalized_role == MessageRole.user:
+        crisis_kind = _check_crisis(text)
+        if crisis_kind:
+            crisis_detected = True
+            session.extracted_profile.crisis_indicators.append(crisis_kind)
+            crisis_msg = _crisis_response(session)
+            _append_responses_context(session, crisis_msg.role.value, crisis_msg.content)
+
+    messages = [msg.model_dump()]
+    if crisis_msg is not None:
+        messages.append(crisis_msg.model_dump())
+
+    return {
+        "messages": messages,
+        "status": session.status.value,
+        "progress_percent": progress,
+        "is_complete": session.status == IntakeStatus.completed,
+        "crisis_detected": crisis_detected,
+    }
 
 
 def _tool_search_services(args: dict[str, Any]) -> str:
