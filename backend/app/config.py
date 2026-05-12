@@ -16,9 +16,12 @@ class Settings(BaseSettings):
     openai_reasoning_effort: str = "medium"  # minimal | low | medium | high
     openai_max_tool_iterations: int = 6
     openai_realtime_model: str = "gpt-realtime-2"
+    openai_realtime_reasoning_effort: str = "medium"
     openai_realtime_voice: str = "marin"
     openai_realtime_transcription_model: str = "gpt-4o-mini-transcribe"
     openai_realtime_secret_ttl_seconds: int = 600
+    realtime_debug_log_enabled: bool = False
+    realtime_debug_log_path: str = "logs/realtime_debug.jsonl"
 
     # ── Azure OpenAI (legacy / optional) ───────────────────────────
     azure_openai_endpoint: str = ""
@@ -40,8 +43,11 @@ class Settings(BaseSettings):
     # Public origin used to build shareable URLs (QR codes, SMS links)
     public_origin: str = "http://localhost:5173"
 
-    # CORS origins allowed by the API
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    # CORS origins allowed by the API. Keep in sync with backend/.env.example.
+    cors_origins: str = (
+        "http://localhost:5173,http://localhost:5174,http://localhost:3000,"
+        "http://127.0.0.1:5173,http://127.0.0.1:5174"
+    )
 
     # App metadata
     app_name: str = "Austin Service Guide API"

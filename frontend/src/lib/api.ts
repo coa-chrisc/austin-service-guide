@@ -39,23 +39,39 @@ async function apiRequest<T>(
   method: string,
   path: string,
   body?: unknown,
+  options: { timeoutMs?: number } = {},
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
   const headers: Record<string, string> = {};
+  const controller =
+    options.timeoutMs && options.timeoutMs > 0 ? new AbortController() : null;
+  const timeoutId = controller
+    ? window.setTimeout(() => controller.abort(), options.timeoutMs)
+    : null;
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    throw new ApiError(res.status, text);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller?.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "Unknown error");
+      throw new ApiError(res.status, text);
+    }
+    if (res.status === 204) return undefined as unknown as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(408, `Request timed out after ${options.timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
   }
-  if (res.status === 204) return undefined as unknown as T;
-  return res.json() as Promise<T>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -98,10 +114,12 @@ export async function startIntake(
   language = "en",
   lifeEvent?: string,
   focus?: string[],
+  mode: "text" | "voice" = "text",
 ): Promise<IntakeSession> {
   const body: Record<string, string | string[]> = { language };
   if (lifeEvent) body.life_event = lifeEvent;
   if (focus && focus.length > 0) body.focus = focus;
+  body.mode = mode;
 
   const raw = await apiRequest<{
     session_id: string;
@@ -151,6 +169,7 @@ export async function sendIntakeMessage(
 export interface RealtimeClientSecretResponse {
   session_id: string;
   model: string;
+  session_config: Record<string, unknown>;
   client_secret: {
     value: string;
     expires_at: number;
@@ -185,6 +204,7 @@ export function executeRealtimeTool(
     "POST",
     `/api/v1/intake/${sessionId}/realtime/tool`,
     body,
+    { timeoutMs: 20000 },
   );
 }
 
@@ -205,6 +225,44 @@ export function syncRealtimeTranscript(
     "POST",
     `/api/v1/intake/${sessionId}/realtime/transcript`,
     body,
+    { timeoutMs: 12000 },
+  );
+}
+
+export interface RealtimeDebugEvent {
+  seq: number;
+  timestamp: string;
+  event: string;
+  source: string;
+  status: string | null;
+  detail: Record<string, unknown>;
+}
+
+export function logRealtimeDebugEvent(
+  sessionId: string,
+  body: {
+    event: string;
+    source?: string;
+    status?: string;
+    detail?: Record<string, unknown>;
+  },
+) {
+  return apiRequest<{ ok: boolean; event: RealtimeDebugEvent }>(
+    "POST",
+    `/api/v1/intake/${sessionId}/realtime/debug`,
+    {
+      source: "client",
+      detail: {},
+      ...body,
+    },
+    { timeoutMs: 5000 },
+  );
+}
+
+export function getRealtimeDebugEvents(sessionId: string, limit = 200) {
+  return apiRequest<{ session_id: string; events: RealtimeDebugEvent[] }>(
+    "GET",
+    `/api/v1/intake/${sessionId}/realtime/debug?limit=${limit}`,
   );
 }
 

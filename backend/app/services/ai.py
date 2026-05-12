@@ -2,7 +2,7 @@
 
 Live mode (default when ``OPENAI_API_KEY`` is set and ``DEMO_MODE`` is false)
 runs an agent loop against the OpenAI **Responses API** with ``gpt-5.5`` at
-``reasoning_effort="medium"``. The model has seven tools available to query
+``reasoning_effort="medium"``. The model has eight tools available to query
 the catalog, persist profile fields, switch language, and finalize matches.
 
 Fallback mode (no key, or ``DEMO_MODE=true``) uses a scripted nine-step
@@ -15,6 +15,9 @@ import asyncio
 import json
 import logging
 import re
+from collections import deque
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from app.config import get_settings
@@ -40,6 +43,16 @@ _sessions: dict[str, IntakeSession] = {}
 _plan_tasks: dict[str, "asyncio.Task[dict]"] = {}
 _plan_cache: dict[str, dict] = {}
 
+# Bounded in-memory debug traces for Realtime voice sessions. This is
+# intentionally lightweight for local/dev troubleshooting; production can
+# swap this behind the same helpers for structured log storage.
+_MAX_REALTIME_DEBUG_EVENTS = 500
+_MAX_REALTIME_DEBUG_TEXT = 1000
+_MAX_REALTIME_DEBUG_FILE_READ = 10000
+_BACKEND_ROOT = Path(__file__).resolve().parents[2]
+_realtime_debug_logs: dict[str, list[dict[str, Any]]] = {}
+_realtime_debug_seq: dict[str, int] = {}
+
 
 _LANGUAGE_NAMES: dict[str, str] = {
     "en": "English",
@@ -51,6 +64,262 @@ _LANGUAGE_NAMES: dict[str, str] = {
     "fr": "French",
     "ko": "Korean",
 }
+
+
+def _clip_debug_text(value: str, limit: int = _MAX_REALTIME_DEBUG_TEXT) -> str:
+    text = value.strip()
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}... [truncated {len(text) - limit} chars]"
+
+
+def _sanitize_debug_value(value: Any, depth: int = 0) -> Any:
+    """Keep debug payloads useful without letting them become huge."""
+    if depth > 4:
+        return _clip_debug_text(str(value), 300)
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, str):
+        return _clip_debug_text(value)
+    if isinstance(value, dict):
+        cleaned: dict[str, Any] = {}
+        for idx, (key, child) in enumerate(value.items()):
+            if idx >= 50:
+                cleaned["_truncated_keys"] = len(value) - idx
+                break
+            cleaned[_clip_debug_text(str(key), 120)] = _sanitize_debug_value(
+                child,
+                depth + 1,
+            )
+        return cleaned
+    if isinstance(value, (list, tuple, set)):
+        items = list(value)
+        cleaned_items = [_sanitize_debug_value(item, depth + 1) for item in items[:40]]
+        if len(items) > 40:
+            cleaned_items.append({"_truncated_items": len(items) - 40})
+        return cleaned_items
+    return _clip_debug_text(str(value))
+
+
+def _realtime_debug_log_path() -> Path:
+    configured = get_settings().realtime_debug_log_path
+    path = Path(configured)
+    if not path.is_absolute():
+        path = _BACKEND_ROOT / path
+    return path
+
+
+def _append_realtime_debug_log(entry: dict[str, Any]) -> None:
+    if not get_settings().realtime_debug_log_enabled:
+        return
+    try:
+        path = _realtime_debug_log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:  # noqa: BLE001
+        log.exception("Failed to write Realtime debug log")
+
+
+def _read_realtime_debug_file(
+    session_id: str | None = None,
+    limit: int = _MAX_REALTIME_DEBUG_FILE_READ,
+) -> list[dict[str, Any]]:
+    safe_limit = max(1, min(_MAX_REALTIME_DEBUG_FILE_READ, limit))
+    path = _realtime_debug_log_path()
+    if not path.exists():
+        return []
+
+    events: deque[dict[str, Any]] = deque(maxlen=safe_limit)
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(entry, dict):
+                    continue
+                if session_id and entry.get("session_id") != session_id:
+                    continue
+                events.append(entry)
+    except OSError:
+        log.exception("Failed to read Realtime debug log")
+        return []
+    return list(events)
+
+
+def record_realtime_debug_event(
+    session_id: str,
+    event: dict[str, Any],
+) -> dict[str, Any]:
+    """Store a bounded Realtime troubleshooting event for an intake session.
+
+    Short-circuits entirely when REALTIME_DEBUG_LOG_ENABLED is false so the
+    default-off privacy posture also covers in-memory storage and log lines.
+    """
+    if not get_settings().realtime_debug_log_enabled:
+        return {}
+    _realtime_debug_seq[session_id] = _realtime_debug_seq.get(session_id, 0) + 1
+    detail = event.get("detail", {})
+    entry = {
+        "session_id": session_id,
+        "seq": _realtime_debug_seq[session_id],
+        "timestamp": f"{datetime.utcnow().isoformat()}Z",
+        "event": _clip_debug_text(str(event.get("event") or event.get("type") or "event"), 120),
+        "source": _clip_debug_text(str(event.get("source") or "server"), 40),
+        "status": (
+            _clip_debug_text(str(event.get("status")), 80)
+            if event.get("status") is not None
+            else None
+        ),
+        "detail": _sanitize_debug_value(detail if isinstance(detail, dict) else {"value": detail}),
+    }
+    bucket = _realtime_debug_logs.setdefault(session_id, [])
+    bucket.append(entry)
+    if len(bucket) > _MAX_REALTIME_DEBUG_EVENTS:
+        del bucket[: len(bucket) - _MAX_REALTIME_DEBUG_EVENTS]
+    _append_realtime_debug_log(entry)
+    log.info(
+        "Realtime debug session=%s seq=%s event=%s source=%s status=%s",
+        session_id,
+        entry["seq"],
+        entry["event"],
+        entry["source"],
+        entry["status"],
+    )
+    return entry
+
+
+def get_realtime_debug_events(session_id: str, limit: int = 200) -> list[dict[str, Any]]:
+    """Return the latest Realtime troubleshooting events for a session."""
+    safe_limit = max(1, min(500, limit))
+    file_events = _read_realtime_debug_file(session_id=session_id, limit=safe_limit)
+    if file_events:
+        return file_events[-safe_limit:]
+    return list(_realtime_debug_logs.get(session_id, [])[-safe_limit:])
+
+
+def get_realtime_debug_sessions(limit: int = 20) -> list[dict[str, Any]]:
+    """Return recent Realtime sessions with enough signal to pick a trace."""
+    safe_limit = max(1, min(100, limit))
+    events = _read_realtime_debug_file(limit=_MAX_REALTIME_DEBUG_FILE_READ)
+    seen = {
+        (
+            entry.get("session_id"),
+            entry.get("seq"),
+            entry.get("timestamp"),
+            entry.get("event"),
+            entry.get("source"),
+        )
+        for entry in events
+    }
+    for session_id, bucket in _realtime_debug_logs.items():
+        for entry in bucket:
+            identity = (
+                session_id,
+                entry.get("seq"),
+                entry.get("timestamp"),
+                entry.get("event"),
+                entry.get("source"),
+            )
+            if identity not in seen:
+                events.append(entry)
+                seen.add(identity)
+
+    sessions: dict[str, dict[str, Any]] = {}
+    for entry in events:
+        session_id = str(entry.get("session_id") or "")
+        if not session_id:
+            continue
+        event_name = str(entry.get("event") or "")
+        status = entry.get("status")
+        timestamp = str(entry.get("timestamp") or "")
+        detail = entry.get("detail") if isinstance(entry.get("detail"), dict) else {}
+        summary = sessions.setdefault(
+            session_id,
+            {
+                "session_id": session_id,
+                "first_timestamp": timestamp,
+                "last_timestamp": timestamp,
+                "event_count": 0,
+                "last_event": event_name,
+                "last_status": status,
+                "has_error": False,
+                "has_thinking_timeout": False,
+                "has_completion": False,
+                "response_create_count": 0,
+                "tool_call_count": 0,
+                "last_progress_percent": None,
+            },
+        )
+        summary["event_count"] += 1
+        if timestamp and (
+            not summary["first_timestamp"] or timestamp < summary["first_timestamp"]
+        ):
+            summary["first_timestamp"] = timestamp
+        if timestamp and (
+            not summary["last_timestamp"] or timestamp >= summary["last_timestamp"]
+        ):
+            summary["last_timestamp"] = timestamp
+            summary["last_event"] = event_name
+            summary["last_status"] = status
+        if "error" in event_name.lower() or status in {"error", "failed", "not_found"}:
+            summary["has_error"] = True
+        if event_name == "thinking_timeout":
+            summary["has_thinking_timeout"] = True
+        if event_name in {
+            "completion_finish_scheduled",
+            "completion_finish_from_tool_result",
+            "completion_voice_timeout_finalized",
+        }:
+            summary["has_completion"] = True
+        if event_name in {"response_create_sent", "startup_response_create_sent"}:
+            summary["response_create_count"] += 1
+        if event_name == "tool_call_completed":
+            summary["tool_call_count"] += 1
+        progress = detail.get("progress_percent") if detail else None
+        if isinstance(progress, (int, float)):
+            summary["last_progress_percent"] = int(progress)
+
+    return sorted(
+        sessions.values(),
+        key=lambda item: str(item.get("last_timestamp") or ""),
+        reverse=True,
+    )[:safe_limit]
+
+
+def _summarize_realtime_tool_output(output: str) -> dict[str, Any]:
+    try:
+        parsed = json.loads(output)
+    except json.JSONDecodeError:
+        return {"text": _clip_debug_text(output, 500)}
+
+    if not isinstance(parsed, dict):
+        return {"value": _sanitize_debug_value(parsed)}
+
+    summary: dict[str, Any] = {
+        "keys": sorted(str(key) for key in parsed.keys())[:20],
+    }
+    for key in (
+        "error",
+        "deferred",
+        "action",
+        "missing_fields",
+        "next_question",
+        "wait",
+        "no_response",
+        "count",
+        "match_count",
+        "summary",
+    ):
+        if key in parsed:
+            summary[key] = _sanitize_debug_value(parsed[key])
+    if "results" in parsed and isinstance(parsed["results"], list):
+        summary["result_count"] = len(parsed["results"])
+    return summary
 
 
 # ── Demo conversation steps (used when no API key) ───────────────────
@@ -90,6 +359,7 @@ async def start_session(
     language: str = "en",
     life_event: str | None = None,
     focus: list[str] | None = None,
+    mode: str = "text",
 ) -> IntakeSession:
     """Create a new intake session and seed the greeting.
 
@@ -100,6 +370,8 @@ async def start_session(
     session = IntakeSession(language=language)
     if life_event:
         session.extracted_profile.immediate_needs = _needs_from_life_event(life_event)
+        session.persona_note = _life_event_context(life_event)
+        session.entry_source = f"life-event:{_normalize_life_event(life_event)}"
     if focus:
         cleaned = [c.strip() for c in focus if c and c.strip()]
         if cleaned:
@@ -160,8 +432,20 @@ async def process_message(
     crisis_kind = _check_crisis(user_text)
     if crisis_kind:
         session.extracted_profile.crisis_indicators.append(crisis_kind)
-        if crisis_kind:
-            return _crisis_response(session)
+        crisis_msg = _crisis_response(session)
+        # Mirror the exchange into the Responses-API context so a subsequent
+        # turn (e.g., "Continue finding services") has the prior crisis
+        # context. Otherwise _responses_flow would resume with no record of
+        # what was discussed.
+        session.responses_input.append({"role": "user", "content": user_text})
+        session.responses_input.append(
+            {"role": "assistant", "content": crisis_msg.content}
+        )
+        return crisis_msg
+
+    scenario_followup = _scenario_first_followup(session, user_text)
+    if scenario_followup is not None:
+        return scenario_followup
 
     if settings.use_live_ai:
         try:
@@ -427,6 +711,18 @@ _TOOL_SCHEMAS: list[dict[str, Any]] = [
         "parameters": {"type": "object", "properties": {}, "additionalProperties": False, "required": []},
         "strict": True,
     },
+    {
+        "type": "function",
+        "name": "wait_for_user",
+        "description": (
+            "Realtime voice only: call this when the latest audio should not "
+            "receive a spoken response, such as silence, background noise, "
+            "TV or hold audio, side conversation, or speech not addressed to "
+            "the assistant. This ends the turn without speaking."
+        ),
+        "parameters": {"type": "object", "properties": {}, "additionalProperties": False, "required": []},
+        "strict": True,
+    },
 ]
 
 
@@ -505,7 +801,24 @@ def _build_instructions(session: IntakeSession) -> str:
         "  - extract_profile: persist facts as you learn them\n"
         "  - find_matching_services: run the matching engine\n"
         "  - set_language: switch language codes mid-conversation\n"
-        "  - complete_intake: finalize and produce the summary\n\n"
+        "  - complete_intake: finalize and produce the summary\n"
+        "  - wait_for_user: realtime voice only; stay quiet when audio is "
+        "not addressed to you\n\n"
+        "Tool rules:\n"
+        "  - Use only tools that are explicitly listed here. Never invent, "
+        "simulate, or claim results from an unavailable tool.\n"
+        "  - Only say a lookup, save, or plan step is complete after the "
+        "relevant tool succeeds. If a tool fails, explain briefly in plain "
+        "language and choose a useful next step; do not expose raw errors.\n"
+        "  - If a tool returns deferred=true or missing_fields, do not mention "
+        "services or the tool. Ask the next_question from the tool result in "
+        "plain language and continue the interview.\n"
+        "  - search_services, extract_profile, find_matching_services, "
+        "set_language, and complete_intake are low-risk intake tools. Do "
+        "not ask for confirmation before calling them when intent and "
+        "required fields are clear.\n"
+        "  - get_crisis_resources is urgent and should be called immediately "
+        "for suicidal thoughts, domestic violence, or immediate danger.\n\n"
         "Rules:\n"
         "  - Call extract_profile every time you learn a new fact. "
         "When the resident describes someone else's situation (parent of a "
@@ -522,6 +835,11 @@ def _build_instructions(session: IntakeSession) -> str:
         "employment, income, insurance, plus stated needs), call "
         "complete_intake and weave the returned summary into a warm "
         "closing message.\n"
+        "  - If the resident names housing, rent, eviction, homelessness, "
+        "shelter, or veteran housing and housing_situation is not known yet, "
+        "your next resident-facing question must ask about their current "
+        "housing situation before asking for zip code, income, insurance, or "
+        "services.\n"
         "  - The catalog is English-canonical: search in English even if "
         "the conversation is in another language; translate results when "
         "you cite them.\n"
@@ -530,7 +848,13 @@ def _build_instructions(session: IntakeSession) -> str:
     )
 
     if session.persona_note:
-        base += "\n\n--- Persona context ---\n" + session.persona_note
+        base += (
+            "\n\n--- Active scenario contract: highest priority ---\n"
+            "This contract overrides the generic intake order. Follow the "
+            "selected scenario path before moving into generic eligibility "
+            "questions, unless there is an immediate safety issue.\n"
+            + session.persona_note
+        )
 
     return base
 
@@ -541,14 +865,68 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
     instructions = (
         _build_instructions(session)
         + "\n\n--- Voice mode ---\n"
-        "You are speaking with the resident in a live voice conversation. "
-        "Keep spoken replies concise and natural, usually one or two short "
-        "sentences before asking the next question. Use tools silently as "
-        "facts become available. When you have enough information, call "
-        "complete_intake, then tell the resident their plan is ready and "
-        "that they can review it on screen. When voice mode starts, give a "
-        "brief spoken greeting in the resident's selected language and invite "
-        "them to say what they need help with."
+        "You are speaking with the resident in a live voice conversation.\n\n"
+        "Speech style:\n"
+        "  - Sound calm, direct, and human. Keep most replies to one or two "
+        "short spoken sentences, then ask one clear question.\n"
+        "  - Do not end a turn with only an acknowledgement. Unless the "
+        "intake is complete, always ask the next needed intake question.\n"
+        "  - Avoid long lists while speaking. If there are multiple items, "
+        "summarize the gist and let the on-screen plan carry the details.\n"
+        "  - Read numbers naturally for speech: say zip codes as individual "
+        "digits, phone numbers in chunks, and money in plain words.\n\n"
+        "Language behavior:\n"
+        "  - Start in the resident's selected language from the session. "
+        "If they naturally speak another language, briefly acknowledge the "
+        "switch, call set_language with the ISO code, and continue in that "
+        "language.\n"
+        "  - Search the service catalog in English, but translate any spoken "
+        "summary back into the resident's current language.\n\n"
+        "Realtime tool behavior:\n"
+        "  - Tool-first rule: when a tool is needed, call the tool before "
+        "speaking. Do not speak a partial answer and then call a tool in "
+        "the same turn.\n"
+        "  - After tool results return, give at most one short spoken "
+        "response that advances the intake with the next missing question. "
+        "Do not restate the same empathy, acknowledgement, or question twice.\n"
+        "  - Use extract_profile silently as facts become available; do not "
+        "announce that you are saving profile fields. After extract_profile "
+        "returns, ask the next missing intake question.\n"
+        "  - Use search_services or find_matching_services only when it helps "
+        "the next answer and only after you have enough basics to make the "
+        "search useful. For housing, rent, eviction, homelessness, or veteran "
+        "housing needs, collect current housing situation before lookup. For "
+        "all service lookup, collect the full core interview first: housing, "
+        "zip code, household size, employment, income, and insurance. Do not "
+        "say you are checking options until you are actually calling a "
+        "service-search, matching, or completion tool. Before that, ask the "
+        "next missing intake question instead. Do not mention services that "
+        "were not returned by tools.\n"
+        "  - Call complete_intake once you have the stated needs and enough "
+        "profile information for useful matches: household, zip, housing, "
+        "employment, income, insurance, plus any special risk signals that "
+        "came up.\n"
+        "  - After complete_intake returns, give a short closing message: "
+        "say the plan is ready, mention one useful high-level result if "
+        "available, and tell the resident they can review it on screen. Do "
+        "not continue asking intake questions after complete_intake.\n"
+        "  - If the latest audio is silence, background noise, hold music, "
+        "TV audio, side conversation, or speech not addressed to you, call "
+        "wait_for_user and do not speak.\n\n"
+        "Interview control:\n"
+        "  - Treat any selected life-event scenario as context, not as a "
+        "completed intake. Use it to choose a sensible first follow-up.\n"
+        "  - Collect these fields before completing: stated needs, current "
+        "housing situation, zip code, household size, employment status, "
+        "monthly income or income range, insurance status, and any urgent "
+        "risk signals.\n"
+        "  - Ask for one missing field at a time. For housing or veteran "
+        "housing scenarios, ask about current housing stability first, then "
+        "zip code, then household size.\n\n"
+        "Startup:\n"
+        "  - If an assistant greeting is already in the conversation "
+        "history, do not greet again. Continue with the next missing intake "
+        "question."
     )
     lang = (session.language or "en").split("-")[0].lower()
     transcription: dict[str, Any] = {
@@ -566,13 +944,16 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         "type": "realtime",
         "model": settings.openai_realtime_model,
         "instructions": instructions,
+        "reasoning": {
+            "effort": settings.openai_realtime_reasoning_effort,
+        },
         "audio": {
             "input": {
                 "noise_reduction": {"type": "near_field"},
                 "transcription": transcription,
                 "turn_detection": {
                     "type": "server_vad",
-                    "create_response": True,
+                    "create_response": False,
                     "interrupt_response": True,
                     "threshold": 0.5,
                     "prefix_padding_ms": 300,
@@ -606,10 +987,13 @@ async def _live_greeting(session: IntakeSession) -> str:
         "role": "user",
         "content": (
             "Begin the intake. Greet the resident warmly in their preferred "
-            "language, briefly explain you'll ask a few questions to find "
-            "services that fit, mention the conversation is confidential "
-            "and takes 3-5 minutes, and end with an open question about "
-            "what brings them here today."
+            "language. If the resident selected a life-event scenario before "
+            "starting, briefly acknowledge that scenario with calm, practical "
+            "empathy, then ask one focused follow-up question. Otherwise, "
+            "briefly explain you'll ask a few questions to find services that "
+            "fit, mention the conversation is confidential and takes 3-5 "
+            "minutes, and end with an open question about what brings them "
+            "here today."
         ),
     }]
 
@@ -644,7 +1028,7 @@ async def _responses_flow(session: IntakeSession, user_text: str) -> IntakeMessa
     iterations = 0
     final_text = ""
 
-    while iterations <= settings.openai_max_tool_iterations:
+    while iterations < settings.openai_max_tool_iterations:
         instructions = _build_instructions(session)
 
         response = await client.responses.create(
@@ -720,6 +1104,138 @@ def _item_to_dict(item: Any) -> dict[str, Any]:
     return json.loads(json.dumps(item, default=str))
 
 
+# ── Intake readiness guards ──────────────────────────────────────────
+
+def _field_question(field: str) -> str:
+    questions = {
+        "stated_needs": (
+            "What kind of help do you need most right now?"
+        ),
+        "current_housing_situation": (
+            "What is your housing situation right now — are you in a place "
+            "but behind on rent, staying somewhere temporary, or without housing?"
+        ),
+        "zip_code": "What zip code are you in?",
+        "household_size": (
+            "How many people are in your household, including you?"
+        ),
+        "employment_status": (
+            "What is your current work situation?"
+        ),
+        "monthly_income": (
+            "About how much money is coming into the household each month, "
+            "even if it is zero?"
+        ),
+        "insurance_status": (
+            "Do you have health insurance right now, such as Medicaid, "
+            "Medicare, employer insurance, Marketplace coverage, or none?"
+        ),
+        "veteran_status": (
+            "Is this support for you as a veteran, or for someone else who is a veteran?"
+        ),
+    }
+    return questions.get(field, "What else should I know to match the right services?")
+
+
+def _profile_needs_text(profile: ResidentProfile, args: dict[str, Any] | None = None) -> str:
+    parts = list(profile.immediate_needs)
+    if args:
+        for key in ("query", "category"):
+            val = args.get(key)
+            if val:
+                parts.append(str(val))
+    return " ".join(parts).lower()
+
+
+def _is_housing_related(profile: ResidentProfile, args: dict[str, Any] | None = None) -> bool:
+    text = _profile_needs_text(profile, args)
+    return any(
+        token in text
+        for token in (
+            "housing",
+            "rent",
+            "evict",
+            "shelter",
+            "homeless",
+            "home",
+            "veteran",
+            "veterans",
+        )
+    )
+
+
+def _is_veteran_related(profile: ResidentProfile) -> bool:
+    text = _profile_needs_text(profile)
+    return "veteran" in text or "veterans" in text
+
+
+def _missing_interview_fields(
+    session: IntakeSession,
+    *,
+    require_all_core: bool = True,
+    args: dict[str, Any] | None = None,
+) -> list[str]:
+    profile = session.extracted_profile
+    housing_related = _is_housing_related(profile, args)
+    missing: list[str] = []
+
+    if not profile.immediate_needs and require_all_core:
+        missing.append("stated_needs")
+    if housing_related and not profile.housing_situation:
+        missing.append("current_housing_situation")
+    if not profile.zip_code:
+        missing.append("zip_code")
+    if profile.household_size is None:
+        missing.append("household_size")
+    if not housing_related and require_all_core and not profile.housing_situation:
+        missing.append("current_housing_situation")
+    if require_all_core and not profile.employment_status:
+        missing.append("employment_status")
+    if require_all_core and not profile.income_bracket:
+        missing.append("monthly_income")
+    if require_all_core and not profile.insurance_status:
+        missing.append("insurance_status")
+    if require_all_core and _is_veteran_related(profile) and profile.veteran_status is None:
+        missing.append("veteran_status")
+
+    return missing
+
+
+def _deferred_tool_output(action: str, missing_fields: list[str]) -> str:
+    next_field = missing_fields[0] if missing_fields else "stated_needs"
+    return json.dumps({
+        "deferred": True,
+        "action": action,
+        "missing_fields": missing_fields,
+        "next_question": _field_question(next_field),
+        "instruction": (
+            "Do not mention services yet. Ask next_question exactly once, "
+            "then wait for the resident's answer."
+        ),
+    })
+
+
+def _guard_search_services(session: IntakeSession, args: dict[str, Any]) -> str | None:
+    # Search is intentionally held until the core interview is complete. This
+    # keeps both text and voice flows from veering into partial recommendations
+    # before the guide has enough information to match responsibly.
+    missing = _missing_interview_fields(
+        session,
+        require_all_core=True,
+        args=args,
+    )
+    if missing:
+        return _deferred_tool_output("search_services", missing)
+    return None
+
+
+def _guard_matching_or_completion(session: IntakeSession, action: str) -> str | None:
+    missing = _missing_interview_fields(session, require_all_core=True)
+    if missing:
+        return _deferred_tool_output(action, missing)
+    return None
+
+
 # ── Tool dispatch ────────────────────────────────────────────────────
 
 def _dispatch_tool(
@@ -730,6 +1246,9 @@ def _dispatch_tool(
     """Execute a tool call locally. Returns (json_output, crisis_fired)."""
     try:
         if name == "search_services":
+            deferred = _guard_search_services(session, args)
+            if deferred:
+                return deferred, False
             return _tool_search_services(args), False
         if name == "get_service_details":
             return _tool_get_service_details(args), False
@@ -738,11 +1257,19 @@ def _dispatch_tool(
         if name == "extract_profile":
             return _tool_extract_profile(session, args), False
         if name == "find_matching_services":
+            deferred = _guard_matching_or_completion(session, name)
+            if deferred:
+                return deferred, False
             return _tool_find_matching_services(session), False
         if name == "set_language":
             return _tool_set_language(session, args), False
         if name == "complete_intake":
+            deferred = _guard_matching_or_completion(session, name)
+            if deferred:
+                return deferred, False
             return _tool_complete_intake(session), False
+        if name == "wait_for_user":
+            return json.dumps({"wait": True, "no_response": True}), False
         return json.dumps({"error": f"unknown tool: {name}"}), False
     except Exception as exc:  # noqa: BLE001
         log.exception("Tool %s failed", name)
@@ -753,10 +1280,33 @@ def execute_realtime_tool(
     session_id: str,
     name: str,
     args: dict[str, Any] | None = None,
+    call_id: str = "",
 ) -> dict[str, Any]:
     """Execute a Realtime tool call against the same session state as text chat."""
+    record_realtime_debug_event(
+        session_id,
+        {
+            "event": "tool_call_started",
+            "source": "server",
+            "detail": {
+                "name": name,
+                "call_id": call_id,
+                "argument_keys": sorted((args or {}).keys()),
+                "arguments": args or {},
+            },
+        },
+    )
     session = _sessions.get(session_id)
     if not session:
+        record_realtime_debug_event(
+            session_id,
+            {
+                "event": "tool_call_completed",
+                "source": "server",
+                "status": "not_found",
+                "detail": {"name": name, "call_id": call_id},
+            },
+        )
         return {
             "output": json.dumps({"error": "session not found"}),
             "status": "not_found",
@@ -766,6 +1316,21 @@ def execute_realtime_tool(
         }
 
     if session.status == IntakeStatus.completed:
+        record_realtime_debug_event(
+            session_id,
+            {
+                "event": "tool_call_completed",
+                "source": "server",
+                "status": session.status.value,
+                "detail": {
+                    "name": name,
+                    "call_id": call_id,
+                    "is_complete": True,
+                    "match_count": len(session.matches),
+                    "output": {"error": "session already completed"},
+                },
+            },
+        )
         return {
             "output": json.dumps({"error": "session already completed"}),
             "status": session.status.value,
@@ -777,6 +1342,20 @@ def execute_realtime_tool(
 
     allowed = {schema["name"] for schema in _TOOL_SCHEMAS}
     if name not in allowed:
+        record_realtime_debug_event(
+            session_id,
+            {
+                "event": "tool_call_completed",
+                "source": "server",
+                "status": session.status.value,
+                "detail": {
+                    "name": name,
+                    "call_id": call_id,
+                    "is_complete": session.status == IntakeStatus.completed,
+                    "output": {"error": f"unknown tool: {name}"},
+                },
+            },
+        )
         return {
             "output": json.dumps({"error": f"unknown tool: {name}"}),
             "status": session.status.value,
@@ -791,7 +1370,7 @@ def execute_realtime_tool(
         "assistant",
         f"[Realtime tool {name} returned] {output[:1200]}",
     )
-    return {
+    result = {
         "output": output,
         "status": session.status.value,
         "progress_percent": (
@@ -802,6 +1381,24 @@ def execute_realtime_tool(
         "crisis_detected": crisis_detected,
         "match_count": len(session.matches),
     }
+    record_realtime_debug_event(
+        session_id,
+        {
+            "event": "tool_call_completed",
+            "source": "server",
+            "status": result["status"],
+            "detail": {
+                "name": name,
+                "call_id": call_id,
+                "progress_percent": result["progress_percent"],
+                "is_complete": result["is_complete"],
+                "crisis_detected": crisis_detected,
+                "match_count": len(session.matches),
+                "output": _summarize_realtime_tool_output(output),
+            },
+        },
+    )
+    return result
 
 
 def _append_responses_context(
@@ -814,6 +1411,17 @@ def _append_responses_context(
     if not text:
         return
     session.responses_input.append({"role": role, "content": text})
+
+
+def _apply_realtime_text_profile_hints(session: IntakeSession, text: str) -> None:
+    """Capture high-confidence facts from voice transcripts before model tools run."""
+    profile = session.extracted_profile
+    if not profile.zip_code:
+        for candidate in re.findall(r"(?<!\d)(\d[\d\s-]{3,8}\d)(?!\d)", text):
+            digits = re.sub(r"\D", "", candidate)
+            if len(digits) == 5:
+                profile.zip_code = digits
+                break
 
 
 def record_realtime_transcript(
@@ -850,8 +1458,19 @@ def record_realtime_transcript(
             "crisis_detected": False,
         }
 
+    last = session.conversation[-1] if session.conversation else None
+    if last and last.role == normalized_role and last.content.strip() == text:
+        return {
+            "messages": [],
+            "status": session.status.value,
+            "progress_percent": (
+                100 if completed else _estimate_progress(session.extracted_profile)
+            ),
+            "is_complete": session.status == IntakeStatus.completed,
+            "crisis_detected": False,
+        }
+
     if completed and normalized_role == MessageRole.assistant:
-        last = session.conversation[-1] if session.conversation else None
         if last and last.role == MessageRole.assistant and last.content.strip() == text:
             return {
                 "messages": [],
@@ -860,6 +1479,18 @@ def record_realtime_transcript(
                 "is_complete": True,
                 "crisis_detected": False,
             }
+        if last and last.role == MessageRole.assistant:
+            return {
+                "messages": [],
+                "status": session.status.value,
+                "progress_percent": 100,
+                "is_complete": True,
+                "crisis_detected": False,
+                "error": "session already completed",
+            }
+
+    if normalized_role == MessageRole.user:
+        _apply_realtime_text_profile_hints(session, text)
 
     progress = (
         100 if session.status == IntakeStatus.completed
@@ -990,19 +1621,54 @@ def _tool_extract_profile(session: IntakeSession, args: dict[str, Any]) -> str:
         applied["immediate_needs"] = merged
 
     children = args.get("school_age_children")
-    if children:
-        # Overwrite (not merge) — the model has the latest picture.
+    if children and isinstance(children, list):
+        # Overwrite (not merge) — the model has the latest picture. Filter
+        # out malformed items (non-dict) before dereferencing so a stray
+        # entry doesn't crash the whole extract_profile tool call.
+        valid_children = [c for c in children if isinstance(c, dict)]
+        ignored_count = len(children) - len(valid_children)
         profile.school_age_children = [
             SchoolAgeChild(
                 grade=str(c.get("grade") or "").strip(),
                 district=str(c.get("district") or "").strip(),
-                concerns=[str(x).lower() for x in (c.get("concerns") or [])],
+                concerns=[
+                    str(x).lower()
+                    for x in (
+                        c.get("concerns")
+                        if isinstance(c.get("concerns"), list)
+                        else []
+                    )
+                ],
             )
-            for c in children
+            for c in valid_children
         ]
         applied["school_age_children"] = [c.model_dump() for c in profile.school_age_children]
+        if ignored_count:
+            applied["school_age_children_ignored"] = (
+                f"{ignored_count} non-object entries skipped"
+            )
+    elif children:
+        applied["school_age_children_ignored"] = "expected array of child profiles"
 
-    return json.dumps({"applied": applied, "profile_complete": _profile_completeness(profile)})
+    missing = _missing_interview_fields(session, require_all_core=True)
+    payload: dict[str, Any] = {
+        "applied": applied,
+        "profile_complete": _profile_completeness(profile),
+        "missing_fields": missing,
+    }
+    if missing:
+        payload["next_question"] = _field_question(missing[0])
+        payload["instruction"] = (
+            "Ask next_question exactly once now, in plain resident-facing "
+            "language, then wait for the resident's answer. Do not stop at an "
+            "acknowledgement."
+        )
+    else:
+        payload["instruction"] = (
+            "The core interview is complete. Call complete_intake now before "
+            "telling the resident their plan is ready."
+        )
+    return json.dumps(payload)
 
 
 def _tool_find_matching_services(session: IntakeSession) -> str:
@@ -1090,6 +1756,210 @@ def _estimate_progress(profile: ResidentProfile) -> int:
 
 
 # ─────────────────────────────────────────────────────────────────────
+# Scenario interview flow
+# ─────────────────────────────────────────────────────────────────────
+
+def _session_life_event_slug(session: IntakeSession) -> str:
+    prefix = "life-event:"
+    if session.entry_source.startswith(prefix):
+        return _normalize_life_event(session.entry_source[len(prefix):])
+    return ""
+
+
+def _canonical_life_event_slug(slug: str) -> str:
+    aliases = {
+        "job-loss": "lost-job",
+        "food-help": "need-food",
+        "facing-eviction": "housing-crisis",
+        "behind-on-rent": "housing-crisis",
+        "having-baby": "new-baby",
+        "medical-help": "need-healthcare",
+        "healthcare": "need-healthcare",
+        "senior-care": "senior-help",
+        "veteran": "veteran-transition",
+        "veteran-benefits": "veteran-transition",
+        "legal-help": "legal-trouble",
+        "childcare": "child-care",
+    }
+    return aliases.get(slug, slug)
+
+
+def _text_mentions_housing_status(text: str) -> bool:
+    t = text.lower()
+    return any(
+        token in t
+        for token in (
+            "behind on rent",
+            "eviction",
+            "evict",
+            "renting",
+            "rent ",
+            "staying",
+            "shelter",
+            "car",
+            "homeless",
+            "unhoused",
+            "couch",
+            "temporary",
+            "no place",
+            "nowhere",
+        )
+    )
+
+
+def _text_mentions_household_count(text: str) -> bool:
+    t = text.lower()
+    if re.search(r"\b\d+\b", t):
+        return True
+    return any(word in t for word in ("just me", "alone", "two", "three", "four", "five", "six", "seven", "eight"))
+
+
+def _scenario_first_followup(session: IntakeSession, user_text: str) -> IntakeMessage | None:
+    """Keep life-event sessions on their scenario path for the first answer."""
+    slug = _canonical_life_event_slug(_session_life_event_slug(session))
+    if not slug:
+        return None
+
+    # process_message already appended the current user turn to conversation.
+    user_turns = [m for m in session.conversation if m.role == MessageRole.user]
+    if len(user_turns) != 1:
+        return None
+
+    text = user_text.lower()
+    question_by_slug = {
+        "lost-job": (
+            "What has been hit the hardest since the job change: rent, food, "
+            "utilities, health insurance, finding work, or something else?"
+        ),
+        "need-food": (
+            "How many people are in your household, including you?"
+            if not _text_mentions_household_count(user_text)
+            else "Do you need food today, help applying for SNAP, or both?"
+        ),
+        "housing-crisis": (
+            "What is your housing situation right now — are you in a place but "
+            "behind on rent, staying somewhere temporary, or without housing?"
+            if not _text_mentions_housing_status(user_text)
+            else "What zip code or area are you staying in right now?"
+        ),
+        "new-baby": (
+            "Is the baby expected soon or already born, and what kind of support "
+            "would help most first: WIC, healthcare, baby supplies, or childcare?"
+        ),
+        "need-healthcare": (
+            "Is this care urgent today, or are you looking for ongoing clinic "
+            "care, coverage, prescriptions, dental, or something else?"
+        ),
+        "mental-health": (
+            "Is this support for you or someone else, and are you looking for "
+            "counseling, crisis support, school support, or peer support?"
+        ),
+        "senior-help": (
+            "What support is needed most: meals, transportation, personal care, "
+            "healthcare, benefits, home safety, or caregiver respite?"
+        ),
+        "retiring": (
+            "What are you trying to plan for first: healthcare, meals, "
+            "transportation, benefits, social support, or caregiving?"
+        ),
+        "veteran-transition": (
+            "What kind of veteran support is most urgent right now: housing, "
+            "VA benefits, healthcare, job help, or documents/navigation?"
+            if not any(word in text for word in ("housing", "place", "live", "shelter", "homeless", "car", "rent"))
+            else (
+                "What is your housing situation right now — are you in a place "
+                "but behind on rent, staying somewhere temporary, or without housing?"
+                if not _text_mentions_housing_status(user_text)
+                else "What zip code or area are you staying in right now?"
+            )
+        ),
+        "new-to-austin": (
+            "What do you need help setting up first: healthcare, food, "
+            "transportation, school, utilities, housing, or documents?"
+        ),
+        "legal-trouble": (
+            "Do the papers mention a deadline, hearing date, eviction, "
+            "protective order/family safety issue, immigration matter, or "
+            "benefits issue?"
+        ),
+        "child-care": (
+            "How old is the child, and what days or hours do you need care to cover?"
+        ),
+        "back-to-school": (
+            "What kind of program are you looking for: GED, adult education, "
+            "ESL, college help, job training, or school support for a child?"
+        ),
+        "young-adult": (
+            "What are you trying to handle first: housing, job, school, "
+            "healthcare, transportation, or basic needs?"
+        ),
+        "aging-parent": (
+            "What kind of support does your parent need most right now: meals, "
+            "rides, personal care, medical care, respite, home safety, or benefits?"
+        ),
+        "divorce": (
+            "What kind of help do you need first: legal aid, counseling, "
+            "housing, childcare, or financial support?"
+        ),
+        "family-death": (
+            "What help is most needed right now: grief support, legal paperwork, "
+            "benefits, food, housing, or immediate expenses?"
+        ),
+        "new-disability": (
+            "What has become hardest to manage: healthcare, benefits, assistive "
+            "devices, transportation, work, housing accessibility, or legal support?"
+        ),
+        "unsafe-situation": (
+            "Are you in immediate danger right now, or do you need help finding "
+            "safe shelter, legal support, counseling, or housing?"
+        ),
+        "healthspan": (
+            "What is making that goal hardest right now: cost, time, stress, "
+            "transportation, health issues, or not knowing where to start?"
+        ),
+    }
+    if slug == "lost-job":
+        if any(word in text for word in ("rent", "evict", "housing", "shelter", "homeless")):
+            question = (
+                "What is your housing situation right now — are you in a place "
+                "but behind on rent, staying somewhere temporary, or without housing?"
+            )
+        elif any(word in text for word in ("food", "groceries", "kids", "children", "snap")):
+            question = "How many people are in your household, including you?"
+        elif any(word in text for word in ("insurance", "health coverage", "healthcare")):
+            question = (
+                "Do you have health insurance right now, or did you lose coverage "
+                "with the job change?"
+            )
+        else:
+            question = question_by_slug.get(slug)
+    elif slug == "back-to-school" and any(word in text for word in ("ged", "hse", "high school")):
+        question = (
+            "Are you looking for GED classes, test prep, or help paying for the "
+            "exam, and do you need evening or daytime options?"
+        )
+    elif slug == "new-disability" and any(word in text for word in ("work", "job", "injured", "injury")):
+        question = (
+            "Do you need help with healthcare, disability benefits, job or "
+            "workplace support, transportation, or income while you recover?"
+        )
+    else:
+        question = question_by_slug.get(slug)
+    if not question:
+        return None
+
+    _append_responses_context(session, "user", user_text)
+    msg = IntakeMessage(
+        role=MessageRole.assistant,
+        content=question,
+        progress_percent=_estimate_progress(session.extracted_profile),
+    )
+    session.conversation.append(msg)
+    _append_responses_context(session, msg.role.value, msg.content)
+    return msg
+
+
+# ─────────────────────────────────────────────────────────────────────
 # Crisis detection (backend-side safety net)
 # ─────────────────────────────────────────────────────────────────────
 
@@ -1104,9 +1974,324 @@ def _check_crisis(text: str) -> str:
     return ""
 
 
+def _normalize_life_event(life_event: str) -> str:
+    return life_event.strip().lower().replace("_", "-")
+
+
+def _life_event_context(life_event: str) -> str:
+    """Return scenario-specific interview guidance for a landing-page entry."""
+    slug = _normalize_life_event(life_event)
+    plans = {
+        "lost-job": {
+            "label": "Lost a Job",
+            "categories": "employment, utilities, food, housing, healthcare",
+            "first": (
+                "Ask what changed most urgently since the job loss: rent, food, "
+                "utilities, health insurance, job search, or something else."
+            ),
+            "scenario_questions": (
+                "Confirm whether they are unemployed or had hours cut; ask if "
+                "rent, food, utilities, or health coverage were affected; then "
+                "continue with the core eligibility questions."
+            ),
+        },
+        "job-loss": {
+            "alias": "lost-job",
+        },
+        "need-food": {
+            "label": "Need Food Help",
+            "categories": "food, nutrition, childcare/family supports",
+            "first": "Ask whether they need food today, SNAP help, or both.",
+            "scenario_questions": (
+                "Ask household size, whether children/seniors are included, and "
+                "whether they can travel to a pantry or need nearby options."
+            ),
+        },
+        "food-help": {
+            "alias": "need-food",
+        },
+        "housing-crisis": {
+            "label": "Housing Crisis",
+            "categories": "housing, emergency, legal, utilities",
+            "first": (
+                "Ask their current housing situation first: behind on rent, "
+                "eviction notice/court date, temporary stay, shelter need, or "
+                "without housing."
+            ),
+            "scenario_questions": (
+                "If eviction is involved, ask whether there is a notice or court "
+                "date. If without housing, ask where they are staying tonight."
+            ),
+        },
+        "facing-eviction": {
+            "alias": "housing-crisis",
+        },
+        "behind-on-rent": {
+            "alias": "housing-crisis",
+        },
+        "new-baby": {
+            "label": "New Baby",
+            "categories": "healthcare, childcare, food, family support",
+            "first": (
+                "Ask whether they need prenatal care, WIC/food, baby supplies, "
+                "childcare, or health coverage first."
+            ),
+            "scenario_questions": (
+                "Ask whether the baby is expected or already born, the child's "
+                "age if born, and whether the parent/baby has health coverage."
+            ),
+        },
+        "having-baby": {
+            "alias": "new-baby",
+        },
+        "need-healthcare": {
+            "label": "Need Healthcare",
+            "categories": "healthcare, mental_health, disability",
+            "first": (
+                "Ask what kind of care they need: clinic visit, dental, mental "
+                "health, prescriptions, health coverage, or urgent care."
+            ),
+            "scenario_questions": (
+                "Ask whether they have insurance, whether the care is urgent, "
+                "and whether cost, language, transportation, or prescriptions "
+                "are barriers."
+            ),
+        },
+        "medical-help": {
+            "alias": "need-healthcare",
+        },
+        "healthcare": {
+            "alias": "need-healthcare",
+        },
+        "mental-health": {
+            "label": "Mental Health Support",
+            "categories": "mental_health, healthcare, emergency, schools",
+            "first": (
+                "Ask what kind of support they want: counseling, crisis support, "
+                "peer support, school/youth support, or another kind of help."
+            ),
+            "scenario_questions": (
+                "Screen gently for immediate danger or self-harm. If the support "
+                "is for a child or student, capture school/grade concerns."
+            ),
+        },
+        "senior-help": {
+            "label": "Senior Assistance",
+            "categories": "senior, healthcare, transportation, food",
+            "first": "Ask whether the support is for the resident or someone they care for.",
+            "scenario_questions": (
+                "Ask what support is needed most: meals, caregiving, benefits, "
+                "transportation, healthcare, respite, or home safety."
+            ),
+        },
+        "senior-care": {
+            "alias": "senior-help",
+        },
+        "retiring": {
+            "label": "Retiring",
+            "categories": "senior, healthcare, transportation, benefits",
+            "first": (
+                "Ask what they are trying to plan for first: healthcare, meals, "
+                "transportation, benefits, social support, or caregiving."
+            ),
+            "scenario_questions": (
+                "Ask whether they already have Medicare or other coverage and "
+                "whether mobility, transportation, meals, or benefits are the "
+                "main concern."
+            ),
+        },
+        "veteran-transition": {
+            "label": "Veteran Transition",
+            "categories": "veterans, housing, employment, healthcare",
+            "first": (
+                "Ask which veteran support is most helpful now: housing, VA "
+                "benefits, healthcare, job help, or documents/navigation."
+            ),
+            "scenario_questions": (
+                "Confirm whether the resident is the veteran or calling for one. "
+                "If housing is mentioned, ask current housing situation before "
+                "zip code or services."
+            ),
+        },
+        "veteran-benefits": {
+            "alias": "veteran-transition",
+        },
+        "veteran": {
+            "alias": "veteran-transition",
+        },
+        "new-to-austin": {
+            "label": "New to Austin",
+            "categories": "utilities, healthcare, transportation, education, food",
+            "first": (
+                "Ask what they need help setting up first: healthcare, food, "
+                "transportation, school, utilities, housing, or documents."
+            ),
+            "scenario_questions": (
+                "Ask how recently they arrived, whether they have stable housing, "
+                "and whether language, transportation, school enrollment, or "
+                "health coverage are barriers."
+            ),
+        },
+        "legal-trouble": {
+            "label": "Legal Trouble",
+            "categories": "legal, emergency, housing, immigration",
+            "first": (
+                "Ask what type of legal issue they are dealing with, without "
+                "asking for private details they do not want to share."
+            ),
+            "scenario_questions": (
+                "Ask whether there is a deadline, hearing, notice, eviction, "
+                "family safety concern, immigration issue, or benefits issue."
+            ),
+        },
+        "legal-help": {
+            "alias": "legal-trouble",
+        },
+        "child-care": {
+            "label": "Child Care Needs",
+            "categories": "childcare, education, employment",
+            "first": "Ask the child's age and what schedule they need covered.",
+            "scenario_questions": (
+                "Ask whether care is needed for work, school, training, or an "
+                "emergency; ask about preferred location and whether cost is the "
+                "main barrier."
+            ),
+        },
+        "childcare": {
+            "alias": "child-care",
+        },
+        "back-to-school": {
+            "label": "Back to School",
+            "categories": "education, employment, schools",
+            "first": (
+                "Ask what kind of program they want: GED, adult education, ESL, "
+                "college help, job training, or school support for a child."
+            ),
+            "scenario_questions": (
+                "Ask the learner's age or grade if relevant, current education "
+                "level, schedule constraints, and whether transportation or "
+                "technology access is a barrier."
+            ),
+        },
+        "young-adult": {
+            "label": "Becoming Independent",
+            "categories": "education, employment, housing, healthcare",
+            "first": (
+                "Ask what they are trying to handle first: housing, job, school, "
+                "healthcare, transportation, or basic needs."
+            ),
+            "scenario_questions": (
+                "Ask current housing stability, work/school situation, and the "
+                "most immediate barrier to becoming stable."
+            ),
+        },
+        "aging-parent": {
+            "label": "Aging Parent",
+            "categories": "senior, healthcare, transportation, food, respite",
+            "first": "Ask what kind of support their parent needs most right now.",
+            "scenario_questions": (
+                "Ask whether the need is meals, transportation, personal care, "
+                "medical care, caregiver respite, home safety, or benefits."
+            ),
+        },
+        "divorce": {
+            "label": "Going Through Divorce",
+            "categories": "legal, healthcare, childcare, housing",
+            "first": (
+                "Ask whether they need legal aid, counseling, housing, childcare, "
+                "or financial support first."
+            ),
+            "scenario_questions": (
+                "Ask whether there is a court deadline, child custody/childcare "
+                "issue, housing change, safety concern, or loss of income."
+            ),
+        },
+        "family-death": {
+            "label": "Loss of a Family Member",
+            "categories": "healthcare, legal, benefits, food",
+            "first": (
+                "Ask what help is most needed right now: grief support, legal "
+                "paperwork, benefits, food, housing, or immediate expenses."
+            ),
+            "scenario_questions": (
+                "Ask gently whether there is a legal/probate issue, benefits or "
+                "income change, children or seniors affected, or urgent basic "
+                "needs."
+            ),
+        },
+        "new-disability": {
+            "label": "New Disability",
+            "categories": "disability, healthcare, employment, legal, transportation",
+            "first": "Ask what has become hardest to manage since the disability changed.",
+            "scenario_questions": (
+                "Ask whether they need healthcare, benefits, assistive devices, "
+                "transportation, workplace help, housing accessibility, or legal "
+                "support."
+            ),
+        },
+        "unsafe-situation": {
+            "label": "Unsafe Situation",
+            "categories": "emergency, legal, housing, healthcare",
+            "first": (
+                "Ask whether they are in immediate danger right now. If yes, "
+                "prioritize 911/crisis resources before regular intake."
+            ),
+            "scenario_questions": (
+                "If not in immediate danger, ask whether they need safe shelter, "
+                "domestic violence support, legal help, counseling, or housing."
+            ),
+        },
+        "healthspan": {
+            "label": "Adding Healthy Years",
+            "categories": "smoking_cessation, nutrition, physical_activity, mental_health, healthcare",
+            "first": (
+                "Ask which health goal they want to work on first: food/nutrition, "
+                "movement, tobacco/vaping, stress/mental health, or healthcare."
+            ),
+            "scenario_questions": (
+                "Ask what makes that goal hard right now, whether chronic "
+                "conditions or mobility issues matter, and whether they prefer "
+                "classes, coaching, clinics, or self-guided support."
+            ),
+        },
+    }
+
+    while isinstance(plans.get(slug), dict) and plans[slug].get("alias"):
+        slug = plans[slug]["alias"]
+
+    plan = plans.get(slug)
+    if not plan:
+        return (
+            f"Entry scenario: the resident selected {slug.replace('-', ' ')}. "
+            "Keep that scenario active through the interview, ask one practical "
+            "follow-up question at a time, and only recommend services related "
+            "to that scenario or needs the resident adds."
+        )
+
+    return (
+        f"Entry scenario: the resident selected {plan['label']}.\n"
+        "Scenario rule: this is not just an opener. Keep this path active until "
+        "the plan is made. Ask scenario-specific follow-up questions before "
+        "switching to generic eligibility questions. Ask one question at a time.\n"
+        "Do not move to zip code, household size, income, or insurance until "
+        "the resident has answered at least one scenario-specific detail beyond "
+        "the card they selected, unless that generic field is itself the next "
+        "scenario-specific detail listed here.\n"
+        f"Primary service categories to preserve in matching: {plan['categories']}.\n"
+        f"First follow-up: {plan['first']}\n"
+        f"Scenario-specific details to collect: {plan['scenario_questions']}\n"
+        "After the scenario-specific details are clear, collect the core intake "
+        "fields still needed: zip code, household size, housing situation, "
+        "employment, income, insurance, and urgent risk signals. Search and "
+        "recommend services only after enough detail is collected, and keep the "
+        "recommendations tied to this scenario plus any additional needs the "
+        "resident stated."
+    )
+
+
 def _needs_from_life_event(life_event: str) -> list[str]:
     """Map a landing-page life-event slug into initial need categories."""
-    slug = life_event.strip().lower().replace("_", "-")
+    slug = _normalize_life_event(life_event)
     mapping = {
         "lost-job": ["employment"],
         "job-loss": ["employment"],
@@ -1122,17 +2307,25 @@ def _needs_from_life_event(life_event: str) -> list[str]:
         "child-care": ["childcare"],
         "having-baby": ["childcare", "healthcare", "food"],
         "new-baby": ["childcare", "healthcare", "food"],
-        "mental-health": ["healthcare"],
         "senior-care": ["senior"],
         "senior-help": ["senior"],
         "veteran": ["veterans"],
         "veteran-benefits": ["veterans"],
+        "veteran-transition": ["veterans", "employment", "housing", "healthcare"],
         "legal-help": ["legal"],
         "legal-trouble": ["legal"],
         "transportation": ["transportation"],
-        "back-to-school": ["education"],
-        "new-to-austin": ["food", "housing", "healthcare"],
-        "healthspan": ["healthcare", "smoking_cessation", "nutrition", "physical_activity", "mental_health"],
+        "mental-health": ["mental_health", "healthcare"],
+        "back-to-school": ["education", "schools"],
+        "new-to-austin": ["utilities", "transportation", "education", "food", "housing", "healthcare"],
+        "retiring": ["senior", "healthcare", "transportation"],
+        "aging-parent": ["senior", "healthcare", "transportation"],
+        "young-adult": ["education", "employment", "housing"],
+        "divorce": ["legal", "healthcare", "childcare"],
+        "family-death": ["healthcare", "legal"],
+        "new-disability": ["disability", "healthcare", "employment", "legal"],
+        "unsafe-situation": ["emergency", "legal", "housing"],
+        "healthspan": ["smoking_cessation", "nutrition", "physical_activity", "mental_health", "healthcare"],
     }
     if slug in mapping:
         return mapping[slug]
@@ -1609,7 +2802,7 @@ async def generate_plan_summary(session: IntakeSession) -> str:
         response = await client.responses.create(
             model=settings.openai_model,
             input=[{"role": "user", "content": prompt}],
-            reasoning={"effort": "low"},
+            reasoning={"effort": settings.openai_reasoning_effort},
             max_output_tokens=120,
         )
         text = (response.output_text or "").strip()
