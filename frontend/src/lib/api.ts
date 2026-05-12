@@ -194,6 +194,13 @@ export interface RealtimeToolResult {
   is_complete: boolean;
   crisis_detected: boolean;
   match_count?: number;
+  /**
+   * Present after state-mutating tool calls (extract_profile, set_language,
+   * complete_intake). The voice hook diff-checks this against the last-pushed
+   * instructions and emits a `session.update` so the realtime model picks up
+   * the refreshed "Currently known" snapshot before its next response.
+   */
+  refreshed_instructions?: string;
 }
 
 export function executeRealtimeTool(
@@ -238,6 +245,19 @@ export interface RealtimeDebugEvent {
   detail: Record<string, unknown>;
 }
 
+// The realtime debug endpoint is gated by REALTIME_DEBUG_LOG_ENABLED on the
+// backend. When it's off, every recordDebug() call (status change, tool
+// dispatch, transport event…) would otherwise POST and get back a 404,
+// spamming the console. After the first 404 we latch this flag and skip
+// further POSTs. console.debug() in the caller still runs so local devs see
+// events. resetRealtimeDebugLogDisabled() clears the flag at the start of a
+// new realtime session so a config change doesn't require a page reload.
+let realtimeDebugLogDisabled = false;
+
+export function resetRealtimeDebugLogDisabled() {
+  realtimeDebugLogDisabled = false;
+}
+
 export function logRealtimeDebugEvent(
   sessionId: string,
   body: {
@@ -246,7 +266,10 @@ export function logRealtimeDebugEvent(
     status?: string;
     detail?: Record<string, unknown>;
   },
-) {
+): Promise<{ ok: boolean; event: RealtimeDebugEvent } | null> {
+  if (realtimeDebugLogDisabled) {
+    return Promise.resolve(null);
+  }
   return apiRequest<{ ok: boolean; event: RealtimeDebugEvent }>(
     "POST",
     `/api/v1/intake/${sessionId}/realtime/debug`,
@@ -256,7 +279,32 @@ export function logRealtimeDebugEvent(
       ...body,
     },
     { timeoutMs: 5000 },
-  );
+  ).catch((err) => {
+    // 404 with detail="Not found" means the endpoint itself is disabled
+    // (REALTIME_DEBUG_LOG_ENABLED=false). Latch and swallow so the burst of
+    // in-flight POSTs that fired before the first 404 arrived doesn't each
+    // surface as an unhandled rejection. A 404 with detail="Session not
+    // found" means just this sessionId is stale — re-throw so the caller
+    // can see it; we don't latch so a subsequent valid session still logs.
+    if (
+      err instanceof ApiError &&
+      err.status === 404 &&
+      isDebugEndpointDisabledDetail(err.message)
+    ) {
+      realtimeDebugLogDisabled = true;
+      return null;
+    }
+    throw err;
+  });
+}
+
+function isDebugEndpointDisabledDetail(message: string): boolean {
+  try {
+    const parsed = JSON.parse(message) as { detail?: unknown };
+    return parsed?.detail === "Not found";
+  } catch {
+    return false;
+  }
 }
 
 export function getRealtimeDebugEvents(sessionId: string, limit = 200) {

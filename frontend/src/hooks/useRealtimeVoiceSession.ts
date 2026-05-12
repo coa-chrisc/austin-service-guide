@@ -3,6 +3,7 @@ import {
   createRealtimeClientSecret,
   executeRealtimeTool,
   logRealtimeDebugEvent,
+  resetRealtimeDebugLogDisabled,
   syncRealtimeTranscript,
   type RealtimeToolResult,
   type RealtimeTranscriptResult,
@@ -231,6 +232,7 @@ export function useRealtimeVoiceSession({
   const sessionUpdateSentRef = useRef(false);
   const sessionUpdatedRef = useRef(false);
   const sessionConfigRef = useRef<Record<string, unknown> | null>(null);
+  const lastPushedInstructionsRef = useRef<string>("");
   const sessionUpdateTimerRef = useRef<number | null>(null);
   const initialResponseEventRef = useRef<Record<string, unknown> | null>(null);
   const initialGreetingTextRef = useRef("");
@@ -377,6 +379,39 @@ export function useRealtimeVoiceSession({
     [recordDebug, sendEvent],
   );
 
+  // Realtime audio_transcript deltas arrive 30-50/sec. Committing each one to
+  // React state caused the chat bubble to re-render that fast, which made
+  // streaming text feel herky-jerky and competed with the smooth-scroll
+  // effect. Coalesce delta-driven updates to a single paint per frame; flush
+  // immediately on discrete writes (role switch, clear) so resets are
+  // instant. The ref-based accumulation preserves token-level fidelity for
+  // commit/sync paths that read liveTranscriptRef directly.
+  const liveTranscriptRafRef = useRef<number | null>(null);
+
+  const cancelLiveTranscriptFlush = useCallback(() => {
+    if (liveTranscriptRafRef.current !== null) {
+      window.cancelAnimationFrame(liveTranscriptRafRef.current);
+      liveTranscriptRafRef.current = null;
+    }
+  }, []);
+
+  const scheduleLiveTranscriptFlush = useCallback(() => {
+    if (liveTranscriptRafRef.current !== null) return;
+    liveTranscriptRafRef.current = window.requestAnimationFrame(() => {
+      liveTranscriptRafRef.current = null;
+      setLiveTranscript(liveTranscriptRef.current);
+    });
+  }, []);
+
+  // Cancel any pending RAF flush on unmount so the scheduled callback can't
+  // call setLiveTranscript after the component is gone. stop() already cancels
+  // through clearLiveTranscript, but a parent unmount may skip stop().
+  useEffect(() => {
+    return () => {
+      cancelLiveTranscriptFlush();
+    };
+  }, [cancelLiveTranscriptFlush]);
+
   const commitLiveTranscript = useCallback(() => {
     const role = liveTranscriptRoleRef.current;
     const text = liveTranscriptRef.current.trim();
@@ -390,12 +425,13 @@ export function useRealtimeVoiceSession({
       if (liveTranscriptRoleRef.current !== role || value === "") {
         commitLiveTranscript();
       }
+      cancelLiveTranscriptFlush();
       liveTranscriptRef.current = value;
       liveTranscriptRoleRef.current = role;
       setLiveTranscriptRole(role);
       setLiveTranscript(value);
     },
-    [commitLiveTranscript],
+    [cancelLiveTranscriptFlush, commitLiveTranscript],
   );
 
   const appendLiveTranscript = useCallback(
@@ -405,31 +441,32 @@ export function useRealtimeVoiceSession({
         setLiveTranscriptForRole(role, delta);
         return;
       }
-      const next = `${liveTranscriptRef.current}${delta}`;
-      liveTranscriptRef.current = next;
-      setLiveTranscript(next);
+      liveTranscriptRef.current = `${liveTranscriptRef.current}${delta}`;
+      scheduleLiveTranscriptFlush();
     },
-    [setLiveTranscriptForRole],
+    [scheduleLiveTranscriptFlush, setLiveTranscriptForRole],
   );
 
   const clearLiveTranscript = useCallback(() => {
     commitLiveTranscript();
+    cancelLiveTranscriptFlush();
     liveTranscriptRef.current = "";
     liveTranscriptRoleRef.current = null;
     setLiveTranscriptRole(null);
     setLiveTranscript("");
-  }, [commitLiveTranscript]);
+  }, [cancelLiveTranscriptFlush, commitLiveTranscript]);
 
   const clearLiveTranscriptIfCurrent = useCallback(
     (role: LiveTranscriptRole, text: string) => {
       if (liveTranscriptRoleRef.current !== role) return;
       if (liveTranscriptRef.current.trim() !== text.trim()) return;
+      cancelLiveTranscriptFlush();
       liveTranscriptRef.current = "";
       liveTranscriptRoleRef.current = null;
       setLiveTranscript("");
       setLiveTranscriptRole(null);
     },
-    [],
+    [cancelLiveTranscriptFlush],
   );
 
   const setInputTracksEnabled = useCallback((enabled: boolean) => {
@@ -516,6 +553,7 @@ export function useRealtimeVoiceSession({
     sessionUpdateSentRef.current = false;
     sessionUpdatedRef.current = false;
     sessionConfigRef.current = null;
+    lastPushedInstructionsRef.current = "";
     if (sessionUpdateTimerRef.current) {
       window.clearTimeout(sessionUpdateTimerRef.current);
       sessionUpdateTimerRef.current = null;
@@ -913,6 +951,30 @@ export function useRealtimeVoiceSession({
           } else {
             onToolResultRef.current(result);
           }
+          // Push refreshed instructions BEFORE the function_call_output so
+          // the next response uses the updated "Currently known" snapshot.
+          // Only advance lastPushedInstructionsRef if sendEvent actually
+          // dispatched — otherwise a dropped data channel would suppress
+          // future retries of the same instructions.
+          const refreshed = result.refreshed_instructions;
+          if (
+            typeof refreshed === "string" &&
+            refreshed.length > 0 &&
+            refreshed !== lastPushedInstructionsRef.current
+          ) {
+            const sent = sendEvent({
+              type: "session.update",
+              session: { type: "realtime", instructions: refreshed },
+            });
+            if (sent) {
+              lastPushedInstructionsRef.current = refreshed;
+              recordDebug("session_update_instructions_refreshed", {
+                tool: call.name,
+                call_id: call.call_id,
+                length: refreshed.length,
+              });
+            }
+          }
           sendEvent({
             type: "conversation.item.create",
             item: {
@@ -995,15 +1057,37 @@ export function useRealtimeVoiceSession({
           setStatus("connected");
         }
         if (!sessionUpdateSentRef.current && sessionConfigRef.current) {
+          const initialInstructions =
+            typeof sessionConfigRef.current.instructions === "string"
+              ? (sessionConfigRef.current.instructions as string)
+              : "";
+          const sent = sendEvent({
+            type: "session.update",
+            session: sessionConfigRef.current,
+          });
+          if (!sent) {
+            // The data channel rejected the initial session.update, so the
+            // model never received tools/instructions. Don't let the
+            // fallback timer mark the session ready — fail fast so the
+            // user can retry rather than continuing in a misconfigured
+            // state where the "Currently known" prompt and tool flow
+            // silently don't work.
+            recordDebug("session_update_initial_send_failed", {
+              data_channel_state: dcRef.current?.readyState ?? "missing",
+            });
+            setError("Could not configure the realtime voice session.");
+            setStatus("error");
+            stopSessionRef.current?.();
+            return;
+          }
           sessionUpdateSentRef.current = true;
           recordDebug(
             "session_update_sent",
             realtimeSessionSummary(sessionConfigRef.current),
           );
-          sendEvent({
-            type: "session.update",
-            session: sessionConfigRef.current,
-          });
+          // Seed the diff baseline only after the send succeeded so the
+          // first post-tool refresh isn't suppressed as a no-op.
+          lastPushedInstructionsRef.current = initialInstructions;
           if (sessionUpdateTimerRef.current) {
             window.clearTimeout(sessionUpdateTimerRef.current);
           }
@@ -1371,6 +1455,10 @@ export function useRealtimeVoiceSession({
         }
         if (audioRef.current === ownedAudio) audioRef.current = null;
       };
+      // Re-arm debug logging before any recordDebug() call so a prior
+      // session that latched it off after a 404 doesn't suppress the very
+      // first event of this new session.
+      resetRealtimeDebugLogDisabled();
       recordDebug("voice_start_requested", {
         language,
         conversation_length: conversation.length,

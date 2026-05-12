@@ -734,6 +734,67 @@ def get_realtime_tool_schemas() -> list[dict[str, Any]]:
     ]
 
 
+def _format_known_facts(session: IntakeSession) -> str:
+    """Compact key=value snapshot of fields the model has already captured."""
+    profile = session.extracted_profile
+    parts: list[str] = []
+    # Use canonical field names that match extract_profile's parameter
+    # schema so the model can map the snapshot to the underlying tool
+    # arguments without a translation step.
+    if profile.immediate_needs:
+        # Sort + pipe-join so equivalent sets always serialize the same way.
+        # immediate_needs is merged through a set in _tool_extract_profile,
+        # so without this the diff check against lastPushedInstructions
+        # would trip on cosmetic reordering and emit spurious session.update.
+        needs = sorted({str(n) for n in profile.immediate_needs})
+        parts.append("immediate_needs=" + "|".join(needs))
+    if profile.household_size:
+        parts.append(f"household_size={profile.household_size}")
+    if profile.zip_code:
+        parts.append(f"zip_code={profile.zip_code}")
+    if profile.housing_situation:
+        parts.append(f"housing_situation={profile.housing_situation}")
+    if profile.employment_status:
+        parts.append(f"employment_status={profile.employment_status}")
+    if profile.income_bracket:
+        parts.append(f"income_bracket={profile.income_bracket}")
+    if profile.insurance_status:
+        parts.append(f"insurance_status={profile.insurance_status}")
+    # For bool|None fields, emit both true and false so an explicit "no" is
+    # captured in the snapshot — otherwise the model may re-ask a question
+    # the resident has already answered negatively.
+    if profile.has_children is not None:
+        parts.append(f"has_children={str(profile.has_children).lower()}")
+    if profile.veteran_status is not None:
+        parts.append(f"veteran_status={str(profile.veteran_status).lower()}")
+    if profile.has_disability is not None:
+        parts.append(f"has_disability={str(profile.has_disability).lower()}")
+    if profile.is_outdoor_worker is not None:
+        parts.append(
+            f"is_outdoor_worker={str(profile.is_outdoor_worker).lower()}"
+        )
+    if profile.has_ac is not None:
+        parts.append(f"has_ac={str(profile.has_ac).lower()}")
+    if profile.has_chronic_conditions is not None:
+        parts.append(
+            f"has_chronic_conditions={str(profile.has_chronic_conditions).lower()}"
+        )
+    if profile.is_refugee_or_immigrant is not None:
+        parts.append(
+            f"is_refugee_or_immigrant={str(profile.is_refugee_or_immigrant).lower()}"
+        )
+    if profile.primary_language:
+        parts.append(f"primary_language={profile.primary_language}")
+    if profile.school_age_children:
+        parts.append(
+            "school_age_children=" + ", ".join(
+                f"grade {c.grade}/{c.district or '?'}/concerns={c.concerns or '[]'}"
+                for c in profile.school_age_children
+            )
+        )
+    return ", ".join(parts) if parts else "none yet"
+
+
 def _build_instructions(session: IntakeSession) -> str:
     """System instructions sent every Responses API call."""
     lang_code = (session.language or "en").split("-")[0].lower()
@@ -746,41 +807,9 @@ def _build_instructions(session: IntakeSession) -> str:
         "set_language and switch with them."
     )
 
-    profile = session.extracted_profile
-    known: list[str] = []
-    if profile.household_size:
-        known.append(f"household_size={profile.household_size}")
-    if profile.zip_code:
-        known.append(f"zip={profile.zip_code}")
-    if profile.housing_situation:
-        known.append(f"housing={profile.housing_situation}")
-    if profile.employment_status:
-        known.append(f"employment={profile.employment_status}")
-    if profile.income_bracket:
-        known.append(f"income={profile.income_bracket}")
-    if profile.insurance_status:
-        known.append(f"insurance={profile.insurance_status}")
-    if profile.immediate_needs:
-        known.append(f"needs={profile.immediate_needs}")
-    if profile.is_outdoor_worker:
-        known.append("outdoor_worker=true")
-    if profile.has_ac is False:
-        known.append("has_ac=false")
-    if profile.has_chronic_conditions:
-        known.append("chronic_conditions=true")
-    if profile.is_refugee_or_immigrant:
-        known.append("refugee_or_immigrant=true")
-    if profile.primary_language:
-        known.append(f"primary_language={profile.primary_language}")
-    if profile.school_age_children:
-        known.append(
-            "school_age_children=" + ", ".join(
-                f"grade {c.grade}/{c.district or '?'}/concerns={c.concerns or '[]'}"
-                for c in profile.school_age_children
-            )
-        )
+    facts = _format_known_facts(session)
     profile_note = (
-        f"Currently known about the resident: {', '.join(known)}." if known
+        f"Currently known about the resident: {facts}." if facts != "none yet"
         else "Nothing is known about the resident yet."
     )
 
@@ -819,6 +848,22 @@ def _build_instructions(session: IntakeSession) -> str:
         "required fields are clear.\n"
         "  - get_crisis_resources is urgent and should be called immediately "
         "for suicidal thoughts, domestic violence, or immediate danger.\n\n"
+        "Listening rules (read these every turn before you speak):\n"
+        "  - Before asking any intake question, scan the resident's prior "
+        "turns in this conversation AND the 'Currently known' snapshot "
+        "below. If they have already named that fact in their own words, "
+        "treat it as captured and move to the next missing field instead "
+        "of asking again. Never ask a resident a question whose answer "
+        "they just gave you.\n"
+        "  - When a resident packs multiple facts into one turn (for "
+        "example 'I'm worried about rent, I'm already behind, and I lost "
+        "my job'), make a single extract_profile call that captures every "
+        "implied field at once — immediate_needs, housing_situation, "
+        "employment_status — before asking the next question. Do not "
+        "extract one field per turn when several are stated together.\n"
+        "  - Treat the 'Currently known' snapshot below and the "
+        "current_known_facts field returned by extract_profile as "
+        "authoritative. If a field appears there, do not re-ask for it.\n\n"
         "Rules:\n"
         "  - Call extract_profile every time you learn a new fact. "
         "When the resident describes someone else's situation (parent of a "
@@ -836,10 +881,14 @@ def _build_instructions(session: IntakeSession) -> str:
         "complete_intake and weave the returned summary into a warm "
         "closing message.\n"
         "  - If the resident names housing, rent, eviction, homelessness, "
-        "shelter, or veteran housing and housing_situation is not known yet, "
-        "your next resident-facing question must ask about their current "
-        "housing situation before asking for zip code, income, insurance, or "
-        "services.\n"
+        "shelter, or veteran housing AND housing_situation is not yet in "
+        "the 'Currently known' snapshot AND they have not already named "
+        "their current housing situation in their own words, your next "
+        "resident-facing question must ask about their current housing "
+        "situation before asking for zip code, income, insurance, or "
+        "services. If they already said it (for example 'I'm behind on "
+        "rent', 'I'm staying in my car', 'I'm in a shelter'), capture it "
+        "with extract_profile and skip ahead.\n"
         "  - The catalog is English-canonical: search in English even if "
         "the conversation is in another language; translate results when "
         "you cite them.\n"
@@ -859,10 +908,13 @@ def _build_instructions(session: IntakeSession) -> str:
     return base
 
 
-def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
-    """Build a Realtime session config that mirrors the text intake agent."""
-    settings = get_settings()
-    instructions = (
+def _build_realtime_instructions(session: IntakeSession) -> str:
+    """Realtime system instructions = base intake prompt + voice add-on.
+
+    Pulled out so both initial session setup and post-tool session.update
+    refreshes share one source of truth.
+    """
+    return (
         _build_instructions(session)
         + "\n\n--- Voice mode ---\n"
         "You are speaking with the resident in a live voice conversation.\n\n"
@@ -875,6 +927,20 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         "summarize the gist and let the on-screen plan carry the details.\n"
         "  - Read numbers naturally for speech: say zip codes as individual "
         "digits, phone numbers in chunks, and money in plain words.\n\n"
+        "Pacing — no fake pauses:\n"
+        "  - Never narrate a pause you are not actually taking. Phrases "
+        "like 'let me think about what to do next', 'one moment', 'give me "
+        "a second', 'okay let me see', 'hmm', or 'let me check on that' "
+        "promise a pause; if you say one and then immediately speak the "
+        "next sentence, you sound robotic. Either continue smoothly to "
+        "the next sentence with no filler at all, or stay quiet — never "
+        "both.\n"
+        "  - Tool calls happen instantly behind the scenes. Do not "
+        "announce 'let me look that up' or 'one second while I check.' "
+        "Just call the tool and continue.\n"
+        "  - When you do acknowledge what the resident said, keep it to "
+        "one short clause and flow straight into the next question — not "
+        "as a stall, but as part of the same breath.\n\n"
         "Language behavior:\n"
         "  - Start in the resident's selected language from the session. "
         "If they naturally speak another language, briefly acknowledge the "
@@ -890,8 +956,11 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         "response that advances the intake with the next missing question. "
         "Do not restate the same empathy, acknowledgement, or question twice.\n"
         "  - Use extract_profile silently as facts become available; do not "
-        "announce that you are saving profile fields. After extract_profile "
-        "returns, ask the next missing intake question.\n"
+        "announce that you are saving profile fields. When the resident "
+        "states several facts at once, batch them into one extract_profile "
+        "call. After extract_profile returns, read its current_known_facts "
+        "field and ask the NEXT missing intake question — never re-ask for a "
+        "field that already appears there.\n"
         "  - Use search_services or find_matching_services only when it helps "
         "the next answer and only after you have enough basics to make the "
         "search useful. For housing, rent, eviction, homelessness, or veteran "
@@ -920,14 +989,26 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         "housing situation, zip code, household size, employment status, "
         "monthly income or income range, insurance status, and any urgent "
         "risk signals.\n"
-        "  - Ask for one missing field at a time. For housing or veteran "
-        "housing scenarios, ask about current housing stability first, then "
-        "zip code, then household size.\n\n"
+        "  - Ask for one missing field at a time. Before each question, "
+        "verify the field is genuinely missing — re-read the 'Currently "
+        "known' snapshot above and the most recent current_known_facts from "
+        "extract_profile. If the resident has already named it in their own "
+        "words, capture it silently with extract_profile and skip to the "
+        "next missing field instead of asking again. For housing or veteran "
+        "housing scenarios, prefer housing stability first, then zip code, "
+        "then household size — but only ask about a field that is still "
+        "missing.\n\n"
         "Startup:\n"
         "  - If an assistant greeting is already in the conversation "
         "history, do not greet again. Continue with the next missing intake "
         "question."
     )
+
+
+def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
+    """Build a Realtime session config that mirrors the text intake agent."""
+    settings = get_settings()
+    instructions = _build_realtime_instructions(session)
     lang = (session.language or "en").split("-")[0].lower()
     transcription: dict[str, Any] = {
         "model": settings.openai_realtime_transcription_model,
@@ -1381,6 +1462,12 @@ def execute_realtime_tool(
         "crisis_detected": crisis_detected,
         "match_count": len(session.matches),
     }
+    # State-mutating tools change the "Currently known" snapshot and the
+    # active language note in the system prompt; ship a freshly-rebuilt
+    # instructions string so the client can push a session.update and keep
+    # the model from re-asking for facts it already has.
+    if name in {"extract_profile", "set_language", "complete_intake"}:
+        result["refreshed_instructions"] = _build_realtime_instructions(session)
     record_realtime_debug_event(
         session_id,
         {
@@ -1655,13 +1742,15 @@ def _tool_extract_profile(session: IntakeSession, args: dict[str, Any]) -> str:
         "applied": applied,
         "profile_complete": _profile_completeness(profile),
         "missing_fields": missing,
+        "current_known_facts": _format_known_facts(session),
     }
     if missing:
         payload["next_question"] = _field_question(missing[0])
         payload["instruction"] = (
-            "Ask next_question exactly once now, in plain resident-facing "
-            "language, then wait for the resident's answer. Do not stop at an "
-            "acknowledgement."
+            "current_known_facts is authoritative — never ask the resident "
+            "for any field listed there. Ask next_question exactly once now, "
+            "in plain resident-facing language, then wait for the resident's "
+            "answer. Do not stop at an acknowledgement."
         )
     else:
         payload["instruction"] = (

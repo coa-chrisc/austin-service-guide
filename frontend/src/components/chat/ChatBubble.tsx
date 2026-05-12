@@ -11,14 +11,30 @@ interface ChatBubbleProps {
   message: IntakeMessage;
   onButtonClick?: (value: string) => void;
   isLatest?: boolean;
+  /**
+   * Skip the fade-slide-in entry animation. Used for the live voice-streaming
+   * bubble (which grows in place) and for the assistant message that
+   * immediately replaces it on commit, so the swap doesn't flash a second
+   * entry animation.
+   */
+  suppressEntryAnimation?: boolean;
+  /**
+   * Render the bubble in streaming mode: plain text only (no Markdown
+   * re-parse on every token), no suggested-button row, no entry animation.
+   * Switched off once the message commits to the message list.
+   */
+  streaming?: boolean;
 }
 
 export default function ChatBubble({
   message,
   onButtonClick,
   isLatest,
+  suppressEntryAnimation,
+  streaming,
 }: ChatBubbleProps) {
   const isUser = message.role === "user";
+  const skipEntryAnim = suppressEntryAnimation || streaming;
 
   return (
     <Box
@@ -28,13 +44,17 @@ export default function ChatBubble({
         alignItems: "flex-start",
         gap: 1.5,
         mb: 2,
-        "@media (prefers-reduced-motion: no-preference)": {
-          animation: "fadeSlideIn 0.3s ease-out",
-          "@keyframes fadeSlideIn": {
-            from: { opacity: 0, transform: "translateY(8px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
-        },
+        ...(skipEntryAnim
+          ? {}
+          : {
+              "@media (prefers-reduced-motion: no-preference)": {
+                animation: "fadeSlideIn 0.3s ease-out",
+                "@keyframes fadeSlideIn": {
+                  from: { opacity: 0, transform: "translateY(8px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
+              },
+            }),
       }}
     >
       {/* Avatar */}
@@ -68,7 +88,7 @@ export default function ChatBubble({
                 }),
           }}
         >
-          {isUser ? (
+          {isUser || streaming ? (
             <Typography
               variant="body1"
               dir="auto"
@@ -146,6 +166,7 @@ export default function ChatBubble({
         {/* Suggested buttons */}
         {!isUser &&
           isLatest &&
+          !streaming &&
           message.suggested_buttons &&
           message.suggested_buttons.length > 0 && (
             <Box
