@@ -21,6 +21,31 @@ Built on the [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter) t
 - **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Production target is Azure AD B2C / Entra ID.
 - **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend).
 
+## Common Commands
+
+Backend (run from `backend/`, virtualenv activated):
+
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload                  # dev server at http://127.0.0.1:8000
+python -m compileall app                       # baseline syntax check
+python scripts/dump_catalog_to_yaml.py         # legacy seed_data.py → YAML migration utility; do NOT run on a curated YAML tree (overwrites it)
+python scripts/dedupe_catalog.py               # produce dedupe_review.csv
+```
+
+Frontend (run from `frontend/`):
+
+```bash
+npm install
+npm run dev                                    # Vite dev server at http://localhost:5173
+npm run build                                  # tsc -b && vite build (the required CI check)
+npm run preview                                # serve the production build locally
+```
+
+Environment: copy `backend/.env.example` to `backend/.env`. Key flags — `OPENAI_API_KEY` (enables live AI), `DEMO_MODE=true` (forces scripted fallback), `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS`, `CORS_ORIGINS`, `PUBLIC_ORIGIN`. `settings.use_live_ai` is `True` only when an API key is set AND `DEMO_MODE` is false.
+
+No test framework is committed yet. The verification gates are `npm run build` (from `frontend/`) and `python -m compileall app` (from `backend/`).
+
 ## Architecture
 
 The AI intake is implemented as a **Responses API agent loop** in `backend/app/services/ai.py`. Each turn the model can call any of these function tools, often several in sequence within a single user turn:
@@ -40,6 +65,14 @@ Service matching today is rules-based only (`backend/app/services/matching.py`).
 The service catalog is stored in English. All translation is delegated to the model at runtime — no static translation files.
 
 Admin console lives under `/admin/*` routes in the same SPA. Auth is stubbed for the demo; production target is Entra ID with four roles (super_admin, admin, manager, viewer).
+
+### Module Layout
+
+- `backend/app/routers/` — `intake.py` (chat session + tools), `services.py` (catalog/search/detail), `admin.py` (analytics, equity, audit). All mounted under `/api/v1/`.
+- `backend/app/services/` — `ai.py` (Responses agent loop + tool dispatch), `catalog.py` + `catalog_loader.py` (in-memory catalog backed by YAML in `app/data/services/`), `seed_data.py` (legacy hard-coded fallback), `matching.py` (rules engine), `i18n.py`, `hours.py`, `notify.py` (Twilio/SendGrid stubs), `personas.py` (multilingual demo personas).
+- `backend/app/data/` — YAML data the backend loads at boot: `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`, and the per-service files under `services/`. Edit YAML rather than `seed_data.py` for catalog changes; the loader merges them.
+- `frontend/src/pages/` — resident routes (`Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`) plus `admin/`.
+- `frontend/src/components/` — grouped by feature: `chat/`, `results/`, `services/`, `map/`, `layout/`, `common/`. `lib/` holds the API client; `hooks/` exposes `useBrandConfig`, auth, etc.
 
 ## Key Design Decisions
 
@@ -69,3 +102,5 @@ These patterns come from the starter template and must be followed:
 - Branding: all visual identity driven by `brand.config.json`. Use `useBrandConfig()` hook.
 - Auth: FastAPI dependency injection (`Depends(require_auth)`).
 - Grid: MUI Grid v2 with `size` prop: `<Grid size={{ xs: 12, md: 6 }}>`.
+- Commits: Conventional Commits with scopes seen in history (`feat(intake):`, `fix(a11y):`, `chore(catalog):`, etc.). Keep subjects imperative.
+- Tests: when adding tests, colocate frontend tests with their component; place backend tests under `backend/tests/test_*.py`.
