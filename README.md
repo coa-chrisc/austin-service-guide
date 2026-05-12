@@ -42,15 +42,15 @@ The chatbot is not just a keyword bot. In live mode, the backend uses the OpenAI
 
 Available AI tools in the demo:
 
-| Tool | What it does |
-| --- | --- |
-| `search_services` | Searches the local service catalog by keyword, category, and ZIP code. |
-| `get_service_details` | Retrieves full detail for one service by slug. |
-| `get_crisis_resources` | Returns crisis and emergency resources for urgent situations. |
-| `extract_profile` | Stores relevant intake facts such as household size, ZIP code, housing situation, income range, insurance status, and immediate needs. |
-| `find_matching_services` | Runs the matching engine against the resident profile. |
-| `set_language` | Switches the conversation language when the resident asks or writes in another language. |
-| `complete_intake` | Finalizes the intake, runs matching, assesses risk flags, estimates benefits, and marks the session complete. |
+| Tool                     | What it does                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_services`        | Searches the local service catalog by keyword, category, and ZIP code.                                                                 |
+| `get_service_details`    | Retrieves full detail for one service by slug.                                                                                         |
+| `get_crisis_resources`   | Returns crisis and emergency resources for urgent situations.                                                                          |
+| `extract_profile`        | Stores relevant intake facts such as household size, ZIP code, housing situation, income range, insurance status, and immediate needs. |
+| `find_matching_services` | Runs the matching engine against the resident profile.                                                                                 |
+| `set_language`           | Switches the conversation language when the resident asks or writes in another language.                                               |
+| `complete_intake`        | Finalizes the intake, runs matching, assesses risk flags, estimates benefits, and marks the session complete.                          |
 
 If no API key is configured, the app still works in demo mode using a scripted guided intake. That makes it easier to present live without depending on external services.
 
@@ -109,17 +109,17 @@ Each service can include provider details, eligibility summaries, application in
 
 ## Technology Stack
 
-| Layer | Technology |
-| --- | --- |
-| Frontend | React, TypeScript, Vite |
-| UI | Material UI, MUI Icons |
-| Routing | React Router |
-| Mapping | Leaflet and React Leaflet |
-| Backend | FastAPI, Pydantic |
-| AI | OpenAI Responses API with tool calling; scripted fallback mode |
-| HTTP | Fetch API on frontend, `httpx` for outbound backend integrations |
-| Demo data | In-memory Python seed catalog |
-| Optional notifications | Twilio SMS and SendGrid email stubs/integration points |
+| Layer                  | Technology                                                       |
+| ---------------------- | ---------------------------------------------------------------- |
+| Frontend               | React, TypeScript, Vite                                          |
+| UI                     | Material UI, MUI Icons                                           |
+| Routing                | React Router                                                     |
+| Mapping                | Leaflet and React Leaflet                                        |
+| Backend                | FastAPI, Pydantic                                                |
+| AI                     | OpenAI Responses API with tool calling; scripted fallback mode   |
+| HTTP                   | Fetch API on frontend, `httpx` for outbound backend integrations |
+| Demo data              | In-memory Python seed catalog                                    |
+| Optional notifications | Twilio SMS and SendGrid email stubs/integration points           |
 
 ## Running Locally
 
@@ -218,3 +218,6 @@ python -m compileall backend/app
 
 These are the current baseline checks for the demo.
 
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and redistribute this work with attribution and under the terms of the license.
