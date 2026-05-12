@@ -23,6 +23,7 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 ## Demo Highlights
 
 - **AI-powered intake chatbot** that can run with OpenAI's Responses API or fall back to a scripted demo flow.
+- **Realtime voice intake** using OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC, so residents can talk through their situation instead of typing.
 - **Tool-calling AI workflow** that searches services, extracts profile information, finds matches, changes language, retrieves crisis resources, and completes the intake.
 - **No-account-first resident experience** so a resident can get recommendations without signing up.
 - **Life-event entry points** such as job loss, eviction, food need, healthcare need, having a baby, veteran benefits, senior help, legal trouble, and child care.
@@ -123,19 +124,37 @@ Each service can include provider details, eligibility summaries, application in
 
 ## Running Locally
 
-### Backend
+### Prerequisites
+
+- **Python 3.11 or newer** (3.12 tested) for the backend.
+- **Node.js 20 or newer** with `npm` for the frontend.
+- **Git** to clone the repository.
+- (Optional) An **OpenAI API key** with access to the Responses API and the Realtime API. Without one, the app runs in scripted demo mode.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/crypticpy/austin-service-guide.git
+cd austin-service-guide
+```
+
+### 2. Start the backend
+
+The backend is a FastAPI app under `backend/`. Run every command below from that directory with a virtual environment active.
 
 ```bash
 cd backend
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate              # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The API runs at `http://127.0.0.1:8000` by default.
+The API runs at `http://127.0.0.1:8000`. Leave this terminal open.
 
-### Frontend
+### 3. Start the frontend
+
+In a **second terminal**, from the repository root:
 
 ```bash
 cd frontend
@@ -143,11 +162,13 @@ npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`.
+The app runs at `http://localhost:5173`. Open that URL in a browser. The frontend expects the backend from step 2 to be running.
 
-### Optional Environment
+> The frontend uses npm; `package-lock.json` is the canonical lockfile committed to the repo.
 
-Copy `backend/.env.example` to `backend/.env` to configure live services.
+### 4. (Optional) Configure environment
+
+Copy `backend/.env.example` to `backend/.env` to enable live AI, realtime voice, and notifications. Without a `.env`, the backend runs in scripted demo mode and the rest of the app still works.
 
 ```bash
 cp backend/.env.example backend/.env
@@ -155,13 +176,20 @@ cp backend/.env.example backend/.env
 
 Useful settings:
 
-- `OPENAI_API_KEY`: enables live AI intake.
-- `OPENAI_MODEL`: model used by the Responses API.
-- `DEMO_MODE=true`: forces the scripted fallback flow.
-- `CORS_ORIGINS`: allowed frontend origins.
-- `PUBLIC_ORIGIN`: origin used for share links.
-- `TWILIO_*`: optional SMS sending.
-- `SENDGRID_*`: optional email sending.
+- `OPENAI_API_KEY` — enables live AI intake (Responses API).
+- `OPENAI_MODEL` — model used by the Responses API (default `gpt-5.5-2026-04-23`).
+- `OPENAI_REASONING_EFFORT` — `low` / `medium` / `high` (default `medium`).
+- `OPENAI_MAX_TOOL_ITERATIONS` — safety cap on tool-call rounds per assistant turn (default `6`).
+- `OPENAI_REALTIME_MODEL` — model for the voice intake (default `gpt-realtime-2`).
+- `OPENAI_REALTIME_VOICE` — Realtime voice preset (default `marin`).
+- `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-mini-transcribe`).
+- `OPENAI_REALTIME_SECRET_TTL_SECONDS` — lifetime of the ephemeral client secret returned to the browser (default `600`).
+- `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` — opt-in trace for troubleshooting realtime voice sessions. Off by default; transcripts are short but sensitive, so keep this disabled outside local debugging.
+- `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set.
+- `CORS_ORIGINS` — allowed frontend origins.
+- `PUBLIC_ORIGIN` — origin used to build share links (QR codes, SMS/email).
+- `TWILIO_*` — optional SMS sending.
+- `SENDGRID_*` — optional email sending.
 
 ## Demo Boundaries
 
@@ -193,16 +221,23 @@ The larger point is not that this exact demo should be launched as-is. The point
 ```text
 backend/
   app/
-    routers/       API routes for intake, services, and admin
-    services/      AI, matching, catalog, hours, notification, and seed data logic
+    routers/       API routes for intake (chat + realtime voice), services, and admin
+    services/      AI loop, realtime session config, matching, catalog, hours, notifications, seed data
+    data/          YAML catalog: categories, life events, crisis resources, and per-service files
     main.py        FastAPI entry point
+  scripts/         One-off catalog utilities (YAML migration, dedupe report)
+  requirements.txt Python dependencies
+  .env.example     Environment template
 frontend/
   src/
-    components/    Shared UI components
-    pages/         Resident and admin routes
+    components/    Shared UI components (chat, results, services, map, layout, common)
+    pages/         Resident routes plus admin/* console
+    hooks/         React hooks, including useRealtimeVoiceSession for voice intake
     lib/           API client and utilities
     theme/         APH-inspired theme setup
+  package.json     Frontend dependencies and dev/build/preview scripts
 AGENTS.md          Contributor guide for coding agents and maintainers
+CLAUDE.md          Architecture and conventions for AI coding tools
 ```
 
 ## Verification

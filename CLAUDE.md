@@ -17,6 +17,7 @@ Built on the [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter) t
 - **Frontend:** React 18 + TypeScript + Vite + Material UI v7 (MUI). No Tailwind — all styling through MUI theme system via `brand.config.json`.
 - **Backend:** FastAPI (Python 3.11+) + Pydantic v2. Routes under `/api/v1/`.
 - **AI:** Standard OpenAI **Responses API** with **`gpt-5.5-2026-04-23`** at `reasoning_effort="medium"`. Single model for the conversational intake, the catalog tool calls, language switching, and matching. All AI calls go through `backend/app/services/ai.py`. Falls back to a scripted demo flow when `OPENAI_API_KEY` is unset or `DEMO_MODE=true`.
+- **Voice intake:** OpenAI **Realtime API** (`gpt-realtime-2`) over WebRTC. The browser fetches an ephemeral `client_secret` from `/api/v1/intake/{session_id}/realtime/client-secret`, then opens a peer connection directly to OpenAI. Tool calls flow back through `/api/v1/intake/{session_id}/realtime/tool`; transcripts and debug events have their own endpoints under the same prefix. The frontend hook is `frontend/src/hooks/useRealtimeVoiceSession.ts`.
 - **Database (demo):** in-memory seed data in `backend/app/services/seed_data.py` (PostgreSQL + pgvector are the production target — not wired in this demo).
 - **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Production target is Azure AD B2C / Entra ID.
 - **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend).
@@ -42,7 +43,7 @@ npm run build                                  # tsc -b && vite build (the requi
 npm run preview                                # serve the production build locally
 ```
 
-Environment: copy `backend/.env.example` to `backend/.env`. Key flags — `OPENAI_API_KEY` (enables live AI), `DEMO_MODE=true` (forces scripted fallback), `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS`, `CORS_ORIGINS`, `PUBLIC_ORIGIN`. `settings.use_live_ai` is `True` only when an API key is set AND `DEMO_MODE` is false.
+Environment: copy `backend/.env.example` to `backend/.env`. Key flags — `OPENAI_API_KEY` (enables live AI), `DEMO_MODE=true` (forces scripted fallback), `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS`, `CORS_ORIGINS`, `PUBLIC_ORIGIN`. Realtime voice flags — `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS`, plus opt-in `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` for local troubleshooting. `settings.use_live_ai` is `True` only when an API key is set AND `DEMO_MODE` is false.
 
 No test framework is committed yet. The verification gates are `npm run build` (from `frontend/`) and `python -m compileall app` (from `backend/`).
 
@@ -68,11 +69,11 @@ Admin console lives under `/admin/*` routes in the same SPA. Auth is stubbed for
 
 ### Module Layout
 
-- `backend/app/routers/` — `intake.py` (chat session + tools), `services.py` (catalog/search/detail), `admin.py` (analytics, equity, audit). All mounted under `/api/v1/`.
-- `backend/app/services/` — `ai.py` (Responses agent loop + tool dispatch), `catalog.py` + `catalog_loader.py` (in-memory catalog backed by YAML in `app/data/services/`), `seed_data.py` (legacy hard-coded fallback), `matching.py` (rules engine), `i18n.py`, `hours.py`, `notify.py` (Twilio/SendGrid stubs), `personas.py` (multilingual demo personas).
+- `backend/app/routers/` — `intake.py` (chat session + tools + realtime voice session/token/tool endpoints under `/intake/realtime/*`), `services.py` (catalog/search/detail), `admin.py` (analytics, equity, audit). All mounted under `/api/v1/`.
+- `backend/app/services/` — `ai.py` (Responses agent loop, tool dispatch, realtime session config, realtime tool execution, debug trace recorder), `catalog.py` + `catalog_loader.py` (in-memory catalog backed by YAML in `app/data/services/`), `seed_data.py` (legacy hard-coded fallback), `matching.py` (rules engine), `i18n.py`, `hours.py`, `notify.py` (Twilio/SendGrid stubs), `personas.py` (multilingual demo personas).
 - `backend/app/data/` — YAML data the backend loads at boot: `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`, and the per-service files under `services/`. Edit YAML rather than `seed_data.py` for catalog changes; the loader merges them.
 - `frontend/src/pages/` — resident routes (`Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`) plus `admin/`.
-- `frontend/src/components/` — grouped by feature: `chat/`, `results/`, `services/`, `map/`, `layout/`, `common/`. `lib/` holds the API client; `hooks/` exposes `useBrandConfig`, auth, etc.
+- `frontend/src/components/` — grouped by feature: `chat/`, `results/`, `services/`, `map/`, `layout/`, `common/`. `lib/` holds the API client; `hooks/` exposes `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice intake), auth, etc.
 
 ## Key Design Decisions
 
