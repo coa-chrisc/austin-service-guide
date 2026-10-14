@@ -34,7 +34,7 @@ React components and page files use `PascalCase` (`ServiceDetailCard.tsx`). Hook
 
 ## Testing Guidelines
 
-No committed test framework is currently configured. For now, use `npm run build` as the required frontend verification step and manually exercise key resident/admin flows. When adding tests, colocate frontend tests near the component or page they cover and add backend tests under `backend/tests/` with names like `test_services.py`.
+Backend tests use pytest: from `backend/`, run `pip install -r requirements-dev.txt` then `python -m pytest`. They force the scripted (no-AI) flow. The frontend has no test framework; use `npm run build` as the required frontend verification step and manually exercise key resident/admin flows. When adding tests, colocate frontend tests near the component or page they cover and add backend tests under `backend/tests/` with names like `test_services.py`.
 
 ## Commit & Pull Request Guidelines
 

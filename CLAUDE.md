@@ -45,7 +45,7 @@ npm run preview                                # serve the production build loca
 
 Environment: copy `backend/.env.example` to `backend/.env`. Key flags — `OPENAI_API_KEY` (enables live AI), `DEMO_MODE=true` (forces scripted fallback), `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS`, `CORS_ORIGINS`, `PUBLIC_ORIGIN`. Realtime voice flags — `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS`, plus opt-in `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` for local troubleshooting. `settings.use_live_ai` is `True` only when an API key is set AND `DEMO_MODE` is false.
 
-No test framework is committed yet. The verification gates are `npm run build` (from `frontend/`) and `python -m compileall app` (from `backend/`).
+The verification gates are `npm run build` (from `frontend/`), and `python -m compileall app` plus `python -m pytest` (from `backend/`, after `pip install -r requirements-dev.txt`). Backend tests force the scripted flow and never call OpenAI. There is no frontend test framework.
 
 ## Architecture
 
