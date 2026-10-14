@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest, ResidentProfile
@@ -49,10 +50,26 @@ def _profile_debug_snapshot(profile: ResidentProfile | None) -> dict[str, Any] |
     }
 
 
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+_PHONE_RE = re.compile(r"^\+?\d{10,15}$")
+
+
 class ShareRequest(BaseModel):
     channel: Literal["sms", "email"]
     recipient: str = Field(min_length=3, max_length=200)
     language: str = "en"
+
+    @model_validator(mode="after")
+    def _check_recipient(self) -> "ShareRequest":
+        value = self.recipient.strip()
+        if self.channel == "sms":
+            value = re.sub(r"[\s().-]", "", value)
+            if not _PHONE_RE.match(value):
+                raise ValueError("recipient must be a phone number")
+        elif not _EMAIL_RE.match(value):
+            raise ValueError("recipient must be an email address")
+        self.recipient = value
+        return self
 
 
 class LoadPersonaRequest(BaseModel):
@@ -60,13 +77,13 @@ class LoadPersonaRequest(BaseModel):
 
 
 class RealtimeSecretRequest(BaseModel):
-    language: str = "en"
+    language: str = Field(default="en", max_length=16)
 
 
 class RealtimeToolRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     arguments: dict[str, Any] = Field(default_factory=dict)
-    call_id: str = ""
+    call_id: str = Field(default="", max_length=200)
 
 
 class RealtimeTranscriptRequest(BaseModel):
@@ -524,28 +541,34 @@ async def share_results(session_id: str, body: ShareRequest):
 
     text_body = "\n".join(lines)
 
-    if body.channel == "sms":
-        result = await send_sms(to=body.recipient, body=text_body)
-    else:
-        html_body = (
-            "<h2>Your Austin Service Guide matches</h2>"
-            "<ol>"
-            + "".join(
-                f'<li><strong>{m.service.name}</strong>'
-                f'{f" — {m.service.phone}" if m.service.phone else ""}<br>'
-                f'<a href="{origin}/services/{m.service.slug}">'
-                f"{origin}/services/{m.service.slug}</a></li>"
-                for m in session.matches[:8]
+    try:
+        if body.channel == "sms":
+            result = await send_sms(to=body.recipient, body=text_body)
+        else:
+            html_body = (
+                "<h2>Your Austin Service Guide matches</h2>"
+                "<ol>"
+                + "".join(
+                    f'<li><strong>{m.service.name}</strong>'
+                    f'{f" — {m.service.phone}" if m.service.phone else ""}<br>'
+                    f'<a href="{origin}/services/{m.service.slug}">'
+                    f"{origin}/services/{m.service.slug}</a></li>"
+                    for m in session.matches[:8]
+                )
+                + "</ol>"
+                f'<p><a href="{origin}/results/{session_id}">'
+                f"View all matches</a></p>"
             )
-            + "</ol>"
-            f'<p><a href="{origin}/results/{session_id}">'
-            f"View all matches</a></p>"
-        )
-        result = await send_email(
-            to=body.recipient,
-            subject="Your Austin Service Guide matches",
-            text=text_body,
-            html=html_body,
-        )
+            result = await send_email(
+                to=body.recipient,
+                subject="Your Austin Service Guide matches",
+                text=text_body,
+                html=html_body,
+            )
+    except (RuntimeError, httpx.HTTPError) as exc:
+        # notify.py raises RuntimeError when Twilio/SendGrid reject the send.
+        raise HTTPException(
+            status_code=502, detail="Could not send right now. Please try again."
+        ) from exc
 
     return result

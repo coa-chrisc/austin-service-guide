@@ -12,6 +12,8 @@ from typing import Any, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from app.models import Service
 from app.services.catalog import (
@@ -150,7 +152,10 @@ async def admin_create_service(
     """Create a new service."""
     _check_staff_role(x_staff_role)
     body.setdefault("id", str(uuid4()))
-    svc = Service(**body)
+    try:
+        svc = Service(**body)
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
     created = create_service(svc)
     return created.model_dump()
 
@@ -163,7 +168,10 @@ async def admin_update_service(
 ):
     """Partial update a service."""
     _check_staff_role(x_staff_role)
-    updated = update_service(service_id, body)
+    try:
+        updated = update_service(service_id, body)
+    except ValidationError as exc:
+        raise RequestValidationError(exc.errors()) from exc
     if not updated:
         raise HTTPException(status_code=404, detail="Service not found")
     return updated.model_dump()

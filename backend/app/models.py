@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, date
 from enum import Enum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -314,15 +314,17 @@ class PaginatedResponse(BaseModel):
 
 
 class IntakeStartRequest(BaseModel):
-    language: str = "en"
-    life_event: str | None = None
-    focus: list[str] | None = None
+    language: str = Field(default="en", max_length=16)
+    life_event: str | None = Field(default=None, max_length=64)
+    focus: list[Annotated[str, Field(max_length=64)]] | None = Field(
+        default=None, max_length=20
+    )
     mode: Literal["text", "voice"] = "text"
 
 
 class IntakeMessageRequest(BaseModel):
-    message: str
-    language: str = "en"
+    message: str = Field(min_length=1, max_length=4000)
+    language: str = Field(default="en", max_length=16)
 
 
 class MapPin(BaseModel):
