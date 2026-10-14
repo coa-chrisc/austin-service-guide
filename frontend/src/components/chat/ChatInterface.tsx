@@ -893,11 +893,7 @@ export default function ChatInterface({
         ) : (
           <>
             {voice.status === "error" && (
-              <Alert
-                severity="error"
-                sx={{ mb: 1, borderRadius: 2 }}
-                role="status"
-              >
+              <Alert severity="error" sx={{ mb: 1, borderRadius: 2 }}>
                 {voice.error ||
                   "Voice chat couldn't start. You can keep typing or try voice again."}
               </Alert>

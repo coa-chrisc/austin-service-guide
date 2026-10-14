@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ApiError,
   createRealtimeClientSecret,
   executeRealtimeTool,
   logRealtimeDebugEvent,
@@ -107,8 +108,18 @@ function startErrorMessage(err: unknown) {
     if (err.name === "NotFoundError") {
       return "No microphone was found. Connect a microphone and try voice chat again.";
     }
+    if (err.name === "NotReadableError") {
+      return "Your microphone is in use by another app. Close it and try voice chat again.";
+    }
   }
-  return err instanceof Error ? err.message : "Could not start voice chat.";
+  // Server and upstream error bodies are raw JSON; residents get plain copy.
+  // The raw detail is already captured by the debug trace.
+  if (err instanceof ApiError) {
+    return err.status === 400
+      ? "Voice chat isn't available right now. You can keep typing."
+      : "Voice chat couldn't connect. Please try again or keep typing.";
+  }
+  return "Could not start voice chat. You can keep typing or try again.";
 }
 
 function clipDebugText(value: string, limit = DEBUG_TEXT_LIMIT) {
@@ -860,7 +871,7 @@ export function useRealtimeVoiceSession({
         // the previous session's mic stream / WebRTC handles.
         stopSessionRef.current?.();
         setError(
-          err instanceof Error ? err.message : "Failed to sync transcript.",
+          "Voice chat lost its connection. You can keep typing or restart voice.",
         );
         setStatus("error");
         return false;
@@ -1075,9 +1086,11 @@ export function useRealtimeVoiceSession({
             recordDebug("session_update_initial_send_failed", {
               data_channel_state: dcRef.current?.readyState ?? "missing",
             });
+            // Stop first: stop() resets status to idle, which would
+            // otherwise hide the error.
+            stopSessionRef.current?.();
             setError("Could not configure the realtime voice session.");
             setStatus("error");
-            stopSessionRef.current?.();
             return;
           }
           sessionUpdateSentRef.current = true;
@@ -1411,7 +1424,9 @@ export function useRealtimeVoiceSession({
           "I hit a voice connection problem. You can keep going, or restart voice chat if the microphone stopped.",
         );
         stopSessionRef.current?.();
-        setError(message);
+        setError(
+          "Voice chat lost its connection. You can keep typing or restart voice.",
+        );
         setStatus("error");
       }
     },
@@ -1704,6 +1719,7 @@ export function useRealtimeVoiceSession({
             "Content-Type": "application/sdp",
           },
           body: offer.sdp,
+          signal: AbortSignal.timeout(15000),
         });
         if (!answer.ok) {
           const answerText = await answer.text();
@@ -1711,7 +1727,7 @@ export function useRealtimeVoiceSession({
             status: answer.status,
             body: answerText,
           });
-          throw new Error(answerText);
+          throw new Error("Realtime voice connection could not be established.");
         }
         if (startCancelled()) {
           cleanupOwnedStart();
