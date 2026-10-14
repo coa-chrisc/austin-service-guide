@@ -35,6 +35,18 @@ export class ApiError extends Error {
   }
 }
 
+// FastAPI errors arrive as {"detail": ...}. Surface a string detail as the
+// message so pages never render raw JSON; anything else gets a generic line.
+function errorDetail(body: string, status: number): string {
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown };
+    if (typeof parsed?.detail === "string") return parsed.detail;
+  } catch {
+    // non-JSON body
+  }
+  return `Request failed (${status}).`;
+}
+
 async function apiRequest<T>(
   method: string,
   path: string,
@@ -59,8 +71,8 @@ async function apiRequest<T>(
       signal: controller?.signal,
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "Unknown error");
-      throw new ApiError(res.status, text);
+      const text = await res.text().catch(() => "");
+      throw new ApiError(res.status, errorDetail(text, res.status));
     }
     if (res.status === 204) return undefined as unknown as T;
     return res.json() as Promise<T>;
@@ -299,12 +311,7 @@ export function logRealtimeDebugEvent(
 }
 
 function isDebugEndpointDisabledDetail(message: string): boolean {
-  try {
-    const parsed = JSON.parse(message) as { detail?: unknown };
-    return parsed?.detail === "Not found";
-  } catch {
-    return false;
-  }
+  return message === "Not found";
 }
 
 export function getRealtimeDebugEvents(sessionId: string, limit = 200) {

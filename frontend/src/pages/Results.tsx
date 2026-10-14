@@ -47,6 +47,7 @@ import PlanList from "@/components/results/PlanList";
 import {
   getIntakeResults,
   shareIntakeResults,
+  ApiError,
   type ApplicationOrderItem,
 } from "@/lib/api";
 import { makeResultsT } from "@/lib/resultsI18n";
@@ -183,7 +184,9 @@ export default function Results() {
       setShareRecipient("");
     } catch (err) {
       setSnackbar(
-        `Failed to send: ${err instanceof Error ? err.message : "unknown error"}`,
+        err instanceof ApiError && err.status === 422
+          ? `Please check the ${shareChannel === "sms" ? "phone number" : "email address"} and try again.`
+          : "Couldn't send right now. Please try again.",
       );
     } finally {
       setShareSending(false);
