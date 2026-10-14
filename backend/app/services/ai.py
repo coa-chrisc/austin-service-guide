@@ -432,6 +432,7 @@ async def process_message(
     crisis_kind = _check_crisis(user_text)
     if crisis_kind:
         session.extracted_profile.crisis_indicators.append(crisis_kind)
+        session.scripted_turns_skipped += 1
         crisis_msg = _crisis_response(session)
         # Mirror the exchange into the Responses-API context so a subsequent
         # turn (e.g., "Continue finding services") has the prior crisis
@@ -445,6 +446,7 @@ async def process_message(
 
     scenario_followup = _scenario_first_followup(session, user_text)
     if scenario_followup is not None:
+        session.scripted_turns_skipped += 1
         return scenario_followup
 
     if settings.use_live_ai:
@@ -462,11 +464,19 @@ async def process_message(
                 progress_percent=0,
             )
             session.conversation.append(err_msg)
-            user_msg_count = sum(1 for m in session.conversation if m.role == MessageRole.user)
-            return await _demo_flow(session, user_text, user_msg_count)
+            return await _demo_flow(session, user_text, _scripted_step_num(session))
 
+    return await _demo_flow(session, user_text, _scripted_step_num(session))
+
+
+def _scripted_step_num(session: IntakeSession) -> int:
+    """1-based scripted step for the current user turn.
+
+    Turns diverted to the crisis response or the life-event scenario
+    follow-up did not answer a scripted question, so they don't advance it.
+    """
     user_msg_count = sum(1 for m in session.conversation if m.role == MessageRole.user)
-    return await _demo_flow(session, user_text, user_msg_count)
+    return max(1, user_msg_count - session.scripted_turns_skipped)
 
 
 def get_session(session_id: str) -> IntakeSession | None:

@@ -194,6 +194,10 @@ class IntakeSession(BaseModel):
     # Optional persona-specific instructions appended to system prompt.
     # Set when a session is loaded from a demo persona; empty otherwise.
     persona_note: str = ""
+    # User turns answered outside the scripted demo steps (crisis response,
+    # life-event scenario follow-up). Subtracted when picking the next
+    # scripted step so no question is skipped.
+    scripted_turns_skipped: int = 0
 
 
 # ---------------------------------------------------------------------------
