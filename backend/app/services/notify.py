@@ -18,11 +18,16 @@ from app.config import get_settings
 log = logging.getLogger(__name__)
 
 
+def _mask(recipient: str) -> str:
+    """Keep only the last two characters so logs carry no contact details."""
+    return "*" * max(len(recipient) - 2, 0) + recipient[-2:]
+
+
 async def send_sms(*, to: str, body: str) -> dict[str, Any]:
     """Send an SMS via Twilio. Stubs out when creds are missing."""
     settings = get_settings()
     if not settings.has_twilio:
-        log.info("[notify-stub] SMS to %s: %s", to, body[:80])
+        log.info("[notify-stub] SMS to %s (%d chars)", _mask(to), len(body))
         return {"ok": True, "demo": True, "channel": "sms", "to": to}
 
     url = (
@@ -46,8 +51,7 @@ async def send_email(
     """Send an email via SendGrid. Stubs out when creds are missing."""
     settings = get_settings()
     if not settings.has_email:
-        log.info("[notify-stub] Email to %s subject=%r body=%s",
-                 to, subject, text[:80])
+        log.info("[notify-stub] Email to %s (%d chars)", _mask(to), len(text))
         return {"ok": True, "demo": True, "channel": "email", "to": to}
 
     payload = {
