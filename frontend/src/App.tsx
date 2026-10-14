@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import AdminLayout from "@/components/layout/AdminLayout";
 import Landing from "@/pages/Landing";
@@ -69,6 +69,7 @@ export default function App() {
                 <Route path="/map" element={<MapView />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/demo/:sessionId" element={<DemoIntake />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Box>
           </Box>
