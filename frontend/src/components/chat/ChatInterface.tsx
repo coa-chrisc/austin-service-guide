@@ -947,6 +947,9 @@ export default function ChatInterface({
                 disabled={isLoading || isComplete}
                 variant="outlined"
                 size="small"
+                slotProps={{
+                  htmlInput: { maxLength: 4000, "aria-label": "Message" },
+                }}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "24px",

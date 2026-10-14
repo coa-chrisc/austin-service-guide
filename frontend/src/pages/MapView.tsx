@@ -179,7 +179,11 @@ export default function MapView() {
             Services ({filteredPins.length})
           </Typography>
           {isMobile && (
-            <IconButton onClick={() => setListOpen(false)} size="small">
+            <IconButton
+              onClick={() => setListOpen(false)}
+              size="small"
+              aria-label="Close service list"
+            >
               <CloseIcon />
             </IconButton>
           )}
@@ -206,6 +210,7 @@ export default function MapView() {
           <ListItemButton key={pin.id}>
             <ListItemText
               primary={pin.name}
+              slotProps={{ secondary: { component: "div" } }}
               secondary={
                 <Chip
                   label={getCategoryDisplayName(pin.category)}
@@ -260,6 +265,7 @@ export default function MapView() {
         {isMobile && (
           <IconButton
             onClick={() => setListOpen(true)}
+            aria-label="Show service list"
             sx={{
               position: "absolute",
               bottom: 80,

@@ -537,6 +537,7 @@ export default function AdminServiceEdit() {
                       size="small"
                       color="error"
                       onClick={() => removeLocation(idx)}
+                      aria-label={`Remove location ${idx + 1}`}
                     >
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -657,6 +658,7 @@ export default function AdminServiceEdit() {
                     size="small"
                     color="error"
                     onClick={() => removeDocument(idx)}
+                    aria-label={`Remove document ${idx + 1}`}
                   >
                     <DeleteIcon fontSize="small" />
                   </IconButton>

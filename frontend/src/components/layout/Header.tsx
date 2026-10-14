@@ -240,6 +240,9 @@ export default function Header() {
           <IconButton
             onClick={toggleMode}
             size="small"
+            aria-label={
+              mode === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
             sx={{ color: "text.secondary" }}
           >
             {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
@@ -248,7 +251,11 @@ export default function Header() {
           {/* Auth area */}
           {isAuthenticated ? (
             <>
-              <IconButton onClick={handleUserMenuOpen} size="small">
+              <IconButton
+                onClick={handleUserMenuOpen}
+                size="small"
+                aria-label="Account menu"
+              >
                 <Avatar
                   sx={{
                     width: 32,

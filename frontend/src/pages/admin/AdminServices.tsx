@@ -135,6 +135,7 @@ export default function AdminServices() {
         <Box>
           <IconButton
             size="small"
+            aria-label={`Edit ${params.row.name}`}
             onClick={(e) => {
               e.stopPropagation();
               navigate(`/admin/services/${params.row.id}/edit`);
@@ -145,6 +146,7 @@ export default function AdminServices() {
           <IconButton
             size="small"
             color="error"
+            aria-label={`Delete ${params.row.name}`}
             onClick={(e) => {
               e.stopPropagation();
               setDeleteDialog(params.row.id);

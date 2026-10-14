@@ -248,6 +248,7 @@ export default function AdminLayout() {
               <IconButton
                 edge="start"
                 onClick={() => setMobileOpen(true)}
+                aria-label="Open admin menu"
                 sx={{ mr: 1 }}
               >
                 <MenuIcon />
