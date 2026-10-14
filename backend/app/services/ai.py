@@ -452,13 +452,12 @@ async def process_message(
     if settings.use_live_ai:
         try:
             return await _responses_flow(session, user_text)
-        except Exception as exc:  # noqa: BLE001 — surface anything from the SDK
+        except Exception:  # noqa: BLE001 — fall back on any SDK failure
             log.exception("Responses API call failed; falling back to scripted demo")
             err_msg = IntakeMessage(
                 role=MessageRole.assistant,
                 content=(
-                    "I hit a problem reaching the AI service "
-                    f"(`{type(exc).__name__}: {exc}`). "
+                    "I hit a problem reaching the AI service. "
                     "Switching to the offline guided flow so we can keep going."
                 ),
                 progress_percent=0,

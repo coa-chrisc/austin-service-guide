@@ -267,7 +267,11 @@ async def create_realtime_client_secret(
                 "detail": {"error": detail},
             },
         )
-        raise HTTPException(status_code=502, detail=detail) from exc
+        # Upstream error bodies can include account/key hints; keep them in
+        # the opt-in debug trace only.
+        raise HTTPException(
+            status_code=502, detail="Realtime voice is temporarily unavailable."
+        ) from exc
     except httpx.HTTPError as exc:
         record_realtime_debug_event(
             session_id,
