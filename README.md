@@ -26,7 +26,7 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 - **Realtime voice intake** using OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC, so residents can talk through their situation instead of typing.
 - **Tool-calling AI workflow** that searches services, extracts profile information, finds matches, changes language, retrieves crisis resources, and completes the intake.
 - **No-account-first resident experience** so a resident can get recommendations without signing up.
-- **Life-event entry points** such as job loss, eviction, food need, healthcare need, having a baby, veteran benefits, senior help, legal trouble, and child care.
+- **Life-event entry points** such as losing a job, a housing crisis, a new baby, veteran transition, an aging parent, a new disability, an unsafe situation, and adding healthy years.
 - **Personalized service plan** that prioritizes the first few actions instead of overwhelming residents with a long directory.
 - **Searchable service directory** with categories, highlighted matches, open-now filtering, and helpful suggestions when no exact result is found.
 - **Interactive map** with categorized service pins, list view, category filters, plan-only mode, "near me" distance support, and service popups.
@@ -89,7 +89,7 @@ In production, these areas would connect to authenticated staff access, governed
 
 ## Service Catalog
 
-The backend includes a seeded Austin-area service catalog with 75 demo services across categories such as:
+The backend includes a seeded Austin-area service catalog with 87 demo services across categories such as:
 
 - Food and nutrition
 - Healthcare and mental health
@@ -119,7 +119,7 @@ Each service can include provider details, eligibility summaries, application in
 | Backend                | FastAPI, Pydantic                                                |
 | AI                     | OpenAI Responses API with tool calling; scripted fallback mode   |
 | HTTP                   | Fetch API on frontend, `httpx` for outbound backend integrations |
-| Demo data              | In-memory Python seed catalog                                    |
+| Demo data              | YAML catalog under `backend/app/data/`, loaded into memory       |
 | Optional notifications | Twilio SMS and SendGrid email stubs/integration points           |
 
 ## Running Locally
@@ -134,7 +134,7 @@ Each service can include provider details, eligibility summaries, application in
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/crypticpy/austin-service-guide.git
+git clone https://github.com/coa-chrisc/austin-service-guide.git
 cd austin-service-guide
 ```
 
@@ -181,15 +181,26 @@ Useful settings:
 - `OPENAI_REASONING_EFFORT` — `low` / `medium` / `high` (default `medium`).
 - `OPENAI_MAX_TOOL_ITERATIONS` — safety cap on tool-call rounds per assistant turn (default `6`).
 - `OPENAI_REALTIME_MODEL` — model for the voice intake (default `gpt-realtime-2`).
+- `OPENAI_REALTIME_REASONING_EFFORT` — reasoning effort for the voice model (default `medium`).
 - `OPENAI_REALTIME_VOICE` — Realtime voice preset (default `marin`).
 - `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-mini-transcribe`).
 - `OPENAI_REALTIME_SECRET_TTL_SECONDS` — lifetime of the ephemeral client secret returned to the browser (default `600`).
 - `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` — opt-in trace for troubleshooting realtime voice sessions. Off by default; transcripts are short but sensitive, so keep this disabled outside local debugging.
-- `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set.
+- `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. Voice intake needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
 - `CORS_ORIGINS` — allowed frontend origins.
 - `PUBLIC_ORIGIN` — origin used to build share links (QR codes, SMS/email).
 - `TWILIO_*` — optional SMS sending.
 - `SENDGRID_*` — optional email sending.
+
+## Companion App: Austin Health Pulse
+
+The [Austin Health Pulse](https://github.com/coa-chrisc/austin-health-pulse) life-expectancy calculator links residents into this guide's intake with the healthy-years scenario and the factors they want to work on:
+
+```text
+/intake?event=healthspan&focus=smoking_cessation,nutrition,physical_activity,mental_health
+```
+
+`event=healthspan` opens the "Adding Healthy Years" scenario, and each `focus` value is a catalog category slug that seeds the resident's needs before the first question.
 
 ## Demo Boundaries
 
@@ -236,6 +247,7 @@ frontend/
     lib/           API client and utilities
     theme/         APH-inspired theme setup
   package.json     Frontend dependencies and dev/build/preview scripts
+docs/              Vision, requirements, user stories, backend design, brand notes
 AGENTS.md          Contributor guide for coding agents and maintainers
 CLAUDE.md          Architecture and conventions for AI coding tools
 ```
@@ -248,10 +260,13 @@ npm run build
 ```
 
 ```bash
-python -m compileall backend/app
+cd backend
+pip install -r requirements-dev.txt
+python -m compileall app
+python -m pytest
 ```
 
-These are the current baseline checks for the demo.
+These are the baseline checks for the demo. The backend tests force the scripted flow, so they never call OpenAI. See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request expectations.
 
 ## License
 
