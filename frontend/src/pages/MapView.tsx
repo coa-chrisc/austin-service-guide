@@ -176,7 +176,7 @@ export default function MapView() {
           }}
         >
           <Typography variant="h6" fontWeight={600}>
-            Services ({filteredPins.length})
+            Locations ({filteredPins.length})
           </Typography>
           {isMobile && (
             <IconButton

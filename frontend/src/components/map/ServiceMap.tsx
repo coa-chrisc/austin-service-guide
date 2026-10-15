@@ -82,6 +82,14 @@ const CATEGORY_STYLES: Record<string, CategoryStyle> = {
     color: "#9F3CC9",
     svg: `<path d="M8 2C5.2 2 3 4.2 3 7c0 1.9 1 3.5 2.5 4.3V13h5v-1.7C12 10.5 13 8.9 13 7c0-2.8-2.2-5-5-5zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm-2 3h4v1H6V7z" fill="white"/>`,
   },
+  // Public-health program categories added after the original set; colors
+  // match backend/app/data/categories.yaml.
+  cooling: { color: "#0288D1", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  schools: { color: "#5E35B1", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  refugee: { color: "#00897B", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  smoking_cessation: { color: "#6A1B9A", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  nutrition: { color: "#2E7D32", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  physical_activity: { color: "#EF6C00", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
   financial: {
     color: "#008743",
     svg: `<path d="M8 2a6 6 0 100 12A6 6 0 008 2zm.5 3v1c1 .2 1.5.7 1.5 1.5 0 .7-.5 1.2-1.5 1.4v1.5c.3 0 .6-.1.9-.3l.6.8c-.4.3-1 .5-1.5.6V12h-1v-1.5C6.5 10.3 6 9.8 6 9c0-.8.5-1.3 1.5-1.5V6c-.2 0-.4.1-.7.2L6.2 5.4c.4-.3.9-.4 1.3-.4V4h1zM7 7.7c-.3.1-.5.3-.5.6 0 .3.2.5.5.6V7.7zm1 2.7c.3-.1.5-.3.5-.6s-.2-.5-.5-.6v1.2z" fill="white"/>`,
@@ -107,6 +115,12 @@ const CATEGORY_SLUG_MAP: Record<string, string> = {
   "Immigration Services": "immigration",
   Emergency: "emergency",
   "Financial Assistance": "financial",
+  "Heat Relief & Cooling": "cooling",
+  "Schools & Youth Mental Health": "schools",
+  "Refugee & Resettlement": "refugee",
+  "Smoking Cessation": "smoking_cessation",
+  "Nutrition & Healthy Eating": "nutrition",
+  "Physical Activity": "physical_activity",
 };
 
 const SLUG_DISPLAY_MAP: Record<string, string> = Object.fromEntries(
