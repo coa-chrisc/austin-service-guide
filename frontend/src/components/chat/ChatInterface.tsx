@@ -518,7 +518,8 @@ export default function ChatInterface({
               maxWidth={400}
             >
               I'll ask you a few questions to find city services you may be
-              eligible for. Your information stays private and secure.
+              eligible for. This guide uses AI (OpenAI), so please don't share
+              names, Social Security numbers, or account numbers.
             </Typography>
           </Box>
         )}

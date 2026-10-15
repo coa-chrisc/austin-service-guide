@@ -375,7 +375,8 @@ export default function Landing() {
             Get Started
           </Button>
           <Typography variant="body2" sx={{ mt: 2, opacity: 0.75 }}>
-            No account needed. Free and confidential.
+            No account needed. Free. Uses AI (OpenAI) — please don't share
+            names or ID numbers.
           </Typography>
         </Container>
       </Box>

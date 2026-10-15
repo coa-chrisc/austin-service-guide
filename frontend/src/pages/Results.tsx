@@ -51,7 +51,7 @@ import {
   type ApplicationOrderItem,
 } from "@/lib/api";
 import { makeResultsT } from "@/lib/resultsI18n";
-import { setActiveSession } from "@/lib/session";
+import { clearActiveSession, setActiveSession } from "@/lib/session";
 import { canNativeShare, nativeShare } from "@/lib/share";
 import type {
   ServiceMatch,
@@ -119,6 +119,7 @@ export default function Results() {
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterConfidence, setFilterConfidence] =
     useState<MatchConfidence | null>(null);
@@ -154,11 +155,12 @@ export default function Results() {
       matchCount > 0
         ? `My Austin Service Guide plan — ${matchCount} matched service${matchCount !== 1 ? "s" : ""}.`
         : "My Austin Service Guide plan.";
+    const shareText = `${text} This link expires within 24 hours.`;
 
     if (canNativeShare()) {
       const result = await nativeShare({
         title: "My Austin Service Guide plan",
-        text,
+        text: shareText,
         url,
       });
       if (result.kind === "shared" || result.kind === "cancelled") return;
@@ -212,7 +214,16 @@ export default function Results() {
           language: res.language ?? "en",
         });
       })
-      .catch((err) => setError(err.message || "Failed to load results"))
+      .catch((err) => {
+        // Sessions expire server-side (SESSION_TTL_HOURS); forget the stale
+        // id so the header stops offering a plan that no longer exists.
+        if (err instanceof ApiError && err.status === 404) {
+          clearActiveSession();
+          setExpired(true);
+          return;
+        }
+        setError(err.message || "Failed to load results");
+      })
       .finally(() => setLoading(false));
   }, [sessionId]);
 
@@ -249,7 +260,9 @@ export default function Results() {
   if (error || !data) {
     return (
       <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
-        <Alert severity="error">{error || t("session_not_found")}</Alert>
+        <Alert severity={expired ? "info" : "error"}>
+          {expired ? t("plan_expired") : error || t("session_not_found")}
+        </Alert>
         <Button sx={{ mt: 2 }} onClick={() => navigate("/intake")}>
           {t("start_new_intake")}
         </Button>
