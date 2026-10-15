@@ -261,9 +261,9 @@ export interface RealtimeDebugEvent {
 // backend. When it's off, every recordDebug() call (status change, tool
 // dispatch, transport event…) would otherwise POST and get back a 404,
 // spamming the console. After the first 404 we latch this flag and skip
-// further POSTs. console.debug() in the caller still runs so local devs see
-// events. resetRealtimeDebugLogDisabled() clears the flag at the start of a
-// new realtime session so a config change doesn't require a page reload.
+// further POSTs for the rest of the page session (new voice sessions do not
+// re-arm it). console.debug() in the caller still runs so local devs see
+// events. resetRealtimeDebugLogDisabled() is for tests / explicit re-arming.
 let realtimeDebugLogDisabled = false;
 
 export function resetRealtimeDebugLogDisabled() {
@@ -292,26 +292,15 @@ export function logRealtimeDebugEvent(
     },
     { timeoutMs: 5000 },
   ).catch((err) => {
-    // 404 with detail="Not found" means the endpoint itself is disabled
-    // (REALTIME_DEBUG_LOG_ENABLED=false). Latch and swallow so the burst of
-    // in-flight POSTs that fired before the first 404 arrived doesn't each
-    // surface as an unhandled rejection. A 404 with detail="Session not
-    // found" means just this sessionId is stale — re-throw so the caller
-    // can see it; we don't latch so a subsequent valid session still logs.
-    if (
-      err instanceof ApiError &&
-      err.status === 404 &&
-      isDebugEndpointDisabledDetail(err.message)
-    ) {
+    // Any 404 (endpoint disabled, or a stale session) latches the flag and is
+    // swallowed so the burst of in-flight POSTs that fired before the first
+    // 404 arrived doesn't surface as unhandled rejections.
+    if (err instanceof ApiError && err.status === 404) {
       realtimeDebugLogDisabled = true;
       return null;
     }
     throw err;
   });
-}
-
-function isDebugEndpointDisabledDetail(message: string): boolean {
-  return message === "Not found";
 }
 
 export function getRealtimeDebugEvents(sessionId: string, limit = 200) {

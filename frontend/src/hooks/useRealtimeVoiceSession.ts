@@ -4,7 +4,6 @@ import {
   createRealtimeClientSecret,
   executeRealtimeTool,
   logRealtimeDebugEvent,
-  resetRealtimeDebugLogDisabled,
   syncRealtimeTranscript,
   type RealtimeToolResult,
   type RealtimeTranscriptResult,
@@ -1470,10 +1469,6 @@ export function useRealtimeVoiceSession({
         }
         if (audioRef.current === ownedAudio) audioRef.current = null;
       };
-      // Re-arm debug logging before any recordDebug() call so a prior
-      // session that latched it off after a 404 doesn't suppress the very
-      // first event of this new session.
-      resetRealtimeDebugLogDisabled();
       recordDebug("voice_start_requested", {
         language,
         conversation_length: conversation.length,
@@ -1502,6 +1497,25 @@ export function useRealtimeVoiceSession({
       setStatus("connecting");
 
       try {
+        // Fetch the client secret first so an unconfigured voice service (no
+        // API key / demo mode) fails before the browser prompts for the mic.
+        // The secret TTL is 600s, so fetching before getUserMedia is safe.
+        recordDebug("client_secret_request_started", { language });
+        const secret = await createRealtimeClientSecret(sessionId, language);
+        if (startCancelled()) {
+          cleanupOwnedStart();
+          recordDebug("voice_start_cancelled", {
+            stage: "client_secret_ready",
+          });
+          return;
+        }
+        sessionConfigRef.current = secret.session_config || null;
+        recordDebug("client_secret_request_completed", {
+          model: secret.model,
+          client_session_id: secret.client_secret.session?.id,
+          expires_at: secret.client_secret.expires_at,
+          session_config: realtimeSessionSummary(sessionConfigRef.current),
+        });
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
         });
@@ -1530,22 +1544,6 @@ export function useRealtimeVoiceSession({
           }, startupMicLockMs);
         }
 
-        recordDebug("client_secret_request_started", { language });
-        const secret = await createRealtimeClientSecret(sessionId, language);
-        if (startCancelled()) {
-          cleanupOwnedStart();
-          recordDebug("voice_start_cancelled", {
-            stage: "client_secret_ready",
-          });
-          return;
-        }
-        sessionConfigRef.current = secret.session_config || null;
-        recordDebug("client_secret_request_completed", {
-          model: secret.model,
-          client_session_id: secret.client_secret.session?.id,
-          expires_at: secret.client_secret.expires_at,
-          session_config: realtimeSessionSummary(sessionConfigRef.current),
-        });
         const pc = new RTCPeerConnection();
         ownedPc = pc;
         pcRef.current = pc;
