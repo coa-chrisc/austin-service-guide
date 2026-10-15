@@ -228,6 +228,18 @@ def test_scripted_flow_skips_known_fields_after_lost_job(client):
     assert profile["income_bracket"] == "$0-$10,000"
 
 
+def test_lost_job_opener_does_not_re_ask_stated_housing(client):
+    sid = _start(client, life_event="lost_job")
+    reply = _say(
+        client, sid,
+        "I lost my job last month and I'm behind on rent. I rent an apartment in 78744.",
+    )
+    assert "housing situation" not in reply
+    profile = client.get(f"/api/v1/intake/{sid}/results").json()["profile"]
+    assert profile["housing_situation"] == "renting"
+    assert profile["zip_code"] == "78744"
+
+
 def test_scripted_flow_still_asks_unknown_fields_in_order(client):
     sid = _start(client)
     assert HOUSEHOLD_Q in _say(client, sid, "I need food, I live in 78702")

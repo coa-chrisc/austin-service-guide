@@ -2112,6 +2112,9 @@ def _scenario_first_followup(session: IntakeSession, user_text: str) -> IntakeMe
     }
     if slug == "lost-job":
         if any(word in text for word in ("rent", "evict", "housing", "shelter", "homeless")):
+            # Housing already described: let the main flow ask what's still unknown.
+            if _text_mentions_housing_status(user_text):
+                return None
             question = (
                 "What is your housing situation right now — are you in a place "
                 "but behind on rent, staying somewhere temporary, or without housing?"
