@@ -7,6 +7,7 @@ and CRUD operations for the service directory.
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 from app.models import (
@@ -79,19 +80,52 @@ def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> floa
 
 # ── Fuzzy text matching ───────────────────────────────────────────────
 
+_WORD_RE = re.compile(r"[a-z0-9]+")
+# Filler words residents type that say nothing about the service they need.
+_SEARCH_STOPWORDS = frozenset({
+    "a", "an", "and", "any", "for", "get", "help", "i", "im", "in", "is",
+    "me", "my", "need", "of", "on", "or", "please", "service", "services",
+    "the", "to", "we", "with",
+})
+
+
+# Everyday words mapped to the category they mean, so "rent" or "doctor"
+# finds services whose descriptions say "housing" or "healthcare".
+_SEARCH_CATEGORY_WORDS: dict[str, str] = {
+    **dict.fromkeys(("rent", "rental", "eviction", "evicted", "landlord",
+                     "apartment", "shelter", "homeless", "homelessness"), "housing"),
+    **dict.fromkeys(("doctor", "clinic", "medical", "sick", "dentist",
+                     "dental", "insurance", "medicaid"), "healthcare"),
+    **dict.fromkeys(("groceries", "hungry", "meals", "pantry", "snap"), "food"),
+    **dict.fromkeys(("job", "jobs", "work", "unemployed", "career"), "employment"),
+    **dict.fromkeys(("daycare", "kids", "baby"), "childcare"),
+    **dict.fromkeys(("lawyer", "attorney", "court"), "legal"),
+    **dict.fromkeys(("electric", "electricity", "water", "bill", "bills"), "utilities"),
+    **dict.fromkeys(("bus", "ride", "rides"), "transportation"),
+    **dict.fromkeys(("depression", "anxiety", "counseling", "therapy"), "mental_health"),
+}
+
+
+def _query_categories(query: str) -> set[str]:
+    return {
+        _SEARCH_CATEGORY_WORDS[w]
+        for w in _WORD_RE.findall(query.lower())
+        if w in _SEARCH_CATEGORY_WORDS
+    }
+
+
 def _text_match(query: str, text: str) -> bool:
-    """Case-insensitive substring / token match."""
-    q = query.lower()
-    t = text.lower()
-    # Full substring match
-    if q in t:
-        return True
-    # Token overlap
-    q_tokens = set(q.split())
-    t_tokens = set(t.split())
-    if q_tokens & t_tokens:
-        return True
-    return False
+    """Case-insensitive word-prefix match on the query's meaningful words.
+
+    "rent" matches "rent", "rental" and "renters" but not "parents"; filler
+    words like "help" are ignored unless the query is nothing but filler.
+    """
+    q_words = _WORD_RE.findall(query.lower())
+    t_words = _WORD_RE.findall(text.lower())
+    if not q_words or not t_words:
+        return False
+    meaningful = [w for w in q_words if w not in _SEARCH_STOPWORDS] or q_words
+    return any(tw.startswith(qw) for qw in meaningful for tw in t_words)
 
 
 # ── Query functions ───────────────────────────────────────────────────
@@ -124,6 +158,7 @@ def get_all_services(
         results = [s for s in results if category in s.categories]
 
     if search:
+        search_cats = _query_categories(search)
         results = [
             s for s in results
             if _text_match(search, s.name)
@@ -131,6 +166,7 @@ def get_all_services(
             or _text_match(search, s.provider_name)
             or _text_match(search, s.eligibility_summary)
             or any(_text_match(search, c) for c in s.categories)
+            or bool(search_cats.intersection(s.categories))
         ]
 
     if zip_code:

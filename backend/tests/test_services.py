@@ -19,3 +19,24 @@ def test_admin_service_writes_return_422_on_invalid_body(client):
     res = client.patch("/api/v1/admin/services/svc-wic", json={"categories": 5})
     assert res.status_code == 422
     assert client.patch("/api/v1/admin/services/nope", json={}).status_code == 404
+
+
+def test_search_matches_whole_words_and_ignores_filler(client):
+    names = lambda q: {  # noqa: E731
+        s["name"]
+        for s in client.get("/api/v1/services", params={"search": q, "page_size": 100}).json()["items"]
+    }
+    rent = names("rent help")
+    assert "Austin Tenants' Council" in rent
+    assert rent == names("rent")  # "help" is filler, not a match term
+    assert "Any Baby Can" not in rent  # "parents" is not "rent"
+    assert names("help")  # all-filler queries still search
+
+
+def test_search_maps_everyday_words_to_categories(client):
+    def items(q):
+        return client.get("/api/v1/services", params={"search": q, "page_size": 100}).json()["items"]
+
+    assert all("housing" in s["categories"] or "rent" in s["description"].lower() for s in items("rent"))
+    assert any("housing" in s["categories"] for s in items("rent help"))
+    assert any("healthcare" in s["categories"] for s in items("i need a doctor"))
