@@ -23,7 +23,14 @@ type VoiceStatus =
 interface UseRealtimeVoiceSessionOptions {
   sessionId: string;
   onLocalTranscript: (role: "user" | "assistant", content: string) => void;
-  onTranscriptSync: (result: RealtimeTranscriptResult) => void;
+  /**
+   * `localText` is the raw transcript already shown via onLocalTranscript for
+   * user-role syncs; the receiver must replace it with the redacted server copy.
+   */
+  onTranscriptSync: (
+    result: RealtimeTranscriptResult,
+    localText?: string,
+  ) => void;
   onToolResult: (result: RealtimeToolResult) => void;
 }
 
@@ -807,7 +814,6 @@ export function useRealtimeVoiceSession({
       recordDebug("transcript_sync_started", {
         role,
         content_length: text.length,
-        content_preview: clipDebugText(text, 240),
       });
       onLocalTranscriptRef.current(role, text);
       try {
@@ -825,6 +831,7 @@ export function useRealtimeVoiceSession({
         recordDebug("transcript_sync_completed", {
           role,
           message_count: result.messages.length,
+          redacted_count: result.redacted?.length ?? 0,
           progress_percent: result.progress_percent,
           is_complete: result.is_complete,
           crisis_detected: result.crisis_detected,
@@ -837,7 +844,11 @@ export function useRealtimeVoiceSession({
                 messages: [
                   {
                     role,
-                    content: text,
+                    // Never fall back to raw text when the server redacted it.
+                    content:
+                      role === "user" && result.redacted?.length
+                        ? "[details removed]"
+                        : text,
                     suggested_buttons: [],
                     progress_percent: result.progress_percent,
                     is_complete: result.is_complete,
@@ -858,7 +869,10 @@ export function useRealtimeVoiceSession({
           onTranscriptSyncRef.current({ ...syncedResult, is_complete: false });
           scheduleCompletionFinish("assistant_transcript_synced");
         } else {
-          onTranscriptSyncRef.current(syncedResult);
+          onTranscriptSyncRef.current(
+            syncedResult,
+            role === "user" ? text : undefined,
+          );
         }
         return true;
       } catch (err) {
@@ -1151,8 +1165,7 @@ export function useRealtimeVoiceSession({
       }
       if (type === "response.created") {
         const response = event.response as
-          | { id?: string; metadata?: Record<string, unknown> }
-          | undefined;
+          { id?: string; metadata?: Record<string, unknown> } | undefined;
         const isStartupCreated =
           response?.metadata?.purpose === "startup_greeting" ||
           startupResponsePendingRef.current;
@@ -1254,7 +1267,6 @@ export function useRealtimeVoiceSession({
         recordDebug("input_transcription_completed", {
           item_id: itemId,
           content_length: transcript.trim().length,
-          content_preview: clipDebugText(transcript, 240),
         });
         if (itemId && transcript.trim())
           transcriptItemIdsRef.current.add(itemId);
@@ -1395,9 +1407,9 @@ export function useRealtimeVoiceSession({
         }
         if (stopAfterNextAssistantRef.current || completionFlowRef.current) {
           finalResponseDoneRef.current = true;
-          if (
-            !(finalAudioStartedRef.current && !finalAudioStoppedRef.current)
-          ) {
+          if (!(
+            finalAudioStartedRef.current && !finalAudioStoppedRef.current
+          )) {
             setStatus("finalizing");
           }
           scheduleCompletionFinish("response_done");
@@ -1725,7 +1737,9 @@ export function useRealtimeVoiceSession({
             status: answer.status,
             body: answerText,
           });
-          throw new Error("Realtime voice connection could not be established.");
+          throw new Error(
+            "Realtime voice connection could not be established.",
+          );
         }
         if (startCancelled()) {
           cleanupOwnedStart();

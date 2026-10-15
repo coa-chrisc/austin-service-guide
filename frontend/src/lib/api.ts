@@ -2,6 +2,7 @@
 /*  API client for the Austin Service Guide backend                    */
 /* ------------------------------------------------------------------ */
 
+import { getAdminToken } from "./adminToken";
 import type {
   IntakeSession,
   IntakeMessage,
@@ -51,10 +52,10 @@ async function apiRequest<T>(
   method: string,
   path: string,
   body?: unknown,
-  options: { timeoutMs?: number } = {},
+  options: { timeoutMs?: number; headers?: Record<string, string> } = {},
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...options.headers };
   const controller =
     options.timeoutMs && options.timeoutMs > 0 ? new AbortController() : null;
   const timeoutId = controller
@@ -165,17 +166,24 @@ export async function startIntake(
   };
 }
 
+export interface SendIntakeMessageResult {
+  response: IntakeMessage;
+  /** Stored, PII-redacted copy of what the resident typed (null if absent). */
+  userMessage: IntakeMessage | null;
+}
+
 export async function sendIntakeMessage(
   sessionId: string,
   message: string,
   language = "en",
-): Promise<IntakeMessage> {
+): Promise<SendIntakeMessageResult> {
   const raw = await apiRequest<{
     session_id: string;
     response: IntakeMessage;
+    user_message: IntakeMessage | null;
     status: string;
   }>("POST", `/api/v1/intake/${sessionId}/message`, { message, language });
-  return raw.response;
+  return { response: raw.response, userMessage: raw.user_message };
 }
 
 export interface RealtimeClientSecretResponse {
@@ -230,6 +238,8 @@ export function executeRealtimeTool(
 export interface RealtimeTranscriptResult {
   session_id: string;
   messages: IntakeMessage[];
+  /** Identifier types removed from a user-role transcript (e.g. "phone"). */
+  redacted?: string[];
   status: string;
   progress_percent: number;
   is_complete: boolean;
@@ -492,12 +502,39 @@ export function getAdminStaff() {
   return apiRequest<StaffMember[]>("GET", "/api/v1/admin/staff");
 }
 
+// Catalog writes need the staff-entered X-Admin-Token (sessionStorage only).
+function adminWriteOptions() {
+  const token = getAdminToken();
+  const headers: Record<string, string> = {};
+  if (token) headers["X-Admin-Token"] = token;
+  return { headers };
+}
+
 export function updateAdminService(id: string, data: Partial<Service>) {
-  return apiRequest<Service>("PATCH", `/api/v1/admin/services/${id}`, data);
+  return apiRequest<Service>(
+    "PATCH",
+    `/api/v1/admin/services/${id}`,
+    data,
+    adminWriteOptions(),
+  );
 }
 
 export function createAdminService(data: Partial<Service>) {
-  return apiRequest<Service>("POST", "/api/v1/admin/services", data);
+  return apiRequest<Service>(
+    "POST",
+    "/api/v1/admin/services",
+    data,
+    adminWriteOptions(),
+  );
+}
+
+export function deleteAdminService(id: string) {
+  return apiRequest<{ status: string; service_id: string }>(
+    "DELETE",
+    `/api/v1/admin/services/${id}`,
+    undefined,
+    adminWriteOptions(),
+  );
 }
 
 // ── New admin endpoints ───────────────────────────────────────────

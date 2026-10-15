@@ -109,12 +109,36 @@ export default function ChatInterface({
   );
 
   const handleVoiceTranscriptSync = useCallback(
-    (result: {
-      messages: IntakeMessage[];
-      progress_percent: number;
-      is_complete: boolean;
-      crisis_detected: boolean;
-    }) => {
+    (
+      result: {
+        messages: IntakeMessage[];
+        progress_percent: number;
+        is_complete: boolean;
+        crisis_detected: boolean;
+      },
+      localText?: string,
+    ) => {
+      // Replace the raw local transcript (shown before the sync) with the
+      // redacted server copy so the raw version is neither kept nor duplicated.
+      const redacted = result.messages.find((m) => m.role === "user");
+      if (localText && redacted) {
+        setMessages((prev) => {
+          let idx = -1;
+          for (let k = prev.length - 1; k >= 0; k--) {
+            if (
+              prev[k].role === "user" &&
+              prev[k].content.trim() === localText
+            ) {
+              idx = k;
+              break;
+            }
+          }
+          if (idx < 0) return prev;
+          const next = [...prev];
+          next[idx] = { ...next[idx], content: redacted.content.trim() };
+          return next;
+        });
+      }
       appendMessages(result.messages);
       setProgress(result.progress_percent);
       if (result.crisis_detected) {
@@ -256,13 +280,22 @@ export default function ChatInterface({
 
     try {
       const language = getStoredLanguage();
-      const response = await sendIntakeMessage(
+      const { response, userMessage } = await sendIntakeMessage(
         activeSessionId,
         text.trim(),
         language,
       );
       if (sessionIdRef.current !== activeSessionId) return;
-      setMessages((prev) => [...prev, response]);
+      // Swap the optimistic raw copy for the stored, redacted one: this state
+      // is later replayed into voice sessions.
+      setMessages((prev) => [
+        ...(userMessage
+          ? prev.map((m) =>
+              m === userMsg ? { ...m, content: userMessage.content } : m,
+            )
+          : prev),
+        response,
+      ]);
       setProgress(response.progress_percent);
 
       if (response.crisis_detected && !crisisDetected) {
