@@ -30,6 +30,13 @@ import RestaurantIcon from "@mui/icons-material/Restaurant";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import PublicIcon from "@mui/icons-material/Public";
+import LocationCityIcon from "@mui/icons-material/LocationCity";
+import ChildFriendlyIcon from "@mui/icons-material/ChildFriendly";
+import WorkOffIcon from "@mui/icons-material/WorkOff";
+import BeachAccessIcon from "@mui/icons-material/BeachAccess";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import AccessibleIcon from "@mui/icons-material/Accessible";
+import ShieldIcon from "@mui/icons-material/Shield";
 import {
   getLifeEvents,
   getPersonas,
@@ -86,6 +93,19 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   crisis: <PsychologyIcon sx={{ fontSize: 36 }} />,
   immigrant: <PublicIcon sx={{ fontSize: 36 }} />,
   immigration: <PublicIcon sx={{ fontSize: 36 }} />,
+  // MUI icon names as sent by the backend life_events.yaml `icon` field.
+  LocationCity: <LocationCityIcon sx={{ fontSize: 36 }} />,
+  ChildFriendly: <ChildFriendlyIcon sx={{ fontSize: 36 }} />,
+  WorkOff: <WorkOffIcon sx={{ fontSize: 36 }} />,
+  BeachAccess: <BeachAccessIcon sx={{ fontSize: 36 }} />,
+  MilitaryTech: <MilitaryTechIcon sx={{ fontSize: 36 }} />,
+  HomeWork: <HomeWorkIcon sx={{ fontSize: 36 }} />,
+  Elderly: <ElderlyIcon sx={{ fontSize: 36 }} />,
+  School: <SchoolIcon sx={{ fontSize: 36 }} />,
+  FamilyRestroom: <FamilyRestroomIcon sx={{ fontSize: 36 }} />,
+  Favorite: <FavoriteIcon sx={{ fontSize: 36 }} />,
+  Accessible: <AccessibleIcon sx={{ fontSize: 36 }} />,
+  Shield: <ShieldIcon sx={{ fontSize: 36 }} />,
 };
 
 function getIconForEvent(event: LifeEvent): React.ReactNode {
@@ -207,7 +227,7 @@ const STEPS = [
     icon: <SearchIcon sx={{ fontSize: 48, color: "primary.main" }} />,
     title: "We Find Matching Services",
     description:
-      "Our system searches 200+ services to find ones you're likely eligible for.",
+      "Our system searches 87 local services to find ones you're likely eligible for.",
   },
   {
     icon: <MapIcon sx={{ fontSize: 48, color: "primary.main" }} />,
@@ -634,10 +654,10 @@ export default function Landing() {
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             {[
-              { value: "200+", label: "Services Available" },
-              { value: "14", label: "Service Categories" },
-              { value: "1M+", label: "Austin Residents Served" },
-              { value: "7+", label: "Languages Supported" },
+              { value: "87", label: "Services Available" },
+              { value: "21", label: "Service Categories" },
+              { value: "Free", label: "No Account Needed" },
+              { value: "8", label: "Languages Supported" },
             ].map((stat) => (
               <Grid key={stat.label} size={{ xs: 6, md: 3 }}>
                 <Typography
