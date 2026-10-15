@@ -54,7 +54,7 @@ For staff, an administrative console provides a clean, real-time view of who has
 
 ---
 
-## Competitive Landscape & How We Exceed It
+## Landscape: What Others Do Well and Where This Demo Differs
 
 ### What Exists Today
 
@@ -68,9 +68,9 @@ For staff, an administrative console provides a clean, real-time view of who has
 | **findhelp.org**         | 1M+ program locations, full-stack enrollment                        | Directory model — no AI personalization, no risk assessment, no city-integrated mapping  |
 | **Unite Us**             | Closed-loop referral tracking, HIPAA compliant                      | Healthcare-focused, requires organizational adoption, not resident-self-service          |
 
-### How Austin Service Guide Exceeds All of Them
+### Where Austin Service Guide Differs
 
-1. **Unified platform** — First U.S. city to combine AI-powered intake + benefits eligibility + risk assessment + interactive mapping + closed-loop tracking in one resident-facing portal
+1. **Unified platform** — Combines AI-powered intake + benefits eligibility + risk assessment + interactive mapping + closed-loop tracking in one resident-facing portal (some of these are vision items not yet built in the demo)
 2. **Conversational AI navigator** — Not a keyword chatbot but a context-aware AI that conducts a structured intake conversation, adapts questions dynamically, and explains its recommendations
 3. **Proactive risk identification** — Goes beyond "what are you looking for?" to identify risks the resident may not be aware of, based on their demographic profile and responses
 4. **Life-event architecture** — Services organized by what happened to you (new baby, job loss, new to Austin, aging parent, housing crisis), not by which department runs them

@@ -92,7 +92,6 @@ Read these before implementing:
 - `docs/REQUIREMENTS.md` — feature inventory (24 resident + 15 admin features), detailed functional requirements, technical architecture, data model, non-functional requirements
 - `docs/USER_STORIES.md` — 42 user stories across 10 epics with acceptance criteria, prioritized P0-P3
 - `docs/BACKEND_DESIGN.md` — database schema (full DDL), API endpoints (50+), AI pipeline (system prompt, tool definitions, matching engine), admin console wireframes, background jobs, module structure
-- `docs/COMPETITIVE_ANALYSIS.md` — landscape audit, gap analysis, innovation features
 
 ## Civic-AI-Starter Conventions
 
