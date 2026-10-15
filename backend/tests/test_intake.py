@@ -521,3 +521,18 @@ def test_results_and_health_expose_session_ttl(client):
     ttl = get_settings().session_ttl_hours
     assert client.get(f"/api/v1/intake/{sid}/results").json()["session_ttl_hours"] == ttl
     assert client.get("/api/v1/health").json()["session_ttl_hours"] == ttl
+
+
+@pytest.mark.parametrize(
+    "answer, expected",
+    [
+        ("I own my home", "own_home"),
+        ("We own our house", "own_home"),
+        ("I live on my own", "other"),
+        ("I own a car and live in my car", "homeless"),
+    ],
+)
+def test_housing_answer_needs_a_home_to_mean_own_home(answer, expected):
+    from app.services.ai import _extract_housing
+
+    assert _extract_housing(answer) == expected

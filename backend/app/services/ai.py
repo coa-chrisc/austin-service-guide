@@ -2689,7 +2689,7 @@ _STATED_HOUSEHOLD_RE = re.compile(
 )
 _SOLO_RE = re.compile(r"\b(?:just me|i live alone|by myself)\b", re.IGNORECASE)
 _HOMELESS_RE = re.compile(
-    r"\b(?:homeless|unhoused|in a shelter|(?:sleeping|living) in (?:my|our|a) (?:car|truck|van)"
+    r"\b(?:homeless|unhoused|in a shelter|(?:sleep(?:ing)?|liv(?:e|ing)) in (?:my|our|a|the) (?:car|truck|van)"
     r"|on the streets?)\b",
     re.IGNORECASE,
 )
@@ -2722,7 +2722,10 @@ _HOUSING_ANSWER: list[tuple[str, re.Pattern[str]]] = [
     ("homeless", _HOMELESS_RE),
     ("unstable", _UNSTABLE_RE),
     ("renting", re.compile(r"\brent(?:ing|er)?\b", re.IGNORECASE)),
-    ("own_home", re.compile(r"\bown\b|\bhomeowner\b|\bmortgage\b", re.IGNORECASE)),
+    ("own_home", re.compile(
+        r"\bown (?:my |our |a |the )?(?:home|house|condo|place)\b|\bhomeowner\b|\bmortgage\b",
+        re.IGNORECASE,
+    )),
     ("unstable", re.compile(r"\b(?:friends?|family|staying|couch)\b", re.IGNORECASE)),
 ]
 _STATED_EMPLOYMENT: list[tuple[str, re.Pattern[str]]] = [
