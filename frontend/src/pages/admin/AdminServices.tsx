@@ -26,7 +26,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
-import { getServices } from "../../lib/api";
+import { getServices, deleteAdminService, ApiError } from "../../lib/api";
+import AdminTokenButton from "./AdminTokenButton";
 import type { Service, ServiceStatus } from "../../types";
 
 const STATUS_COLORS: Record<ServiceStatus, "success" | "default" | "warning"> =
@@ -52,7 +53,10 @@ export default function AdminServices() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [snackbar, setSnackbar] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{
+    msg: string;
+    severity: "success" | "error";
+  } | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -95,11 +99,21 @@ export default function AdminServices() {
     ...new Set(services.flatMap((s) => s.categories)),
   ].sort();
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setDeleteDialog(null);
-    setSnackbar("Service deleted successfully");
-    // In production this would call deleteAdminService(id)
-    setServices((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await deleteAdminService(id);
+      setSnackbar({ msg: "Service deleted successfully", severity: "success" });
+      setServices((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setSnackbar({
+        msg:
+          err instanceof ApiError && err.status === 403
+            ? err.message
+            : "Failed to delete service",
+        severity: "error",
+      });
+    }
   };
 
   const columns: GridColDef[] = [
@@ -172,13 +186,16 @@ export default function AdminServices() {
         <Typography variant="h5" fontWeight={700}>
           Services
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate("/admin/services/new")}
-        >
-          Add Service
-        </Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <AdminTokenButton />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate("/admin/services/new")}
+          >
+            Add Service
+          </Button>
+        </Box>
       </Box>
 
       {/* -- toolbar -------------------------------------------------- */}
@@ -298,15 +315,15 @@ export default function AdminServices() {
 
       <Snackbar
         open={!!snackbar}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setSnackbar(null)}
       >
         <Alert
           onClose={() => setSnackbar(null)}
-          severity="success"
+          severity={snackbar?.severity ?? "success"}
           variant="filled"
         >
-          {snackbar}
+          {snackbar?.msg}
         </Alert>
       </Snackbar>
     </Box>

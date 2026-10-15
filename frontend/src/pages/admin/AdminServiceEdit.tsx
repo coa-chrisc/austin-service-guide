@@ -30,7 +30,9 @@ import {
   getServiceBySlug,
   createAdminService,
   updateAdminService,
+  ApiError,
 } from "../../lib/api";
+import AdminTokenButton from "./AdminTokenButton";
 import type {
   Service,
   ServiceDocument,
@@ -233,7 +235,13 @@ export default function AdminServiceEdit() {
       setTimeout(() => navigate("/admin/services"), 1200);
     } catch (err) {
       console.error("Save failed", err);
-      setSnackbar({ msg: "Failed to save service", severity: "error" });
+      setSnackbar({
+        msg:
+          err instanceof ApiError && err.status === 403
+            ? err.message
+            : "Failed to save service",
+        severity: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -293,6 +301,9 @@ export default function AdminServiceEdit() {
         <Typography variant="h5" fontWeight={700}>
           {isNew ? "Add Service" : "Edit Service"}
         </Typography>
+        <Box sx={{ ml: "auto" }}>
+          <AdminTokenButton />
+        </Box>
       </Box>
 
       <Card>
