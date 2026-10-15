@@ -323,7 +323,15 @@ export default function AdminDashboard() {
                       cornerRadius: 4,
                     },
                   ]}
-                  height={260}
+                  height={320}
+                  margin={{ top: 10, right: 10, bottom: 110, left: 10 }}
+                  slotProps={{
+                    legend: {
+                      direction: "row",
+                      position: { vertical: "bottom", horizontal: "middle" },
+                      padding: 0,
+                    },
+                  }}
                 />
               )}
             </CardContent>
@@ -355,6 +363,7 @@ export default function AdminDashboard() {
                   ]}
                   yAxis={[{ data: catNames, scaleType: "band" }]}
                   xAxis={[{ label: "Matches" }]}
+                  margin={{ left: 170 }}
                 />
               )}
             </CardContent>
