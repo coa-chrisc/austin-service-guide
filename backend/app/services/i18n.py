@@ -360,6 +360,26 @@ def redaction_notice(language: str) -> str:
     return REDACTION_NOTICE_I18N.get(lang, REDACTION_NOTICE_I18N["en"])
 
 
+# ── AI-processing notice (part of the opening greeting) ─────────────────
+# Honest disclosure: typed text goes to OpenAI via the backend and voice
+# audio goes to OpenAI directly, so the greeting must not promise
+# confidentiality. Every translation keeps the Latin-script "OpenAI".
+
+AI_NOTICE_I18N: dict[str, str] = {
+    "en": "This guide uses AI (OpenAI) to help match you with services. Please don't share names, Social Security numbers, or account numbers — we don't need them.",
+    "vi": "Hướng dẫn này dùng trí tuệ nhân tạo (OpenAI) để giúp bạn tìm dịch vụ phù hợp. Vui lòng không chia sẻ tên, số An sinh Xã hội hoặc số tài khoản — chúng tôi không cần những thông tin này.",
+    "es": "Esta guía usa inteligencia artificial (OpenAI) para ayudarte a encontrar servicios. Por favor, no compartas nombres, números de Seguro Social ni números de cuenta — no los necesitamos.",
+    "zh": "本指南使用人工智能（OpenAI）帮助您匹配服务。请不要提供姓名、社会安全号码或账户号码 — 我们不需要这些信息。",
+    "ar": "يستخدم هذا الدليل الذكاء الاصطناعي (OpenAI) لمساعدتك في العثور على الخدمات. يُرجى عدم مشاركة الأسماء أو أرقام الضمان الاجتماعي أو أرقام الحسابات — لا نحتاج إليها.",
+}
+
+
+def ai_notice(language: str) -> str | None:
+    """AI-processing notice in the resident's language, or None if untranslated."""
+    lang = (language or "en").split("-")[0].lower()
+    return AI_NOTICE_I18N.get(lang)
+
+
 def translate_sequence_reason(category: str, language: str) -> str | None:
     """Return the localized sequence reason for a category, or None if no translation."""
     table = SEQUENCE_REASONS_I18N.get(language)

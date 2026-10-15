@@ -548,10 +548,15 @@ async def share_results(session_id: str, body: ShareRequest):
             line += f" — {svc.phone}"
         lines.append(line)
         lines.append(f"   {origin}/services/{svc.slug}")
+    expiry_note = (
+        f"For your privacy, this results link expires within "
+        f"{settings.session_ttl_hours} hours."
+    )
     if len(session.matches) > 8:
         lines.append("")
         lines.append(f"…and {len(session.matches) - 8} more at:")
         lines.append(f"{origin}/results/{session_id}")
+        lines.append(expiry_note)
 
     text_body = "\n".join(lines)
 
@@ -572,6 +577,7 @@ async def share_results(session_id: str, body: ShareRequest):
                 + "</ol>"
                 f'<p><a href="{origin}/results/{session_id}">'
                 f"View all matches</a></p>"
+                f"<p>{expiry_note}</p>"
             )
             result = await send_email(
                 to=body.recipient,

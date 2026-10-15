@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -21,6 +22,41 @@ log = logging.getLogger(__name__)
 def _mask(recipient: str) -> str:
     """Keep only the last two characters so logs carry no contact details."""
     return "*" * max(len(recipient) - 2, 0) + recipient[-2:]
+
+
+_SAFE_FIELD = re.compile(r"^[A-Za-z0-9_.\[\]-]{1,80}$")
+
+
+def _twilio_error_code(resp: httpx.Response) -> int | None:
+    """Twilio's numeric error code. The message text can echo the recipient."""
+    try:
+        data = resp.json()
+    except ValueError:
+        return None
+    code = data.get("code") if isinstance(data, dict) else None
+    return code if isinstance(code, int) and not isinstance(code, bool) else None
+
+
+def _sendgrid_error_fields(resp: httpx.Response) -> list[str]:
+    """Request fields SendGrid flagged (e.g. personalizations.0.to.0.email).
+
+    SendGrid has no numeric error code; the field path is the safe signal.
+    Messages are skipped because they can echo the recipient address.
+    """
+    try:
+        data = resp.json()
+    except ValueError:
+        return []
+    errors = data.get("errors") if isinstance(data, dict) else None
+    if not isinstance(errors, list):
+        return []
+    return [
+        err["field"]
+        for err in errors
+        if isinstance(err, dict)
+        and isinstance(err.get("field"), str)
+        and _SAFE_FIELD.match(err["field"])
+    ]
 
 
 async def send_sms(*, to: str, body: str) -> dict[str, Any]:
@@ -40,7 +76,11 @@ async def send_sms(*, to: str, body: str) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(url, data=data, auth=auth)
         if resp.status_code >= 400:
-            log.error("Twilio error %s: %s", resp.status_code, resp.text)
+            log.error(
+                "Twilio error status=%s code=%s",
+                resp.status_code,
+                _twilio_error_code(resp),
+            )
             raise RuntimeError(f"SMS send failed: {resp.status_code}")
     return {"ok": True, "demo": False, "channel": "sms", "to": to}
 
@@ -78,6 +118,10 @@ async def send_email(
             data=json.dumps(payload),
         )
         if resp.status_code >= 400:
-            log.error("SendGrid error %s: %s", resp.status_code, resp.text)
+            log.error(
+                "SendGrid error status=%s fields=%s",
+                resp.status_code,
+                _sendgrid_error_fields(resp),
+            )
             raise RuntimeError(f"Email send failed: {resp.status_code}")
     return {"ok": True, "demo": False, "channel": "email", "to": to}

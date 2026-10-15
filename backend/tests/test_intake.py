@@ -231,3 +231,78 @@ def test_scripted_flow_still_asks_unknown_fields_in_order(client):
     assert HOUSEHOLD_Q in _say(client, sid, "I need food, I live in 78702")
     # Zip already given, so the next question is housing, not zip.
     assert "housing situation" in _say(client, sid, "Just me")
+
+
+# ── Honest greeting (no "confidential" promise) ─────────────────────────
+
+
+def test_scripted_greeting_discloses_ai_and_never_says_confidential(client):
+    from app.services.ai import _DEMO_STEPS, get_session
+
+    sid = _start(client)
+    greeting = get_session(sid).conversation[0].content
+    assert greeting == _DEMO_STEPS[0]["message"]
+    assert "confidential" not in greeting.lower()
+    assert "OpenAI" in greeting and "Social Security" in greeting
+
+
+def test_ai_notice_translations_are_honest():
+    from app.services.i18n import AI_NOTICE_I18N, REDACTION_NOTICE_I18N, ai_notice
+
+    assert set(AI_NOTICE_I18N) == set(REDACTION_NOTICE_I18N)
+    for text in AI_NOTICE_I18N.values():
+        assert "OpenAI" in text and "confidential" not in text.lower()
+    assert ai_notice("es-MX") == AI_NOTICE_I18N["es"]
+    assert ai_notice("ko") is None
+
+
+def _fake_openai(monkeypatch, output_text):
+    import openai
+
+    from app.config import get_settings
+
+    calls: list[dict] = []
+
+    class _FakeResponse:
+        output: list = []
+
+    _FakeResponse.output_text = output_text
+
+    class _FakeResponses:
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            return _FakeResponse()
+
+    class _FakeClient:
+        def __init__(self, **_):
+            self.responses = _FakeResponses()
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", _FakeClient)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "demo_mode", False)
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    return calls
+
+
+def test_live_greeting_prompt_requires_translated_ai_notice(client, monkeypatch):
+    from app.services.ai import get_session
+    from app.services.i18n import AI_NOTICE_I18N
+
+    calls = _fake_openai(monkeypatch, "¡Hola! ¿Qué te trae por aquí hoy?")
+    sid = _start(client, language="es")
+
+    prompt = calls[0]["input"][0]["content"]
+    assert AI_NOTICE_I18N["es"] in prompt
+    assert "confidential" not in prompt.replace("confidential or private", "")
+    # The model left the notice out, so the backend appends it.
+    greeting = get_session(sid).conversation[0].content
+    assert greeting.endswith(AI_NOTICE_I18N["es"])
+
+
+def test_live_greeting_keeps_model_text_when_notice_present(client, monkeypatch):
+    from app.services.ai import get_session
+
+    text = "Welcome! This guide uses AI (OpenAI) to help. What brings you here?"
+    _fake_openai(monkeypatch, text)
+    sid = _start(client)
+    assert get_session(sid).conversation[0].content == text

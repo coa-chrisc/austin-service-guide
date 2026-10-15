@@ -16,7 +16,7 @@ import json
 import logging
 import re
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -29,7 +29,7 @@ from app.models import (
     ResidentProfile,
 )
 from app.services import catalog
-from app.services.i18n import redaction_notice
+from app.services.i18n import AI_NOTICE_I18N, ai_notice, redaction_notice
 from app.services.matching import assess_risks, calculate_benefits, match_services
 from app.services.pii import redact
 
@@ -54,6 +54,33 @@ _MAX_REALTIME_DEBUG_FILE_READ = 10000
 _BACKEND_ROOT = Path(__file__).resolve().parents[2]
 _realtime_debug_logs: dict[str, list[dict[str, Any]]] = {}
 _realtime_debug_seq: dict[str, int] = {}
+
+
+def _utcnow() -> datetime:
+    """Current UTC time (naive, like IntakeSession.created_at). Patched in tests."""
+    return datetime.utcnow()
+
+
+def _purge_expired_sessions() -> None:
+    """Drop sessions older than SESSION_TTL_HOURS and everything keyed by them.
+
+    Called lazily on session creation and lookup, so expired sessions read
+    as "not found" everywhere without a background sweeper. Expiry counts
+    from creation, not last access, so a shared results link can't keep a
+    session alive. In-memory debug traces for ids that are no longer live
+    sessions are dropped too.
+    """
+    cutoff = _utcnow() - timedelta(hours=get_settings().session_ttl_hours)
+    for session_id in [sid for sid, s in _sessions.items() if s.created_at <= cutoff]:
+        del _sessions[session_id]
+        task = _plan_tasks.pop(session_id, None)
+        if task is not None and not task.done():
+            task.cancel()
+        _plan_cache.pop(session_id, None)
+    for session_id in [sid for sid in _realtime_debug_logs if sid not in _sessions]:
+        del _realtime_debug_logs[session_id]
+    for session_id in [sid for sid in _realtime_debug_seq if sid not in _sessions]:
+        del _realtime_debug_seq[session_id]
 
 
 _LANGUAGE_NAMES: dict[str, str] = {
@@ -334,8 +361,9 @@ _DEMO_STEPS: list[dict[str, Any]] = [
     {
         "message": (
             "Welcome to the Austin Service Guide! I'm here to help you find "
-            "city and community services that fit your needs. This conversation "
-            "is confidential and takes about 3-5 minutes.\n\n"
+            "city and community services that fit your needs. It takes about "
+            "3-5 minutes.\n\n"
+            f"{AI_NOTICE_I18N['en']}\n\n"
             "What brings you here today? Are you looking for help with something "
             "specific, or would you like me to walk you through a few questions?"
         ),
@@ -373,6 +401,7 @@ async def start_session(
     slugs — used by external entry points (e.g. the lifespan calculator)
     that already know which categories matter for this resident.
     """
+    _purge_expired_sessions()
     session = IntakeSession(language=language)
     if life_event:
         session.extracted_profile.immediate_needs = _needs_from_life_event(life_event)
@@ -415,7 +444,7 @@ async def process_message(
     language: str = "en",
 ) -> IntakeMessage:
     """Process a user message and return the assistant's response."""
-    session = _sessions.get(session_id)
+    session = get_session(session_id)
     if not session:
         return IntakeMessage(
             role=MessageRole.assistant,
@@ -499,6 +528,8 @@ def _scripted_step_num(session: IntakeSession) -> int:
 
 
 def get_session(session_id: str) -> IntakeSession | None:
+    """Return a live session, or None if it never existed or has expired."""
+    _purge_expired_sessions()
     return _sessions.get(session_id)
 
 
@@ -520,6 +551,7 @@ async def start_persona_session(persona_id: str) -> IntakeSession | None:
     if persona is None:
         return None
 
+    _purge_expired_sessions()
     session = IntakeSession(language=persona.language)
     session.extracted_profile = deepcopy(persona.seed_profile)
     session.persona_note = persona.persona_note
@@ -1110,17 +1142,26 @@ async def _live_greeting(session: IntakeSession) -> str:
     client = AsyncOpenAI(api_key=settings.openai_api_key)
     instructions = _build_instructions(session)
 
+    notice = ai_notice(session.language)
+    if notice:
+        notice_rule = f'Include this privacy notice word for word: "{notice}" '
+    else:
+        notice_rule = (
+            "Include this privacy notice, translated plainly and accurately "
+            'into their language, keeping the name "OpenAI": '
+            f'"{AI_NOTICE_I18N["en"]}" '
+        )
     seed_input = [{
         "role": "user",
         "content": (
             "Begin the intake. Greet the resident warmly in their preferred "
-            "language. If the resident selected a life-event scenario before "
-            "starting, briefly acknowledge that scenario with calm, practical "
-            "empathy, then ask one focused follow-up question. Otherwise, "
-            "briefly explain you'll ask a few questions to find services that "
-            "fit, mention the conversation is confidential and takes 3-5 "
-            "minutes, and end with an open question about what brings them "
-            "here today."
+            f"language. {notice_rule}Do not call the conversation "
+            "confidential or private. If the resident selected a life-event "
+            "scenario before starting, briefly acknowledge that scenario with "
+            "calm, practical empathy, then ask one focused follow-up question. "
+            "Otherwise, briefly explain you'll ask a few questions to find "
+            "services that fit, mention it takes 3-5 minutes, and end with an "
+            "open question about what brings them here today."
         ),
     }]
 
@@ -1133,6 +1174,9 @@ async def _live_greeting(session: IntakeSession) -> str:
         store=False,
     )
     text = (response.output_text or "").strip()
+    if text and "OpenAI" not in text:
+        # The model dropped the AI disclosure; never send a greeting without it.
+        text = f"{text}\n\n{notice or AI_NOTICE_I18N['en']}"
 
     # Don't seed responses_input with the synthetic prompt — start with a
     # clean slate where the model's greeting is the first assistant message.
@@ -1429,7 +1473,7 @@ def execute_realtime_tool(
             },
         },
     )
-    session = _sessions.get(session_id)
+    session = get_session(session_id)
     if not session:
         record_realtime_debug_event(
             session_id,
@@ -1569,7 +1613,7 @@ def record_realtime_transcript(
     content: str,
 ) -> dict[str, Any] | None:
     """Persist a committed Realtime transcript turn into visible chat history."""
-    session = _sessions.get(session_id)
+    session = get_session(session_id)
     if not session:
         return None
 
