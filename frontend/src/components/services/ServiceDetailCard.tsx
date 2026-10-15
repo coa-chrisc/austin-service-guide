@@ -337,6 +337,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
+                                sx={{ textTransform: "capitalize" }}
                               >
                                 {day}
                               </Typography>
