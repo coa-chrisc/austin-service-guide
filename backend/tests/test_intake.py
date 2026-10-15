@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 HOUSEHOLD_Q = "how many people are in your household"
 ZIP_Q = "What zip code do you live in"
 
@@ -306,3 +308,216 @@ def test_live_greeting_keeps_model_text_when_notice_present(client, monkeypatch)
     _fake_openai(monkeypatch, text)
     sid = _start(client)
     assert get_session(sid).conversation[0].content == text
+
+
+# ── Housing / children inference never excludes residents who may qualify ─
+
+_HOMELESS_SERVICES = (
+    "echo-coordinated-entry",
+    "sunrise-homeless-navigation-center",
+    "austin-resource-center-for-the-homeless",
+    "salvation-army-rathgeber-center",
+)
+
+
+def _session_profile(sid):
+    from app.services.ai import get_session
+
+    return get_session(sid).extracted_profile
+
+
+def _not_excluded(slug, profile):
+    from app.services import catalog
+    from app.services.eligibility import unconfirmed_gates
+
+    return unconfirmed_gates(catalog.get_service_by_slug(slug), profile) is not None
+
+
+def test_eviction_with_nowhere_to_go_keeps_homeless_services(client):
+    sid = _start(client)
+    _say(client, sid, "I need housing help, I got evicted last week and have nowhere to go")
+    _say(client, sid, "3")
+    _say(client, sid, "78744")
+    profile = _session_profile(sid)
+    assert profile.housing_situation == "unstable"
+    for slug in _HOMELESS_SERVICES:
+        assert _not_excluded(slug, profile), slug
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["My landlord won't fix the heat", "I need help with rent", "the lease is up soon"],
+)
+def test_passing_housing_mention_still_asks_housing_question(client, text):
+    sid = _start(client)
+    _say(client, sid, text)
+    _say(client, sid, "Just me")
+    assert "housing situation" in _say(client, sid, "78744")
+    assert _session_profile(sid).housing_situation == ""
+
+
+def test_without_housing_button_is_not_read_as_renting(client):
+    sid = _start(client)
+    for text in ["food", "Just me", "78741"]:
+        _say(client, sid, text)
+    _say(client, sid, "Currently without housing")
+    assert _session_profile(sid).housing_situation == "homeless"
+
+
+def test_household_of_two_does_not_rule_out_family_services(client):
+    sid = _start(client)
+    _say(client, sid, "I need food")
+    _say(client, sid, "2")
+    profile = _session_profile(sid)
+    assert profile.household_size == 2
+    assert profile.has_children is None
+    assert _not_excluded("head-start-austin", profile)
+
+
+def test_stated_household_of_two_leaves_has_children_unknown():
+    from app.models import IntakeMessage, MessageRole
+    from app.services.ai import IntakeSession, _capture_stated_facts
+
+    session = IntakeSession()
+    session.conversation.append(
+        IntakeMessage(role=MessageRole.user, content="We're a family of 2 in 78744")
+    )
+    _capture_stated_facts(session)
+    assert session.extracted_profile.household_size == 2
+    assert session.extracted_profile.has_children is None
+
+
+# ── Realtime transcript results always carry the redacted text ──────────
+
+def test_realtime_early_returns_include_redacted_content(client):
+    sid = _start(client)
+    url = f"/api/v1/intake/{sid}/realtime/transcript"
+    first = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"}).json()
+    assert first["redacted_content"] == "my number is [phone removed]"
+
+    # Duplicate of the stored turn: nothing stored, but still redacted.
+    dup = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"}).json()
+    assert dup["messages"] == []
+    assert dup["redacted"] == ["phone"]
+    assert dup["redacted_content"] == "my number is [phone removed]"
+
+    # Completed session: user turns are refused, still redacted.
+    done = _completed_session(client)
+    res = client.post(
+        f"/api/v1/intake/{done}/realtime/transcript",
+        json={"role": "user", "content": f"ssn {SSN}"},
+    ).json()
+    assert res["messages"] == [] and res["error"] == "session already completed"
+    assert res["redacted"] == ["ssn"]
+    assert res["redacted_content"] == "ssn [SSN removed]"
+    assert SSN not in repr(res)
+
+
+def test_realtime_assistant_transcript_strips_read_back_identifiers(client):
+    sid = _start(client)
+    url = f"/api/v1/intake/{sid}/realtime/transcript"
+    spoken = (
+        f"I heard {SSN}, you don't need to share that. Call 512-972-5000, "
+        "visit 1000 E 11th St, or email info@caritasofaustin.org."
+    )
+    body = client.post(url, json={"role": "assistant", "content": spoken}).json()
+    expected = (
+        "I heard [SSN removed], you don't need to share that. Call 512-972-5000, "
+        "visit 1000 E 11th St, or email info@caritasofaustin.org."
+    )
+    assert body["messages"][0]["content"] == expected
+    assert body["redacted"] == ["ssn"]
+    assert SSN not in _stored_text(sid)
+
+
+# ── Debug log bounds ────────────────────────────────────────────────────
+
+def test_debug_sanitizer_preclips_huge_strings():
+    import time
+
+    from app.services.ai import _sanitize_debug_value
+
+    started = time.perf_counter()
+    cleaned = _sanitize_debug_value({"blob": "a" * 1_000_000, f"ssn {SSN}": 1})
+    assert time.perf_counter() - started < 1.0
+    assert cleaned["blob"].endswith(f"[truncated {1_000_000 - 1000} chars]")
+    assert SSN not in repr(cleaned)
+
+
+def test_debug_event_detail_size_is_bounded(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "realtime_debug_log_enabled", True)
+    monkeypatch.setattr(get_settings(), "realtime_debug_log_path", "/dev/null")
+    sid = _start(client)
+    url = f"/api/v1/intake/{sid}/realtime/debug"
+    too_big = client.post(url, json={"event": "x", "detail": {"blob": "a" * 40_000}})
+    assert too_big.status_code == 422
+    ok = client.post(url, json={"event": "x", "detail": {"blob": "a" * 2_000}})
+    assert ok.status_code == 200
+
+
+# ── Plan task cancelled by expiry ───────────────────────────────────────
+
+def test_application_order_survives_plan_task_cancelled_by_purge(client):
+    import asyncio
+
+    from app.services import ai
+
+    sid = _completed_session(client)
+    session = ai.get_session(sid)
+
+    async def scenario():
+        never = asyncio.get_running_loop().create_future()
+        task = asyncio.ensure_future(never)
+        ai._plan_tasks[sid] = task
+        ai._plan_cache.pop(sid, None)
+        waiter = asyncio.ensure_future(ai.get_application_order(session, wait_seconds=5))
+        await asyncio.sleep(0)
+        # What _purge_expired_sessions does to an expired session.
+        del ai._sessions[sid]
+        ai._plan_tasks.pop(sid, None)
+        task.cancel()
+        return await waiter
+
+    result = asyncio.run(scenario())
+    assert result["ai_generated"] is False and result["items"]
+    assert sid not in ai._plan_cache
+
+
+def test_application_order_not_cached_after_session_expired(client):
+    import asyncio
+
+    from app.services import ai
+
+    sid = _completed_session(client)
+    session = ai.get_session(sid)
+    plan = {"summary": "s", "items": [], "ai_generated": True}
+
+    async def scenario():
+        gate = asyncio.Event()
+
+        async def build():
+            await gate.wait()
+            return plan
+
+        ai._plan_tasks[sid] = asyncio.ensure_future(build())
+        ai._plan_cache.pop(sid, None)
+        waiter = asyncio.ensure_future(ai.get_application_order(session, wait_seconds=5))
+        await asyncio.sleep(0)
+        del ai._sessions[sid]  # expired while the plan was still building
+        gate.set()
+        return await waiter
+
+    assert asyncio.run(scenario()) == plan
+    assert sid not in ai._plan_cache
+    ai._plan_tasks.pop(sid, None)
+
+
+def test_results_and_health_expose_session_ttl(client):
+    from app.config import get_settings
+
+    sid = _completed_session(client)
+    ttl = get_settings().session_ttl_hours
+    assert client.get(f"/api/v1/intake/{sid}/results").json()["session_ttl_hours"] == ttl
+    assert client.get("/api/v1/health").json()["session_ttl_hours"] == ttl

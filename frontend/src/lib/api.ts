@@ -238,8 +238,10 @@ export function executeRealtimeTool(
 export interface RealtimeTranscriptResult {
   session_id: string;
   messages: IntakeMessage[];
-  /** Identifier types removed from a user-role transcript (e.g. "phone"). */
+  /** Identifier types removed from the transcript (e.g. "phone"). */
   redacted?: string[];
+  /** Stored, redacted form of the synced turn; present even when nothing was stored. */
+  redacted_content?: string;
   status: string;
   progress_percent: number;
   is_complete: boolean;
@@ -342,7 +344,16 @@ export function getIntakeResults(sessionId: string) {
     plan_synthesis: string;
     plan_ai_generated: boolean;
     conversation_length: number;
+    session_ttl_hours?: number;
   }>("GET", `/api/v1/intake/${sessionId}/results`);
+}
+
+/** Public backend settings; used for the "plans are deleted after N hours" copy. */
+export function getHealth() {
+  return apiRequest<{ status: string; session_ttl_hours?: number }>(
+    "GET",
+    "/api/v1/health",
+  );
 }
 
 export function getIntakePlanSummary(sessionId: string) {

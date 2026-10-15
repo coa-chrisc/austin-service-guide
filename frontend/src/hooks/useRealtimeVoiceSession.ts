@@ -24,13 +24,16 @@ interface UseRealtimeVoiceSessionOptions {
   sessionId: string;
   onLocalTranscript: (role: "user" | "assistant", content: string) => void;
   /**
-   * `localText` is the raw transcript already shown via onLocalTranscript for
-   * user-role syncs; the receiver must replace it with the redacted server copy.
+   * Replace the raw transcript already shown via onLocalTranscript with its
+   * stored (redacted) form. Called before onTranscriptSync on success, and on
+   * ignored/failed syncs so a raw resident transcript is never kept.
    */
-  onTranscriptSync: (
-    result: RealtimeTranscriptResult,
-    localText?: string,
+  onLocalTranscriptReplace: (
+    role: "user" | "assistant",
+    localText: string,
+    storedText: string,
   ) => void;
+  onTranscriptSync: (result: RealtimeTranscriptResult) => void;
   onToolResult: (result: RealtimeToolResult) => void;
 }
 
@@ -42,6 +45,9 @@ interface RealtimeFunctionCall {
 }
 
 type LiveTranscriptRole = "user" | "assistant";
+
+/** Shown in place of a resident transcript whose redacted form is unknown. */
+const REDACTED_TRANSCRIPT_FALLBACK = "[details removed]";
 
 interface RealtimeStartOptions {
   speakInitialGreeting?: boolean;
@@ -197,6 +203,7 @@ function realtimeSessionSummary(session: Record<string, unknown> | null) {
 export function useRealtimeVoiceSession({
   sessionId,
   onLocalTranscript,
+  onLocalTranscriptReplace,
   onTranscriptSync,
   onToolResult,
 }: UseRealtimeVoiceSessionOptions) {
@@ -262,14 +269,21 @@ export function useRealtimeVoiceSession({
   const debugSeqRef = useRef(0);
   const stopSessionRef = useRef<() => void>(() => undefined);
   const onLocalTranscriptRef = useRef(onLocalTranscript);
+  const onLocalTranscriptReplaceRef = useRef(onLocalTranscriptReplace);
   const onTranscriptSyncRef = useRef(onTranscriptSync);
   const onToolResultRef = useRef(onToolResult);
 
   useEffect(() => {
     onLocalTranscriptRef.current = onLocalTranscript;
+    onLocalTranscriptReplaceRef.current = onLocalTranscriptReplace;
     onTranscriptSyncRef.current = onTranscriptSync;
     onToolResultRef.current = onToolResult;
-  }, [onLocalTranscript, onToolResult, onTranscriptSync]);
+  }, [
+    onLocalTranscript,
+    onLocalTranscriptReplace,
+    onToolResult,
+    onTranscriptSync,
+  ]);
 
   const recordDebug = useCallback(
     (
@@ -816,6 +830,11 @@ export function useRealtimeVoiceSession({
         content_length: text.length,
       });
       onLocalTranscriptRef.current(role, text);
+      // The server's stored form of this turn. A resident transcript is never
+      // kept raw: without a server copy it becomes a placeholder.
+      const storedText = (result?: RealtimeTranscriptResult) =>
+        result?.redacted_content?.trim() ||
+        (role === "user" ? REDACTED_TRANSCRIPT_FALLBACK : text);
       try {
         const result = await syncRealtimeTranscript(sessionId, {
           role,
@@ -826,6 +845,7 @@ export function useRealtimeVoiceSession({
             role,
             reason: stoppedRef.current ? "stopped" : "stale_generation",
           });
+          onLocalTranscriptReplaceRef.current(role, text, storedText(result));
           return false;
         }
         recordDebug("transcript_sync_completed", {
@@ -844,11 +864,7 @@ export function useRealtimeVoiceSession({
                 messages: [
                   {
                     role,
-                    // Never fall back to raw text when the server redacted it.
-                    content:
-                      role === "user" && result.redacted?.length
-                        ? "[details removed]"
-                        : text,
+                    content: storedText(result),
                     suggested_buttons: [],
                     progress_percent: result.progress_percent,
                     is_complete: result.is_complete,
@@ -856,6 +872,12 @@ export function useRealtimeVoiceSession({
                   },
                 ],
               };
+        onLocalTranscriptReplaceRef.current(
+          role,
+          text,
+          syncedResult.messages.find((m) => m.role === role)?.content.trim() ||
+            storedText(result),
+        );
         if (
           role === "assistant" &&
           stopAfterNextAssistantRef.current &&
@@ -869,10 +891,7 @@ export function useRealtimeVoiceSession({
           onTranscriptSyncRef.current({ ...syncedResult, is_complete: false });
           scheduleCompletionFinish("assistant_transcript_synced");
         } else {
-          onTranscriptSyncRef.current(
-            syncedResult,
-            role === "user" ? text : undefined,
-          );
+          onTranscriptSyncRef.current(syncedResult);
         }
         return true;
       } catch (err) {
@@ -880,6 +899,8 @@ export function useRealtimeVoiceSession({
           role,
           error: debugErrorMessage(err),
         });
+        // The server never redacted this turn, so drop the raw local copy.
+        onLocalTranscriptReplaceRef.current(role, text, storedText());
         // Tear down before transitioning to error so a retry doesn't leak
         // the previous session's mic stream / WebRTC handles.
         stopSessionRef.current?.();
@@ -1306,7 +1327,6 @@ export function useRealtimeVoiceSession({
         recordDebug("assistant_transcript_completed", {
           item_id: itemId,
           content_length: transcript.trim().length,
-          content_preview: clipDebugText(transcript, 240),
         });
         if (itemId && transcript.trim())
           transcriptItemIdsRef.current.add(itemId);

@@ -217,6 +217,11 @@ def get_service_by_id(service_id: str) -> Service | None:
     return _services.get(service_id)
 
 
+def get_service_emails() -> set[str]:
+    """Every service's public contact email (kept when redacting assistant text)."""
+    return {s.email for s in _services.values() if s.email}
+
+
 def get_categories() -> list[ServiceCategory]:
     return list(_categories.values())
 

@@ -63,4 +63,6 @@ async def health():
         "demo_mode": settings.demo_mode,
         "azure_openai_configured": settings.has_azure_openai,
         "version": settings.app_version,
+        # Public so an expired results page can say how long plans are kept.
+        "session_ttl_hours": settings.session_ttl_hours,
     }

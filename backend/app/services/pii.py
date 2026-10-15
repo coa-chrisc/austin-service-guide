@@ -16,14 +16,20 @@ Design goals, in order:
 2. No raw values leave this module. ``redact`` returns the cleaned text and
    the *types* that were found, never the matched strings.
 
-Only run this on resident-authored text. Catalog and assistant text carry
-legitimate service phone numbers and addresses.
+Catalog and assistant text carry legitimate service phone numbers and
+addresses, so assistant voice transcripts are redacted with
+``ASSISTANT_KINDS`` only (see ``redact``'s ``kinds`` / ``keep`` options).
+
+Every pattern must stay linear-time on adversarial input (long runs with no
+match): request handlers call ``redact`` on the event loop. Unbounded
+repetition is only allowed where a match can start at most once per run
+(left-boundary lookbehind) or where nothing after it can backtrack into it.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Callable, NamedTuple
+from typing import Callable, Collection, NamedTuple
 
 PLACEHOLDERS: dict[str, str] = {
     "email": "[email removed]",
@@ -36,6 +42,14 @@ PLACEHOLDERS: dict[str, str] = {
 }
 
 
+# Identifier types that never appear in catalog content, so they are safe to
+# strip from what the voice assistant said. Phone and address are left out on
+# purpose: the assistant reads out service phone numbers and addresses.
+# Emails are included, but callers pass the catalog's service emails as
+# ``keep`` so those survive.
+ASSISTANT_KINDS: tuple[str, ...] = ("email", "card", "ssn", "dob", "id_number")
+
+
 class Redaction(NamedTuple):
     text: str
     types: list[str]  # sorted, unique type keys from PLACEHOLDERS
@@ -43,7 +57,9 @@ class Redaction(NamedTuple):
 
 # ── Patterns ─────────────────────────────────────────────────────────
 
-_EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+# The lookbehind pins the start to the beginning of a local-part run, so a
+# long run with no "@" is scanned once instead of once per character.
+_EMAIL_RE = re.compile(r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
 
 # 13-19 contiguous digits, or the printed 4-4-4-4 / 4-6-5 groupings.
 # Luhn-checked so arbitrary long numbers are left alone.
@@ -76,8 +92,10 @@ _ID_KEYWORDS = (
     r"|n[uú]mero\s+de\s+(?:miembro|cuenta|caso|p[oó]liza)"
 )
 _ID_CONNECTORS = r"(?:card|number|num|no\.?|#|id|is|was|es|:|-)"
+# Connectors are bounded: "id" is both a keyword and a connector, so an
+# unbounded run ("id id id ...") would rescan the whole run from every start.
 _ID_CONTEXT_RE = re.compile(
-    rf"(?P<pre>\b(?:{_ID_KEYWORDS})(?![A-Za-z])(?:\s*{_ID_CONNECTORS})*\s*)"
+    rf"(?P<pre>\b(?:{_ID_KEYWORDS})(?![A-Za-z])(?:\s*{_ID_CONNECTORS}){{0,4}}\s*)"
     r"(?P<val>[A-Za-z0-9][A-Za-z0-9-]{4,24}[A-Za-z0-9])(?![A-Za-z0-9-])",
     re.IGNORECASE,
 )
@@ -109,7 +127,7 @@ _PHONE_RE = re.compile(
 # 7-digit local numbers only when a phone keyword precedes them.
 _PHONE_LOCAL_RE = re.compile(
     r"(?P<pre>\b(?:call|text|phone|cell|mobile|number|reach\s+me|tel[eé]fono|celular)"
-    r"\b(?:\s+(?:me|at|is|es|number|al|:))*[\s:]*)"
+    r"\b(?:\s+(?:me|at|is|es|number|al|:)){0,4}[\s:]{0,4})"
     r"(?P<val>\d{3}[\s.-]\d{4})(?!\d)",
     re.IGNORECASE,
 )
@@ -123,11 +141,13 @@ _STREET_SUFFIXES = (
     r"|(?-i:Way|Court|Circle|Place|Trail|Terrace|Cove|Loop|Bend|Path|Crossing|Row|Pass|Run)"
 )
 # Words that show the number is a count/duration, not a house number
-# ("3 months on the street", "2 kids no way").
+# ("3 months on the street", "2 kids no way", "45 minute drive",
+# "2 eviction notices Court date").
 _NOT_STREET_WORDS = (
     r"the|on|in|at|a|an|of|to|for|my|our|from|near|by|and|or|with|but|no|not"
     r"|years?|months?|weeks?|days?|hours?|people|persons?|kids?|children|adults?"
     r"|dollars?|times?|am|pm|i|we|me|it|is|was"
+    r"|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?"
 )
 _STREET_TOKEN = rf"(?!(?:{_NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*"
 _ADDRESS_RE = re.compile(
@@ -159,11 +179,16 @@ def _is_card(match: re.Match[str]) -> bool:
     return _luhn_valid(re.sub(r"\D", "", match.group(0)))
 
 
+_ZIP4_OR_PHONE_RE = re.compile(r"\d{5}-\d{4}|(?:1-)?\d{3}-\d{3}-\d{4}")
+
+
 def _is_id_value(match: re.Match[str]) -> bool:
     value = match.group("val")
     digits = sum(ch.isdigit() for ch in value)
-    # Needs real digit content, and is not a ZIP+4 ("78744-1234").
-    return digits >= 4 and not re.fullmatch(r"\d{5}-\d{4}", value)
+    # Needs real digit content, and is not a ZIP+4 ("78744-1234") or a dashed
+    # phone number ("Medicaid: 1-800-252-8263"). Phones are left to the phone
+    # rule, so assistant text (which skips it) keeps service numbers.
+    return digits >= 4 and not _ZIP4_OR_PHONE_RE.fullmatch(value)
 
 
 def _always(_: re.Match[str]) -> bool:
@@ -187,21 +212,33 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str]], bool]]] = [
 ]
 
 
-def redact(text: str) -> Redaction:
-    """Replace high-risk identifiers in resident-authored ``text``.
+def redact(
+    text: str,
+    kinds: Collection[str] | None = None,
+    keep: Collection[str] = (),
+) -> Redaction:
+    """Replace high-risk identifiers in ``text``.
 
     Returns the redacted text and the sorted list of identifier types that
     were removed. Keyword-anchored rules keep the keyword ("my SSN is
     [SSN removed]") so the sentence still reads naturally.
+
+    ``kinds`` limits which identifier types are removed (default: all, for
+    resident-authored text; use ``ASSISTANT_KINDS`` for assistant text).
+    ``keep`` lists exact values (case-insensitive) that are never removed,
+    such as the catalog's service email addresses.
     """
     found: set[str] = set()
+    kept = {value.lower() for value in keep}
 
     for kind, pattern, accept in _RULES:
+        if kinds is not None and kind not in kinds:
+            continue
         placeholder = PLACEHOLDERS[kind]
 
         def _sub(match: re.Match[str], kind: str = kind, placeholder: str = placeholder,
                  accept: Callable[[re.Match[str]], bool] = accept) -> str:
-            if not accept(match):
+            if not accept(match) or match.group(0).lower() in kept:
                 return match.group(0)
             found.add(kind)
             if "val" in match.re.groupindex:

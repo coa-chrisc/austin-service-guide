@@ -45,6 +45,7 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ServiceCard from "@/components/services/ServiceCard";
 import PlanList from "@/components/results/PlanList";
 import {
+  getHealth,
   getIntakeResults,
   shareIntakeResults,
   ApiError,
@@ -111,6 +112,10 @@ type ViewMode = "simple" | "all";
 
 const VIEW_KEY_PREFIX = "asg.results.view.";
 
+// Backend default for SESSION_TTL_HOURS. Only used when the server doesn't
+// report its configured value (/results or /health).
+const DEFAULT_SESSION_TTL_HOURS = 24;
+
 export default function Results() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -120,6 +125,7 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expired, setExpired] = useState(false);
+  const [ttlHours, setTtlHours] = useState(DEFAULT_SESSION_TTL_HOURS);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterConfidence, setFilterConfidence] =
     useState<MatchConfidence | null>(null);
@@ -155,7 +161,7 @@ export default function Results() {
       matchCount > 0
         ? `My Austin Service Guide plan — ${matchCount} matched service${matchCount !== 1 ? "s" : ""}.`
         : "My Austin Service Guide plan.";
-    const shareText = `${text} This link expires within 24 hours.`;
+    const shareText = `${text} This link expires within ${ttlHours} hours.`;
 
     if (canNativeShare()) {
       const result = await nativeShare({
@@ -200,6 +206,9 @@ export default function Results() {
     getIntakeResults(sessionId)
       .then((res) => {
         setActiveSession(sessionId);
+        if (typeof res.session_ttl_hours === "number") {
+          setTtlHours(res.session_ttl_hours);
+        }
         setData({
           matches: res.matches ?? [],
           risk_flags: res.risk_flags ?? [],
@@ -219,8 +228,16 @@ export default function Results() {
         // id so the header stops offering a plan that no longer exists.
         if (err instanceof ApiError && err.status === 404) {
           clearActiveSession();
-          setExpired(true);
-          return;
+          // The expired session can't report the TTL; ask the server so the
+          // "deleted after N hours" copy matches SESSION_TTL_HOURS.
+          return getHealth()
+            .then((health) => {
+              if (typeof health.session_ttl_hours === "number") {
+                setTtlHours(health.session_ttl_hours);
+              }
+            })
+            .catch(() => undefined)
+            .finally(() => setExpired(true));
         }
         setError(err.message || "Failed to load results");
       })
@@ -261,7 +278,9 @@ export default function Results() {
     return (
       <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
         <Alert severity={expired ? "info" : "error"}>
-          {expired ? t("plan_expired") : error || t("session_not_found")}
+          {expired
+            ? t("plan_expired", { hours: ttlHours })
+            : error || t("session_not_found")}
         </Alert>
         <Button sx={{ mt: 2 }} onClick={() => navigate("/intake")}>
           {t("start_new_intake")}

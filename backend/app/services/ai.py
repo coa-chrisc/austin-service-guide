@@ -31,7 +31,7 @@ from app.models import (
 from app.services import catalog
 from app.services.i18n import AI_NOTICE_I18N, ai_notice, redaction_notice
 from app.services.matching import assess_risks, calculate_benefits, match_services
-from app.services.pii import redact
+from app.services.pii import ASSISTANT_KINDS, redact
 
 log = logging.getLogger(__name__)
 
@@ -102,25 +102,37 @@ def _clip_debug_text(value: str, limit: int = _MAX_REALTIME_DEBUG_TEXT) -> str:
     return f"{text[:limit]}... [truncated {len(text) - limit} chars]"
 
 
+def _redact_debug_text(value: str, limit: int = _MAX_REALTIME_DEBUG_TEXT) -> str:
+    """Redact then clip. Pre-clips to 2x the limit first so a huge string
+    can't make redaction slow; the margin keeps an identifier that straddles
+    the final cut from surviving half-redacted."""
+    text = value.strip()
+    if len(text) <= limit * 2:
+        return _clip_debug_text(redact(text).text, limit)
+    head = redact(text[: limit * 2]).text[:limit]
+    return f"{head}... [truncated {len(text) - limit} chars]"
+
+
 def _sanitize_debug_value(value: Any, depth: int = 0) -> Any:
     """Keep debug payloads useful without letting them become huge.
 
-    Every string is PII-redacted before clipping, so transcript previews
-    and tool arguments never reach the opt-in debug log with raw values.
+    Every string (keys included) is PII-redacted before the final clip, so
+    transcript previews and tool arguments never reach the opt-in debug log
+    with raw values.
     """
     if depth > 4:
-        return _clip_debug_text(redact(str(value)).text, 300)
+        return _redact_debug_text(str(value), 300)
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        return _clip_debug_text(redact(value).text)
+        return _redact_debug_text(value)
     if isinstance(value, dict):
         cleaned: dict[str, Any] = {}
         for idx, (key, child) in enumerate(value.items()):
             if idx >= 50:
                 cleaned["_truncated_keys"] = len(value) - idx
                 break
-            cleaned[_clip_debug_text(str(key), 120)] = _sanitize_debug_value(
+            cleaned[_redact_debug_text(str(key), 120)] = _sanitize_debug_value(
                 child,
                 depth + 1,
             )
@@ -131,7 +143,7 @@ def _sanitize_debug_value(value: Any, depth: int = 0) -> Any:
         if len(items) > 40:
             cleaned_items.append({"_truncated_items": len(items) - 40})
         return cleaned_items
-    return _clip_debug_text(redact(str(value)).text)
+    return _redact_debug_text(str(value))
 
 
 def _realtime_debug_log_path() -> Path:
@@ -1612,7 +1624,12 @@ def record_realtime_transcript(
     role: str,
     content: str,
 ) -> dict[str, Any] | None:
-    """Persist a committed Realtime transcript turn into visible chat history."""
+    """Persist a committed Realtime transcript turn into visible chat history.
+
+    Every result carries ``redacted_content`` (the stored form of the turn)
+    and ``redacted`` (types removed), including the early returns that store
+    nothing, so the client can always replace its raw local copy.
+    """
     session = get_session(session_id)
     if not session:
         return None
@@ -1620,63 +1637,45 @@ def record_realtime_transcript(
     normalized_role = MessageRole.user if role == "user" else MessageRole.assistant
     text = content.strip()
     # Resident speech is redacted before it is stored or replayed into the
-    # text agent's context. Assistant turns are left alone: they quote
-    # catalog phone numbers and addresses on purpose.
-    redacted_types: list[str] = []
+    # text agent's context. Assistant speech gets the rules that can't hit
+    # catalog content (the voice model could read back a number it heard);
+    # phone numbers, addresses and service emails are kept because the
+    # assistant quotes them from the catalog on purpose.
     if normalized_role == MessageRole.user:
         text, redacted_types = redact(text)
+    else:
+        text, redacted_types = redact(
+            text, kinds=ASSISTANT_KINDS, keep=catalog.get_service_emails()
+        )
     completed = session.status == IntakeStatus.completed
-    if completed and normalized_role == MessageRole.user:
-        return {
-            "messages": [],
-            "status": session.status.value,
-            "progress_percent": 100,
-            "is_complete": True,
-            "crisis_detected": False,
-            "error": "session already completed",
-        }
 
-    if not text:
+    def _unchanged(**extra: Any) -> dict[str, Any]:
         return {
             "messages": [],
             "status": session.status.value,
             "progress_percent": (
                 100 if completed else _estimate_progress(session.extracted_profile)
             ),
-            "is_complete": session.status == IntakeStatus.completed,
+            "is_complete": completed,
             "crisis_detected": False,
+            "redacted": redacted_types,
+            "redacted_content": text,
+            **extra,
         }
+
+    if completed and normalized_role == MessageRole.user:
+        return _unchanged(error="session already completed")
+
+    if not text:
+        return _unchanged()
 
     last = session.conversation[-1] if session.conversation else None
     if last and last.role == normalized_role and last.content.strip() == text:
-        return {
-            "messages": [],
-            "status": session.status.value,
-            "progress_percent": (
-                100 if completed else _estimate_progress(session.extracted_profile)
-            ),
-            "is_complete": session.status == IntakeStatus.completed,
-            "crisis_detected": False,
-        }
+        return _unchanged()
 
     if completed and normalized_role == MessageRole.assistant:
-        if last and last.role == MessageRole.assistant and last.content.strip() == text:
-            return {
-                "messages": [],
-                "status": session.status.value,
-                "progress_percent": 100,
-                "is_complete": True,
-                "crisis_detected": False,
-            }
         if last and last.role == MessageRole.assistant:
-            return {
-                "messages": [],
-                "status": session.status.value,
-                "progress_percent": 100,
-                "is_complete": True,
-                "crisis_detected": False,
-                "error": "session already completed",
-            }
+            return _unchanged(error="session already completed")
 
     if normalized_role == MessageRole.user:
         _apply_realtime_text_profile_hints(session, text)
@@ -1716,6 +1715,7 @@ def record_realtime_transcript(
         "is_complete": session.status == IntakeStatus.completed,
         "crisis_detected": crisis_detected,
         "redacted": redacted_types,
+        "redacted_content": text,
     }
 
 
@@ -2573,15 +2573,13 @@ def _extract_zip(text: str) -> str:
 
 
 def _extract_housing(text: str) -> str:
-    t = text.lower()
-    if "rent" in t:
-        return "renting"
-    if "own" in t:
-        return "own_home"
-    if "friend" in t or "family" in t or "staying" in t or "couch" in t:
-        return "unstable"
-    if "without" in t or "homeless" in t or "shelter" in t:
-        return "homeless"
+    """Answer to the housing question. Homeless/unstable wording wins over
+    renting/owning so "I rent but got evicted" keeps homeless services, and
+    whole-word matching keeps "Currently without housing" from reading as
+    "rent"."""
+    for value, pattern in _HOUSING_ANSWER:
+        if pattern.search(text):
+            return value
     return "other"
 
 
@@ -2690,18 +2688,42 @@ _STATED_HOUSEHOLD_RE = re.compile(
     re.IGNORECASE,
 )
 _SOLO_RE = re.compile(r"\b(?:just me|i live alone|by myself)\b", re.IGNORECASE)
+_HOMELESS_RE = re.compile(
+    r"\b(?:homeless|unhoused|in a shelter|(?:sleeping|living) in (?:my|our|a) (?:car|truck|van)"
+    r"|on the streets?)\b",
+    re.IGNORECASE,
+)
+# Losing housing, or housed only temporarily. Eviction is here, not under
+# renting: someone evicted with nowhere to go qualifies for homeless services.
+_UNSTABLE_RE = re.compile(
+    r"\b(?:couch[- ]?surfing|staying with (?:friends|family|a friend|relatives)"
+    r"|evict(?:ed|ion|ing)?|kicked (?:me |us )?out|nowhere (?:to|else to) (?:go|live|stay|sleep)"
+    r"|no(?:where| place) to (?:go|live|stay|sleep)|losing (?:my|our) (?:home|house|apartment|place)"
+    r"|foreclos(?:ure|ed|ing))\b",
+    re.IGNORECASE,
+)
+# Only explicit first-person statements. Inferred housing skips the housing
+# question, and renting/own_home rule out homeless services, so a passing
+# mention ("help with rent", "my landlord") must leave the field unknown.
 _STATED_HOUSING: list[tuple[str, re.Pattern[str]]] = [
-    ("homeless", re.compile(
-        r"\b(?:homeless|unhoused|in a shelter|(?:sleeping|living) in my car|on the street)\b",
-        re.IGNORECASE,
-    )),
-    ("unstable", re.compile(
-        r"\b(?:couch surfing|staying with (?:friends|family|a friend))\b", re.IGNORECASE,
-    )),
+    ("homeless", _HOMELESS_RE),
+    ("unstable", _UNSTABLE_RE),
     ("renting", re.compile(
-        r"\b(?:rent|renting|landlord|lease|evicted|eviction)\b", re.IGNORECASE,
+        r"\b(?:i|we) (?:currently )?rent\b|\b(?:i'?m|i am|we'?re|we are) renting\b", re.IGNORECASE,
     )),
-    ("own_home", re.compile(r"\b(?:i own my (?:home|house)|homeowner|mortgage)\b", re.IGNORECASE)),
+    ("own_home", re.compile(
+        r"\b(?:i|we) own (?:my|our|a) (?:home|house)\b|\bhomeowners?\b", re.IGNORECASE,
+    )),
+]
+# Direct answers to the housing question (buttons or free text), in
+# precedence order.
+_HOUSING_ANSWER: list[tuple[str, re.Pattern[str]]] = [
+    ("homeless", re.compile(r"\bwithout (?:housing|a home)\b|\bshelter\b", re.IGNORECASE)),
+    ("homeless", _HOMELESS_RE),
+    ("unstable", _UNSTABLE_RE),
+    ("renting", re.compile(r"\brent(?:ing|er)?\b", re.IGNORECASE)),
+    ("own_home", re.compile(r"\bown\b|\bhomeowner\b|\bmortgage\b", re.IGNORECASE)),
+    ("unstable", re.compile(r"\b(?:friends?|family|staying|couch)\b", re.IGNORECASE)),
 ]
 _STATED_EMPLOYMENT: list[tuple[str, re.Pattern[str]]] = [
     ("unemployed", re.compile(
@@ -2733,7 +2755,19 @@ def _capture_stated_facts(session: IntakeSession) -> None:
     ):
         profile.employment_status = "unemployed"
 
-    for text in (m.content for m in session.conversation if m.role == MessageRole.user):
+    user_texts = [m.content for m in session.conversation if m.role == MessageRole.user]
+    if not profile.housing_situation:
+        # Precedence across all turns, not first turn wins: "I rent" early on
+        # must not hide "we got evicted" later.
+        profile.housing_situation = next(
+            (
+                value for value, pattern in _STATED_HOUSING
+                if any(pattern.search(text) for text in user_texts)
+            ),
+            "",
+        )
+
+    for text in user_texts:
         if not profile.zip_code:
             profile.zip_code = _extract_zip(text)
         if profile.household_size is None:
@@ -2742,18 +2776,24 @@ def _capture_stated_facts(session: IntakeSession) -> None:
             elif hit := _STATED_HOUSEHOLD_RE.search(text):
                 raw = (hit.group(1) or hit.group(2)).lower()
                 profile.household_size = _COUNT_WORDS.get(raw) or int(raw)
-            if profile.household_size and profile.has_children is None:
-                profile.has_children = profile.household_size >= 3
-        if not profile.housing_situation:
-            profile.housing_situation = next(
-                (value for value, pattern in _STATED_HOUSING if pattern.search(text)), ""
-            )
+            _infer_has_children(profile)
         if not profile.employment_status:
             profile.employment_status = next(
                 (value for value, pattern in _STATED_EMPLOYMENT if pattern.search(text)), ""
             )
         if not profile.insurance_status and _STATED_UNINSURED_RE.search(text):
             profile.insurance_status = "uninsured"
+
+
+def _infer_has_children(profile: ResidentProfile) -> None:
+    """A household of 3+ suggests children; never infer the opposite.
+
+    has_children=False would exclude family services, and a household of 2
+    can be a single parent with one child, so smaller households stay
+    unknown.
+    """
+    if profile.has_children is None and (profile.household_size or 0) >= 3:
+        profile.has_children = True
 
 
 def _next_unanswered_step(profile: ResidentProfile, step_idx: int) -> int:
@@ -2775,7 +2815,7 @@ async def _demo_flow(session: IntakeSession, user_text: str, step_num: int) -> I
         hs = _extract_household_size(user_text)
         if hs:
             profile.household_size = hs
-            profile.has_children = hs >= 3
+            _infer_has_children(profile)
     elif step_num == 3:
         z = _extract_zip(user_text)
         if z:
@@ -2883,8 +2923,18 @@ async def get_application_order(
     if task is not None:
         try:
             result = await asyncio.wait_for(asyncio.shield(task), wait_seconds)
-            _plan_cache[session.id] = result
+            # The session may have expired while we waited; don't re-create
+            # state for it that the purge already cleared.
+            if _sessions.get(session.id) is session:
+                _plan_cache[session.id] = result
             return result
+        except asyncio.CancelledError:
+            # Only swallow the plan task's own cancellation (session purged
+            # mid-wait); a cancelled request must still propagate.
+            current = asyncio.current_task()
+            if not task.cancelled() or (current is not None and current.cancelling()):
+                raise
+            log.info("get_application_order: plan task cancelled (session expired)")
         except asyncio.TimeoutError:
             log.warning("get_application_order: model exceeded %ss", wait_seconds)
         except Exception:

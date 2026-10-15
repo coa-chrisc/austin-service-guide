@@ -83,7 +83,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     failed_to_load: "Failed to load results",
     session_not_found: "Session not found",
     plan_expired:
-      "This plan is no longer available. For your privacy, plans are deleted after 24 hours.",
+      "This plan is no longer available. For your privacy, plans are deleted after {hours} hours.",
   },
   es: {
     my_plan: "Mi plan",
@@ -158,7 +158,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     failed_to_load: "No se pudieron cargar los resultados",
     session_not_found: "Sesión no encontrada",
     plan_expired:
-      "Este plan ya no está disponible. Para proteger su privacidad, los planes se eliminan después de 24 horas.",
+      "Este plan ya no está disponible. Para proteger su privacidad, los planes se eliminan después de {hours} horas.",
   },
   vi: {
     my_plan: "Kế hoạch của tôi",
@@ -233,7 +233,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     failed_to_load: "Không thể tải kết quả",
     session_not_found: "Không tìm thấy phiên",
     plan_expired:
-      "Kế hoạch này không còn khả dụng. Để bảo vệ quyền riêng tư của bạn, kế hoạch sẽ bị xóa sau 24 giờ.",
+      "Kế hoạch này không còn khả dụng. Để bảo vệ quyền riêng tư của bạn, kế hoạch sẽ bị xóa sau {hours} giờ.",
   },
   zh: {
     my_plan: "我的计划",
@@ -306,7 +306,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     failed_to_load: "无法加载结果",
     session_not_found: "未找到会话",
     plan_expired:
-      "此计划已不可用。为保护您的隐私，计划会在 24 小时后删除。",
+      "此计划已不可用。为保护您的隐私，计划会在 {hours} 小时后删除。",
   },
   ar: {
     my_plan: "خطتي",
@@ -380,7 +380,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     failed_to_load: "فشل تحميل النتائج",
     session_not_found: "الجلسة غير موجودة",
     plan_expired:
-      "هذه الخطة لم تعد متاحة. لحماية خصوصيتك، يتم حذف الخطط بعد 24 ساعة.",
+      "هذه الخطة لم تعد متاحة. لحماية خصوصيتك، يتم حذف الخطط بعد {hours} ساعة.",
   },
 };
 

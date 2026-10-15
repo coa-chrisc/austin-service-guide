@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any, Literal
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.config import get_settings
 from app.models import IntakeMessageRequest, IntakeStartRequest, ResidentProfile
@@ -30,6 +31,9 @@ from app.services.pii import redact
 from app.services.personas import list_personas
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
+
+# Upper bound on one client debug event's serialized ``detail``.
+_MAX_DEBUG_DETAIL_CHARS = 32_000
 
 
 def _profile_debug_snapshot(profile: ResidentProfile | None) -> dict[str, Any] | None:
@@ -97,6 +101,15 @@ class RealtimeDebugEventRequest(BaseModel):
     source: str = Field(default="client", max_length=40)
     status: str | None = Field(default=None, max_length=80)
     detail: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("detail")
+    @classmethod
+    def _bound_detail(cls, value: dict[str, Any]) -> dict[str, Any]:
+        # The sanitizer clips each string, but cap the whole payload so a
+        # client can't make the server parse and redact megabytes per event.
+        if len(json.dumps(value, default=str)) > _MAX_DEBUG_DETAIL_CHARS:
+            raise ValueError(f"detail must serialize to at most {_MAX_DEBUG_DETAIL_CHARS} characters")
+        return value
 
 
 @router.get("/personas")
@@ -502,6 +515,8 @@ async def get_results(session_id: str):
         "plan_synthesis": plan_synthesis,
         "plan_ai_generated": plan_ai_generated,
         "conversation_length": len(session.conversation),
+        # Share text quotes this; sessions are deleted this long after start.
+        "session_ttl_hours": get_settings().session_ttl_hours,
     }
 
 

@@ -108,37 +108,36 @@ export default function ChatInterface({
     [appendMessages, progress],
   );
 
-  const handleVoiceTranscriptSync = useCallback(
-    (
-      result: {
-        messages: IntakeMessage[];
-        progress_percent: number;
-        is_complete: boolean;
-        crisis_detected: boolean;
-      },
-      localText?: string,
-    ) => {
-      // Replace the raw local transcript (shown before the sync) with the
-      // redacted server copy so the raw version is neither kept nor duplicated.
-      const redacted = result.messages.find((m) => m.role === "user");
-      if (localText && redacted) {
-        setMessages((prev) => {
-          let idx = -1;
-          for (let k = prev.length - 1; k >= 0; k--) {
-            if (
-              prev[k].role === "user" &&
-              prev[k].content.trim() === localText
-            ) {
-              idx = k;
-              break;
-            }
+  // Replace the raw local transcript (shown before the sync) with the
+  // redacted server copy so the raw version is neither kept nor duplicated.
+  // This state is replayed into later voice sessions.
+  const handleVoiceLocalTranscriptReplace = useCallback(
+    (role: "user" | "assistant", localText: string, storedText: string) => {
+      if (storedText === localText) return;
+      setMessages((prev) => {
+        let idx = -1;
+        for (let k = prev.length - 1; k >= 0; k--) {
+          if (prev[k].role === role && prev[k].content.trim() === localText) {
+            idx = k;
+            break;
           }
-          if (idx < 0) return prev;
-          const next = [...prev];
-          next[idx] = { ...next[idx], content: redacted.content.trim() };
-          return next;
-        });
-      }
+        }
+        if (idx < 0) return prev;
+        const next = [...prev];
+        next[idx] = { ...next[idx], content: storedText };
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleVoiceTranscriptSync = useCallback(
+    (result: {
+      messages: IntakeMessage[];
+      progress_percent: number;
+      is_complete: boolean;
+      crisis_detected: boolean;
+    }) => {
       appendMessages(result.messages);
       setProgress(result.progress_percent);
       if (result.crisis_detected) {
@@ -171,6 +170,7 @@ export default function ChatInterface({
   const voice = useRealtimeVoiceSession({
     sessionId: session.id,
     onLocalTranscript: handleVoiceLocalTranscript,
+    onLocalTranscriptReplace: handleVoiceLocalTranscriptReplace,
     onTranscriptSync: handleVoiceTranscriptSync,
     onToolResult: handleVoiceToolResult,
   });
@@ -287,13 +287,13 @@ export default function ChatInterface({
       );
       if (sessionIdRef.current !== activeSessionId) return;
       // Swap the optimistic raw copy for the stored, redacted one: this state
-      // is later replayed into voice sessions.
+      // is later replayed into voice sessions. Without a stored copy, drop it.
       setMessages((prev) => [
         ...(userMessage
           ? prev.map((m) =>
               m === userMsg ? { ...m, content: userMessage.content } : m,
             )
-          : prev),
+          : prev.filter((m) => m !== userMsg)),
         response,
       ]);
       setProgress(response.progress_percent);
@@ -315,7 +315,9 @@ export default function ChatInterface({
         is_complete: false,
         crisis_detected: false,
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      // The server never stored (or redacted) this message, so drop the raw
+      // optimistic copy; otherwise it would be replayed into a voice session.
+      setMessages((prev) => [...prev.filter((m) => m !== userMsg), errorMsg]);
     } finally {
       if (sessionIdRef.current === activeSessionId) {
         setIsLoading(false);

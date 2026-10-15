@@ -109,3 +109,50 @@ def test_redaction_is_idempotent():
     once = redact("phone 512-555-0199, ssn 123-45-6789").text
     assert redact(once).text == once
     assert redact(once).types == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "45 minute drive to work",
+        "I have 2 eviction notices Court date is Monday",
+    ],
+)
+def test_count_and_time_words_are_not_house_numbers(text):
+    assert redact(text).text == text
+
+
+# ── Assistant-mode redaction ────────────────────────────────────────────
+
+def test_assistant_kinds_keep_catalog_phone_address_and_email():
+    from app.services.pii import ASSISTANT_KINDS
+
+    text = (
+        "Call 512-972-5000 or visit 1000 E 11th St. Email info@caritasofaustin.org. "
+        "For Medicaid: 1-800-252-8263. I heard 123-45-6789 and jane@example.org."
+    )
+    result = redact(text, kinds=ASSISTANT_KINDS, keep={"INFO@caritasofaustin.org"})
+    assert result.text == (
+        "Call 512-972-5000 or visit 1000 E 11th St. Email info@caritasofaustin.org. "
+        "For Medicaid: 1-800-252-8263. I heard [SSN removed] and [email removed]."
+    )
+    assert result.types == ["email", "ssn"]
+
+
+def test_dashed_phone_after_id_keyword_is_redacted_as_phone_for_residents():
+    assert redact("Medicaid: 512-555-0199").text == "Medicaid: [phone removed]"
+
+
+# ── Linear time on adversarial input ────────────────────────────────────
+
+@pytest.mark.parametrize(
+    "unit",
+    ["a", "7", "a1", "a.", "id ", "number ", "phone : ", "1 "],
+)
+def test_redact_is_fast_on_200kb_without_matches(unit):
+    import time
+
+    text = (unit * (200_000 // len(unit) + 1))[:200_000]
+    started = time.perf_counter()
+    redact(text)
+    assert time.perf_counter() - started < 1.0
