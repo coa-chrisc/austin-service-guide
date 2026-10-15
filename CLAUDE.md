@@ -19,7 +19,8 @@ Built on the [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter) t
 - **AI:** Standard OpenAI **Responses API** with **`gpt-5.5-2026-04-23`** at `reasoning_effort="medium"`. Single model for the conversational intake, the catalog tool calls, language switching, and matching. All AI calls go through `backend/app/services/ai.py`. Falls back to a scripted demo flow when `OPENAI_API_KEY` is unset or `DEMO_MODE=true`.
 - **Voice intake:** OpenAI **Realtime API** (`gpt-realtime-2`) over WebRTC. The browser fetches an ephemeral `client_secret` from `/api/v1/intake/{session_id}/realtime/client-secret`, then opens a peer connection directly to OpenAI. Tool calls flow back through `/api/v1/intake/{session_id}/realtime/tool`; transcripts and debug events have their own endpoints under the same prefix. The frontend hook is `frontend/src/hooks/useRealtimeVoiceSession.ts`.
 - **Database (demo):** in-memory seed data in `backend/app/services/seed_data.py` (PostgreSQL + pgvector are the production target — not wired in this demo).
-- **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Production target is Azure AD B2C / Entra ID.
+- **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Admin catalog writes require `X-Admin-Token` matching `ADMIN_API_TOKEN` (writes are disabled when it is unset). Production target is Azure AD B2C / Entra ID.
+- **Privacy:** resident text is PII-redacted (`backend/app/services/pii.py`) before storage or any model call; sessions expire after `SESSION_TTL_HOURS`. See `docs/PRIVACY.md` and keep it true when changing data flows.
 - **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend).
 
 ## Common Commands

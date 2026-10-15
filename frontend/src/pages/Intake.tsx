@@ -441,6 +441,13 @@ export default function Intake() {
               >
                 Talk naturally with the guide.
               </Typography>
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{ opacity: 0.85 }}
+              >
+                Your voice is sent to OpenAI to understand you.
+              </Typography>
             </Button>
             <Button
               variant="outlined"
