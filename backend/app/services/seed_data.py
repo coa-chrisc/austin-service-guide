@@ -353,13 +353,14 @@ DEMO_RESIDENTS: list[DemoResident] = [
 
 def _generate_daily_sessions(days: int = 30) -> list[DailySessionCount]:
     """Generate realistic-looking daily session counts."""
+    rng = random.Random(20240601)  # fixed seed: stable demo charts across reloads
     result = []
     base = 35
     for i in range(days, 0, -1):
         d = (_TODAY - timedelta(days=i)).isoformat()
         dow = (_TODAY - timedelta(days=i)).weekday()
         # Weekend dip
-        noise = random.randint(-8, 12)
+        noise = rng.randint(-8, 12)
         weekend_mod = -15 if dow >= 5 else 0
         # Slight upward trend
         trend = int(i * -0.3)

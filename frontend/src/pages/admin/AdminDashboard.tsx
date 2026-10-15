@@ -72,6 +72,21 @@ interface MetricCardProps {
   loading?: boolean;
 }
 
+// Distinct slice colors drawn from the brand theme (primary, secondary, info,
+// warning, error) plus complementary tints so 8+ languages never repeat.
+const LANGUAGE_PALETTE = [
+  "#44499C",
+  "#009F4D",
+  "#009CDE",
+  "#FF8F00",
+  "#F83125",
+  "#8E5BB5",
+  "#00A99D",
+  "#C2185B",
+  "#8D6E63",
+  "#6e72b8",
+];
+
 function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
   const positive = (change ?? 0) >= 0;
   return (
@@ -217,6 +232,7 @@ export default function AdminDashboard() {
 
   const pieData = languageData.map((l, i) => ({
     id: i,
+    color: LANGUAGE_PALETTE[i % LANGUAGE_PALETTE.length],
     value: l.sessions,
     label: l.language,
   }));
