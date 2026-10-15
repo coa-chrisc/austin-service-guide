@@ -567,7 +567,7 @@ _SEQUENCE_REASONS: dict[str, str] = {
     "emergency": "Address immediate safety first — these resources answer 24/7.",
     "cooling": "Heat illness escalates fast — cooling and AC help come before everything else during a heat advisory.",
     "food": "Food assistance often qualifies you for other programs automatically.",
-    "housing": "Stabilize where you sleep before tackling longer-term goals.",
+    "housing": "Keeping a stable place to live comes before longer-term goals.",
     "refugee": "Resettlement coordination can unlock food, healthcare, and school support in a single intake.",
     "utilities": "Keeping the lights on prevents eviction and protects your deposits.",
     "healthcare": "Get covered before any out-of-pocket bills pile up.",
