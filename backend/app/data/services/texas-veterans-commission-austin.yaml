@@ -5,6 +5,8 @@ provider_name: Texas Veterans Commission
 description: State agency providing claims representation, employment services, education benefits assistance,
   and entrepreneur support for Texas veterans and their families.
 eligibility_summary: Texas veterans, eligible dependents, and surviving spouses.
+eligibility_requires:
+- veteran
 how_to_apply: Call 512-463-6564 or visit tvc.texas.gov.
 cost: Free
 cost_type: free

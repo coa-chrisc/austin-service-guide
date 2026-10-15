@@ -5,6 +5,9 @@ provider_name: The Salvation Army
 description: Emergency family shelter for women with children and two-parent families experiencing homelessness,
   providing meals, case management, and rapid rehousing services.
 eligibility_summary: Families with at least one minor child experiencing homelessness in Travis County.
+eligibility_requires:
+- homeless_or_unstable_housing
+- has_children
 how_to_apply: Call the Salvation Army intake line at 512-933-0600.
 cost: Free
 cost_type: free

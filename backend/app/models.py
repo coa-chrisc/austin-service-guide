@@ -73,6 +73,23 @@ class ServiceLocation(BaseModel):
     hours_verified: bool = False
 
 
+# Closed vocabulary for Service.eligibility_requires — hard eligibility gates
+# the matching engine checks against the resident profile. Every listed gate
+# must be satisfied (AND). Semantics live in app/services/eligibility.py and
+# are documented in app/data/README.md.
+EligibilityGate = Literal[
+    "veteran",
+    "homeless_or_unstable_housing",
+    "refugee_or_immigrant",
+    "disability",
+    "older_adult",
+    "older_adult_or_disability",
+    "has_children",
+    "youth",
+    "other_criteria",
+]
+
+
 class Service(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
@@ -80,6 +97,7 @@ class Service(BaseModel):
     provider_name: str = ""
     description: str = ""
     eligibility_summary: str = ""
+    eligibility_requires: list[EligibilityGate] = Field(default_factory=list)
     how_to_apply: str = ""
     cost: str = ""
     cost_type: CostType = CostType.free

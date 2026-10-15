@@ -6,6 +6,8 @@ description: Daytime resource center for people experiencing homelessness, offer
   service, ID recovery assistance, case management, and a food pantry.
 eligibility_summary: Open to anyone experiencing homelessness or housing instability. No documentation
   required.
+eligibility_requires:
+- homeless_or_unstable_housing
 how_to_apply: Walk in during open hours; no appointment needed.
 cost: Free
 cost_type: free

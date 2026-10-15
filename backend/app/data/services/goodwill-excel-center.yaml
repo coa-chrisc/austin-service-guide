@@ -5,6 +5,8 @@ provider_name: Goodwill Central Texas
 description: Tuition-free public charter high school for adults 18-50 to earn an accredited Texas high-school
   diploma plus an industry credential, with on-site childcare and life coaches.
 eligibility_summary: Adults 18-50 who have not completed high school. Texas residents only.
+eligibility_requires:
+- other_criteria
 how_to_apply: Attend an info session or apply at goodwillcentraltexas.org/excel-center.
 cost: Free (includes books, transportation, childcare)
 cost_type: free

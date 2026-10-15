@@ -6,6 +6,8 @@ description: ADA-complementary paratransit service providing curb-to-curb shared
   disability prevents them from using the fixed-route bus and rail system.
 eligibility_summary: Individuals certified through CapMetro's Eligibility Center as unable to use fixed-route
   service due to a disability.
+eligibility_requires:
+- disability
 how_to_apply: Call 512-369-6010 to begin the eligibility process and schedule an in-person assessment.
 cost: $1.75 per one-way trip
 cost_type: flat_fee

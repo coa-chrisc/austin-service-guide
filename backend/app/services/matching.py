@@ -14,6 +14,7 @@ from app.models import (
     ServiceMatch,
 )
 from app.services import catalog
+from app.services.eligibility import eligibility_note, unconfirmed_gates
 
 
 # ── Category keyword mapping ──────────────────────────────────────────
@@ -203,49 +204,126 @@ def _score_service(service: Service, profile: ResidentProfile, target_cats: set[
     return min(100, score)
 
 
+# Services that directly answer a crisis indicator, most local first.
+# They skip the relevance filter, eligibility gates, and the match cap, and
+# lead the application plan. Slugs are checked against the catalog in tests.
+_CRISIS_SERVICES: dict[str, list[str]] = {
+    "domestic_violence": ["safe-alliance"],
+    "immediate_danger": ["safe-alliance"],
+    "suicidal_ideation": ["integral-care"],
+    "homelessness": ["echo-coordinated-entry"],
+}
+
+_MAX_MATCHES = 15
+
+
+def _crisis_slugs(profile: ResidentProfile) -> list[str]:
+    """Crisis-direct service slugs for the profile, in indicator order."""
+    out: list[str] = []
+    for indicator in profile.crisis_indicators:
+        for slug in _CRISIS_SERVICES.get(indicator, []):
+            if slug not in out:
+                out.append(slug)
+    return out
+
+
+def _needs_label(cats: set[str]) -> str:
+    """Matched categories, highest plan priority first, readable slugs.
+
+    Slugs (underscores → spaces) rather than categories.yaml display names,
+    because i18n.translate_match_reasoning translates by slug.
+    """
+    ordered = sorted(cats, key=lambda c: (-_SEQUENCE_PRIORITY.get(c, 0), c))
+    return ", ".join(c.replace("_", " ") for c in ordered)
+
+
+def _to_match(
+    svc: Service,
+    score: float,
+    unconfirmed: list[str],
+    profile: ResidentProfile,
+    target_cats: set[str],
+    *,
+    crisis: bool = False,
+) -> ServiceMatch:
+    if crisis or score >= 50:
+        confidence = "high"
+    elif score >= 30:
+        confidence = "medium"
+    else:
+        confidence = "low"
+
+    # Build reasoning
+    matched_cats = set(svc.categories) & target_cats
+    reasons = []
+    if crisis:
+        reasons.append("Directly serves the safety concern you shared")
+    if matched_cats:
+        reasons.append(f"Matches needs: {_needs_label(matched_cats)}")
+    if profile.languages_spoken and any(l in svc.languages_offered for l in profile.languages_spoken):
+        reasons.append("Available in your language")
+    if svc.cost_type in ("free", "sliding_scale"):
+        reasons.append("Free or low-cost")
+    if unconfirmed:
+        reasons.append(eligibility_note(svc, unconfirmed))
+
+    return ServiceMatch(
+        service=svc,
+        match_confidence=confidence,
+        match_reasoning="; ".join(reasons) if reasons else "Potential match based on profile",
+        match_score=round(score, 1),
+    )
+
+
 def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
-    """Return services ranked by relevance to the resident profile."""
+    """Return services ranked by relevance to the resident profile.
+
+    Crisis-direct services (``_CRISIS_SERVICES``) come first and do not
+    count toward the cap. Services with ``eligibility_requires`` gates the
+    profile contradicts are dropped. Gates the profile cannot confirm keep
+    the service, but capped at "low" confidence and ranked after every
+    confirmed fit.
+    """
     target_cats = _matching_categories(profile)
     if not target_cats:
         return []
 
     all_services = catalog.get_all_services(page=1, page_size=200)["items"]
-    scored: list[tuple[Service, float]] = []
+    crisis = _crisis_slugs(profile)
+    by_slug = {svc.slug: svc for svc in all_services}
+    scored: list[tuple[Service, float, list[str]]] = []
 
     for svc in all_services:
+        if svc.slug in crisis:
+            continue
+        unconfirmed = unconfirmed_gates(svc, profile)
+        if unconfirmed is None:
+            continue
+        # Language/cost/zip points alone are not relevance — require a
+        # shared category or a stated need named in the listing.
+        text = f"{svc.name} {svc.description}".lower()
+        if not (set(svc.categories) & target_cats) and not any(
+            n.lower() in text for n in profile.immediate_needs
+        ):
+            continue
         score = _score_service(svc, profile, target_cats)
         if score > 10:
-            scored.append((svc, score))
+            if unconfirmed:
+                score = min(score, 29.0)  # stays in the "low" band
+            scored.append((svc, score, unconfirmed))
 
-    scored.sort(key=lambda x: x[1], reverse=True)
+    # Confirmed-eligible services first, then by score.
+    scored.sort(key=lambda x: (not x[2], x[1]), reverse=True)
 
-    matches: list[ServiceMatch] = []
-    for svc, score in scored[:15]:
-        if score >= 50:
-            confidence = "high"
-        elif score >= 30:
-            confidence = "medium"
-        else:
-            confidence = "low"
-
-        # Build reasoning
-        svc_cats = set(svc.categories)
-        matched_cats = svc_cats & target_cats
-        reasons = []
-        if matched_cats:
-            reasons.append(f"Matches needs: {', '.join(matched_cats)}")
-        if profile.languages_spoken and any(l in svc.languages_offered for l in profile.languages_spoken):
-            reasons.append("Available in your language")
-        if svc.cost_type in ("free", "sliding_scale"):
-            reasons.append("Free or low-cost")
-
-        matches.append(ServiceMatch(
-            service=svc,
-            match_confidence=confidence,
-            match_reasoning="; ".join(reasons) if reasons else "Potential match based on profile",
-            match_score=round(score, 1),
-        ))
-
+    matches = [
+        _to_match(by_slug[slug], _score_service(by_slug[slug], profile, target_cats), [],
+                  profile, target_cats, crisis=True)
+        for slug in crisis if slug in by_slug
+    ]
+    matches += [
+        _to_match(svc, score, unconfirmed, profile, target_cats)
+        for svc, score, unconfirmed in scored[:_MAX_MATCHES]
+    ]
     return matches
 
 
@@ -506,22 +584,68 @@ _SEQUENCE_REASONS: dict[str, str] = {
 }
 
 
+def _rank_category(service: Service, target_cats: set[str]) -> str | None:
+    """Highest-priority category the service shares with the resident.
+
+    Only categories the resident actually needs count — a multi-purpose
+    provider that also runs an emergency shelter does not jump the queue
+    for someone who never asked for emergency help.
+    """
+    shared = [c for c in service.categories if c in target_cats and c in _SEQUENCE_PRIORITY]
+    return max(shared, key=_SEQUENCE_PRIORITY.__getitem__, default=None)
+
+
 def recommend_application_order(
     matched_services: list[ServiceMatch],
+    profile: ResidentProfile,
 ) -> list[dict]:
-    """Return matches re-ordered for action, each with a one-line reason."""
-    def score(m: ServiceMatch) -> tuple[float, float]:
-        cat_score = max(
-            (_SEQUENCE_PRIORITY.get(c, 0) for c in m.service.categories),
-            default=0,
-        )
-        return (cat_score, m.match_score)
+    """Return matches re-ordered for action, each with a one-line reason.
 
-    ordered = sorted(matched_services, key=score, reverse=True)
+    1. Crisis-direct services for the resident's crisis indicators.
+    2. The best confirmed-eligible service for each target category, one per
+       category, highest-priority category first — so the plan opens with
+       breadth (food, housing, healthcare …) instead of five food pantries.
+    3. Everything else: confirmed before unconfirmed, then by rank category
+       priority, then score.
+    Each item's reason comes from the category it was placed for.
+    """
+    target_cats = _matching_categories(profile)
+    rank_cats = {m.service.id: _rank_category(m.service, target_cats) for m in matched_services}
+    confirmed = {m.service.id: not unconfirmed_gates(m.service, profile) for m in matched_services}
+
+    def prio(cat: str | None) -> int:
+        return _SEQUENCE_PRIORITY.get(cat or "", 0)
+
+    remaining = sorted(
+        matched_services,
+        key=lambda m: (confirmed[m.service.id], prio(rank_cats[m.service.id]), m.match_score),
+        reverse=True,
+    )
+    picks: list[tuple[ServiceMatch, str | None]] = []
+
+    def take(m: ServiceMatch, cat: str | None) -> None:
+        remaining.remove(m)
+        picks.append((m, cat))
+
+    for slug in _crisis_slugs(profile):
+        m = next((m for m in remaining if m.service.slug == slug), None)
+        if m:
+            take(m, "emergency")
+
+    for cat in sorted(target_cats & _SEQUENCE_PRIORITY.keys(), key=lambda c: (-prio(c), c)):
+        if any(c == cat for _, c in picks):
+            continue
+        candidates = [m for m in remaining if confirmed[m.service.id] and cat in m.service.categories]
+        if candidates:
+            take(max(candidates, key=lambda m: m.match_score), cat)
+
+    for m in list(remaining):
+        take(m, rank_cats[m.service.id])
+
     out: list[dict] = []
-    for idx, m in enumerate(ordered, start=1):
-        primary_cat = next(
-            (c for c in m.service.categories if c in _SEQUENCE_PRIORITY),
+    for idx, (m, cat) in enumerate(picks, start=1):
+        primary_cat = cat or next(
+            (c for c in m.service.categories if c in target_cats),
             (m.service.categories[0] if m.service.categories else "other"),
         )
         out.append({
@@ -530,9 +654,7 @@ def recommend_application_order(
             "service_slug": m.service.slug,
             "service_name": m.service.name,
             "category": primary_cat,
-            "reason": _SEQUENCE_REASONS.get(
-                primary_cat,
-                "Apply when you have the time — this one is supportive rather than urgent.",
-            ),
+            "reason": _SEQUENCE_REASONS.get(cat or "")
+            or "Apply when you have the time — this one is supportive rather than urgent.",
         })
     return out

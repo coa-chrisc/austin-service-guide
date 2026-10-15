@@ -6,6 +6,8 @@ description: Free and low-cost legal services for low-income immigrants and refu
   citizenship, family-based petitions, VAWA, U-visas, and detention representation.
 eligibility_summary: Immigrants and refugees in Central Texas, with priority for survivors of violence
   and detained individuals.
+eligibility_requires:
+- refugee_or_immigrant
 how_to_apply: Call 512-478-0546 to schedule a legal screening.
 cost: Free or low cost
 cost_type: sliding_scale

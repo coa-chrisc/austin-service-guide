@@ -5,6 +5,8 @@ provider_name: U.S. Department of Veterans Affairs
 description: Primary care, mental health, women's health, audiology, optometry, and specialty consults
   for enrolled veterans, with telehealth links to the Central Texas Veterans Health Care System.
 eligibility_summary: Veterans enrolled in VA healthcare. New enrollees may apply on-site or at va.gov/healthbenefits.
+eligibility_requires:
+- veteran
 how_to_apply: Call 512-823-4000 to schedule. New patients should enroll through VA Health Eligibility
   Center.
 cost: Free or low copay (income-based)

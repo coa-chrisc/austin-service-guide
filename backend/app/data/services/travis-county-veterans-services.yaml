@@ -5,6 +5,8 @@ provider_name: Travis County
 description: Assists veterans and their dependents in obtaining VA benefits including disability compensation,
   pension, healthcare enrollment, education benefits (GI Bill), and burial benefits.
 eligibility_summary: Veterans and their dependents/survivors who live in Travis County.
+eligibility_requires:
+- veteran
 how_to_apply: Call 512-854-9457 for an appointment with a Veterans Service Officer.
 cost: Free
 cost_type: free

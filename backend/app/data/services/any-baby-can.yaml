@@ -6,6 +6,9 @@ description: Supports families raising children with disabilities or special hea
   home-visiting, therapy services, parent education, and developmental screenings.
 eligibility_summary: Families with children ages 0-18 who have disabilities, developmental delays, or
   special healthcare needs. Some programs income-based.
+eligibility_requires:
+- has_children
+- disability
 how_to_apply: Call 512-454-3743 for a free consultation.
 cost: Free or sliding scale
 cost_type: sliding_scale

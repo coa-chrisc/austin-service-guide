@@ -6,6 +6,8 @@ description: Job training, housing, and support services for veterans and their 
   Homeless Veterans Reintegration Program (HVRP) and transitional housing.
 eligibility_summary: Veterans and eligible family members. HVRP serves veterans experiencing homelessness
   or at risk of homelessness.
+eligibility_requires:
+- veteran
 how_to_apply: Call 512-354-5700 or visit the Austin office.
 cost: Free
 cost_type: free

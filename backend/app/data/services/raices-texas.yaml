@@ -7,6 +7,8 @@ description: Legal services for immigrants and refugees including asylum represe
   detained immigrants.
 eligibility_summary: Immigrants and refugees in Texas. Free legal screenings; some services have income
   eligibility.
+eligibility_requires:
+- refugee_or_immigrant
 how_to_apply: Call 512-354-7798 for a legal screening appointment.
 cost: Free to sliding scale
 cost_type: sliding_scale

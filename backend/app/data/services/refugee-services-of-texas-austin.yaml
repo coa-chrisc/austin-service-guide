@@ -9,6 +9,8 @@ description: Resettlement case management for refugees, asylees, and SIVs (Speci
 eligibility_summary: Refugee, asylee, SIV, parolee, or Cuban/Haitian entrant status, residing in Travis
   or Williamson County. Most case-management services time-bounded to first 5 years post-arrival; one-off
   services (interpretation, advocacy) available longer.
+eligibility_requires:
+- refugee_or_immigrant
 how_to_apply: Walk-in welcome at the Austin office, or call 512-472-9472. New-arrival referrals typically
   come from your sponsoring resettlement agency.
 cost: Free

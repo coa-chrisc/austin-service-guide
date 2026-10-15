@@ -6,6 +6,8 @@ description: Comprehensive services for children and adults with disabilities in
   occupational therapy, speech therapy, day programs, camping, and respite care.
 eligibility_summary: Children and adults with disabilities. Some programs accept Medicaid and private
   insurance; sliding scale available for others.
+eligibility_requires:
+- disability
 how_to_apply: Call 512-615-6800 to schedule an evaluation.
 cost: Insurance accepted; sliding scale
 cost_type: sliding_scale

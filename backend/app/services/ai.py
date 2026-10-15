@@ -2702,7 +2702,7 @@ async def get_application_order(
         return {"summary": "", "items": [], "ai_generated": False}
     return {
         "summary": "",
-        "items": recommend_application_order(session.matches),
+        "items": recommend_application_order(session.matches, session.extracted_profile),
         "ai_generated": False,
     }
 
@@ -2732,7 +2732,7 @@ async def build_application_order(session: IntakeSession) -> dict:
     def fallback() -> dict:
         return {
             "summary": "",
-            "items": recommend_application_order(matches),
+            "items": recommend_application_order(matches, session.extracted_profile),
             "ai_generated": False,
         }
 

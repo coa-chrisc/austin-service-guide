@@ -6,6 +6,8 @@ description: Education and workforce programs for young people 16-28, including 
   corps service-learning, and construction-trades training leading to nationally recognized credentials.
 eligibility_summary: Young adults ages 16-28 from low-income households or facing barriers to education
   and employment.
+eligibility_requires:
+- youth
 how_to_apply: Call 512-744-1900 or attend an information session.
 cost: Free; participants earn a stipend
 cost_type: free

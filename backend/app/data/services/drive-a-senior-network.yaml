@@ -6,6 +6,8 @@ description: Volunteer drivers provide free door-to-door transportation for olde
   grocery stores, pharmacies, and social activities across multiple Austin neighborhoods.
 eligibility_summary: Adults 60+ who can no longer drive themselves. Each chapter serves a defined service
   area.
+eligibility_requires:
+- older_adult
 how_to_apply: Find your neighborhood chapter at driveasenior.org and call to register.
 cost: Free
 cost_type: free

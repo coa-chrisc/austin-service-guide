@@ -6,6 +6,8 @@ description: Community First! Village is a 51-acre master-planned community prov
   housing and a supportive community for men and women coming out of chronic homelessness.
 eligibility_summary: Adults who have been chronically homeless (homeless for at least 1 year or 4+ episodes
   in 3 years). Referred through ECHO's coordinated entry system.
+eligibility_requires:
+- homeless_or_unstable_housing
 how_to_apply: Referral through Austin's Coordinated Entry system — contact ECHO at 512-234-5780.
 cost: Rent from $225-$430/month
 cost_type: flat_fee

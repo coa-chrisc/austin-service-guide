@@ -6,6 +6,8 @@ description: HIV care, prevention, and supportive services including medical and
   mental health counseling, food pantry, and case management for people living with HIV.
 eligibility_summary: People living with HIV and people at risk for HIV. Many services free; insurance
   accepted.
+eligibility_requires:
+- other_criteria
 how_to_apply: Call 512-458-2437 to schedule an intake.
 cost: Free or insurance-billed
 cost_type: free

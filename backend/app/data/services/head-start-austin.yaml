@@ -6,6 +6,8 @@ description: Free early childhood education program for children ages 3-5 from l
   health screenings, nutritious meals, parent engagement activities, and school readiness support.
 eligibility_summary: Children ages 3-5 with family income ≤100% FPL, children in foster care, children
   experiencing homelessness, or children receiving TANF/SSI.
+eligibility_requires:
+- has_children
 how_to_apply: Apply through Child Inc. at 512-451-7361 or AISD early childhood office.
 cost: Free
 cost_type: free

@@ -6,6 +6,9 @@ description: Two-generation program supporting single mothers pursuing post-seco
   housing, on-site early childhood education, life-skills coaching, and empowerment training.
 eligibility_summary: Single mothers with one or more children under 5, enrolled in or pursuing a college
   degree, with low income.
+eligibility_requires:
+- has_children
+- other_criteria
 how_to_apply: Attend an information meeting; sign up at jeremiahprogram.org/austin.
 cost: Subsidized housing & childcare
 cost_type: sliding_scale

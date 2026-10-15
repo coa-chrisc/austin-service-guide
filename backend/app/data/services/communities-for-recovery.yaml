@@ -5,6 +5,8 @@ provider_name: Communities for Recovery
 description: Peer-led recovery support services for people experiencing substance use and mental health
   challenges — including recovery coaching, employment support, and sober social activities.
 eligibility_summary: Adults 18+ in recovery from substance use or co-occurring mental health conditions.
+eligibility_requires:
+- other_criteria
 how_to_apply: Call 512-358-1014 or walk in to the Recovery Resource Center.
 cost: Free
 cost_type: free

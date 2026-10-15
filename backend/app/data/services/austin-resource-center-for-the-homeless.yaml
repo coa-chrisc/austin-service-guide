@@ -5,6 +5,8 @@ provider_name: Front Steps
 description: Downtown homeless services facility offering overnight emergency shelter for adult men, day-resource
   services, mail, showers, and case management.
 eligibility_summary: Adults experiencing homelessness. Overnight shelter beds reserved for adult men.
+eligibility_requires:
+- homeless_or_unstable_housing
 how_to_apply: Walk in to the day resource center or call 512-305-4100.
 cost: Free
 cost_type: free

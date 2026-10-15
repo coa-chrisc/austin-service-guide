@@ -5,6 +5,8 @@ provider_name: Austin Resource Center for Independent Living
 description: Consumer-controlled, cross-disability center promoting independent living through peer support,
   advocacy, skills training, information & referral, and youth transition services.
 eligibility_summary: People of any age with any type of disability living in 10 surrounding counties.
+eligibility_requires:
+- disability
 how_to_apply: Call 512-832-6349 to speak with an Independent Living Specialist.
 cost: Free
 cost_type: free

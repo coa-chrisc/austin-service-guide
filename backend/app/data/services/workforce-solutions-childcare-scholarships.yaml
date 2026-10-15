@@ -6,6 +6,8 @@ description: Subsidized childcare scholarships for working parents and parents i
   payable to participating licensed childcare providers across Travis County.
 eligibility_summary: Parents working, in school, or in training at least 25 hrs/week with household income
   ≤85% State Median Income.
+eligibility_requires:
+- has_children
 how_to_apply: Apply at wfsca.org/childcare or call 512-225-3838.
 cost: Free; co-payment based on income
 cost_type: sliding_scale

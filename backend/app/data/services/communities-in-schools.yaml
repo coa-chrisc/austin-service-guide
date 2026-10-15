@@ -8,6 +8,8 @@ description: School-based case management for K-12 students at risk of dropping 
   referrals to outside therapists when needed. Free for any student attending a partner campus.
 eligibility_summary: Enrolled at a CIS partner campus (AISD, Del Valle ISD, Manor ISD, or Pflugerville
   ISD). Self-referral, parent referral, or teacher/counselor referral all accepted.
+eligibility_requires:
+- has_children
 how_to_apply: Ask your child's school counselor or principal for the CIS site coordinator, or call 512-462-1771
   for a list of partner campuses.
 cost: Free

@@ -6,6 +6,9 @@ description: Youth and family services including emergency shelter for youth age
   living, street outreach, counseling, and workforce programs for young people experiencing homelessness.
 eligibility_summary: Youth ages 17-24 experiencing homelessness or housing instability. Some programs
   serve ages 0-17 with families.
+eligibility_requires:
+- homeless_or_unstable_housing
+- youth
 how_to_apply: Call 512-735-2400 or walk in to the Youth Resource Center.
 cost: Free
 cost_type: free

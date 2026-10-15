@@ -6,6 +6,8 @@ description: Home-delivered nutritious meals and wellness checks for homebound s
   disabilities throughout the greater Austin area.
 eligibility_summary: Adults 60+ or adults with disabilities who are homebound and unable to prepare meals.
   No income requirement.
+eligibility_requires:
+- older_adult_or_disability
 how_to_apply: Call 512-476-6325 or submit a referral online.
 cost: Free (donations accepted)
 cost_type: free

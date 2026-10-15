@@ -8,6 +8,8 @@ description: Long-term integration support for refugee and immigrant families pa
   run out.
 eligibility_summary: Refugee, asylee, immigrant, or other newcomer status. Open to families who have aged
   out of formal resettlement support.
+eligibility_requires:
+- refugee_or_immigrant
 how_to_apply: Stop by the office or call 512-953-5184 — staff will route you to the right program.
 cost: Free
 cost_type: free

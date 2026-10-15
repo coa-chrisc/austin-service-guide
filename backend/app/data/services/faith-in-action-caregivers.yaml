@@ -6,6 +6,8 @@ description: Volunteer caregivers offer free transportation, friendly visits, er
   seniors and adults with disabilities in the Hill Country and northwest Austin area.
 eligibility_summary: Adults 60+ or adults with disabilities living in the service area (NW Travis, Lago
   Vista, Bee Cave).
+eligibility_requires:
+- older_adult_or_disability
 how_to_apply: Call 512-265-2280 to register.
 cost: Free
 cost_type: free

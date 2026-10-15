@@ -73,6 +73,7 @@ unless marked **required**. Defaults come from `app/models.py:Service`.
 | `provider_name`          | string                | Operating organization (often the same string as `name`).             |
 | `description`            | string                | 1–3 sentences. Plain text; no markdown.                               |
 | `eligibility_summary`    | string                | Who qualifies, in plain language.                                     |
+| `eligibility_requires`   | list[enum]            | Hard eligibility gates checked by matching. See below. Default `[]`.  |
 | `how_to_apply`           | string                | First-step instructions (call X, visit Y, apply at URL Z).            |
 | `cost`                   | string                | Free-text label shown on the card. Examples: `Free`, `Sliding scale`. |
 | `cost_type`              | enum                  | One of `free`, `sliding_scale`, `flat_fee`, `insurance`, `varies`.    |
@@ -85,6 +86,53 @@ unless marked **required**. Defaults come from `app/models.py:Service`.
 | `categories`             | list[string]          | Category **slugs**, must exist in `categories.yaml`. See guard below. |
 | `locations`              | list[ServiceLocation] | At least one location is recommended; see schema below.               |
 | `documents`              | list[ServiceDocument] | "What to bring" list; see schema below.                               |
+
+### `eligibility_requires` (hard eligibility gates)
+
+Structured version of the restrictive part of `eligibility_summary`. The
+matching engine (`app/services/eligibility.py`) checks each gate against the
+resident profile. All listed gates must hold (AND).
+
+- Profile **contradicts** a gate (e.g. `veteran_status: false`) → the
+  service is not matched.
+- Profile **can't tell** (field unknown) → the service is kept, capped at
+  `low` confidence, ranked after every confirmed fit, and its reasoning says
+  "Check eligibility: …" quoting the first sentence of `eligibility_summary`.
+- Profile **satisfies** every gate → normal scoring.
+
+| Gate                           | Satisfied when                                                                                   | Contradicted when                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `veteran`                      | `veteran_status: true`, or a veterans need (covers dependents/survivors)                         | `veteran_status: false`                   |
+| `homeless_or_unstable_housing` | `housing_situation` is `homeless`/`unstable`; `homelessness` or `domestic_violence` crisis flag; `homeless`/`shelter` need | `housing_situation` is `renting`/`own_home` |
+| `refugee_or_immigrant`         | `is_refugee_or_immigrant: true`, or a refugee/immigration/citizenship need                       | `is_refugee_or_immigrant: false`          |
+| `disability`                   | `has_disability: true` (household-level), `employment_status: disabled`, or a disability need    | `has_disability: false`                   |
+| `older_adult`                  | `age_range` overlaps 50+, or a senior/aging/elderly need                                         | `age_range` entirely under 50             |
+| `older_adult_or_disability`    | either `older_adult` or `disability` holds                                                       | both are contradicted                     |
+| `has_children`                 | `has_children: true`, `school_age_children` present, or a childcare need                         | `has_children: false`                     |
+| `youth`                        | `age_range` overlaps 16–28                                                                       | `age_range` entirely outside 16–28        |
+| `other_criteria`               | never — the restriction has no profile field (single parents in college, people in recovery, people living with HIV) | never; always "check eligibility" |
+
+Age gates use the most permissive band in the catalog (50+; 16–28) so a
+partly-overlapping bracket is never excluded. Fleeing domestic violence
+satisfies the housing gate because HUD (and ECHO) count it as homelessness.
+
+Crisis-direct services are not gated here: `_CRISIS_SERVICES` in
+`app/services/matching.py` maps each crisis indicator (`domestic_violence`,
+`immediate_danger`, `suicidal_ideation`, `homelessness`) to service slugs that
+always match and lead the plan when that indicator is present. Renaming one
+of those slugs means updating the map (a test checks they all exist).
+
+Only gate a service when its own eligibility text clearly restricts who can
+use it. "Open to anyone; priority for …" stays ungated. An unknown gate name
+fails validation at load time. To add a gate, extend `EligibilityGate` in
+`app/models.py` and its predicate in `app/services/eligibility.py`.
+
+```yaml
+eligibility_summary: Families with at least one minor child experiencing homelessness in Travis County.
+eligibility_requires:
+- homeless_or_unstable_housing
+- has_children
+```
 
 ### `ServiceLocation`
 

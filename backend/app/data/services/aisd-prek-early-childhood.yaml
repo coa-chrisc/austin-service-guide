@@ -6,6 +6,8 @@ description: Free full-day pre-K for eligible 3- and 4-year-olds at AISD element
   childhood special education and dual-language pre-K classrooms.
 eligibility_summary: 3- and 4-year-olds who are economically disadvantaged, English learners, in foster
   care, homeless, or children of active-duty military.
+eligibility_requires:
+- has_children
 how_to_apply: Enroll online at austinisd.org/enroll or at any AISD enrollment center.
 cost: Free
 cost_type: free

@@ -5,6 +5,8 @@ provider_name: Ending Community Homelessness Coalition (ECHO)
 description: The single front door to Austin's homelessness response system, conducting assessments and
   matching people experiencing homelessness with the most appropriate housing program.
 eligibility_summary: Anyone in Travis County experiencing homelessness or fleeing domestic violence.
+eligibility_requires:
+- homeless_or_unstable_housing
 how_to_apply: Call 512-234-5780 or visit a Coordinated Assessment site.
 cost: Free
 cost_type: free

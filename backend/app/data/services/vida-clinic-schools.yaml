@@ -7,6 +7,8 @@ description: Embedded clinicians providing therapy, psychiatric care, and crisis
   to insurance with sliding-scale and grant-funded slots for uninsured students.
 eligibility_summary: Enrolled at an AISD campus where Vida Clinic is contracted. Parent or guardian consent
   required for ongoing therapy.
+eligibility_requires:
+- has_children
 how_to_apply: Contact your school counselor for a referral, or call 512-518-1180 to ask whether your campus
   is a Vida partner site.
 cost: Free or sliding-scale
