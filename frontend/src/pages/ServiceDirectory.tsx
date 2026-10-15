@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -24,7 +25,8 @@ export default function ServiceDirectory() {
   const [categories, setCategoriesList] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const debouncedSearch = useDebouncedValue(search, 250);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sort, setSort] = useState("name");
@@ -37,6 +39,17 @@ export default function ServiceDirectory() {
 
   useEffect(() => {
     setPage(1);
+  }, [debouncedSearch]);
+
+  // Mirror the search box into ?q= (replace, so typing doesn't spam history).
+  useEffect(() => {
+    const current = searchParams.get("q") ?? "";
+    if (current === debouncedSearch) return;
+    const next = new URLSearchParams(searchParams);
+    if (debouncedSearch) next.set("q", debouncedSearch);
+    else next.delete("q");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
 
   const fetchServices = useCallback(async () => {
