@@ -26,6 +26,7 @@ from app.services.ai import (
     start_session,
 )
 from app.services.notify import send_email, send_sms
+from app.services.pii import redact
 from app.services.personas import list_personas
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
@@ -186,9 +187,17 @@ async def send_message(session_id: str, body: IntakeMessageRequest):
         raise HTTPException(status_code=400, detail="Session already completed")
 
     response = await process_message(session_id, body.message, body.language)
+    # The stored (PII-redacted) copy of the resident's message, so the client
+    # can replace its optimistic local copy — that history is replayed into
+    # voice sessions.
+    user_message = next(
+        (m for m in reversed(session.conversation) if m.role.value == "user"),
+        None,
+    )
     return {
         "session_id": session_id,
         "response": response.model_dump(),
+        "user_message": user_message.model_dump() if user_message else None,
         "status": session.status.value,
     }
 
@@ -342,7 +351,8 @@ async def sync_realtime_transcript(
             "detail": {
                 "role": body.role,
                 "content_length": len(body.content),
-                "content_preview": body.content[:240],
+                # Redact before truncating so a clipped identifier can't slip through.
+                "content_preview": redact(body.content).text[:240],
             },
         },
     )

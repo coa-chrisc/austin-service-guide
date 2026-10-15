@@ -343,6 +343,23 @@ PLAN_SUMMARY_I18N: dict[str, str] = {
 }
 
 
+# ── PII redaction notice (prepended to the reply when pii.redact fired) ─
+
+REDACTION_NOTICE_I18N: dict[str, str] = {
+    "en": "For your privacy, I removed some personal details (like an ID number, phone, or address) from your message — I don't need them to find services.",
+    "vi": "Để bảo vệ quyền riêng tư của bạn, tôi đã xóa một số thông tin cá nhân (như số giấy tờ, số điện thoại hoặc địa chỉ) khỏi tin nhắn — tôi không cần chúng để tìm dịch vụ.",
+    "es": "Por tu privacidad, quité algunos datos personales (como un número de identificación, teléfono o dirección) de tu mensaje — no los necesito para encontrar servicios.",
+    "zh": "为保护您的隐私，我已从您的消息中删除了一些个人信息（如证件号码、电话或地址）— 查找服务不需要这些信息。",
+    "ar": "حفاظًا على خصوصيتك، أزلتُ بعض المعلومات الشخصية (مثل رقم هوية أو هاتف أو عنوان) من رسالتك — لا أحتاجها للعثور على الخدمات.",
+}
+
+
+def redaction_notice(language: str) -> str:
+    """One-sentence privacy notice in the resident's language (English fallback)."""
+    lang = (language or "en").split("-")[0].lower()
+    return REDACTION_NOTICE_I18N.get(lang, REDACTION_NOTICE_I18N["en"])
+
+
 def translate_sequence_reason(category: str, language: str) -> str | None:
     """Return the localized sequence reason for a category, or None if no translation."""
     table = SEQUENCE_REASONS_I18N.get(language)

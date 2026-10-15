@@ -1,20 +1,28 @@
 """Admin console routes.
 
-All routes work without real authentication for the demo.  A header-check
-pattern (X-Staff-Role) is included so the frontend can set it, but it is
-not enforced.
+Read routes (GET) are open: they serve synthetic demo data (fake residents,
+generated analytics) plus the public service catalog, and expose no real
+resident information. The X-Staff-Role header is read but not enforced.
+
+Write routes (POST/PATCH/DELETE on /services) change the live catalog that
+residents are matched against, so they require an ``X-Admin-Token`` header
+equal to the ``ADMIN_API_TOKEN`` setting. With no token configured, writes
+are refused. This is a shared-secret stopgap for the demo, not staff
+authentication; production needs real identity (Entra ID) and RBAC.
 """
 
 from __future__ import annotations
 
+import hmac
 import math
 from typing import Any, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
+from app.config import get_settings
 from app.models import Service
 from app.services.catalog import (
     create_service,
@@ -47,6 +55,21 @@ def _check_staff_role(x_staff_role: str | None) -> str:
     """Return the role (or default 'viewer').  In a real app this would
     validate a JWT and enforce RBAC."""
     return x_staff_role or "viewer"
+
+
+def require_admin_token(x_admin_token: str | None = Header(None)) -> None:
+    """Gate catalog writes on the shared ADMIN_API_TOKEN (constant-time compare)."""
+    expected = get_settings().admin_api_token
+    if not expected:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Admin writes are disabled on this server. Set ADMIN_API_TOKEN "
+                "and send it in the X-Admin-Token header."
+            ),
+        )
+    if not hmac.compare_digest((x_admin_token or "").encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Token.")
 
 
 # ── Residents ─────────────────────────────────────────────────────────
@@ -144,7 +167,7 @@ async def admin_list_services(
     }
 
 
-@router.post("/services", status_code=201)
+@router.post("/services", status_code=201, dependencies=[Depends(require_admin_token)])
 async def admin_create_service(
     body: dict[str, Any],
     x_staff_role: Optional[str] = Header(None),
@@ -160,7 +183,7 @@ async def admin_create_service(
     return created.model_dump()
 
 
-@router.patch("/services/{service_id}")
+@router.patch("/services/{service_id}", dependencies=[Depends(require_admin_token)])
 async def admin_update_service(
     service_id: str,
     body: dict[str, Any],
@@ -177,7 +200,7 @@ async def admin_update_service(
     return updated.model_dump()
 
 
-@router.delete("/services/{service_id}")
+@router.delete("/services/{service_id}", dependencies=[Depends(require_admin_token)])
 async def admin_delete_service(
     service_id: str,
     x_staff_role: Optional[str] = Header(None),

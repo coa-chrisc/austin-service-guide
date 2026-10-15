@@ -29,7 +29,9 @@ from app.models import (
     ResidentProfile,
 )
 from app.services import catalog
+from app.services.i18n import redaction_notice
 from app.services.matching import assess_risks, calculate_benefits, match_services
+from app.services.pii import redact
 
 log = logging.getLogger(__name__)
 
@@ -74,13 +76,17 @@ def _clip_debug_text(value: str, limit: int = _MAX_REALTIME_DEBUG_TEXT) -> str:
 
 
 def _sanitize_debug_value(value: Any, depth: int = 0) -> Any:
-    """Keep debug payloads useful without letting them become huge."""
+    """Keep debug payloads useful without letting them become huge.
+
+    Every string is PII-redacted before clipping, so transcript previews
+    and tool arguments never reach the opt-in debug log with raw values.
+    """
     if depth > 4:
-        return _clip_debug_text(str(value), 300)
+        return _clip_debug_text(redact(str(value)).text, 300)
     if value is None or isinstance(value, (bool, int, float)):
         return value
     if isinstance(value, str):
-        return _clip_debug_text(value)
+        return _clip_debug_text(redact(value).text)
     if isinstance(value, dict):
         cleaned: dict[str, Any] = {}
         for idx, (key, child) in enumerate(value.items()):
@@ -98,7 +104,7 @@ def _sanitize_debug_value(value: Any, depth: int = 0) -> Any:
         if len(items) > 40:
             cleaned_items.append({"_truncated_items": len(items) - 40})
         return cleaned_items
-    return _clip_debug_text(str(value))
+    return _clip_debug_text(redact(str(value)).text)
 
 
 def _realtime_debug_log_path() -> Path:
@@ -420,13 +426,24 @@ async def process_message(
     if language and language != session.language:
         session.language = language
 
-    settings = get_settings()
-
-    # Append the raw user message to our visible conversation
+    # Strip SSNs, phone numbers, addresses, etc. before the text is stored,
+    # logged, or sent to the model. Everything below only sees the
+    # redacted text.
+    redaction = redact(user_text)
     session.conversation.append(IntakeMessage(
         role=MessageRole.user,
-        content=user_text,
+        content=redaction.text,
     ))
+
+    reply = await _route_user_turn(session, redaction.text)
+    if redaction.types and not reply.crisis_detected:
+        reply.content = f"{redaction_notice(session.language)}\n\n{reply.content}"
+    return reply
+
+
+async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMessage:
+    """Crisis check, scenario follow-up, then live or scripted flow."""
+    settings = get_settings()
 
     # Backend-side crisis check (cheap safety net independent of the model)
     crisis_kind = _check_crisis(user_text)
@@ -473,6 +490,9 @@ def _scripted_step_num(session: IntakeSession) -> int:
 
     Turns diverted to the crisis response or the life-event scenario
     follow-up did not answer a scripted question, so they don't advance it.
+    Questions skipped because the answer was already known decrement
+    ``scripted_turns_skipped`` (see ``_demo_flow``), which moves the step
+    forward by the same amount.
     """
     user_msg_count = sum(1 for m in session.conversation if m.role == MessageRole.user)
     return max(1, user_msg_count - session.scripted_turns_skipped)
@@ -902,6 +922,18 @@ def _build_instructions(session: IntakeSession) -> str:
         "the conversation is in another language; translate results when "
         "you cite them.\n"
         "  - Never invent services not returned by your tools.\n\n"
+        "Privacy rules (always apply):\n"
+        "  - Never ask for, repeat, or store the resident's name, Social "
+        "Security number, full street address, phone number, email, date of "
+        "birth, or any account, case, Medicaid/Medicare, or member ID number. "
+        "None of these are needed: zip code, household size, and income or "
+        "insurance ranges are enough to match services.\n"
+        "  - If the resident offers one of these anyway, do not read it back. "
+        "Say briefly that you don't need it and steer back to the next intake "
+        "question.\n"
+        "  - Text like [phone removed] or [SSN removed] means the system "
+        "already stripped that detail and told the resident. Don't ask for it "
+        "again and don't comment on the placeholder.\n\n"
         f"{lang_note}\n{profile_note}"
     )
 
@@ -1007,6 +1039,12 @@ def _build_realtime_instructions(session: IntakeSession) -> str:
         "housing scenarios, prefer housing stability first, then zip code, "
         "then household size — but only ask about a field that is still "
         "missing.\n\n"
+        "Voice privacy:\n"
+        "  - Never ask the resident to say their name, Social Security "
+        "number, full address, phone number, date of birth, or any account or "
+        "member number, and never repeat one aloud if they say it. Tell them "
+        "you don't need it and move to the next intake question. Ask for zip "
+        "code only, never a street address.\n\n"
         "Startup:\n"
         "  - If an assistant greeting is already in the conversation "
         "history, do not greet again. Continue with the next missing intake "
@@ -1058,10 +1096,9 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         "tools": get_realtime_tool_schemas(),
         "tool_choice": "auto",
         "max_output_tokens": 1200,
-        "tracing": {
-            "workflow_name": "Austin Service Guide voice intake",
-            "group_id": session.id,
-        },
+        # Explicitly off: Realtime traces are stored in the OpenAI Traces
+        # dashboard and would retain resident voice-session content.
+        "tracing": None,
     }
 
 
@@ -1093,6 +1130,7 @@ async def _live_greeting(session: IntakeSession) -> str:
         input=seed_input,
         reasoning={"effort": settings.openai_reasoning_effort},
         max_output_tokens=600,
+        store=False,
     )
     text = (response.output_text or "").strip()
 
@@ -1128,6 +1166,11 @@ async def _responses_flow(session: IntakeSession, user_text: str) -> IntakeMessa
             tools=_TOOL_SCHEMAS,
             reasoning={"effort": settings.openai_reasoning_effort},
             max_output_tokens=2000,
+            # Don't let OpenAI persist the conversation. The loop is
+            # stateless anyway (full history in `input`); encrypted reasoning
+            # is requested so reasoning items can be replayed without storage.
+            store=False,
+            include=["reasoning.encrypted_content"],
         )
 
         # Persist every output item (reasoning, text, tool calls) so the
@@ -1532,6 +1575,12 @@ def record_realtime_transcript(
 
     normalized_role = MessageRole.user if role == "user" else MessageRole.assistant
     text = content.strip()
+    # Resident speech is redacted before it is stored or replayed into the
+    # text agent's context. Assistant turns are left alone: they quote
+    # catalog phone numbers and addresses on purpose.
+    redacted_types: list[str] = []
+    if normalized_role == MessageRole.user:
+        text, redacted_types = redact(text)
     completed = session.status == IntakeStatus.completed
     if completed and normalized_role == MessageRole.user:
         return {
@@ -1622,6 +1671,7 @@ def record_realtime_transcript(
         "progress_percent": progress,
         "is_complete": session.status == IntakeStatus.completed,
         "crisis_detected": crisis_detected,
+        "redacted": redacted_types,
     }
 
 
@@ -2576,6 +2626,99 @@ def _extract_additional_needs(text: str) -> list[str]:
     return needs
 
 
+# Profile field each scripted question collects, keyed by _DEMO_STEPS index.
+_DEMO_STEP_FIELDS: dict[int, str] = {
+    1: "household_size",
+    2: "zip_code",
+    3: "housing_situation",
+    4: "employment_status",
+    5: "income_bracket",
+    6: "insurance_status",
+}
+
+_COUNT_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+}
+_COUNT = r"(\d{1,2}|" + "|".join(_COUNT_WORDS) + r")"
+_STATED_HOUSEHOLD_RE = re.compile(
+    rf"\b{_COUNT}\s+(?:people|persons|of us)\b|\b(?:family|household)\s+of\s+{_COUNT}\b",
+    re.IGNORECASE,
+)
+_SOLO_RE = re.compile(r"\b(?:just me|i live alone|by myself)\b", re.IGNORECASE)
+_STATED_HOUSING: list[tuple[str, re.Pattern[str]]] = [
+    ("homeless", re.compile(
+        r"\b(?:homeless|unhoused|in a shelter|(?:sleeping|living) in my car|on the street)\b",
+        re.IGNORECASE,
+    )),
+    ("unstable", re.compile(
+        r"\b(?:couch surfing|staying with (?:friends|family|a friend))\b", re.IGNORECASE,
+    )),
+    ("renting", re.compile(
+        r"\b(?:rent|renting|landlord|lease|evicted|eviction)\b", re.IGNORECASE,
+    )),
+    ("own_home", re.compile(r"\b(?:i own my (?:home|house)|homeowner|mortgage)\b", re.IGNORECASE)),
+]
+_STATED_EMPLOYMENT: list[tuple[str, re.Pattern[str]]] = [
+    ("unemployed", re.compile(
+        r"\b(?:lost my job|laid off|unemployed|not working|out of work|got fired)\b",
+        re.IGNORECASE,
+    )),
+    ("part-time", re.compile(r"\bpart[- ]time\b", re.IGNORECASE)),
+    ("full-time", re.compile(r"\bfull[- ]time\b", re.IGNORECASE)),
+    ("retired", re.compile(r"\bretired\b", re.IGNORECASE)),
+]
+_STATED_UNINSURED_RE = re.compile(
+    r"\b(?:no insurance|uninsured|don'?t have (?:health )?insurance"
+    r"|lost (?:my )?(?:health )?(?:insurance|coverage))\b",
+    re.IGNORECASE,
+)
+
+
+def _capture_stated_facts(session: IntakeSession) -> None:
+    """Fill blank profile fields the resident already stated in passing.
+
+    Scans every resident turn (including the life-event scenario answer the
+    scripted step counter never sees) with high-confidence phrases only, so
+    the scripted flow doesn't re-ask something the resident already said.
+    """
+    profile = session.extracted_profile
+    if (
+        not profile.employment_status
+        and _canonical_life_event_slug(_session_life_event_slug(session)) == "lost-job"
+    ):
+        profile.employment_status = "unemployed"
+
+    for text in (m.content for m in session.conversation if m.role == MessageRole.user):
+        if not profile.zip_code:
+            profile.zip_code = _extract_zip(text)
+        if profile.household_size is None:
+            if _SOLO_RE.search(text):
+                profile.household_size = 1
+            elif hit := _STATED_HOUSEHOLD_RE.search(text):
+                raw = (hit.group(1) or hit.group(2)).lower()
+                profile.household_size = _COUNT_WORDS.get(raw) or int(raw)
+            if profile.household_size and profile.has_children is None:
+                profile.has_children = profile.household_size >= 3
+        if not profile.housing_situation:
+            profile.housing_situation = next(
+                (value for value, pattern in _STATED_HOUSING if pattern.search(text)), ""
+            )
+        if not profile.employment_status:
+            profile.employment_status = next(
+                (value for value, pattern in _STATED_EMPLOYMENT if pattern.search(text)), ""
+            )
+        if not profile.insurance_status and _STATED_UNINSURED_RE.search(text):
+            profile.insurance_status = "uninsured"
+
+
+def _next_unanswered_step(profile: ResidentProfile, step_idx: int) -> int:
+    """First scripted question at or after ``step_idx`` whose field is blank."""
+    while step_idx in _DEMO_STEP_FIELDS and getattr(profile, _DEMO_STEP_FIELDS[step_idx]) not in (None, ""):
+        step_idx += 1
+    return step_idx
+
+
 async def _demo_flow(session: IntakeSession, user_text: str, step_num: int) -> IntakeMessage:
     """Scripted fallback used when no API key is configured."""
     profile = session.extracted_profile
@@ -2606,8 +2749,14 @@ async def _demo_flow(session: IntakeSession, user_text: str, step_num: int) -> I
         profile.immediate_needs = list(set(profile.immediate_needs + additional))
         return await _complete_intake_demo(session)
 
+    _capture_stated_facts(session)
+
     if step_num < len(_DEMO_STEPS):
-        step = _DEMO_STEPS[step_num]
+        next_step = _next_unanswered_step(profile, step_num)
+        # Skipped questions never get an answer turn, so shift the step
+        # counter forward by the same amount.
+        session.scripted_turns_skipped -= next_step - step_num
+        step = _DEMO_STEPS[next_step]
         msg = IntakeMessage(
             role=MessageRole.assistant,
             content=step["message"],
@@ -2811,6 +2960,7 @@ async def build_application_order(session: IntakeSession) -> dict:
             reasoning={"effort": settings.openai_reasoning_effort},
             text={"format": {"type": "json_object"}},
             max_output_tokens=2000,
+            store=False,
         )
         raw = (response.output_text or "").strip()
         if not raw:
@@ -2902,6 +3052,7 @@ async def generate_plan_summary(session: IntakeSession) -> str:
             input=[{"role": "user", "content": prompt}],
             reasoning={"effort": settings.openai_reasoning_effort},
             max_output_tokens=120,
+            store=False,
         )
         text = (response.output_text or "").strip()
         return text or fallback()

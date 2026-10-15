@@ -14,11 +14,15 @@ def test_radius_must_be_positive_and_finite(client):
         assert res.status_code == 422, radius
 
 
-def test_admin_service_writes_return_422_on_invalid_body(client):
-    assert client.post("/api/v1/admin/services", json={}).status_code == 422
-    res = client.patch("/api/v1/admin/services/svc-wic", json={"categories": 5})
+def test_admin_service_writes_return_422_on_invalid_body(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "admin_api_token", "test-token")
+    auth = {"X-Admin-Token": "test-token"}
+    assert client.post("/api/v1/admin/services", json={}, headers=auth).status_code == 422
+    res = client.patch("/api/v1/admin/services/svc-wic", json={"categories": 5}, headers=auth)
     assert res.status_code == 422
-    assert client.patch("/api/v1/admin/services/nope", json={}).status_code == 404
+    assert client.patch("/api/v1/admin/services/nope", json={}, headers=auth).status_code == 404
 
 
 def test_search_matches_whole_words_and_ignores_filler(client):

@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     demo_mode: bool = False
     # Public origin used to build shareable URLs (QR codes, SMS links)
     public_origin: str = "http://localhost:5173"
+    # Shared secret for admin catalog writes (POST/PATCH/DELETE under
+    # /api/v1/admin), sent as the X-Admin-Token header. Empty = writes off.
+    admin_api_token: str = ""
 
     # CORS origins allowed by the API. Keep in sync with backend/.env.example.
     cors_origins: str = (

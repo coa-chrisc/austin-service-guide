@@ -74,3 +74,160 @@ def test_realtime_secret_unavailable_without_key(client):
     res = client.post(f"/api/v1/intake/{sid}/realtime/client-secret", json={})
     assert res.status_code == 400
     assert "sk-" not in res.text
+
+
+# ── PII redaction at the intake boundaries ──────────────────────────────
+
+SSN = "123-45-6789"
+PHONE = "512-555-0199"
+
+
+def _stored_text(sid):
+    from app.services.ai import get_session
+
+    session = get_session(sid)
+    return repr([m.content for m in session.conversation]) + repr(session.responses_input)
+
+
+def test_text_message_is_redacted_before_storage(client):
+    sid = _start(client)
+    res = client.post(
+        f"/api/v1/intake/{sid}/message",
+        json={"message": f"I need food. My SSN is {SSN} and my phone is {PHONE}"},
+    )
+    body = res.json()
+    assert res.status_code == 200
+    assert body["user_message"]["content"] == (
+        "I need food. My SSN is [SSN removed] and my phone is [phone removed]"
+    )
+    assert body["response"]["content"].startswith("For your privacy, I removed")
+    assert HOUSEHOLD_Q in body["response"]["content"]  # flow continues normally
+    stored = _stored_text(sid)
+    assert SSN not in stored and PHONE not in stored
+
+
+def test_redaction_notice_follows_session_language(client):
+    sid = _start(client, language="es")
+    res = client.post(
+        f"/api/v1/intake/{sid}/message",
+        json={"message": f"Necesito comida, mi teléfono es {PHONE}", "language": "es"},
+    )
+    assert res.json()["response"]["content"].startswith("Por tu privacidad")
+
+
+def test_live_model_payload_never_contains_raw_identifiers(client, monkeypatch):
+    import openai
+
+    from app.config import get_settings
+
+    calls: list[dict] = []
+
+    class _FakeResponse:
+        output_text = "Thanks. How many people are in your household?"
+        output: list = []
+
+    class _FakeResponses:
+        async def create(self, **kwargs):
+            calls.append(kwargs)
+            return _FakeResponse()
+
+    class _FakeClient:
+        def __init__(self, **_):
+            self.responses = _FakeResponses()
+
+    monkeypatch.setattr(openai, "AsyncOpenAI", _FakeClient)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "demo_mode", False)
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+
+    sid = _start(client)
+    _say(client, sid, f"ssn {SSN}, call me at {PHONE}, I need rent help")
+
+    assert len(calls) == 2  # greeting + one agent-loop turn
+    assert all(call["store"] is False for call in calls)
+    assert calls[1]["include"] == ["reasoning.encrypted_content"]
+    payload = repr(calls)
+    assert SSN not in payload and PHONE not in payload
+    assert "[SSN removed]" in payload and "[phone removed]" in payload
+    assert "Never ask for, repeat, or store" in calls[1]["instructions"]
+
+
+def test_realtime_user_transcript_is_redacted(client):
+    sid = _start(client)
+    url = f"/api/v1/intake/{sid}/realtime/transcript"
+    res = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"})
+    body = res.json()
+    assert res.status_code == 200
+    assert body["messages"][0]["content"] == "my number is [phone removed]"
+    assert body["redacted"] == ["phone"]
+    assert PHONE not in _stored_text(sid)
+
+    # Assistant turns quote catalog phone numbers on purpose; leave them.
+    res = client.post(url, json={"role": "assistant", "content": "Call 512-972-5000 to apply."})
+    assert res.json()["messages"][0]["content"] == "Call 512-972-5000 to apply."
+
+
+def test_debug_log_values_are_redacted():
+    from app.services.ai import _sanitize_debug_value
+
+    cleaned = _sanitize_debug_value({"content_preview": f"ssn {SSN}", "args": [PHONE]})
+    assert SSN not in repr(cleaned) and PHONE not in repr(cleaned)
+
+
+def test_realtime_instructions_include_privacy_rules(client, monkeypatch):
+    from app.services.ai import build_realtime_session_config, get_session
+
+    sid = _start(client)
+    config = build_realtime_session_config(get_session(sid))
+    assert "Voice privacy" in config["instructions"]
+    assert config["tracing"] is None
+
+
+# ── Admin write gate ────────────────────────────────────────────────────
+
+_NEW_SERVICE = {"id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test"}
+
+
+def test_admin_writes_refused_when_token_unset(client):
+    res = client.post("/api/v1/admin/services", json=_NEW_SERVICE)
+    assert res.status_code == 403
+    assert "ADMIN_API_TOKEN" in res.json()["detail"]
+    assert client.delete("/api/v1/admin/services/svc-wic").status_code == 403
+    assert client.get("/api/v1/admin/services").status_code == 200  # reads stay open
+
+
+def test_admin_writes_require_matching_token(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "admin_api_token", "s3cret")
+    url = "/api/v1/admin/services"
+    assert client.post(url, json=_NEW_SERVICE).status_code == 403
+    assert client.post(url, json=_NEW_SERVICE, headers={"X-Admin-Token": "wrong"}).status_code == 403
+    ok = client.post(url, json=_NEW_SERVICE, headers={"X-Admin-Token": "s3cret"})
+    assert ok.status_code == 201
+    gone = client.delete(f"{url}/{_NEW_SERVICE['id']}", headers={"X-Admin-Token": "s3cret"})
+    assert gone.status_code == 200
+
+
+# ── Scripted flow skips questions already answered ──────────────────────
+
+def test_scripted_flow_skips_known_fields_after_lost_job(client):
+    sid = _start(client, life_event="lost_job")
+    assert "hit the hardest" in _say(client, sid, "I got laid off last week")
+    reply = _say(client, sid, "Rent. We're a family of 3 in 78744 and I rent")
+    # Household, zip, housing and employment are all known: go to income.
+    assert "monthly income" in reply
+    assert "health insurance" in _say(client, sid, "Under $1,000")
+    profile = client.get(f"/api/v1/intake/{sid}/results").json()["profile"]
+    assert profile["household_size"] == 3
+    assert profile["zip_code"] == "78744"
+    assert profile["housing_situation"] == "renting"
+    assert profile["employment_status"] == "unemployed"
+    assert profile["income_bracket"] == "$0-$10,000"
+
+
+def test_scripted_flow_still_asks_unknown_fields_in_order(client):
+    sid = _start(client)
+    assert HOUSEHOLD_Q in _say(client, sid, "I need food, I live in 78702")
+    # Zip already given, so the next question is housing, not zip.
+    assert "housing situation" in _say(client, sid, "Just me")

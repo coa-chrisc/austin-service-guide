@@ -189,6 +189,7 @@ Useful settings:
 - `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. Voice intake needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
 - `CORS_ORIGINS` — allowed frontend origins.
 - `PUBLIC_ORIGIN` — origin used to build share links (QR codes, SMS/email).
+- `ADMIN_API_TOKEN` — shared secret required in the `X-Admin-Token` header for admin catalog writes. Empty (the default) refuses all writes.
 - `TWILIO_*` — optional SMS sending.
 - `SENDGRID_*` — optional email sending.
 
@@ -214,6 +215,7 @@ Important limitations:
 - Analytics and reports use demo/generated data.
 - SMS and email send paths stub successfully unless credentials are configured.
 - Privacy, security, accessibility, legal, procurement, records retention, and data governance would need formal review before production use.
+- See [docs/PRIVACY.md](docs/PRIVACY.md) for what data is collected, what is sent to OpenAI, and how personal identifiers are removed before they reach the model.
 
 ## Why This Matters For APH
 
