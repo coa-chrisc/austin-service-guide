@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -44,6 +45,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Header() {
+  const brand = useBrandConfig();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
@@ -130,8 +132,8 @@ export default function Header() {
           >
             <Box
               component="img"
-              src="/aph-logo.png"
-              alt="Austin Public Health"
+              src={brand.logo.src}
+              alt={brand.logo.alt}
               sx={{
                 height: { xs: 32, sm: 36 },
                 width: "auto",
@@ -330,8 +332,8 @@ export default function Header() {
         <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
           <Box
             component="img"
-            src="/aph-logo.png"
-            alt="Austin Public Health"
+            src={brand.logo.src}
+            alt={brand.logo.alt}
             sx={{ height: 32, width: "auto" }}
           />
         </Box>

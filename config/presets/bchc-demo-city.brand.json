@@ -3,7 +3,7 @@
   "shortName": "MSG",
   "agencyName": "Metro Public Health",
   "cityName": "Metro City",
-  "description": "FICTIONAL DEMO CITY. Find services you're eligible for in Metro City — a white-label demonstration, not a real agency.",
+  "description": "FICTIONAL DEMO CITY. Find services you're eligible for in Metro City — a white-label demonstration, not a real agency. Map defaults to the geographic center of the contiguous US (a placeholder, not a real city).",
   "logo": {
     "src": "/brand/metro-logo.svg",
     "alt": "Metro Public Health (fictional demo logo)"
@@ -70,6 +70,10 @@
     "phone311": "311",
     "agencyWebsite": "https://example.org/metro-public-health",
     "accessibilityUrl": "https://example.org/metro-public-health/accessibility"
+  },
+  "map": {
+    "center": [39.8283, -98.5795],
+    "zoom": 4
   },
   "pwa": {
     "themeColor": "#0F5C6E",

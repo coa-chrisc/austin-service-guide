@@ -24,6 +24,10 @@ import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
 import { withIntakeState } from "@/lib/session";
 import { useRealtimeVoiceSession } from "@/hooks/useRealtimeVoiceSession";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
+import PrivacyNotice from "@/components/common/PrivacyNotice";
+import PrivacySnackbar from "@/components/common/PrivacySnackbar";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
+import { scrubPII } from "@/lib/piiGuard";
 import type { IntakeMessage, CrisisResource } from "@/types";
 
 interface ChatInterfaceProps {
@@ -44,6 +48,8 @@ export default function ChatInterface({
   const initialMessages = initialConversation ?? [];
   const [messages, setMessages] = useState<IntakeMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
+  const [privacyToast, setPrivacyToast] = useState(false);
+  const { appName } = useBrandConfig();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(
     initialMessages[initialMessages.length - 1]?.progress_percent ?? 0,
@@ -268,6 +274,11 @@ export default function ChatInterface({
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading || voice.isActive) return;
     const activeKey = intakeKey;
+    // Client-side pre-flight: send only the scrubbed text. The backend still
+    // redacts independently. Never log the raw text.
+    const { text: scrubbed, kinds } = scrubPII(text.trim());
+    if (kinds.length > 0) setPrivacyToast(true);
+    text = scrubbed;
 
     const userMsg: IntakeMessage = {
       role: "user",
@@ -513,7 +524,7 @@ export default function ChatInterface({
               <HealthAndSafetyIcon sx={{ fontSize: 40 }} />
             </Avatar>
             <Typography variant="h5" fontWeight={600} textAlign="center">
-              Welcome to Austin Service Guide
+              Welcome to {appName}
             </Typography>
             <Typography
               variant="body1"
@@ -936,6 +947,7 @@ export default function ChatInterface({
                   "Voice chat couldn't start. You can keep typing or try voice again."}
               </Alert>
             )}
+            <PrivacyNotice sx={{ mb: 1, borderRadius: 2 }} />
             <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
               <Tooltip
                 title={
@@ -1019,6 +1031,10 @@ export default function ChatInterface({
           </>
         )}
       </Box>
+      <PrivacySnackbar
+        open={privacyToast}
+        onClose={() => setPrivacyToast(false)}
+      />
     </Box>
   );
 }

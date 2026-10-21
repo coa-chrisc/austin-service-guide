@@ -53,6 +53,7 @@ import {
   type IntakeResults,
 } from "@/lib/api";
 import { makeResultsT } from "@/lib/resultsI18n";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import {
   ensureIntakePlan,
   hasCompletedPlan,
@@ -137,6 +138,7 @@ function toResultsData(res: IntakeResults): ResultsData {
 }
 
 export default function Results() {
+  const { appName } = useBrandConfig();
   const navigate = useNavigate();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
@@ -188,11 +190,11 @@ export default function Results() {
     const lines = sharedServices()
       .slice(0, 5)
       .map((svc, i) => `${i + 1}. ${svc.name}${svc.phone ? ` — ${svc.phone}` : ""}`);
-    const shareText = ["My Austin Service Guide services:", ...lines].join("\n");
+    const shareText = [`My ${appName} services:`, ...lines].join("\n");
 
     if (canNativeShare()) {
       const result = await nativeShare({
-        title: "My Austin Service Guide plan",
+        title: `My ${appName} plan`,
         text: shareText,
         url: `${window.location.origin}/services`,
       });
@@ -1169,31 +1171,6 @@ export default function Results() {
             onChange={(e) => setShareRecipient(e.target.value)}
             helperText={shareChannel === "sms" ? t("phone_helper") : ""}
           />
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: -0.5 }}
-          >
-            {t("save_across_devices")}{" "}
-            <Box
-              component="a"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                setShareOpen(false);
-                navigate(
-                  `/login?return=${encodeURIComponent("/results")}`,
-                );
-              }}
-              sx={{
-                color: "primary.main",
-                fontWeight: 600,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              {t("sign_in")}
-            </Box>
-          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShareOpen(false)}>{t("cancel")}</Button>

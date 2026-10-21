@@ -10,9 +10,9 @@ import IconButton from "@mui/material/IconButton";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import type { MapPin } from "@/types";
 import { haversineMiles } from "@/lib/geo";
+import { brandConfig } from "@/hooks/useBrandConfig";
 
-const AUSTIN_CENTER: [number, number] = [30.2672, -97.7431];
-const DEFAULT_ZOOM = 11;
+const { center: MAP_CENTER, zoom: DEFAULT_ZOOM } = brandConfig.map;
 
 /* ── Category visual config ─────────────────────────────────────────── */
 
@@ -387,7 +387,7 @@ export default function ServiceMap({
       {/* Map */}
       <Box sx={{ flex: 1, position: "relative", minHeight: 200 }}>
         <MapContainer
-          center={AUSTIN_CENTER}
+          center={MAP_CENTER}
           zoom={DEFAULT_ZOOM}
           style={{ height: "100%", width: "100%", zIndex: 1 }}
           scrollWheelZoom

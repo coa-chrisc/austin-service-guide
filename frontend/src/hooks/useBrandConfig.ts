@@ -44,6 +44,7 @@ export interface BrandConfig {
     agencyWebsite: string;
     accessibilityUrl: string;
   };
+  map: { center: [number, number]; zoom: number };
   pwa: { themeColor: string; backgroundColor: string };
 }
 

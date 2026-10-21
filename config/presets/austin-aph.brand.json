@@ -71,6 +71,10 @@
     "agencyWebsite": "https://www.austintexas.gov/health",
     "accessibilityUrl": "https://www.austintexas.gov/city-manager/americans-disabilities-act-ada"
   },
+  "map": {
+    "center": [30.2672, -97.7431],
+    "zoom": 11
+  },
   "pwa": {
     "themeColor": "#005bbb",
     "backgroundColor": "#ffffff"

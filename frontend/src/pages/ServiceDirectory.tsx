@@ -15,6 +15,16 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import SearchIcon from "@mui/icons-material/Search";
+import PrivacyNotice from "@/components/common/PrivacyNotice";
+import PrivacySnackbar from "@/components/common/PrivacySnackbar";
+import {
+  fetchAllServices,
+  fetchCatalogZips,
+  parseCategoryParam,
+  serviceHasZip,
+} from "@/components/common/catalogFilters";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
+import { scrubPII } from "@/lib/piiGuard";
 import ServiceCard from "@/components/services/ServiceCard";
 import { getServices, getCategories } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/hooks";
@@ -28,7 +38,23 @@ export default function ServiceDirectory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const debouncedSearch = useDebouncedValue(search, 250);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // Filters come from the URL (?category=a,b&zip=78741) so the landing-page
+  // chips can deep-link; a chip click replaces the list with one slug.
+  const selectedCategories = parseCategoryParam(searchParams.get("category"));
+  const selectedCategory =
+    selectedCategories.length === 1 ? selectedCategories[0] : null;
+  const zip = searchParams.get("zip") ?? "";
+  const categoryKey = selectedCategories.join(",");
+  const [zips, setZips] = useState<string[]>([]);
+  const [privacyToast, setPrivacyToast] = useState(false);
+  const brand = useBrandConfig();
+  const setParam = (key: string, value: string | null) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+    setPage(1);
+  };
   const [sort, setSort] = useState("name");
   const [openNowOnly, setOpenNowOnly] = useState(false);
   const [page, setPage] = useState(1);
@@ -39,7 +65,7 @@ export default function ServiceDirectory() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, categoryKey, zip]);
 
   // Mirror the search box into ?q= (replace, so typing doesn't spam history).
   useEffect(() => {
@@ -56,21 +82,34 @@ export default function ServiceDirectory() {
     setLoading(true);
     setError(null);
     try {
-      const params: Record<string, unknown> = {
-        page,
-        page_size: pageSize,
-        sort,
-      };
-      if (debouncedSearch)
-        (params as Record<string, string>).search = debouncedSearch;
-      if (selectedCategory)
-        (params as Record<string, string>).category = selectedCategory;
-      if (openNowOnly) (params as Record<string, boolean>).open_now = true;
-      const res = await getServices(
-        params as Parameters<typeof getServices>[0],
-      );
-      setServices(res.items);
-      setTotalPages(res.total_pages);
+      const base: Record<string, unknown> = { sort };
+      if (debouncedSearch) base.search = debouncedSearch;
+      if (openNowOnly) base.open_now = true;
+      if (selectedCategories.length <= 1 && !zip) {
+        // Single category, no ZIP: the API paginates for us.
+        if (selectedCategory) base.category = selectedCategory;
+        const res = await getServices({
+          ...base,
+          page,
+          page_size: pageSize,
+        } as Parameters<typeof getServices>[0]);
+        setServices(res.items);
+        setTotalPages(res.total_pages);
+      } else {
+        // Several categories and/or a ZIP: the API supports neither exactly
+        // (zip_code is a radius filter), so filter the full list here.
+        const all = await fetchAllServices(
+          base as Parameters<typeof fetchAllServices>[0],
+        );
+        const filtered = all.filter(
+          (svc) =>
+            (selectedCategories.length === 0 ||
+              svc.categories?.some((c) => selectedCategories.includes(c))) &&
+            (!zip || serviceHasZip(svc, zip)),
+        );
+        setTotalPages(Math.max(1, Math.ceil(filtered.length / pageSize)));
+        setServices(filtered.slice((page - 1) * pageSize, page * pageSize));
+      }
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to load services";
@@ -78,7 +117,8 @@ export default function ServiceDirectory() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, selectedCategory, sort, openNowOnly]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, debouncedSearch, categoryKey, zip, sort, openNowOnly]);
 
   useEffect(() => {
     fetchServices();
@@ -88,13 +128,16 @@ export default function ServiceDirectory() {
     getCategories()
       .then(setCategoriesList)
       .catch(() => {});
+    fetchCatalogZips()
+      .then(setZips)
+      .catch(() => {});
   }, []);
 
   const showEmptyWithFilters =
     !loading &&
     services.length === 0 &&
     !error &&
-    (Boolean(debouncedSearch) || Boolean(selectedCategory));
+    (Boolean(debouncedSearch) || selectedCategories.length > 0 || Boolean(zip));
 
   useEffect(() => {
     if (!showEmptyWithFilters || popularFetchedRef.current) return;
@@ -110,15 +153,20 @@ export default function ServiceDirectory() {
         Service Directory
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Browse all available services across Austin
+        Browse all available services across {brand.cityName}
       </Typography>
 
       {/* Search and filters */}
+      <PrivacyNotice sx={{ mb: 2 }} />
       <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
         <TextField
           placeholder="Search services..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            const { text, kinds } = scrubPII(e.target.value);
+            if (kinds.length > 0) setPrivacyToast(true);
+            setSearch(text);
+          }}
           size="small"
           sx={{ flex: 1, minWidth: 200 }}
           slotProps={{
@@ -145,6 +193,24 @@ export default function ServiceDirectory() {
             <MenuItem value="category">Category</MenuItem>
           </Select>
         </FormControl>
+        {zips.length > 0 && (
+          <FormControl size="small" sx={{ minWidth: 140 }}>
+            <InputLabel id="dir-zip-label">ZIP code</InputLabel>
+            <Select
+              labelId="dir-zip-label"
+              value={zip}
+              label="ZIP code"
+              onChange={(e) => setParam("zip", e.target.value || null)}
+            >
+              <MenuItem value="">Any ZIP code</MenuItem>
+              {zips.map((z) => (
+                <MenuItem key={z} value={z}>
+                  {z}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       {/* Category filter chips */}
@@ -164,11 +230,10 @@ export default function ServiceDirectory() {
           <Chip
             label="All Categories"
             onClick={() => {
-              setSelectedCategory(null);
-              setPage(1);
+              setParam("category", null);
             }}
-            color={!selectedCategory ? "primary" : "default"}
-            variant={!selectedCategory ? "filled" : "outlined"}
+            color={selectedCategories.length === 0 ? "primary" : "default"}
+            variant={selectedCategories.length === 0 ? "filled" : "outlined"}
             size="small"
           />
           {categories.map((cat) => (
@@ -176,13 +241,13 @@ export default function ServiceDirectory() {
               key={cat.id}
               label={`${cat.name} (${cat.service_count})`}
               onClick={() => {
-                setSelectedCategory(
+                setParam(
+                  "category",
                   selectedCategory === cat.slug ? null : cat.slug,
                 );
-                setPage(1);
               }}
-              color={selectedCategory === cat.slug ? "primary" : "default"}
-              variant={selectedCategory === cat.slug ? "filled" : "outlined"}
+              color={selectedCategories.includes(cat.slug) ? "primary" : "default"}
+              variant={selectedCategories.includes(cat.slug) ? "filled" : "outlined"}
               size="small"
             />
           ))}
@@ -254,7 +319,8 @@ export default function ServiceDirectory() {
         services.length === 0 &&
         !error &&
         !debouncedSearch &&
-        !selectedCategory && (
+        selectedCategories.length === 0 &&
+        !zip && (
           <Box sx={{ textAlign: "center", py: 8 }}>
             <Typography variant="h6" color="text.secondary">
               No services available.
@@ -273,6 +339,7 @@ export default function ServiceDirectory() {
           />
         </Box>
       )}
+      <PrivacySnackbar open={privacyToast} onClose={() => setPrivacyToast(false)} />
     </Container>
   );
 }

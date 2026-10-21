@@ -14,9 +14,9 @@ import WhatshotIcon from "@mui/icons-material/Whatshot";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 
 import { getAdminDemandMap, type DemandMapPoint } from "../../lib/api";
+import { brandConfig } from "@/hooks/useBrandConfig";
 
-const AUSTIN_CENTER: [number, number] = [30.2672, -97.7431];
-const DEFAULT_ZOOM = 11;
+const { center: MAP_CENTER, zoom: DEFAULT_ZOOM } = brandConfig.map;
 
 const INTENSITY_COLOR: Record<DemandMapPoint["intensity"], string> = {
   high: "#D32F2F",
@@ -245,7 +245,7 @@ export default function AdminDemandMap() {
               <Skeleton variant="rectangular" height="100%" />
             ) : (
               <MapContainer
-                center={AUSTIN_CENTER}
+                center={MAP_CENTER}
                 zoom={DEFAULT_ZOOM}
                 style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom

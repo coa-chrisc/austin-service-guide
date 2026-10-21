@@ -44,6 +44,8 @@ import {
   type PersonaSummary,
 } from "@/lib/api";
 import { startNewIntakeState } from "@/lib/session";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
+import NeedNavigator from "@/components/landing/NeedNavigator";
 import type { LifeEvent } from "@/types";
 
 const PERSONA_ICONS: Record<string, React.ReactNode> = {
@@ -247,6 +249,7 @@ const FOOTER_LINKS = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  const brand = useBrandConfig();
   const [searchParams] = useSearchParams();
   const demoMode = searchParams.get("demo") === "1";
   const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
@@ -336,7 +339,7 @@ export default function Landing() {
               lineHeight: 1.2,
             }}
           >
-            Find services you're eligible for — in minutes
+            {brand.copy.tagline}
           </Typography>
           <Typography
             variant="h6"
@@ -351,7 +354,7 @@ export default function Landing() {
             }}
           >
             Answer a few simple questions and our AI will match you with city,
-            county, state, and nonprofit services across Austin.
+            county, state, and nonprofit services across {brand.cityName}.
           </Typography>
           <Button
             variant="contained"
@@ -382,6 +385,8 @@ export default function Landing() {
           </Typography>
         </Container>
       </Box>
+
+      <NeedNavigator />
 
       {/* Demo persona launcher (?demo=1) */}
       {demoMode && (
@@ -701,8 +706,8 @@ export default function Landing() {
               <Grid size={{ xs: 12, md: 5 }}>
                 <Box
                   component="img"
-                  src="/aph-logo.png"
-                  alt="Austin Public Health"
+                  src={brand.logo.src}
+                  alt={brand.logo.alt}
                   sx={{
                     height: 40,
                     width: "auto",
@@ -714,7 +719,7 @@ export default function Landing() {
                   variant="body2"
                   sx={{ opacity: 0.7, maxWidth: 320 }}
                 >
-                  Connecting Austin residents to the services they need through
+                  Connecting {brand.cityName} residents to the services they need through
                   AI-powered guidance.
                 </Typography>
               </Grid>
@@ -776,9 +781,36 @@ export default function Landing() {
                 textAlign: "center",
               }}
             >
-              <Typography variant="caption" sx={{ opacity: 0.5 }}>
-                Austin Public Health | City of Austin & Travis County
+              <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                {brand.copy.footerDisclaimer}
               </Typography>
+              <Box
+                sx={{
+                  mt: 1,
+                  display: "flex",
+                  gap: 2,
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {[
+                  { label: brand.agencyName, href: brand.contact.agencyWebsite },
+                  { label: "Accessibility", href: brand.contact.accessibilityUrl },
+                  {
+                    label: `Call ${brand.contact.phone311}`,
+                    href: `tel:${brand.contact.phone311}`,
+                  },
+                ].map((l) => (
+                  <Link
+                    key={l.label}
+                    href={l.href}
+                    underline="hover"
+                    sx={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+              </Box>
             </Box>
           </Container>
         </Box>

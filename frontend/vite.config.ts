@@ -50,6 +50,27 @@ function checkSchema(
       else if (node.additionalProperties === false)
         errors.push(`${at}.${key}: unknown field`);
     }
+  } else if (node.type === "array") {
+    if (!Array.isArray(value)) {
+      errors.push(`${at}: expected an array`);
+      return;
+    }
+    if (node.minItems != null && value.length < node.minItems)
+      errors.push(`${at}: needs at least ${node.minItems} items`);
+    if (node.maxItems != null && value.length > node.maxItems)
+      errors.push(`${at}: allows at most ${node.maxItems} items`);
+    value.forEach((v: any, i: number) =>
+      node.items ? checkSchema(node.items, v, `${at}[${i}]`, root, errors) : undefined,
+    );
+  } else if (node.type === "number") {
+    if (typeof value !== "number" || !Number.isFinite(value))
+      errors.push(`${at}: expected a number`);
+    else {
+      if (node.minimum != null && value < node.minimum)
+        errors.push(`${at}: must be >= ${node.minimum}`);
+      if (node.maximum != null && value > node.maximum)
+        errors.push(`${at}: must be <= ${node.maximum}`);
+    }
   } else if (node.type === "string") {
     if (typeof value !== "string") errors.push(`${at}: expected a string`);
     else {
