@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings
 
@@ -22,6 +23,16 @@ class Settings(BaseSettings):
     openai_realtime_secret_ttl_seconds: int = 600
     realtime_debug_log_enabled: bool = False
     realtime_debug_log_path: str = "logs/realtime_debug.jsonl"
+
+    # ── Voice privacy ──────────────────────────────────────────────
+    # "intercepted_text" (default): on-device speech-to-text in the browser,
+    # PII-scrubbed text through the normal /message path; no audio leaves
+    # the device. "realtime_audio": raw microphone audio is streamed to the
+    # OpenAI Realtime API, only for deployments with an OpenAI zero-data-
+    # retention agreement, and only when ALLOW_RAW_AUDIO_STREAM is also true.
+    # Any other value fails at startup.
+    voice_pipeline_mode: Literal["intercepted_text", "realtime_audio"] = "intercepted_text"
+    allow_raw_audio_stream: bool = False
 
     # ── Azure OpenAI (legacy / optional) ───────────────────────────
     azure_openai_endpoint: str = ""
@@ -84,6 +95,15 @@ class Settings(BaseSettings):
     def use_live_ai(self) -> bool:
         """True when we should call a real model rather than the scripted demo."""
         return not self.demo_mode and self.has_openai
+
+    @property
+    def realtime_audio_enabled(self) -> bool:
+        """True only when raw-audio voice is opted into twice and live AI is on."""
+        return (
+            self.voice_pipeline_mode == "realtime_audio"
+            and self.allow_raw_audio_stream
+            and self.use_live_ai
+        )
 
     # "ignore" so a leftover key from an older .env (e.g. SESSION_TTL_HOURS)
     # doesn't stop the app from starting.

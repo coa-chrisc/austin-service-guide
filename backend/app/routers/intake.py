@@ -14,7 +14,7 @@ import re
 from typing import Any, Literal
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.config import get_settings
@@ -355,7 +355,36 @@ async def share_results(body: ShareRequest):
     }
 
 
-# ── Realtime voice ───────────────────────────────────────────────────
+# ── Voice ────────────────────────────────────────────────────────────
+
+_RAW_AUDIO_DISABLED = "Raw-audio voice is disabled for this deployment."
+
+
+@router.get("/voice-config")
+async def get_voice_config():
+    """Which voice pipeline the browser should use. Takes no resident data.
+
+    ``mode`` is "realtime_audio" only when VOICE_PIPELINE_MODE=realtime_audio,
+    ALLOW_RAW_AUDIO_STREAM=true and live AI is on; otherwise the browser uses
+    on-device speech-to-text and sends scrubbed text ("intercepted_text").
+    """
+    settings = get_settings()
+    return {
+        "mode": "realtime_audio" if settings.realtime_audio_enabled else "intercepted_text",
+        "raw_audio_allowed": settings.allow_raw_audio_stream,
+        "live_ai": settings.use_live_ai,
+    }
+
+
+def _require_raw_audio_voice() -> None:
+    """Refuse the Realtime (raw-audio) endpoints unless the deployment opted in.
+
+    Runs as a route dependency, so it fires before the body is validated and
+    before any OpenAI call.
+    """
+    if not get_settings().realtime_audio_enabled:
+        raise HTTPException(status_code=403, detail=_RAW_AUDIO_DISABLED)
+
 
 def _require_realtime_debug_enabled() -> None:
     """Reject debug-endpoint access unless the opt-in debug file log is on."""
@@ -363,7 +392,7 @@ def _require_realtime_debug_enabled() -> None:
         raise HTTPException(status_code=404, detail="Not found")
 
 
-@router.post("/realtime/client-secret")
+@router.post("/realtime/client-secret", dependencies=[Depends(_require_raw_audio_voice)])
 async def create_realtime_client_secret(body: RealtimeSecretRequest):
     """Create an ephemeral Realtime client secret for browser voice intake.
 
@@ -388,18 +417,6 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             "reasoning_effort": settings.openai_realtime_reasoning_effort,
         },
     })
-    if not settings.use_live_ai:
-        record_realtime_debug_event(trace_id, {
-            "event": "client_secret_failed",
-            "source": "server",
-            "status": "live_ai_disabled",
-            "detail": {"demo_mode": settings.demo_mode},
-        })
-        raise HTTPException(
-            status_code=400,
-            detail="Realtime voice requires OPENAI_API_KEY and DEMO_MODE=false.",
-        )
-
     payload = {
         "expires_after": {
             "anchor": "created_at",
@@ -460,7 +477,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
     }
 
 
-@router.post("/realtime/tool")
+@router.post("/realtime/tool", dependencies=[Depends(_require_raw_audio_voice)])
 async def run_realtime_tool(body: RealtimeToolRequest):
     """Execute a Realtime tool call against the client-sent state."""
     session = session_from_state(body.state)
@@ -470,7 +487,7 @@ async def run_realtime_tool(body: RealtimeToolRequest):
     return {"state": _state(session), "call_id": body.call_id, **result}
 
 
-@router.post("/realtime/transcript")
+@router.post("/realtime/transcript", dependencies=[Depends(_require_raw_audio_voice)])
 async def sync_realtime_transcript(body: RealtimeTranscriptRequest):
     """Add a committed Realtime transcript turn to the client-sent state."""
     session = session_from_state(body.state)
