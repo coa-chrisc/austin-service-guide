@@ -264,15 +264,15 @@ frontend/
     pages/         Resident routes plus admin/* console
     hooks/         React hooks: useBrandConfig, useRealtimeVoiceSession (voice intake), auth stub
     lib/           API client, session.ts (client-held intake state), piiGuard.ts (client PII pre-flight)
-    theme/         MUI theme built from the brand config
+    theme/         MUI theme, contrast gate and theme guard, built from the city config
   package.json     Frontend dependencies and dev/build/preview scripts
-config/            White-label brand config, brand and catalog JSON schemas, presets/
+config/            City config (city.config.json), its schema, presets/, brand/ logos, catalog schema
 deploy/            AWS, Azure and GCP starter templates and deploy notes
 Dockerfile         Single image: built SPA served by FastAPI
 docker-compose.yml Local run of that image
 SECURITY.md        Threat model, hardening, known gaps, Phase 2 roadmap
 ARCHITECTURE.md   Components, data flow, module map, deployment modes
-docs/              Vision, requirements, user stories, backend design, privacy, brand notes
+docs/              Vision, requirements, user stories, backend design, privacy, CUSTOMIZING.md (rebranding), brand notes
 AGENTS.md          Contributor guide for coding agents and maintainers
 CLAUDE.md          Architecture and conventions for AI coding tools
 ```
@@ -299,11 +299,11 @@ These are the baseline checks for the demo. The backend tests force the scripted
 
 ```bash
 docker compose up --build                  # builds the image and serves the app on http://localhost:8000 (scripted demo mode by default)
-CITY_PRESET=bchc-demo-city docker compose up --build   # same, with another brand preset
-CITY_PRESET=bchc-demo-city npm run build   # from frontend/: build the SPA with a preset
+CITY_CONFIG=presets/cedar-ridge-county.json docker compose up --build   # same, with another city config (CITY_PRESET=<id> also works)
+CITY_CONFIG=presets/cedar-ridge-county.json npm run build   # from frontend/: build the SPA with a preset
 ```
 
-`CITY_PRESET` picks `config/presets/<name>.brand.json` at build time; an unknown name fails the build. With it unset, `config/brand.config.json` is used. Only branding and copy are configurable today: the model prompts, the catalog, crisis resources, and the admin demo data are Austin-specific. See [ARCHITECTURE.md](ARCHITECTURE.md) and [deploy/README.md](deploy/README.md).
+`CITY_CONFIG` picks a file under `config/` (for example `presets/cedar-ridge-county.json`) at build time; `CITY_PRESET=<id>` is shorthand for `presets/<id>.json`. An unknown name fails the build. With both unset, `config/city.config.json` is used. The backend reads the same file for its scripted greeting and the opening identity sentence of the system prompt. The rest of the model prompt, the catalog, crisis resources, personas and the admin demo data are Austin-specific. To rebrand, follow [docs/CUSTOMIZING.md](docs/CUSTOMIZING.md). See also [ARCHITECTURE.md](ARCHITECTURE.md) and [deploy/README.md](deploy/README.md).
 
 ## License
 

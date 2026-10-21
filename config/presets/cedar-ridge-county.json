@@ -1,0 +1,106 @@
+{
+  "$schema": "../city.config.schema.json",
+  "id": "cedar-ridge-county",
+  "appName": "Cedar Ridge Health Guide",
+  "agency": {
+    "name": "Cedar Ridge County Health Department",
+    "shortName": "CRCHD",
+    "parent": "Cedar Ridge County (fictional)"
+  },
+  "region": {
+    "name": "Cedar Ridge County",
+    "cityName": "Cedar Ridge",
+    "state": "OR"
+  },
+  "brand": {
+    "logoUrl": "brand/cedar-ridge-county/logo.svg"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#5B2A6E",
+      "primarySoft": "#EFE6F3",
+      "accent": "#C2410C",
+      "accentSoft": "#FBE7DA",
+      "ink": "#33143F",
+      "onBrand": "#FFFFFF",
+      "page": "#FAF7FB",
+      "surface": "#FFFFFF",
+      "subtle": "#F0EAF3",
+      "body": "#201626",
+      "muted": "#5E5166",
+      "line": "#D9CEDF",
+      "noData": "#D9CEDF",
+      "positive": "#1F6B45",
+      "positiveFill": "#1F6B45",
+      "negative": "#B42318",
+      "warning": "#8A5A00",
+      "scrim": "#000000"
+    },
+    "dataScale": [
+      "#B42318",
+      "#E0803A",
+      "#F2C14E",
+      "#6BAA7F",
+      "#1F6B45"
+    ],
+    "series": [
+      "#5B2A6E",
+      "#C2410C",
+      "#1F6B45",
+      "#1D5FA6",
+      "#8A5A00",
+      "#7A2E4E"
+    ],
+    "typography": {
+      "fontPackage": "@fontsource/noto-sans",
+      "family": "Noto Sans",
+      "fallback": "Helvetica, Arial, sans-serif",
+      "baseSize": 16,
+      "sizes": {}
+    },
+    "radius": {
+      "chip": "0.25rem",
+      "control": "0rem",
+      "card": "0rem",
+      "panel": "0.25rem"
+    }
+  },
+  "map": {
+    "center": [
+      44.0,
+      -120.5
+    ],
+    "zoom": 6,
+    "minZoom": 4,
+    "maxZoom": 16
+  },
+  "serviceGuide": {
+    "shortName": "CRHG",
+    "description": "FICTIONAL DEMO COUNTY. Find health and human services you may qualify for in Cedar Ridge County \u2014 a white-label demonstration, not a real agency. The map opens on a placeholder view.",
+    "copy": {
+      "tagline": "Find services you may qualify for \u2014 in minutes",
+      "footerDisclaimer": "Cedar Ridge County Health Department | Cedar Ridge County (fictional demonstration county)",
+      "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
+    },
+    "contact": {
+      "phone311": "211",
+      "agencyWebsite": "https://example.org/cedar-ridge-health",
+      "accessibilityUrl": "https://example.org/cedar-ridge-health/accessibility"
+    },
+    "darkColors": {
+      "primary": "#C9A0DC",
+      "accent": "#F5A26B",
+      "accentSoft": "#FBE7DA",
+      "ink": "#5B2A6E",
+      "onBrand": "#000000",
+      "page": "#17101B",
+      "surface": "#221829",
+      "body": "#F1E9F5",
+      "muted": "#B8A9C0",
+      "positive": "#7DD3A0",
+      "positiveFill": "#7DD3A0",
+      "negative": "#FF8A80",
+      "warning": "#FFB74D"
+    }
+  }
+}

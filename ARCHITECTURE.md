@@ -132,27 +132,29 @@ Because the backend holds no per-resident state, replicas need no session affini
 - `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`).
 - `lib/`: `api.ts` (API client), `session.ts` (client-held intake state), `piiGuard.ts` (client PII pre-flight), `share.ts`, plus helpers.
 - `hooks/`: `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice), `useAuth` (stub).
-- `theme/`: MUI theme built from the brand config.
+- `theme/`: MUI theme built from the city config, plus the contrast gate and the theme guard test.
 
 Tests: `npm test` runs vitest (`frontend/src/lib/piiGuard.test.ts` checks the TypeScript PII guard against the shared fixtures).
 
 ## Configuration and white-label flow
 
 ```text
-config/brand.config.json   active config (Austin Public Health values)
-config/presets/*.brand.json named presets (austin-aph, bchc-demo-city)
-config/brand.schema.json    schema both are validated against
+config/city.config.json        active config (Austin Public Health values)
+config/presets/<id>.json       named presets (austin-travis-tx, bchc-demo-city, cedar-ridge-county)
+config/brand/<id>/             logos
+config/city.config.schema.json schema they are validated against
         |
-        |  CITY_PRESET=<name> at build time (unset = brand.config.json)
+        |  CITY_CONFIG=presets/<id>.json at build time
+        |  (CITY_PRESET=<id> is an alias; both unset = city.config.json)
         v
-frontend/vite.config.ts     validates; an unknown preset fails the build
-        |  injects __BRAND_CONFIG__, writes title + PWA manifest
+frontend/plugins/cityConfigPlugin.ts  validates schema, logo, fonts and contrast; a bad config fails the build
+        |  injects __CITY_CONFIG__, writes title + PWA manifest
         v
 useBrandConfig() / brandTheme.ts
         -> palette, fonts, header/footer/logo, privacy notice, contact links, map center
 ```
 
-The brand is fixed into the image at build time. Not yet configurable: backend model prompts and greeting, the catalog, crisis resources, life events, personas, and the admin console's demo data are all Austin-specific.
+The brand is fixed into the image at build time. The backend reads the same file (`backend/app/services/city.py`) at startup for the scripted greeting and the system prompt's identity sentence; a missing or malformed config stops startup. Not configurable: the rest of the model prompt, the catalog, crisis resources, life events, personas, and the admin console's demo data are all Austin-specific. See `docs/CUSTOMIZING.md`.
 
 Catalog data flow: YAML in `backend/app/data/services/` is validated against `config/services.schema.json` by `backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) and loaded at startup by `catalog_loader.py`. All 87 services are currently unverified; see SECURITY.md.
 
