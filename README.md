@@ -2,9 +2,18 @@
 
 **A working demo of how Austin Public Health could use modern AI-assisted development, service design, and open web tools to help residents find the right public health and social services faster.**
 
-This project is a demonstration, not a production system. It was built to show what is now possible in days instead of months or years: a resident-facing service guide, an AI intake assistant with tool calling, a searchable service catalog, an interactive map, shareable service plans, and an admin analytics console.
+This project is a demonstration, not a production system. It was built to show what is now possible in days instead of months or years: a resident-facing service guide, an AI intake assistant with tool calling, a searchable service catalog, an interactive map, service plans residents can print or send by text or email, and an admin analytics console.
 
 The goal is to support conversations with Austin Public Health (APH), public health commissioners, civic technology leaders, and community partners about how AI tools can improve service navigation while keeping humans, transparency, and public accountability at the center.
+
+## Security, privacy & architecture
+
+- [SECURITY.md](SECURITY.md): threat model, what is implemented (stateless intake, PII guard, catalog grounding, containers), known gaps before production, and the Phase 2 roadmap.
+- [ARCHITECTURE.md](ARCHITECTURE.md): components, data-flow diagram, the stateless request lifecycle, module map, white-label config, and deployment modes.
+- [docs/PRIVACY.md](docs/PRIVACY.md): what is collected, what is sent to OpenAI, how identifiers are removed, and the limits of that.
+- [deploy/README.md](deploy/README.md): container image and AWS / Azure / GCP starter templates (validated, not applied to live accounts).
+
+In short: the server keeps no intake sessions (the browser holds the state in `sessionStorage`), recognizable identifiers (SSN, phone, address, and similar) are redacted before any model call, and result cards render only catalog data. The catalog is demo data and is **not verified**, and several production controls (staff auth, rate limiting, vendor agreements) are not built. SECURITY.md lists them.
 
 ## Why This Demo Exists
 
@@ -25,7 +34,8 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 - **AI-powered intake chatbot** that can run with OpenAI's Responses API or fall back to a scripted demo flow.
 - **Realtime voice intake** using OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC, so residents can talk through their situation instead of typing.
 - **Tool-calling AI workflow** that searches services, extracts profile information, finds matches, changes language, retrieves crisis resources, and completes the intake.
-- **No-account-first resident experience** so a resident can get recommendations without signing up.
+- **No-account-first, stateless resident experience** so a resident can get recommendations without signing up. The intake state lives in the browser tab, not on the server, and "Start over" clears it.
+- **Need-first navigation**: the landing page leads with need chips (food, healthcare, housing, maternal and child, financial and benefits, mental health), a ZIP select, and a language selector. Chat and voice are the secondary path.
 - **Life-event entry points** such as losing a job, a housing crisis, a new baby, veteran transition, an aging parent, a new disability, an unsafe situation, and adding healthy years.
 - **Personalized service plan** that prioritizes the first few actions instead of overwhelming residents with a long directory.
 - **Searchable service directory** with categories, highlighted matches, open-now filtering, and helpful suggestions when no exact result is found.
@@ -33,7 +43,7 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 - **Service detail pages** with eligibility, documents needed, locations, hours, contact information, directions, language support, accessibility features, and sharing.
 - **Risk and prevention framing** that surfaces urgent needs in calm, plain language.
 - **Crisis pathway** for suicidal ideation, domestic violence, or immediate danger, with 988, 911, Integral Care, and SAFE Alliance-style guidance.
-- **Share and save options** including native share, text/email fallback, print/PDF support, QR codes, and a saved "View my plan" path.
+- **Share options** including native share, text/email fallback (service names, phone numbers, and public service links), print/PDF support, and per-service QR codes. There are no saved or shareable results links: the plan lives in the resident's browser tab for that visit.
 - **Admin console** for resident records, services, analytics, demand maps, equity views, language access, eligibility rules, reports, audit logs, and staff.
 - **Demo notification stubs** for SMS and email, with optional Twilio and SendGrid integration points.
 
@@ -59,12 +69,12 @@ If no API key is configured, the app still works in demo mode using a scripted g
 
 The resident experience is designed to feel like a helpful navigator rather than a government form.
 
-1. **Start with a need or life event.** The resident can browse the landing page, choose a life-event card, search the directory, or open the intake.
+1. **Start with a need or life event.** The resident can pick a need chip, browse the landing page, choose a life-event card, search the directory, or open the intake.
 2. **Answer a short chat intake.** The assistant asks about household size, ZIP code, housing, work, income, insurance, and immediate needs.
 3. **Get a plan.** Results are organized into a practical starting sequence, with the most important service first and a short list of next actions.
 4. **Explore details.** Each service includes eligibility, cost, documents, phone, website, location, directions, hours, language support, and accessibility notes.
 5. **Use the map.** Residents can see where services are located, filter categories, view only their plan services, and find nearby options.
-6. **Save or share.** The resident can send their plan to themselves, print it, or return through the saved plan link.
+6. **Share or print.** The resident can send service names and phone numbers to themselves by text or email, or print the plan. The plan is not saved on a server; it stays in the browser tab until the resident clicks "Start over" or closes the tab.
 
 ## What Staff And Leaders Can Review
 
@@ -188,7 +198,7 @@ Useful settings:
 - `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` — opt-in trace for troubleshooting realtime voice sessions. Off by default; transcripts are short but sensitive, so keep this disabled outside local debugging.
 - `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. Voice intake needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
 - `CORS_ORIGINS` — allowed frontend origins.
-- `PUBLIC_ORIGIN` — origin used to build share links (QR codes, SMS/email).
+- `PUBLIC_ORIGIN` — origin used to build the service links in SMS/email shares.
 - `ADMIN_API_TOKEN` — shared secret required in the `X-Admin-Token` header for admin catalog writes. Empty (the default) refuses all writes.
 - `TWILIO_*` — optional SMS sending.
 - `SENDGRID_*` — optional email sending.
@@ -210,12 +220,14 @@ This repository is intentionally a demo. It is not ready to handle real resident
 Important limitations:
 
 - Service data is seeded demo data, not an authoritative live APH catalog.
-- Intake sessions are stored in memory and reset when the backend restarts.
+- The server keeps no intake sessions; the browser tab holds the intake state, so there is nothing to recover if the tab is closed or "Start over" is used.
+- The service catalog (87 services) is demo data and **unverified**: no service records a verifier or verification date yet (`npm run validate:catalog` reports this).
+- No rate limiting or WAF. Voice audio goes straight to OpenAI and cannot be redacted first. No OpenAI zero-data-retention agreement is in place.
 - Admin authentication is simulated for demonstration.
 - Analytics and reports use demo/generated data.
 - SMS and email send paths stub successfully unless credentials are configured.
 - Privacy, security, accessibility, legal, procurement, records retention, and data governance would need formal review before production use.
-- See [docs/PRIVACY.md](docs/PRIVACY.md) for what data is collected, what is sent to OpenAI, and how personal identifiers are removed before they reach the model.
+- See [SECURITY.md](SECURITY.md) for the full list of known gaps, and [docs/PRIVACY.md](docs/PRIVACY.md) for what data is collected, what is sent to OpenAI, and how personal identifiers are removed before they reach the model.
 
 ## Why This Matters For APH
 
@@ -234,22 +246,31 @@ The larger point is not that this exact demo should be launched as-is. The point
 ```text
 backend/
   app/
-    routers/       API routes for intake (chat + realtime voice), services, and admin
-    services/      AI loop, realtime session config, matching, catalog, hours, notifications, seed data
+    routers/       API routes for intake (stateless chat + realtime voice), services, and admin
+    services/      AI loop, prompts and tools, PII redaction, grounding, client-state conversion, realtime voice, matching, catalog, plan, notifications
+    middleware.py  256 KiB body limit for intake requests
+    spa.py         Serves the built SPA in the container image
     data/          YAML catalog: categories, life events, crisis resources, and per-service files
     main.py        FastAPI entry point
-  scripts/         One-off catalog utilities (YAML migration, dedupe report)
+  scripts/         Catalog utilities (validate_catalog.py, YAML migration, dedupe report)
+  tests/           pytest suite, including shared PII fixtures
   requirements.txt Python dependencies
   .env.example     Environment template
 frontend/
   src/
     components/    Shared UI components (chat, results, services, map, layout, common)
     pages/         Resident routes plus admin/* console
-    hooks/         React hooks, including useRealtimeVoiceSession for voice intake
-    lib/           API client and utilities
-    theme/         APH-inspired theme setup
+    hooks/         React hooks: useBrandConfig, useRealtimeVoiceSession (voice intake), auth stub
+    lib/           API client, session.ts (client-held intake state), piiGuard.ts (client PII pre-flight)
+    theme/         MUI theme built from the brand config
   package.json     Frontend dependencies and dev/build/preview scripts
-docs/              Vision, requirements, user stories, backend design, brand notes
+config/            White-label brand config, brand and catalog JSON schemas, presets/
+deploy/            AWS, Azure and GCP starter templates and deploy notes
+Dockerfile         Single image: built SPA served by FastAPI
+docker-compose.yml Local run of that image
+SECURITY.md        Threat model, hardening, known gaps, Phase 2 roadmap
+ARCHITECTURE.md   Components, data flow, module map, deployment modes
+docs/              Vision, requirements, user stories, backend design, privacy, brand notes
 AGENTS.md          Contributor guide for coding agents and maintainers
 CLAUDE.md          Architecture and conventions for AI coding tools
 ```
@@ -258,7 +279,9 @@ CLAUDE.md          Architecture and conventions for AI coding tools
 
 ```bash
 cd frontend
-npm run build
+npm run build              # tsc -b && vite build
+npm test                   # vitest: client PII guard against the shared fixtures
+npm run validate:catalog   # catalog YAML vs config/services.schema.json (add -- --strict to fail on unverified entries)
 ```
 
 ```bash
@@ -268,7 +291,17 @@ python -m compileall app
 python -m pytest
 ```
 
-These are the baseline checks for the demo. The backend tests force the scripted flow, so they never call OpenAI. See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request expectations.
+These are the baseline checks for the demo. The backend tests force the scripted flow, so they never call OpenAI. `npm run validate:catalog` currently passes with 0 errors and warns that all 87 services are unverified; `-- --strict` fails until staff record verification. See [CONTRIBUTING.md](CONTRIBUTING.md) for pull request expectations.
+
+## Container and white-label builds
+
+```bash
+docker compose up --build                  # builds the image and serves the app on http://localhost:8000 (scripted demo mode by default)
+CITY_PRESET=bchc-demo-city docker compose up --build   # same, with another brand preset
+CITY_PRESET=bchc-demo-city npm run build   # from frontend/: build the SPA with a preset
+```
+
+`CITY_PRESET` picks `config/presets/<name>.brand.json` at build time; an unknown name fails the build. With it unset, `config/brand.config.json` is used. Only branding and copy are configurable today: the model prompts, the catalog, crisis resources, and the admin demo data are Austin-specific. See [ARCHITECTURE.md](ARCHITECTURE.md) and [deploy/README.md](deploy/README.md).
 
 ## License
 

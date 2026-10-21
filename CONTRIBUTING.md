@@ -22,7 +22,7 @@ python -m compileall app              # syntax check
 python -m pytest                      # backend tests (scripted flow, no network)
 ```
 
-If you fix a backend bug, add a regression test under `backend/tests/test_*.py`. The frontend has no test framework, so exercise any UI change by hand in the browser.
+If you fix a backend bug, add a regression test under `backend/tests/test_*.py`. The frontend uses vitest (`npm test`), which currently covers the client PII guard against the shared fixtures in `backend/tests/fixtures/pii_cases.json`; add a case there when you change a redaction rule. Exercise UI changes by hand in the browser.
 
 ## Pull requests
 

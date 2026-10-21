@@ -6,14 +6,14 @@ These are **starter templates**, not a turnkey production setup. Review them aga
 
 | Artifact | Validated | Not exercised |
 | --- | --- | --- |
-| `backend/app/spa.py` | `pytest backend/tests/test_spa.py`: 11 passed | Behaviour behind a real proxy; not yet wired into `main.py` when authored |
-| `Dockerfile` | `docker build` succeeded (Docker 29.8). Ran with `--read-only --tmpfs /tmp --cap-drop ALL`, `DEMO_MODE=true`: `/api/v1/health` returned 200, process ran as uid 10001, container health status `healthy` | SPA serving from the image (needs the `mount_spa` call in `main.py`) |
+| `backend/app/spa.py` | `pytest backend/tests/test_spa.py`: 11 passed. Wired in `main.py` (mounted when `STATIC_DIR` is set) | Behaviour behind a real proxy/CDN |
+| `Dockerfile` | `docker build` succeeded (Docker 29.8). Ran with `--read-only --tmpfs /tmp --cap-drop ALL`, `DEMO_MODE=true`: process ran as uid 10001, container health `healthy`, `/api/v1/health` 200, the SPA served at `/` and client routes (`/results`, `/services`), unknown `/api/*` paths returned JSON 404, a `../` traversal path returned 404, and `POST /api/v1/intake/start` returned a new intake state | Live-AI mode (needs `OPENAI_API_KEY`); voice over WebRTC from a deployed origin |
 | `docker-compose.yml` | `docker compose config` parses | `docker compose up` |
 | `aws/ecs-fargate.tf` | `terraform fmt -check`, `terraform init -backend=false` and `terraform validate` (Terraform 1.9 in Docker, AWS provider ~> 5) all passed | `plan`/`apply`; no live AWS account |
 | `azure/container-app.bicep` | `az bicep build` compiles with no errors or warnings | `az deployment group create`; no live Azure subscription |
 | `gcp/cloud-run.yaml` | YAML parses | `gcloud run services replace`; no live GCP project |
 
-The container needs no database or persistent volume: it holds no resident data at rest (intake sessions live in process memory and expire after `SESSION_TTL_HOURS`). Because sessions are in memory, a resident's in-progress session is lost if their instance restarts, and a multi-instance deployment needs session affinity or a single replica. The templates default to more than one replica; set the count to 1 or add affinity if this matters to you.
+The container needs no database or persistent volume: the backend is stateless and holds no resident data. The browser keeps the intake state in `sessionStorage` and sends it with every request (see `docs/PRIVACY.md` and `ARCHITECTURE.md`), so any number of replicas works without session affinity, and restarting or replacing an instance loses nothing a resident needs. The only server-side state is the service catalog, loaded from the YAML baked into the image. The replica defaults in the templates are `desired_count = 2` (AWS), and `minReplicas` 1 / `maxReplicas` 3 (Azure) and `minScale` 1 / `maxScale` 3 (GCP); change them freely.
 
 ## Deployment modes
 
@@ -58,7 +58,6 @@ Set via environment variables (see `backend/.env.example` and `backend/app/confi
 | `ADMIN_API_TOKEN` | yes | Required (as `X-Admin-Token`) for admin catalog writes. Empty keeps writes disabled. Admin GET routes are open and serve synthetic data; the demo auth is a stub. |
 | `PUBLIC_ORIGIN` | no | Public `https` origin used to build share links. |
 | `CORS_ORIGINS` | no | Comma-separated allowed origins. The SPA is same-origin, so set it to the public origin. |
-| `SESSION_TTL_HOURS` | no | Hours an in-memory session lives (default 24). |
 | `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS` | no | Model settings. |
 | `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_REASONING_EFFORT`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS` | no | Voice intake settings. |
 | `REALTIME_DEBUG_LOG_ENABLED`, `REALTIME_DEBUG_LOG_PATH` | no | Keep **off** in production. The trace contains transcript previews and the root filesystem is read-only. |
@@ -87,4 +86,4 @@ The app writes to stdout/stderr. Each platform collects it: CloudWatch Logs (`/e
 - **AWS:** no WAF, no access logs on the ALB, no VPC or certificate creation; the task needs outbound HTTPS (NAT or endpoints). The security group allows egress to `0.0.0.0/0` on 443 because OpenAI has no fixed IP range. Image architecture defaults to `X86_64`.
 - **Azure:** the managed certificate requires the custom domain's CNAME and `asuid` TXT record to exist before deployment; otherwise leave `customDomain` empty, deploy, add DNS, then redeploy. Role assignments (Key Vault Secrets User, AcrPull) are not created by the template.
 - **GCP:** the manifest does not create the service account, secret, or public-access binding; custom domains are configured outside it.
-- **All:** in-memory sessions (see Status); admin auth is the demo stub, so put admin routes behind the platform's own access control for anything beyond a demo.
+- **All:** admin auth is the demo stub, so put admin routes behind the platform's own access control for anything beyond a demo.
