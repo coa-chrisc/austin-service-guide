@@ -1,0 +1,71 @@
+# STARTER TEMPLATE - review before use. Not validated against a live GCP project.
+# Replace the REPLACE_* placeholders, then:
+#   gcloud run services replace deploy/gcp/cloud-run.yaml --region REGION
+# Public access / custom domain (Cloud Run domain mapping or a load balancer) are configured separately:
+#   gcloud run services add-iam-policy-binding service-guide --region REGION \
+#     --member=allUsers --role=roles/run.invoker
+# The service account needs roles/secretmanager.secretAccessor on the secret (and nothing else).
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: service-guide # e.g. <city>-service-guide
+  labels:
+    app: service-guide
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "3"
+        run.googleapis.com/cpu-throttling: "true"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      serviceAccountName: REPLACE_SA@REPLACE_PROJECT.iam.gserviceaccount.com
+      containerConcurrency: 40
+      timeoutSeconds: 300
+      containers:
+        - name: app
+          image: REGION-docker.pkg.dev/REPLACE_PROJECT/REPLACE_REPO/service-guide:REPLACE_TAG
+          ports:
+            - name: http1
+              containerPort: 8000
+          env:
+            - name: DEMO_MODE
+              value: "false"
+            - name: PUBLIC_ORIGIN
+              value: https://services.example.gov
+            - name: CORS_ORIGINS
+              value: https://services.example.gov
+            - name: REALTIME_DEBUG_LOG_ENABLED
+              value: "false"
+            # Cloud Run's front end sets X-Forwarded-*; ingress is the only path to the container.
+            - name: FORWARDED_ALLOW_IPS
+              value: "*"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai-api-key # Secret Manager secret name
+                  key: latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+  traffic:
+    - percent: 100
+      latestRevision: true
