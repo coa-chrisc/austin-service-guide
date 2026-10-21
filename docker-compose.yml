@@ -1,0 +1,32 @@
+# Local/single-host run of the production image. Starter template.
+#   docker compose up --build
+# Optional: copy backend/.env.example to backend/.env to enable live AI.
+services:
+  app:
+    build:
+      context: .
+      args:
+        CITY_PRESET: ${CITY_PRESET:-}
+    image: austin-service-guide:local
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      # Scripted fallback by default; set DEMO_MODE=false and OPENAI_API_KEY for live AI.
+      DEMO_MODE: ${DEMO_MODE:-true}
+    ports:
+      - "8000:8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped

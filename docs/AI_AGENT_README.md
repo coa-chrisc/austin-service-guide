@@ -10,10 +10,10 @@ The core user journey is:
 
 1. A resident lands on the app and chooses a life event, searches services, opens the map, or starts intake.
 2. The intake assistant asks short, plain-language questions.
-3. The backend stores inferred profile facts in an in-memory session.
+3. Inferred profile facts are kept in the intake state, which the browser holds in `sessionStorage` and sends with every request. The server keeps no sessions (see `SECURITY.md`).
 4. Matching logic ranks services by needs, household profile, language, cost, and location signals.
 5. Results are shown as a prioritized plan, not just a directory.
-6. The resident can inspect service details, use the map, call providers, get directions, print, share, or return to the saved plan.
+6. The resident can inspect service details, use the map, call providers, get directions, print, share, or return to their plan while the tab is open.
 7. Staff-facing admin pages demonstrate resident records, service management, analytics, demand maps, equity views, language access, eligibility rules, reports, audit logs, and staff management.
 
 This is demo software. Do not treat it as production-ready for real resident data without privacy, security, governance, accessibility, authentication, logging, and data-retention review.
@@ -36,7 +36,7 @@ This is demo software. Do not treat it as production-ready for real resident dat
 - Map page: `frontend/src/pages/MapView.tsx`
 - Leaflet map component: `frontend/src/components/map/ServiceMap.tsx`
 - Language selector: `frontend/src/components/common/LanguageSelector.tsx`
-- Saved active plan helper: `frontend/src/lib/session.ts`
+- Client-held intake state (`sessionStorage`): `frontend/src/lib/session.ts`
 - Native share helper: `frontend/src/lib/share.ts`
 
 ### Backend API
@@ -77,7 +77,7 @@ This is demo software. Do not treat it as production-ready for real resident dat
 
 The live intake path uses the OpenAI Responses API in `backend/app/services/ai.py`. The model receives system instructions plus a tool list, then runs a loop:
 
-1. Append the resident message to `session.responses_input`.
+1. Rebuild the session from the client-sent `IntakeState` (`session_from_state` in `backend/app/services/intake_state.py`) and append the redacted resident message to this turn's model input.
 2. Call the model with the current context and tool schemas.
 3. If the model emits tool calls, execute them locally.
 4. Append tool outputs back into the model context.
@@ -90,9 +90,9 @@ Available tools:
 | `search_services` | Calls catalog search with optional category and ZIP filters. |
 | `get_service_details` | Returns full service detail by slug. |
 | `get_crisis_resources` | Returns urgent/crisis resources. |
-| `extract_profile` | Updates the resident profile stored on the session. |
+| `extract_profile` | Updates the resident profile in this request's state (returned to the browser). |
 | `find_matching_services` | Runs the matching engine on the current profile. |
-| `set_language` | Changes session language and profile language fields. |
+| `set_language` | Changes the intake language and profile language fields. |
 | `complete_intake` | Computes matches, risks, benefits, and marks the intake complete. |
 
 Agents can reuse this pattern for other domains by replacing the tool schemas, local dispatch functions, seed data, and matching logic while keeping the loop structure.
@@ -115,7 +115,7 @@ Adapt by changing `seed_data.py`, service categories, tool descriptions, and mat
 
 ### 2. No-Account-First Flow
 
-Residents can complete intake without signing up. This pattern is useful for agencies where account creation is a barrier. Reuse `frontend/src/lib/session.ts` and the `/results/:sessionId` model, but replace in-memory sessions with a governed store before production.
+Residents can complete intake without signing up. This pattern is useful for agencies where account creation is a barrier. Reuse `frontend/src/lib/session.ts` and the stateless intake endpoints: the browser holds the redacted state in `sessionStorage`, so nothing about the resident is stored on the server. If an agency needs plans that survive the tab, add a governed store with explicit consent and deletion.
 
 ### 3. Prioritized Plan Instead Of Long List
 
@@ -188,7 +188,7 @@ Common agency customizations:
 
 Before real deployment, agents should not skip these:
 
-- Replace in-memory sessions with persistent storage.
+- If plans must persist beyond the browser tab, add a governed store with consent, retention, and deletion (the demo deliberately keeps no server-side sessions).
 - Add real authentication and authorization for admin routes.
 - Define data classification, consent, retention, audit, and deletion policies.
 - Add rate limiting and abuse protection.
@@ -250,7 +250,7 @@ python backend/scripts/dedupe_catalog.py
 Good next steps for future agents:
 
 - Add backend tests for `matching.py`, `hours.py`, and intake crisis handling.
-- Add persistent session storage with explicit consent and deletion.
+- Add optional, consented plan persistence with explicit deletion.
 - Build a catalog import pipeline from CSV or Airtable.
 - Add map radius filters and ZIP-code centering.
 - Add an authenticated staff workflow and role enforcement.

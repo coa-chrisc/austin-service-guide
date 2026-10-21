@@ -81,9 +81,8 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     what_to_bring: "What to bring",
     optional: "Optional",
     failed_to_load: "Failed to load results",
-    session_not_found: "Session not found",
-    plan_expired:
-      "This plan is no longer available. For your privacy, plans are deleted after {hours} hours.",
+    no_plan_here:
+      "There's no plan in this browser tab. For your privacy, plans are kept only in the tab where you made them, and they are cleared when you close the tab or choose Start over.",
   },
   es: {
     my_plan: "Mi plan",
@@ -156,9 +155,8 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     what_to_bring: "Qué llevar",
     optional: "Opcional",
     failed_to_load: "No se pudieron cargar los resultados",
-    session_not_found: "Sesión no encontrada",
-    plan_expired:
-      "Este plan ya no está disponible. Para proteger su privacidad, los planes se eliminan después de {hours} horas.",
+    no_plan_here:
+      "No hay ningún plan en esta pestaña del navegador. Para proteger su privacidad, los planes se guardan solo en la pestaña donde los creó y se borran al cerrarla o al elegir Empezar de nuevo.",
   },
   vi: {
     my_plan: "Kế hoạch của tôi",
@@ -231,9 +229,8 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     what_to_bring: "Cần mang theo",
     optional: "Tùy chọn",
     failed_to_load: "Không thể tải kết quả",
-    session_not_found: "Không tìm thấy phiên",
-    plan_expired:
-      "Kế hoạch này không còn khả dụng. Để bảo vệ quyền riêng tư của bạn, kế hoạch sẽ bị xóa sau {hours} giờ.",
+    no_plan_here:
+      "Không có kế hoạch nào trong thẻ trình duyệt này. Để bảo vệ quyền riêng tư của bạn, kế hoạch chỉ được lưu trong thẻ nơi bạn tạo và sẽ bị xóa khi bạn đóng thẻ hoặc chọn Bắt đầu lại.",
   },
   zh: {
     my_plan: "我的计划",
@@ -304,9 +301,8 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     what_to_bring: "需要携带",
     optional: "可选",
     failed_to_load: "无法加载结果",
-    session_not_found: "未找到会话",
-    plan_expired:
-      "此计划已不可用。为保护您的隐私，计划会在 {hours} 小时后删除。",
+    no_plan_here:
+      "此浏览器标签页中没有计划。为保护您的隐私，计划仅保存在您创建它的标签页中，关闭该标签页或选择“重新开始”时会被清除。",
   },
   ar: {
     my_plan: "خطتي",
@@ -378,9 +374,8 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     what_to_bring: "ما يجب إحضاره",
     optional: "اختياري",
     failed_to_load: "فشل تحميل النتائج",
-    session_not_found: "الجلسة غير موجودة",
-    plan_expired:
-      "هذه الخطة لم تعد متاحة. لحماية خصوصيتك، يتم حذف الخطط بعد {hours} ساعة.",
+    no_plan_here:
+      "لا توجد خطة في علامة التبويب هذه. لحماية خصوصيتك، تُحفظ الخطط فقط في علامة التبويب التي أنشأتها فيها، وتُمسح عند إغلاقها أو عند اختيار البدء من جديد.",
   },
 };
 

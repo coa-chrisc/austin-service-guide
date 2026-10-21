@@ -23,7 +23,8 @@ const PLAN_EXTENDED_CAP = 12;
 interface PlanListProps {
   items: ApplicationOrderItem[];
   matches: ServiceMatch[];
-  sessionId?: string;
+  /** Opened from the resident's plan: detail pages link back to it. */
+  fromPlan?: boolean;
   onShowAll: () => void;
   language?: string;
 }
@@ -31,7 +32,7 @@ interface PlanListProps {
 export default function PlanList({
   items,
   matches,
-  sessionId,
+  fromPlan,
   onShowAll,
   language,
 }: PlanListProps) {
@@ -54,7 +55,7 @@ export default function PlanList({
       <StartHereHero
         topItem={topItem}
         topMatch={topMatch}
-        sessionId={sessionId}
+        fromPlan={fromPlan}
         language={language}
       />
 
@@ -78,7 +79,7 @@ export default function PlanList({
                 key={item.service_id}
                 item={item}
                 rank={idx + 2}
-                sessionId={sessionId}
+                fromPlan={fromPlan}
               />
             ))}
           </Stack>
@@ -111,7 +112,7 @@ export default function PlanList({
                   key={item.service_id}
                   item={item}
                   rank={idx + PLAN_PRIMARY_CAP + 1}
-                  sessionId={sessionId}
+                  fromPlan={fromPlan}
                 />
               ))}
             </Stack>

@@ -10,7 +10,8 @@ Design goals, in order:
 
 1. Precision over recall. Every pattern is anchored on a strong signal
    (a fixed digit layout, a Luhn checksum, an ``@``, a street suffix, or an
-   explicit keyword such as "SSN" / "Medicaid number" / "date of birth").
+   explicit keyword such as "SSN" / "Medicaid number" / "date of birth", or
+   a self-identification phrase such as "my name is").
    Zip codes, household counts, ages and dollar amounts must survive
    untouched because the intake depends on them.
 2. No raw values leave this module. ``redact`` returns the cleaned text and
@@ -39,6 +40,7 @@ PLACEHOLDERS: dict[str, str] = {
     "dob": "[date of birth removed]",
     "phone": "[phone removed]",
     "address": "[address removed]",
+    "name": "[name removed]",
 }
 
 
@@ -71,7 +73,7 @@ _CARD_RE = re.compile(
 _SSN_FORMATTED_RE = re.compile(r"(?<![\d$])\d{3}([-. ])\d{2}\1\d{4}(?!\d)")
 
 _SSN_KEYWORDS = (
-    r"ssn|s\.s\.n\.?|social(?:\s+security)?(?:\s+(?:number|no\.?|#))?"
+    r"ssn|itin(?:\s+(?:number|no\.?|#))?|s\.s\.n\.?|social(?:\s+security)?(?:\s+(?:number|no\.?|#))?"
     r"|seguro\s+social|n[uú]mero\s+de\s+seguro\s+social"
 )
 _SSN_CONTEXT_RE = re.compile(
@@ -160,6 +162,76 @@ _ADDRESS_RE = re.compile(
 )
 _PO_BOX_RE = re.compile(r"\bP\.?\s?O\.?\s*Box\s+\d+", re.IGNORECASE)
 
+# Names are only removed right after an explicit self-identification phrase.
+# Name tokens are case-sensitive on purpose, so only the phrases use ``(?i:``.
+_NAME_LET = "A-Za-zÀ-ÖØ-öø-ÿ"
+_NAME_UP = "A-ZÀ-ÖØ-Þ"
+_NAME_LOW = "a-zß-öø-ÿ"
+# Function words that can follow "my name is" ("my name is on the lease").
+_NAME_STOP_FUNC = (
+    r"on|in|at|to|of|not|no|the|a|an|and|or|but|is|was|are|for|with|from|under"
+    r"|off|also|here|there|different|same|wrong|misspelled|spelled|listed"
+    r"|correct|incorrect|mine|ok|okay|just|really|so|that|this|it|its|then|if"
+    r"|when|what|who|why|how|we|you|he|she|they|my|me|your|his|her|our|their"
+    r"|too|very|still|now|never|always|only|written|printed|signed|required"
+    r"|missing|en|el|la|los|las|de|del|y|mi|es|un|una|que|para|por|con|sin"
+    r"|aqui|aquí|mal|igual|diferente"
+)
+_NAME_STOP_CONTINUATION = (
+    _NAME_STOP_FUNC
+    + r"|i|im|need|needs|needed|looking|look|want|wants|wanted|have|has|had|am|be"
+    r"|been|live|lives|living|work|works|working|help|trying|try|seeking|get"
+    r"|getting|got|can|cant|could|will|would|do|does|did|lost|late|behind|hungry"
+    r"|homeless|unemployed|pregnant|disabled|veteran|calling|writing|applying"
+    r"|please|pls|thanks|hi|hello|necesito|busco|tengo|soy|estoy|vivo|quiero"
+    r"|trabajo|perdi|perdí|ayuda|hola|gracias"
+)
+# Capitalized words that follow "I am" / "this is" without being a name.
+_NAME_STOP_DESCRIPTOR = (
+    _NAME_STOP_FUNC
+    + r"|monday|tuesday|wednesday|thursday|friday|saturday|sunday"
+    r"|january|february|march|april|may|june|july|august|september|october"
+    r"|november|december|veterans?|unemployed|disabled|pregnant|retired"
+    r"|homeless|single|married|divorced|widowed|separated|student|citizen"
+    r"|resident|immigrant|refugee|senior|elderly|deaf|blind|sick|diabetic"
+    r"|spanish|english|mexican|texas|austin|american|african|asian|black|white"
+    r"|hispanic|latino|latina|latinx|native|indian|chinese|vietnamese|korean"
+    r"|filipino|cuban|salvadoran|guatemalan|honduran|venezuelan|haitian|french"
+    r"|german|arabic|catholic|christian|muslim|jewish|buddhist|hindu|currently"
+    r"|looking|seeking|trying|having|living|working|needing|receiving|behind"
+    r"|out|laid|late|without|sure|new|public|health|center|city|county|food"
+    r"|bank|help|need|needs"
+)
+
+
+def _not_stop(words: str) -> str:
+    return rf"(?!(?i:{words})(?![{_NAME_LET}]))"
+
+
+# One capitalized name token: Maria, O'Brien, McDonald, Smith-Jones.
+_NAME_CAP = (
+    rf"[{_NAME_UP}](?:[{_NAME_LOW}]+|['’][{_NAME_UP}][{_NAME_LOW}]+)"
+    rf"(?:[{_NAME_UP}][{_NAME_LOW}]+)?(?:-[{_NAME_UP}][{_NAME_LOW}]+)?(?![{_NAME_LET}])"
+)
+_NAME_ANY = rf"[{_NAME_LET}]+(?:['’-][{_NAME_LET}]+)*"
+_NAME_FUNC_GUARD = _not_stop(_NAME_STOP_FUNC)
+_NAME_DESC_GUARD = _not_stop(_NAME_STOP_DESCRIPTOR)
+_NAME_CONT_GUARD = _not_stop(_NAME_STOP_CONTINUATION)
+
+# "my name is maria lopez": the phrase is explicit, so up to 3 tokens in any
+# case; the run stops at the first function/verb stopword, punctuation or digit
+# (over-redacting is acceptable, leaking a name is not).
+_NAME_EXPLICIT_RE = re.compile(
+    r"(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))"
+    rf"(?P<val>{_NAME_FUNC_GUARD}{_NAME_ANY}(?:[ \t  ]+{_NAME_CONT_GUARD}{_NAME_ANY}){{0,2}})"
+)
+# "I am Maria Lopez" / "this is Maria Lopez": ambiguous phrases, so two to
+# three Capitalized, non-stoplisted words are required.
+_NAME_SELF_RE = re.compile(
+    r"(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))"
+    rf"(?P<val>{_NAME_DESC_GUARD}{_NAME_CAP}(?:[ \t  ]+{_NAME_DESC_GUARD}{_NAME_CAP}){{1,2}})"
+)
+
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
@@ -209,6 +281,8 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str]], bool]]] = [
     ("phone", _PHONE_LOCAL_RE, _always),
     ("address", _PO_BOX_RE, _always),
     ("address", _ADDRESS_RE, _always),
+    ("name", _NAME_EXPLICIT_RE, _always),
+    ("name", _NAME_SELF_RE, _always),
 ]
 
 

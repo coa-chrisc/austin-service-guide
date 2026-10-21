@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { useNavigate, useLocation, Link as RouterLink } from "react-router-dom";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
@@ -30,7 +31,12 @@ import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
 import { useThemeMode } from "@/theme/ThemeContext";
-import { getActiveSession } from "@/lib/session";
+import StartOverButton from "@/components/layout/StartOverButton";
+import {
+  INTAKE_STATE_EVENT,
+  hasCompletedPlan,
+  loadIntakeState,
+} from "@/lib/session";
 
 const NAV_ITEMS = [
   { label: "Home", path: "/", icon: <HomeIcon /> },
@@ -39,6 +45,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Header() {
+  const brand = useBrandConfig();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
@@ -50,19 +57,23 @@ export default function Header() {
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null,
   );
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(() =>
-    getActiveSession(),
-  );
+  const [hasPlan, setHasPlan] = useState(() => hasCompletedPlan());
+  const [hasIntake, setHasIntake] = useState(() => !!loadIntakeState());
 
-  // Re-read on every route change so the pill appears the moment a user
-  // lands on /results or disappears after "Start over."
+  // Re-read on every route change and whenever this tab's intake state is
+  // saved or cleared, so the pill and "Start over" track the stored intake.
   useEffect(() => {
-    setActiveSessionId(getActiveSession());
+    const refresh = () => {
+      setHasPlan(hasCompletedPlan());
+      setHasIntake(!!loadIntakeState());
+    };
+    refresh();
+    window.addEventListener(INTAKE_STATE_EVENT, refresh);
+    return () => window.removeEventListener(INTAKE_STATE_EVENT, refresh);
   }, [location.pathname]);
 
-  const onResultsPage =
-    !!activeSessionId && location.pathname === `/results/${activeSessionId}`;
-  const showPlanPill = !!activeSessionId && !onResultsPage;
+  const onResultsPage = location.pathname.startsWith("/results");
+  const showPlanPill = hasPlan && !onResultsPage;
 
   const handleUserMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(e.currentTarget);
@@ -121,8 +132,8 @@ export default function Header() {
           >
             <Box
               component="img"
-              src="/aph-logo.png"
-              alt="Austin Public Health"
+              src={brand.logo.src}
+              alt={brand.logo.alt}
               sx={{
                 height: { xs: 32, sm: 36 },
                 width: "auto",
@@ -174,7 +185,7 @@ export default function Header() {
               variant="contained"
               size="small"
               startIcon={<AssignmentTurnedInIcon />}
-              onClick={() => navigate(`/results/${activeSessionId}`)}
+              onClick={() => navigate("/results")}
               sx={{
                 borderRadius: "20px",
                 fontWeight: 700,
@@ -194,7 +205,7 @@ export default function Header() {
           {/* My Plan pill — compact icon variant for mobile AppBar */}
           {showPlanPill && isMobile && (
             <IconButton
-              onClick={() => navigate(`/results/${activeSessionId}`)}
+              onClick={() => navigate("/results")}
               aria-label="View my plan"
               sx={{
                 width: 40,
@@ -213,6 +224,9 @@ export default function Header() {
               <AssignmentTurnedInIcon fontSize="small" />
             </IconButton>
           )}
+
+          {/* Start over — wipes this tab's intake after a confirm dialog */}
+          {hasIntake && !isMobile && <StartOverButton />}
 
           {/* Demo launcher — opens persona drawer on Landing */}
           {!isMobile && (
@@ -318,8 +332,8 @@ export default function Header() {
         <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
           <Box
             component="img"
-            src="/aph-logo.png"
-            alt="Austin Public Health"
+            src={brand.logo.src}
+            alt={brand.logo.alt}
             sx={{ height: 32, width: "auto" }}
           />
         </Box>
@@ -328,7 +342,7 @@ export default function Header() {
           {showPlanPill && (
             <ListItemButton
               onClick={() => {
-                navigate(`/results/${activeSessionId}`);
+                navigate("/results");
                 setDrawerOpen(false);
               }}
               sx={{
@@ -372,6 +386,12 @@ export default function Header() {
             </ListItemIcon>
             <ListItemText primary="Demo" />
           </ListItemButton>
+          {hasIntake && (
+            <StartOverButton
+              variant="drawer"
+              onClosed={() => setDrawerOpen(false)}
+            />
+          )}
         </List>
         <Divider />
         <List>

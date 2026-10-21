@@ -1,0 +1,872 @@
+[
+  {
+    "input": "My SSN is 123-45-6789",
+    "expected": "My SSN is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "ssn 123 45 6789",
+    "expected": "ssn [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "social security number is 123456789",
+    "expected": "social security number is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "my social: 123.45.6789",
+    "expected": "my social: [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "last four of my social is 4321",
+    "expected": "last four of my social is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "mi número de seguro social es 123456789",
+    "expected": "mi número de seguro social es [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "my ITIN is 912-70-1234",
+    "expected": "my ITIN is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "ITIN: 934-88-1234",
+    "expected": "ITIN: [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "ITIN 912701234",
+    "expected": "ITIN [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "itin number is 987-94-5678",
+    "expected": "itin number is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "order number 123456789",
+    "expected": "order number 123456789",
+    "kinds": []
+  },
+  {
+    "input": "card 4111 1111 1111 1111",
+    "expected": "card [card number removed]",
+    "kinds": [
+      "card"
+    ]
+  },
+  {
+    "input": "4111-1111-1111-1111",
+    "expected": "[card number removed]",
+    "kinds": [
+      "card"
+    ]
+  },
+  {
+    "input": "amex 3782 822463 10005",
+    "expected": "amex [card number removed]",
+    "kinds": [
+      "card"
+    ]
+  },
+  {
+    "input": "my visa is 4111111111111111",
+    "expected": "my visa is [card number removed]",
+    "kinds": [
+      "card"
+    ]
+  },
+  {
+    "input": "4111 1111 1111 1112",
+    "expected": "4111 1111 1111 1112",
+    "kinds": []
+  },
+  {
+    "input": "reference 1234567890123456",
+    "expected": "reference 1234567890123456",
+    "kinds": []
+  },
+  {
+    "input": "４１１１１１１１１１１１１１１１",
+    "expected": "[card number removed]",
+    "kinds": [
+      "card"
+    ]
+  },
+  {
+    "input": "email jane.doe+food@example.org please",
+    "expected": "email [email removed] please",
+    "kinds": [
+      "email"
+    ]
+  },
+  {
+    "input": "reach Jane_Doe@Mail.Example.COM today",
+    "expected": "reach [email removed] today",
+    "kinds": [
+      "email"
+    ]
+  },
+  {
+    "input": "write to a@b.co",
+    "expected": "write to [email removed]",
+    "kinds": [
+      "email"
+    ]
+  },
+  {
+    "input": "call me at (512) 555-0199",
+    "expected": "call me at [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "my cell is 512.555.0199",
+    "expected": "my cell is [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "text +1 512 555 0199 anytime",
+    "expected": "text [phone removed] anytime",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "number 5125550199",
+    "expected": "number [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "reach me at 555-0199",
+    "expected": "reach me at [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "1-800-252-8263",
+    "expected": "[phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "call 512-974-2000 or 311",
+    "expected": "call [phone removed] or 311",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "the number 555 0199 is wrong",
+    "expected": "the number [phone removed] is wrong",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "I live at 1234 Elm St Apt 5",
+    "expected": "I live at [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "4500 S Congress Ave",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "we're at 12 Oak Court now",
+    "expected": "we're at [address removed] now",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "6800 burleson rd",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "send it to P.O. Box 1234",
+    "expected": "send it to [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "PO Box 55",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "1 eviction court date next week",
+    "expected": "1 eviction court date next week",
+    "kinds": []
+  },
+  {
+    "input": "I have 3 months on the street",
+    "expected": "I have 3 months on the street",
+    "kinds": []
+  },
+  {
+    "input": "2 kids no way",
+    "expected": "2 kids no way",
+    "kinds": []
+  },
+  {
+    "input": "a 45 minute drive",
+    "expected": "a 45 minute drive",
+    "kinds": []
+  },
+  {
+    "input": "900 Rutland Dr, Unit 12",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "77 Pecan Ln #4B",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "10 Lakeline Blvd.",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "my DOB is 03/15/1988",
+    "expected": "my DOB is [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "date of birth: 1988-03-15",
+    "expected": "date of birth: [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "I was born on March 5, 1990",
+    "expected": "I was born on [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "fecha de nacimiento 5 de mayo de 1990",
+    "expected": "fecha de nacimiento [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "DOB 3/5/90",
+    "expected": "DOB [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "birthday is 12-25-1975",
+    "expected": "birthday is [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "born Sept. 3rd, 1984",
+    "expected": "born [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "born on 7/4/1980",
+    "expected": "born on [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "born in 1990",
+    "expected": "born in 1990",
+    "kinds": []
+  },
+  {
+    "input": "my kid's birthday is soon",
+    "expected": "my kid's birthday is soon",
+    "kinds": []
+  },
+  {
+    "input": "DOB: 12/31/99, SSN 987-65-4321",
+    "expected": "DOB: [date of birth removed], SSN [SSN removed]",
+    "kinds": [
+      "dob",
+      "ssn"
+    ]
+  },
+  {
+    "input": "nací el 5 de mayo de 1990",
+    "expected": "nací el [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "My Medicaid number is 512345678",
+    "expected": "My Medicaid number is [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "medicare id 1EG4-TE5-MK73",
+    "expected": "medicare id [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "member ID: ABC1234567",
+    "expected": "member ID: [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "case # 2024-778812",
+    "expected": "case # [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "driver's license 12345678",
+    "expected": "driver's license [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "policy number is POL9988776",
+    "expected": "policy number is [ID number removed]",
+    "kinds": [
+      "id_number"
+    ]
+  },
+  {
+    "input": "my case is closed",
+    "expected": "my case is closed",
+    "kinds": []
+  },
+  {
+    "input": "account 12345",
+    "expected": "account 12345",
+    "kinds": []
+  },
+  {
+    "input": "Medicaid: 1-800-252-8263",
+    "expected": "Medicaid: [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "member id 78744-1234",
+    "expected": "member id 78744-1234",
+    "kinds": []
+  },
+  {
+    "input": "NACÍ EL 5 DE MAYO DE 1990",
+    "expected": "NACÍ EL [date of birth removed]",
+    "kinds": [
+      "dob"
+    ]
+  },
+  {
+    "input": "MY SSN IS 123456789",
+    "expected": "MY SSN IS [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "12 oak court",
+    "expected": "12 oak court",
+    "kinds": []
+  },
+  {
+    "input": "12 OAK COURT",
+    "expected": "12 OAK COURT",
+    "kinds": []
+  },
+  {
+    "input": "Número de Seguro Social 123456789",
+    "expected": "Número de Seguro Social [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "SSN 123456789",
+    "expected": "SSN [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "call me at 555-0199",
+    "expected": "call me at [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "my name is maria lopez",
+    "expected": "my name is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "Me llamo ana maría",
+    "expected": "Me llamo [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria need food",
+    "expected": "my name is [name removed] need food",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria and i need help",
+    "expected": "my name is [name removed] and i need help",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria lopez, i need food",
+    "expected": "my name is [name removed], i need food",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "mi nombre es juan perez y necesito ayuda",
+    "expected": "mi nombre es [name removed] y necesito ayuda",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria lopez 78744",
+    "expected": "my name is [name removed] 78744",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria soy de austin",
+    "expected": "my name is [name removed] soy de austin",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is Maria Garcia",
+    "expected": "my name is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My name is maria",
+    "expected": "My name is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name's Jose Luis Martinez",
+    "expected": "my name's [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My Name Is O'Brien",
+    "expected": "My Name Is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "me llamo José",
+    "expected": "me llamo [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "mi nombre es Ana María Pérez-Gómez",
+    "expected": "mi nombre es [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is Maria Garcia and I need food",
+    "expected": "my name is [name removed] and I need food",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "this is Maria Garcia",
+    "expected": "this is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "This is Maria",
+    "expected": "This is Maria",
+    "kinds": []
+  },
+  {
+    "input": "I am Maria Lopez",
+    "expected": "I am [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "I'm Maria Lopez Cruz",
+    "expected": "I'm [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "i am maria lopez",
+    "expected": "i am maria lopez",
+    "kinds": []
+  },
+  {
+    "input": "I’m DeShawn McDonald",
+    "expected": "I’m [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "I am Mary-Ann Smith-Jones",
+    "expected": "I am [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is Ronald McDonald, I need rent help",
+    "expected": "my name is [name removed], I need rent help",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is on the lease",
+    "expected": "my name is on the lease",
+    "kinds": []
+  },
+  {
+    "input": "My name is not on the lease",
+    "expected": "My name is not on the lease",
+    "kinds": []
+  },
+  {
+    "input": "my name is misspelled",
+    "expected": "my name is misspelled",
+    "kinds": []
+  },
+  {
+    "input": "my name is different",
+    "expected": "my name is different",
+    "kinds": []
+  },
+  {
+    "input": "I am Not Sure",
+    "expected": "I am Not Sure",
+    "kinds": []
+  },
+  {
+    "input": "I am Hispanic",
+    "expected": "I am Hispanic",
+    "kinds": []
+  },
+  {
+    "input": "I am Black Hispanic",
+    "expected": "I am Black Hispanic",
+    "kinds": []
+  },
+  {
+    "input": "I am Mexican American",
+    "expected": "I am Mexican American",
+    "kinds": []
+  },
+  {
+    "input": "I'm Texas Resident",
+    "expected": "I'm Texas Resident",
+    "kinds": []
+  },
+  {
+    "input": "I am Unemployed Veteran",
+    "expected": "I am Unemployed Veteran",
+    "kinds": []
+  },
+  {
+    "input": "I'm Currently Unemployed",
+    "expected": "I'm Currently Unemployed",
+    "kinds": []
+  },
+  {
+    "input": "This is Very Hard",
+    "expected": "This is Very Hard",
+    "kinds": []
+  },
+  {
+    "input": "this is a test",
+    "expected": "this is a test",
+    "kinds": []
+  },
+  {
+    "input": "this is Monday morning",
+    "expected": "this is Monday morning",
+    "kinds": []
+  },
+  {
+    "input": "I am Maria",
+    "expected": "I am Maria",
+    "kinds": []
+  },
+  {
+    "input": "I'm 34",
+    "expected": "I'm 34",
+    "kinds": []
+  },
+  {
+    "input": "I am 34 years old",
+    "expected": "I am 34 years old",
+    "kinds": []
+  },
+  {
+    "input": "I am a veteran",
+    "expected": "I am a veteran",
+    "kinds": []
+  },
+  {
+    "input": "I am unemployed",
+    "expected": "I am unemployed",
+    "kinds": []
+  },
+  {
+    "input": "I'm in Austin",
+    "expected": "I'm in Austin",
+    "kinds": []
+  },
+  {
+    "input": "I'm looking for food",
+    "expected": "I'm looking for food",
+    "kinds": []
+  },
+  {
+    "input": "I am pregnant and need WIC",
+    "expected": "I am pregnant and need WIC",
+    "kinds": []
+  },
+  {
+    "input": "I AM SO TIRED",
+    "expected": "I AM SO TIRED",
+    "kinds": []
+  },
+  {
+    "input": "my name is",
+    "expected": "my name is",
+    "kinds": []
+  },
+  {
+    "input": "Hi, I'm Maria Lopez, SSN 123-45-6789, call 512-555-0199",
+    "expected": "Hi, I'm [name removed], SSN [SSN removed], call [phone removed]",
+    "kinds": [
+      "name",
+      "phone",
+      "ssn"
+    ]
+  },
+  {
+    "input": "I live in 78744",
+    "expected": "I live in 78744",
+    "kinds": []
+  },
+  {
+    "input": "78744-1234",
+    "expected": "78744-1234",
+    "kinds": []
+  },
+  {
+    "input": "zip 78702",
+    "expected": "zip 78702",
+    "kinds": []
+  },
+  {
+    "input": "we are 4 people in my household",
+    "expected": "we are 4 people in my household",
+    "kinds": []
+  },
+  {
+    "input": "I have 3 kids",
+    "expected": "I have 3 kids",
+    "kinds": []
+  },
+  {
+    "input": "I'm 34 and my husband is 36",
+    "expected": "I'm 34 and my husband is 36",
+    "kinds": []
+  },
+  {
+    "input": "$1,200 rent",
+    "expected": "$1,200 rent",
+    "kinds": []
+  },
+  {
+    "input": "I make $2,500 a month",
+    "expected": "I make $2,500 a month",
+    "kinds": []
+  },
+  {
+    "input": "rent is $1200",
+    "expected": "rent is $1200",
+    "kinds": []
+  },
+  {
+    "input": "$12,345,678 owed",
+    "expected": "$12,345,678 owed",
+    "kinds": []
+  },
+  {
+    "input": "I need help with food",
+    "expected": "I need help with food",
+    "kinds": []
+  },
+  {
+    "input": "",
+    "expected": "",
+    "kinds": []
+  },
+  {
+    "input": "Hola, necesito ayuda con la renta",
+    "expected": "Hola, necesito ayuda con la renta",
+    "kinds": []
+  },
+  {
+    "input": "My name is: Maria Lopez",
+    "expected": "My name is: [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is Maria Lopez",
+    "expected": "my name is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My name is\nMaria Lopez",
+    "expected": "My name is\n[name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "I'm Maria Lopez",
+    "expected": "I'm [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria\nneed food",
+    "expected": "my name is [name removed]\nneed food",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My name is — Ana",
+    "expected": "My name is — [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "Mi nombre es: Juan Perez",
+    "expected": "Mi nombre es: [name removed]",
+    "kinds": [
+      "name"
+    ]
+  }
+]

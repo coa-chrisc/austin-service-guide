@@ -17,10 +17,10 @@ import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import ServiceDetailCard from "@/components/services/ServiceDetailCard";
 import ServiceMap from "@/components/map/ServiceMap";
 import { getServiceBySlug, getIntakeResults } from "@/lib/api";
+import { hasCompletedPlan, loadIntakeState } from "@/lib/session";
 import type { Service, MapPin } from "@/types";
 
 interface PlanContext {
-  sessionId: string;
   slugs: string[];
 }
 
@@ -28,7 +28,7 @@ export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const planSessionId = searchParams.get("session");
+  const fromPlan = searchParams.get("plan") === "1";
 
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,20 +44,21 @@ export default function ServiceDetail() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  // Load plan context (matched service slugs in plan order) when ?session= is present.
+  // Load plan context (matched service slugs in plan order) from this tab's
+  // intake state when the page was opened from the plan (?plan=1).
   useEffect(() => {
-    if (!planSessionId) {
+    const state = loadIntakeState();
+    if (!fromPlan || !state || !hasCompletedPlan(state)) {
       setPlan(null);
       return;
     }
-    getIntakeResults(planSessionId)
+    getIntakeResults(state)
       .then((res) => {
         const slugs = (res.matches ?? []).map((m) => m.service.slug);
-        if (slugs.length > 0) setPlan({ sessionId: planSessionId, slugs });
-        else setPlan(null);
+        setPlan(slugs.length > 0 ? { slugs } : null);
       })
       .catch(() => setPlan(null));
-  }, [planSessionId]);
+  }, [fromPlan]);
 
   const planNav = useMemo(() => {
     if (!plan || !slug) return null;
@@ -72,7 +73,7 @@ export default function ServiceDetail() {
   }, [plan, slug]);
 
   const inPlanContext = !!planNav;
-  const sessionQs = inPlanContext ? `?session=${plan!.sessionId}` : "";
+  const planQs = inPlanContext ? "?plan=1" : "";
 
   if (loading) {
     return (
@@ -139,7 +140,7 @@ export default function ServiceDetail() {
               <Button
                 size="small"
                 startIcon={<AssignmentTurnedInIcon />}
-                onClick={() => navigate(`/results/${plan!.sessionId}`)}
+                onClick={() => navigate("/results")}
                 sx={{
                   fontWeight: 700,
                   textTransform: "none",
@@ -166,7 +167,7 @@ export default function ServiceDetail() {
                 disabled={!planNav!.prevSlug}
                 onClick={() =>
                   planNav!.prevSlug &&
-                  navigate(`/services/${planNav!.prevSlug}${sessionQs}`)
+                  navigate(`/services/${planNav!.prevSlug}${planQs}`)
                 }
                 aria-label="Previous service"
                 sx={{ minWidth: 44, minHeight: 44 }}
@@ -178,7 +179,7 @@ export default function ServiceDetail() {
                 disabled={!planNav!.nextSlug}
                 onClick={() =>
                   planNav!.nextSlug &&
-                  navigate(`/services/${planNav!.nextSlug}${sessionQs}`)
+                  navigate(`/services/${planNav!.nextSlug}${planQs}`)
                 }
                 aria-label="Next service"
                 sx={{ minWidth: 44, minHeight: 44 }}

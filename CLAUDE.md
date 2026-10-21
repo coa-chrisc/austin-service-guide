@@ -14,14 +14,15 @@ This is a **demonstration application** showcasing the OpenAI Responses API with
 
 Built on the [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter) template. Follow its conventions.
 
-- **Frontend:** React 18 + TypeScript + Vite + Material UI v7 (MUI). No Tailwind — all styling through MUI theme system via `brand.config.json`.
+- **Frontend:** React 18 + TypeScript + Vite + Material UI v7 (MUI). No Tailwind — all styling through the MUI theme system, driven by the brand config (`config/brand.config.json`, or `config/presets/<CITY_PRESET>.brand.json` at build time).
 - **Backend:** FastAPI (Python 3.11+) + Pydantic v2. Routes under `/api/v1/`.
-- **AI:** Standard OpenAI **Responses API** with **`gpt-5.5-2026-04-23`** at `reasoning_effort="medium"`. Single model for the conversational intake, the catalog tool calls, language switching, and matching. All AI calls go through `backend/app/services/ai.py`. Falls back to a scripted demo flow when `OPENAI_API_KEY` is unset or `DEMO_MODE=true`.
-- **Voice intake:** OpenAI **Realtime API** (`gpt-realtime-2`) over WebRTC. The browser fetches an ephemeral `client_secret` from `/api/v1/intake/{session_id}/realtime/client-secret`, then opens a peer connection directly to OpenAI. Tool calls flow back through `/api/v1/intake/{session_id}/realtime/tool`; transcripts and debug events have their own endpoints under the same prefix. The frontend hook is `frontend/src/hooks/useRealtimeVoiceSession.ts`.
+- **AI:** Standard OpenAI **Responses API** with **`gpt-5.5-2026-04-23`** at `reasoning_effort="medium"`. Single model for the conversational intake, the catalog tool calls, language switching, and matching. Text-model calls live in `backend/app/services/ai.py` (agent loop, greeting) and `backend/app/services/plan.py` (plan ordering); every call passes `store=False`. The Realtime client secret is minted in `backend/app/routers/intake.py`. Falls back to a scripted demo flow when `OPENAI_API_KEY` is unset or `DEMO_MODE=true`.
+- **Voice intake:** OpenAI **Realtime API** (`gpt-realtime-2`) over WebRTC. The browser posts its intake state to `/api/v1/intake/realtime/client-secret` and gets back an ephemeral `client_secret`, then opens a peer connection directly to OpenAI. Tool calls flow back through `/api/v1/intake/realtime/tool`; transcripts and debug events have their own endpoints under the same prefix. The frontend hook is `frontend/src/hooks/useRealtimeVoiceSession.ts`.
 - **Database (demo):** in-memory seed data in `backend/app/services/seed_data.py` (PostgreSQL + pgvector are the production target — not wired in this demo).
 - **Auth (demo):** stubbed — header `X-Staff-Role` is read but not enforced. Admin catalog writes require `X-Admin-Token` matching `ADMIN_API_TOKEN` (writes are disabled when it is unset). Production target is Azure AD B2C / Entra ID.
-- **Privacy:** resident text is PII-redacted (`backend/app/services/pii.py`) before storage or any model call; sessions expire after `SESSION_TTL_HOURS`. See `docs/PRIVACY.md` and keep it true when changing data flows.
-- **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend).
+- **Privacy / state:** the intake is **stateless**. The server keeps no intake sessions; the browser holds `IntakeState` in `sessionStorage` (`frontend/src/lib/session.ts`) and sends it with every request, and the server re-validates, re-redacts and re-grounds it (`backend/app/services/intake_state.py`) before responding and keeping nothing. Resident text is PII-redacted (`backend/app/services/pii.py`, mirrored client-side in `frontend/src/lib/piiGuard.ts`) before any model call. There is no session TTL and no session id in any route. See `docs/PRIVACY.md` and `SECURITY.md`, and keep them true when changing data flows.
+- **Hosting:** local `uvicorn` (backend) + `vite` dev server (frontend), or the single container image (`Dockerfile`, `docker-compose.yml`; FastAPI serves the built SPA when `STATIC_DIR` is set). Starter IaC templates are in `deploy/`; see `deploy/README.md` for what was and was not validated.
+- **White-label:** `config/brand.config.json` (active), `config/brand.schema.json`, `config/presets/*.brand.json`. `CITY_PRESET` selects a preset at build time (`frontend/vite.config.ts`; an unknown name fails the build). Backend prompts, the catalog, crisis resources and personas are still Austin-specific.
 
 ## Common Commands
 
@@ -41,12 +42,20 @@ Frontend (run from `frontend/`):
 npm install
 npm run dev                                    # Vite dev server at http://localhost:5173
 npm run build                                  # tsc -b && vite build (the required CI check)
+npm test                                       # vitest (client PII guard vs shared fixtures)
+npm run validate:catalog                       # catalog YAML vs config/services.schema.json (-- --strict fails on unverified entries)
 npm run preview                                # serve the production build locally
+```
+
+Container (from the repo root):
+
+```bash
+docker compose up --build                      # production image on http://localhost:8000; CITY_PRESET=<name> picks a brand preset
 ```
 
 Environment: copy `backend/.env.example` to `backend/.env`. Key flags — `OPENAI_API_KEY` (enables live AI), `DEMO_MODE=true` (forces scripted fallback), `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS`, `CORS_ORIGINS`, `PUBLIC_ORIGIN`. Realtime voice flags — `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS`, plus opt-in `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` for local troubleshooting. `settings.use_live_ai` is `True` only when an API key is set AND `DEMO_MODE` is false.
 
-The verification gates are `npm run build` (from `frontend/`), and `python -m compileall app` plus `python -m pytest` (from `backend/`, after `pip install -r requirements-dev.txt`). Backend tests force the scripted flow and never call OpenAI. There is no frontend test framework.
+The verification gates are `npm run build`, `npm test`, and `npm run validate:catalog` (from `frontend/`), and `python -m compileall app` plus `python -m pytest` (from `backend/`, after `pip install -r requirements-dev.txt`). Backend tests force the scripted flow and never call OpenAI. The frontend test framework is vitest; it currently covers `src/lib/piiGuard.ts`. `validate:catalog` currently reports 0 errors and all services unverified; `--strict` fails until staff record verification.
 
 ## Architecture
 
@@ -62,6 +71,8 @@ The AI intake is implemented as a **Responses API agent loop** in `backend/app/s
 
 The loop walks `response.output`, dispatches each `function_call` item locally, appends the call + a `function_call_output` (correlated by `call_id`) to the conversation context, and re-invokes `client.responses.create(...)` until the model returns a plain text message. Iteration cap lives in `OPENAI_MAX_TOOL_ITERATIONS` (default 6).
 
+Each request is stateless: the router rebuilds an `IntakeSession` from the client-sent `IntakeState` (`session_from_state`), the agent loop and tools mutate only that object, and `state_from_session` serializes it back. Any service id or slug that comes from the model or the browser passes through `ground_service_ids` (`backend/app/services/grounding.py`) so only catalog records are rendered or sent. The model still writes conversational text, plan summaries and per-item reasons; those are redacted and length-capped but not fact-checked.
+
 Service matching today is rules-based only (`backend/app/services/matching.py`). Semantic search via pgvector is the production target.
 
 The service catalog is stored in English. All translation is delegated to the model at runtime — no static translation files.
@@ -70,11 +81,12 @@ Admin console lives under `/admin/*` routes in the same SPA. Auth is stubbed for
 
 ### Module Layout
 
-- `backend/app/routers/` — `intake.py` (chat session + tools + realtime voice session/token/tool endpoints under `/intake/realtime/*`), `services.py` (catalog/search/detail), `admin.py` (analytics, equity, audit). All mounted under `/api/v1/`.
-- `backend/app/services/` — `ai.py` (Responses agent loop, tool dispatch, realtime session config, realtime tool execution, debug trace recorder), `catalog.py` + `catalog_loader.py` (in-memory catalog backed by YAML in `app/data/services/`), `seed_data.py` (legacy hard-coded fallback), `matching.py` (rules engine), `i18n.py`, `hours.py`, `notify.py` (Twilio/SendGrid stubs), `personas.py` (multilingual demo personas).
+- `backend/app/routers/` — `intake.py` (stateless endpoints: `personas`, `load-persona`, `start`, `message`, `results`, `plan`, `share`, and realtime voice `realtime/client-secret|tool|transcript|debug*`; no session ids), `services.py` (catalog/search/detail), `admin.py` (analytics, equity, audit). All mounted under `/api/v1/`. Also `app/middleware.py` (256 KiB intake body limit) and `app/spa.py` (serves the built SPA).
+- `backend/app/services/` — `ai.py` (session start, `process_message`, Responses agent loop, greeting), `prompts.py` (text-agent instructions), `tool_schemas.py` + `tools.py` (tool definitions and dispatch, shared with voice), `scripted.py` (scripted fallback flow), `scenarios.py` (life-event follow-ups, crisis check), `intake_state.py` (client state ↔ session), `grounding.py` (catalog id gate), `pii.py` (redaction), `plan.py` (ordered plan), `realtime.py` (voice session config, tools, transcripts), `realtime_debug.py` (opt-in redacted file log), `catalog.py` + `catalog_loader.py` (in-memory catalog backed by YAML in `app/data/services/`), `seed_data.py` (legacy hard-coded fallback and synthetic admin data), `matching.py` + `eligibility.py` (rules engine), `life_events.py`, `i18n.py`, `hours.py`, `notify.py` (Twilio/SendGrid with masked logging), `personas.py` (multilingual demo personas).
 - `backend/app/data/` — YAML data the backend loads at boot: `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`, and the per-service files under `services/`. Edit YAML rather than `seed_data.py` for catalog changes; the loader merges them.
 - `frontend/src/pages/` — resident routes (`Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`) plus `admin/`.
-- `frontend/src/components/` — grouped by feature: `chat/`, `results/`, `services/`, `map/`, `layout/`, `common/`. `lib/` holds the API client; `hooks/` exposes `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice intake), auth, etc.
+- `frontend/src/components/` — grouped by feature: `landing/` (need chips), `chat/`, `results/`, `services/`, `map/`, `layout/` (incl. `StartOverButton`), `common/`. `lib/` holds the API client (`api.ts`), the client-held intake state (`session.ts`) and the PII pre-flight (`piiGuard.ts`); `hooks/` exposes `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice intake), auth, etc.
+- `config/` — brand config, presets and JSON schemas (brand and catalog). `deploy/` — AWS/Azure/GCP templates. Root docs: `SECURITY.md`, `ARCHITECTURE.md`, `docs/PRIVACY.md`.
 
 ## Key Design Decisions
 
@@ -82,7 +94,10 @@ Admin console lives under `/admin/*` routes in the same SPA. Auth is stubbed for
 - **`gpt-5.5-2026-04-23` at `reasoning_effort="medium"`** — one model for everything (conversation, tool dispatch, translation, summarization)
 - **No human translation** — multilingual support is purely generative
 - **English-canonical catalog** — services stored in English, model translates on the fly
-- **No-account-first** — full intake and results work without an account; anonymous session data lives only in browser memory + backend in-memory store
+- **No-account-first, stateless** — full intake and results work without an account; the intake state lives only in the browser tab's `sessionStorage` and is sent with each request; the server stores none of it. "Start over" clears it.
+- **Catalog grounding** — cards and contact details render only from catalog records; unknown service ids from the model or client are dropped
+- **Structured navigation first** — the landing page leads with need chips + ZIP + language; chat/voice is the secondary path
+- **No claims beyond the code** — the catalog is unverified, admin auth is a stub, and `store=False` is not zero data retention; do not write docs that imply otherwise
 - **Crisis detection interrupts intake** — keyword check in the backend short-circuits to a crisis response; the model also has `get_crisis_resources` available to call proactively
 
 ## Design Documents
@@ -99,9 +114,9 @@ Read these before implementing:
 These patterns come from the starter template and must be followed:
 
 - MUI: use `sx` prop for one-off styles, `styled()` for reusable. Import from specific paths (`@mui/material/Button`). Use `theme.palette.*` colors, never hardcoded hex. Buttons: `textTransform: "none"`, `fontWeight: 600`, `disableElevation: true`.
-- Backend: AI calls live in `backend/app/services/ai.py`. The Responses-API path is `_responses_flow`; the scripted path is `_demo_flow`. The router (`process_message`) picks based on `settings.use_live_ai`.
-- Branding: all visual identity driven by `brand.config.json`. Use `useBrandConfig()` hook.
+- Backend: text-model calls live in `backend/app/services/ai.py` (and `plan.py` for plan ordering). The Responses-API path is `_responses_flow`; the scripted path is `demo_flow` in `scripted.py`. `process_message` picks based on `settings.use_live_ai`.
+- Branding: all visual identity driven by the brand config (`config/brand.config.json` or a `CITY_PRESET` preset). Use the `useBrandConfig()` hook.
 - Auth: FastAPI dependency injection (`Depends(require_auth)`).
 - Grid: MUI Grid v2 with `size` prop: `<Grid size={{ xs: 12, md: 6 }}>`.
 - Commits: Conventional Commits with scopes seen in history (`feat(intake):`, `fix(a11y):`, `chore(catalog):`, etc.). Keep subjects imperative.
-- Tests: when adding tests, colocate frontend tests with their component; place backend tests under `backend/tests/test_*.py`.
+- Tests: when adding tests, colocate frontend tests (vitest) with their module; place backend tests under `backend/tests/test_*.py`. PII rule changes go in `backend/tests/fixtures/pii_cases.json`, which both pytest and vitest run.

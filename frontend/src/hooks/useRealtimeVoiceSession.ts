@@ -8,6 +8,7 @@ import {
   type RealtimeToolResult,
   type RealtimeTranscriptResult,
 } from "@/lib/api";
+import { withIntakeState } from "@/lib/session";
 import type { IntakeMessage } from "@/types";
 
 type VoiceStatus =
@@ -21,7 +22,6 @@ type VoiceStatus =
   | "error";
 
 interface UseRealtimeVoiceSessionOptions {
-  sessionId: string;
   onLocalTranscript: (role: "user" | "assistant", content: string) => void;
   /**
    * Replace the raw transcript already shown via onLocalTranscript with its
@@ -92,6 +92,13 @@ function parseArguments(raw: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function newTraceId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID().replace(/-/g, "");
+  }
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 function messageContent(message: IntakeMessage) {
@@ -201,7 +208,6 @@ function realtimeSessionSummary(session: Record<string, unknown> | null) {
 }
 
 export function useRealtimeVoiceSession({
-  sessionId,
   onLocalTranscript,
   onLocalTranscriptReplace,
   onTranscriptSync,
@@ -221,6 +227,8 @@ export function useRealtimeVoiceSession({
   const liveTranscriptRef = useRef("");
   const liveTranscriptRoleRef = useRef<LiveTranscriptRole | null>(null);
   const startGenerationRef = useRef(0);
+  // Random id for one voice start; keys the opt-in server debug log only.
+  const traceIdRef = useRef("");
   const stoppedRef = useRef(false);
   const transcriptItemIdsRef = useRef<Set<string>>(new Set());
   const stopAfterNextAssistantRef = useRef(false);
@@ -302,9 +310,11 @@ export function useRealtimeVoiceSession({
         }) as Record<string, unknown>,
       };
       console.debug("[realtime]", payload.event, payload);
-      void logRealtimeDebugEvent(sessionId, payload).catch(() => undefined);
+      void logRealtimeDebugEvent(traceIdRef.current, payload).catch(
+        () => undefined,
+      );
     },
-    [sessionId],
+    [],
   );
 
   useEffect(() => {
@@ -836,10 +846,13 @@ export function useRealtimeVoiceSession({
         result?.redacted_content?.trim() ||
         (role === "user" ? REDACTED_TRANSCRIPT_FALLBACK : text);
       try {
-        const result = await syncRealtimeTranscript(sessionId, {
-          role,
-          content: text,
-        });
+        const result = await withIntakeState((state) =>
+          syncRealtimeTranscript(state, {
+            role,
+            content: text,
+            trace_id: traceIdRef.current,
+          }),
+        );
         if (stoppedRef.current || generation !== startGenerationRef.current) {
           recordDebug("transcript_sync_ignored", {
             role,
@@ -917,7 +930,6 @@ export function useRealtimeVoiceSession({
       clearLiveTranscriptIfCurrent,
       recordDebug,
       scheduleCompletionFinish,
-      sessionId,
     ],
   );
 
@@ -945,11 +957,14 @@ export function useRealtimeVoiceSession({
             call_id: call.call_id,
             argument_keys: Object.keys(parseArguments(call.arguments)),
           });
-          const result = await executeRealtimeTool(sessionId, {
-            name: call.name,
-            arguments: parseArguments(call.arguments),
-            call_id: call.call_id,
-          });
+          const result = await withIntakeState((state) =>
+            executeRealtimeTool(state, {
+              name: call.name,
+              arguments: parseArguments(call.arguments),
+              call_id: call.call_id,
+              trace_id: traceIdRef.current,
+            }),
+          );
           if (stoppedRef.current || generation !== startGenerationRef.current) {
             recordDebug("tool_call_result_ignored", {
               name: call.name,
@@ -1075,7 +1090,6 @@ export function useRealtimeVoiceSession({
       recordDebug,
       requestModelResponse,
       sendEvent,
-      sessionId,
     ],
   );
 
@@ -1481,6 +1495,7 @@ export function useRealtimeVoiceSession({
     ) => {
       const startId = startGenerationRef.current + 1;
       startGenerationRef.current = startId;
+      traceIdRef.current = newTraceId();
       const startCancelled = () =>
         stoppedRef.current || startGenerationRef.current !== startId;
       let ownedStream: MediaStream | null = null;
@@ -1533,7 +1548,9 @@ export function useRealtimeVoiceSession({
         // API key / demo mode) fails before the browser prompts for the mic.
         // The secret TTL is 600s, so fetching before getUserMedia is safe.
         recordDebug("client_secret_request_started", { language });
-        const secret = await createRealtimeClientSecret(sessionId, language);
+        const secret = await withIntakeState((state) =>
+          createRealtimeClientSecret(state, language, traceIdRef.current),
+        );
         if (startCancelled()) {
           cleanupOwnedStart();
           recordDebug("voice_start_cancelled", {
@@ -1805,7 +1822,6 @@ export function useRealtimeVoiceSession({
       recordDebug,
       resetSessionState,
       sendInitialResponseWhenReady,
-      sessionId,
       setInputTracksEnabled,
       stop,
       teardownTransport,

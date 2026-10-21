@@ -4,8 +4,14 @@
 
 import { getAdminToken } from "./adminToken";
 import type {
-  IntakeSession,
+  BenefitsEstimate,
   IntakeMessage,
+  IntakePlan,
+  IntakePlanItem,
+  IntakeState,
+  ResidentProfile,
+  RiskFlag,
+  ServiceMatch,
   Service,
   ServiceCategory,
   LifeEvent,
@@ -112,7 +118,7 @@ export interface PersonaScriptTurn {
 
 export function loadPersona(personaId: string) {
   return apiRequest<{
-    session_id: string;
+    state: IntakeState;
     language: string;
     entry_source: string;
     status: string;
@@ -123,71 +129,43 @@ export function loadPersona(personaId: string) {
   }>("POST", "/api/v1/intake/load-persona", { persona_id: personaId });
 }
 
-export async function startIntake(
+/*  Intake endpoints are stateless: each takes the client-held intake state
+    and returns the updated copy. Callers go through withIntakeState() in
+    lib/session.ts so requests are serialized and the result is saved. */
+
+export function startIntake(
   language = "en",
   lifeEvent?: string,
   focus?: string[],
   mode: "text" | "voice" = "text",
-): Promise<IntakeSession> {
+) {
   const body: Record<string, string | string[]> = { language };
   if (lifeEvent) body.life_event = lifeEvent;
   if (focus && focus.length > 0) body.focus = focus;
   body.mode = mode;
-
-  const raw = await apiRequest<{
-    session_id: string;
+  return apiRequest<{
+    state: IntakeState;
     language: string;
     greeting: IntakeMessage | null;
   }>("POST", "/api/v1/intake/start", body);
-
-  return {
-    id: raw.session_id,
-    language: raw.language,
-    conversation: raw.greeting ? [raw.greeting] : [],
-    extracted_profile: {
-      age_range: "",
-      household_size: null,
-      zip_code: "",
-      housing_situation: "",
-      employment_status: "",
-      income_bracket: "",
-      insurance_status: "",
-      has_children: null,
-      veteran_status: null,
-      has_disability: null,
-      immediate_needs: [],
-      languages_spoken: [],
-      crisis_indicators: [],
-    },
-    status: "in_progress",
-    matches: [],
-    risk_flags: [],
-    created_at: new Date().toISOString(),
-  };
 }
 
-export interface SendIntakeMessageResult {
-  response: IntakeMessage;
-  /** Stored, PII-redacted copy of what the resident typed (null if absent). */
-  userMessage: IntakeMessage | null;
-}
-
-export async function sendIntakeMessage(
-  sessionId: string,
+export function sendIntakeMessage(
+  state: IntakeState,
   message: string,
   language = "en",
-): Promise<SendIntakeMessageResult> {
-  const raw = await apiRequest<{
-    session_id: string;
+) {
+  return apiRequest<{
+    state: IntakeState;
     response: IntakeMessage;
-    user_message: IntakeMessage | null;
+    /** Stored, PII-redacted copy of what the resident typed. */
+    user_message: IntakeMessage;
     status: string;
-  }>("POST", `/api/v1/intake/${sessionId}/message`, { message, language });
-  return { response: raw.response, userMessage: raw.user_message };
+  }>("POST", "/api/v1/intake/message", { state, message, language });
 }
 
 export interface RealtimeClientSecretResponse {
-  session_id: string;
+  state: IntakeState;
   model: string;
   session_config: Record<string, unknown>;
   client_secret: {
@@ -197,16 +175,20 @@ export interface RealtimeClientSecretResponse {
   };
 }
 
-export function createRealtimeClientSecret(sessionId: string, language = "en") {
+export function createRealtimeClientSecret(
+  state: IntakeState,
+  language = "en",
+  traceId = "",
+) {
   return apiRequest<RealtimeClientSecretResponse>(
     "POST",
-    `/api/v1/intake/${sessionId}/realtime/client-secret`,
-    { language },
+    "/api/v1/intake/realtime/client-secret",
+    { state, language, trace_id: traceId },
   );
 }
 
 export interface RealtimeToolResult {
-  session_id: string;
+  state: IntakeState;
   call_id: string;
   output: string;
   status: string;
@@ -224,19 +206,24 @@ export interface RealtimeToolResult {
 }
 
 export function executeRealtimeTool(
-  sessionId: string,
-  body: { name: string; arguments: Record<string, unknown>; call_id: string },
+  state: IntakeState,
+  body: {
+    name: string;
+    arguments: Record<string, unknown>;
+    call_id: string;
+    trace_id?: string;
+  },
 ) {
   return apiRequest<RealtimeToolResult>(
     "POST",
-    `/api/v1/intake/${sessionId}/realtime/tool`,
-    body,
+    "/api/v1/intake/realtime/tool",
+    { state, ...body },
     { timeoutMs: 20000 },
   );
 }
 
 export interface RealtimeTranscriptResult {
-  session_id: string;
+  state: IntakeState;
   messages: IntakeMessage[];
   /** Identifier types removed from the transcript (e.g. "phone"). */
   redacted?: string[];
@@ -249,19 +236,19 @@ export interface RealtimeTranscriptResult {
 }
 
 export function syncRealtimeTranscript(
-  sessionId: string,
-  body: { role: "user" | "assistant"; content: string },
+  state: IntakeState,
+  body: { role: "user" | "assistant"; content: string; trace_id?: string },
 ) {
   return apiRequest<RealtimeTranscriptResult>(
     "POST",
-    `/api/v1/intake/${sessionId}/realtime/transcript`,
-    body,
+    "/api/v1/intake/realtime/transcript",
+    { state, ...body },
     { timeoutMs: 12000 },
   );
 }
 
 export interface RealtimeDebugEvent {
-  seq: number;
+  trace_id: string;
   timestamp: string;
   event: string;
   source: string;
@@ -282,8 +269,9 @@ export function resetRealtimeDebugLogDisabled() {
   realtimeDebugLogDisabled = false;
 }
 
+/** `traceId` is a random per-voice-session id; it never names a resident. */
 export function logRealtimeDebugEvent(
-  sessionId: string,
+  traceId: string,
   body: {
     event: string;
     source?: string;
@@ -291,22 +279,23 @@ export function logRealtimeDebugEvent(
     detail?: Record<string, unknown>;
   },
 ): Promise<{ ok: boolean; event: RealtimeDebugEvent } | null> {
-  if (realtimeDebugLogDisabled) {
+  if (realtimeDebugLogDisabled || !traceId) {
     return Promise.resolve(null);
   }
   return apiRequest<{ ok: boolean; event: RealtimeDebugEvent }>(
     "POST",
-    `/api/v1/intake/${sessionId}/realtime/debug`,
+    "/api/v1/intake/realtime/debug",
     {
       source: "client",
       detail: {},
       ...body,
+      trace_id: traceId,
     },
     { timeoutMs: 5000 },
   ).catch((err) => {
-    // Any 404 (endpoint disabled, or a stale session) latches the flag and is
-    // swallowed so the burst of in-flight POSTs that fired before the first
-    // 404 arrived doesn't surface as unhandled rejections.
+    // Any 404 (endpoint disabled) latches the flag and is swallowed so the
+    // burst of in-flight POSTs that fired before the first 404 arrived
+    // doesn't surface as unhandled rejections.
     if (err instanceof ApiError && err.status === 404) {
       realtimeDebugLogDisabled = true;
       return null;
@@ -315,67 +304,64 @@ export function logRealtimeDebugEvent(
   });
 }
 
-export function getRealtimeDebugEvents(sessionId: string, limit = 200) {
-  return apiRequest<{ session_id: string; events: RealtimeDebugEvent[] }>(
+export function getRealtimeDebugEvents(traceId: string, limit = 200) {
+  return apiRequest<{ trace_id: string; events: RealtimeDebugEvent[] }>(
     "GET",
-    `/api/v1/intake/${sessionId}/realtime/debug?limit=${limit}`,
+    `/api/v1/intake/realtime/debug/${encodeURIComponent(traceId)}?limit=${limit}`,
   );
 }
 
-export interface ApplicationOrderItem {
-  rank: number;
-  service_id: string;
-  service_slug: string;
-  service_name: string;
-  category: string;
-  reason: string;
+export type ApplicationOrderItem = IntakePlanItem;
+
+export interface IntakeResults {
+  state: IntakeState;
+  status: string;
+  language: string;
+  profile: ResidentProfile;
+  matches: ServiceMatch[];
+  risk_flags: RiskFlag[];
+  benefits_estimate: BenefitsEstimate;
+  application_order: ApplicationOrderItem[];
+  plan_synthesis: string;
+  plan_ai_generated: boolean;
+  /** Matches exist but no plan has been built yet: call buildIntakePlan. */
+  plan_pending: boolean;
+  conversation_length: number;
 }
 
-export function getIntakeResults(sessionId: string) {
-  return apiRequest<{
-    session_id: string;
-    status: string;
-    language: string;
-    profile: import("@/types").ResidentProfile;
-    matches: import("@/types").ServiceMatch[];
-    risk_flags: import("@/types").RiskFlag[];
-    benefits_estimate: import("@/types").BenefitsEstimate;
-    application_order: ApplicationOrderItem[];
-    plan_synthesis: string;
-    plan_ai_generated: boolean;
-    conversation_length: number;
-    session_ttl_hours?: number;
-  }>("GET", `/api/v1/intake/${sessionId}/results`);
+/** Hydrate results for the client-held state. Catalog data only; no model call. */
+export function getIntakeResults(state: IntakeState) {
+  return apiRequest<IntakeResults>("POST", "/api/v1/intake/results", {
+    state,
+  });
 }
 
-/** Public backend settings; used for the "plans are deleted after N hours" copy. */
-export function getHealth() {
-  return apiRequest<{ status: string; session_ttl_hours?: number }>(
-    "GET",
-    "/api/v1/health",
+/** Build the ordered plan for a completed intake; returns it inside the state. */
+export function buildIntakePlan(state: IntakeState) {
+  return apiRequest<{ state: IntakeState; plan: IntakePlan }>(
+    "POST",
+    "/api/v1/intake/plan",
+    { state },
+    { timeoutMs: 60000 },
   );
 }
 
-export function getIntakePlanSummary(sessionId: string) {
-  return apiRequest<{
-    session_id: string;
-    summary: string;
-    match_count: number;
-    started_at: string;
-    status: string;
-  }>("GET", `/api/v1/intake/${sessionId}/summary`);
-}
-
-export function shareIntakeResults(
-  sessionId: string,
-  body: { channel: "sms" | "email"; recipient: string; language?: string },
-) {
+/**
+ * Send catalog details for these services by SMS or email. The server
+ * builds the message from catalog data only and does not keep the recipient.
+ */
+export function shareIntakeResults(body: {
+  channel: "sms" | "email";
+  recipient: string;
+  service_ids: string[];
+  language?: string;
+}) {
   return apiRequest<{
     ok: boolean;
     demo: boolean;
     channel: string;
-    to: string;
-  }>("POST", `/api/v1/intake/${sessionId}/share`, body);
+    service_count: number;
+  }>("POST", "/api/v1/intake/share", body);
 }
 
 export function getServices(params?: {

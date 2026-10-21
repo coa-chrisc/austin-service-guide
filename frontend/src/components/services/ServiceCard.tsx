@@ -29,7 +29,8 @@ import type { Service, MatchConfidence } from "@/types";
 interface ServiceCardProps {
   service: Service;
   matchConfidence?: MatchConfidence;
-  fromSessionId?: string;
+  /** Opened from the resident's plan: the detail page links back to it. */
+  fromPlan?: boolean;
   highlightQuery?: string;
 }
 
@@ -59,7 +60,7 @@ const COST_LABELS: Record<string, string> = {
 export default function ServiceCard({
   service,
   matchConfidence,
-  fromSessionId,
+  fromPlan,
   highlightQuery,
 }: ServiceCardProps) {
   const navigate = useNavigate();
@@ -79,7 +80,7 @@ export default function ServiceCard({
 
   const navigateToDetail = () =>
     navigate(
-      `/services/${service.slug}${fromSessionId ? `?session=${fromSessionId}` : ""}`,
+      `/services/${service.slug}${fromPlan ? "?plan=1" : ""}`,
     );
 
   return (

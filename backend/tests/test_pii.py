@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
-from app.services.pii import PLACEHOLDERS, redact
+from app.services.pii import ASSISTANT_KINDS, PLACEHOLDERS, redact
 
 
 @pytest.mark.parametrize(
@@ -156,3 +159,56 @@ def test_redact_is_fast_on_200kb_without_matches(unit):
     started = time.perf_counter()
     redact(text)
     assert time.perf_counter() - started < 1.0
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I'm 34",
+        "I am a veteran",
+        "I am unemployed",
+        "I'm in Austin",
+        "I am Hispanic",
+        "my name is on the lease",
+        "I am Not Sure",
+        "I'm looking for food",
+        "This is Maria",
+        "I am Maria",
+    ],
+)
+def test_name_rule_leaves_non_names_alone(text):
+    assert redact(text) == (text, [])
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("my name is maria", "my name is [name removed]"),
+        ("My name's Maria Garcia.", "My name's [name removed]."),
+        ("me llamo José", "me llamo [name removed]"),
+        ("I'm Maria Lopez and I need food", "I'm [name removed] and I need food"),
+        ("this is Maria Garcia", "this is [name removed]"),
+    ],
+)
+def test_name_rule_redacts_after_self_identification(text, expected):
+    result = redact(text)
+    assert result.text == expected
+    assert result.types == ["name"]
+
+
+def test_name_is_not_an_assistant_kind():
+    assert "name" not in ASSISTANT_KINDS
+    text = "I'm Maria Lopez"
+    assert redact(text, kinds=ASSISTANT_KINDS).text == text
+
+
+_FIXTURE = Path(__file__).parent / "fixtures" / "pii_cases.json"
+_CASES = json.loads(_FIXTURE.read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("case", _CASES, ids=[c["input"][:40] for c in _CASES])
+def test_shared_fixture_matches_backend_redactor(case):
+    # The same fixture is run through frontend/src/lib/piiGuard.ts by vitest.
+    result = redact(case["input"])
+    assert result.text == case["expected"]
+    assert result.types == case["kinds"]

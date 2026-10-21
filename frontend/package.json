@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "validate:catalog": "python3 ../backend/scripts/validate_catalog.py"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -34,6 +36,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "~5.6.2",
     "vite": "^6.0.0",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^3.2.7"
   }
 }

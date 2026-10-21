@@ -132,15 +132,47 @@ export interface ServiceMatch {
   match_score: number;
 }
 
-export interface IntakeSession {
-  id: string;
+/** One step of the resident's plan. Names/slugs come from the catalog. */
+export interface IntakePlanItem {
+  rank: number;
+  service_id: string;
+  service_slug: string;
+  service_name: string;
+  category: string;
+  reason: string;
+}
+
+export interface IntakePlan {
+  summary: string;
+  items: IntakePlanItem[];
+  ai_generated: boolean;
+}
+
+/** A visible conversation turn as held in the client intake state. */
+export interface IntakeStateMessage {
+  role: "user" | "assistant";
+  content: string;
+  suggested_buttons: string[];
+  progress_percent: number;
+  is_complete: boolean;
+  crisis_detected: boolean;
+}
+
+/**
+ * Client-held intake state (mirrors backend `IntakeState`, version 1).
+ * Kept in sessionStorage and sent with every intake request; the server
+ * validates, re-redacts and re-grounds it, and keeps nothing.
+ */
+export interface IntakeState {
+  version: 1;
   language: string;
-  conversation: IntakeMessage[];
-  extracted_profile: ResidentProfile;
-  status: IntakeStatus;
-  matches: ServiceMatch[];
-  risk_flags: RiskFlag[];
-  created_at: string;
+  status: "in_progress" | "completed";
+  conversation: IntakeStateMessage[];
+  profile: ResidentProfile;
+  entry_source: string;
+  scripted_turns_skipped: number;
+  matched_service_ids: string[];
+  plan: IntakePlan | null;
 }
 
 // Map

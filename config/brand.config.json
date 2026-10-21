@@ -1,0 +1,82 @@
+{
+  "appName": "Austin Service Guide",
+  "shortName": "ASG",
+  "agencyName": "Austin Public Health",
+  "cityName": "Austin",
+  "description": "Find services you're eligible for in Austin — built by Austin Public Health.",
+  "logo": {
+    "src": "/aph-logo.png",
+    "alt": "Austin Public Health"
+  },
+  "palette": {
+    "primary": {
+      "main": "#44499C",
+      "light": "#6e72b8",
+      "dark": "#22254E",
+      "contrastText": "#FFFFFF"
+    },
+    "secondary": {
+      "main": "#009F4D",
+      "light": "#dff0e3",
+      "dark": "#005027",
+      "contrastText": "#FFFFFF"
+    },
+    "background": {
+      "default": "#f7f6f5",
+      "paper": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#22254E",
+      "secondary": "#636262"
+    },
+    "error": "#F83125",
+    "warning": "#FF8F00",
+    "success": "#008743",
+    "info": "#009CDE"
+  },
+  "darkPalette": {
+    "primary": {
+      "main": "#8b8fd4",
+      "light": "#b0b3e6",
+      "dark": "#44499C",
+      "contrastText": "#000000"
+    },
+    "secondary": {
+      "main": "#4dd68f",
+      "light": "#dff0e3",
+      "dark": "#009F4D",
+      "contrastText": "#000000"
+    },
+    "background": {
+      "default": "#121214",
+      "paper": "#1e1e24"
+    },
+    "text": {
+      "primary": "#e8e8ec",
+      "secondary": "#a0a0a8"
+    },
+    "error": "#ff6b63",
+    "warning": "#ffb040",
+    "success": "#4dd68f",
+    "info": "#40c4f0"
+  },
+  "fontFamily": "Geist,Helvetica,Aptos,sans-serif",
+  "copy": {
+    "tagline": "Find services you're eligible for — in minutes",
+    "footerDisclaimer": "Austin Public Health | City of Austin & Travis County",
+    "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
+  },
+  "contact": {
+    "phone311": "311",
+    "agencyWebsite": "https://www.austintexas.gov/health",
+    "accessibilityUrl": "https://www.austintexas.gov/city-manager/americans-disabilities-act-ada"
+  },
+  "map": {
+    "center": [30.2672, -97.7431],
+    "zoom": 11
+  },
+  "pwa": {
+    "themeColor": "#005bbb",
+    "backgroundColor": "#ffffff"
+  }
+}

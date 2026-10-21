@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -45,16 +45,24 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ServiceCard from "@/components/services/ServiceCard";
 import PlanList from "@/components/results/PlanList";
 import {
-  getHealth,
+  buildIntakePlan,
   getIntakeResults,
   shareIntakeResults,
   ApiError,
   type ApplicationOrderItem,
+  type IntakeResults,
 } from "@/lib/api";
 import { makeResultsT } from "@/lib/resultsI18n";
-import { clearActiveSession, setActiveSession } from "@/lib/session";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
+import {
+  ensureIntakePlan,
+  hasCompletedPlan,
+  loadIntakeState,
+  withIntakeState,
+} from "@/lib/session";
 import { canNativeShare, nativeShare } from "@/lib/share";
 import type {
+  Service,
   ServiceMatch,
   MatchConfidence,
   RiskFlag,
@@ -110,22 +118,35 @@ const RISK_VISUAL: Record<
 
 type ViewMode = "simple" | "all";
 
-const VIEW_KEY_PREFIX = "asg.results.view.";
+// Shares the intake key prefix so "Start over" clears it too.
+const VIEW_KEY = "asg.intake.resultsView";
 
-// Backend default for SESSION_TTL_HOURS. Only used when the server doesn't
-// report its configured value (/results or /health).
-const DEFAULT_SESSION_TTL_HOURS = 24;
+function toResultsData(res: IntakeResults): ResultsData {
+  return {
+    matches: res.matches ?? [],
+    risk_flags: res.risk_flags ?? [],
+    benefits_estimate: res.benefits_estimate ?? {
+      total_monthly_value: 0,
+      total_annual_value: 0,
+      breakdown: [],
+    },
+    application_order: res.application_order ?? [],
+    plan_synthesis: res.plan_synthesis ?? "",
+    plan_ai_generated: res.plan_ai_generated ?? false,
+    language: res.language ?? "en",
+  };
+}
 
 export default function Results() {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const { appName } = useBrandConfig();
   const navigate = useNavigate();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expired, setExpired] = useState(false);
-  const [ttlHours, setTtlHours] = useState(DEFAULT_SESSION_TTL_HOURS);
+  // No completed intake in this tab (fresh tab, old share link, start over).
+  const [noPlan, setNoPlan] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [filterConfidence, setFilterConfidence] =
     useState<MatchConfidence | null>(null);
@@ -136,15 +157,14 @@ export default function Results() {
   const [shareSending, setShareSending] = useState(false);
   const [snackbar, setSnackbar] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>(() => {
-    if (typeof window === "undefined" || !sessionId) return "simple";
-    const stored = window.sessionStorage.getItem(VIEW_KEY_PREFIX + sessionId);
-    return stored === "all" ? "all" : "simple";
+    if (typeof window === "undefined") return "simple";
+    return window.sessionStorage.getItem(VIEW_KEY) === "all" ? "all" : "simple";
   });
 
   useEffect(() => {
-    if (typeof window === "undefined" || !sessionId) return;
-    window.sessionStorage.setItem(VIEW_KEY_PREFIX + sessionId, view);
-  }, [view, sessionId]);
+    if (typeof window === "undefined" || noPlan) return;
+    window.sessionStorage.setItem(VIEW_KEY, view);
+  }, [view, noPlan]);
 
   const handlePrint = () => window.print();
 
@@ -153,21 +173,30 @@ export default function Results() {
     setShareOpen(true);
   };
 
+  // Services to share, in plan order when there is a plan.
+  const sharedServices = () => {
+    if (!data) return [];
+    const byId = new Map(data.matches.map((m) => [m.service.id, m.service]));
+    const ordered = data.application_order
+      .map((item) => byId.get(item.service_id))
+      .filter((svc): svc is Service => svc !== undefined);
+    return ordered.length > 0 ? ordered : data.matches.map((m) => m.service);
+  };
+
   const handleShare = async () => {
-    if (!sessionId) return;
-    const url = `${window.location.origin}/results/${sessionId}`;
-    const matchCount = data?.matches.length ?? 0;
-    const text =
-      matchCount > 0
-        ? `My Austin Service Guide plan — ${matchCount} matched service${matchCount !== 1 ? "s" : ""}.`
-        : "My Austin Service Guide plan.";
-    const shareText = `${text} This link expires within ${ttlHours} hours.`;
+    if (!data) return;
+    // There is no plan link to share: plans live only in this tab. Share
+    // catalog names, phone numbers and the public service directory.
+    const lines = sharedServices()
+      .slice(0, 5)
+      .map((svc, i) => `${i + 1}. ${svc.name}${svc.phone ? ` — ${svc.phone}` : ""}`);
+    const shareText = [`My ${appName} services:`, ...lines].join("\n");
 
     if (canNativeShare()) {
       const result = await nativeShare({
-        title: "My Austin Service Guide plan",
+        title: `My ${appName} plan`,
         text: shareText,
-        url,
+        url: `${window.location.origin}/services`,
       });
       if (result.kind === "shared" || result.kind === "cancelled") return;
       // unsupported / error → fall through to dialog
@@ -176,17 +205,19 @@ export default function Results() {
   };
 
   const handleShareSubmit = async () => {
-    if (!sessionId || !shareRecipient.trim()) return;
+    if (!data || !shareRecipient.trim()) return;
     setShareSending(true);
     try {
-      const res = await shareIntakeResults(sessionId, {
+      const res = await shareIntakeResults({
         channel: shareChannel,
         recipient: shareRecipient.trim(),
+        service_ids: sharedServices().map((svc) => svc.id),
+        language: data.language,
       });
       setSnackbar(
         res.demo
           ? `${shareChannel === "sms" ? "Text" : "Email"} queued (demo mode — no real send).`
-          : `${shareChannel === "sms" ? "Text" : "Email"} sent to ${res.to}.`,
+          : `${shareChannel === "sms" ? "Text" : "Email"} sent.`,
       );
       setShareOpen(false);
       setShareRecipient("");
@@ -202,47 +233,40 @@ export default function Results() {
   };
 
   useEffect(() => {
-    if (!sessionId) return;
-    getIntakeResults(sessionId)
+    let cancelled = false;
+    if (!hasCompletedPlan(loadIntakeState())) {
+      setNoPlan(true);
+      setLoading(false);
+      return;
+    }
+    // Hydrate from this tab's intake state (catalog data, no model call),
+    // then build the plan once if it hasn't been built yet.
+    withIntakeState(getIntakeResults)
       .then((res) => {
-        setActiveSession(sessionId);
-        if (typeof res.session_ttl_hours === "number") {
-          setTtlHours(res.session_ttl_hours);
-        }
-        setData({
-          matches: res.matches ?? [],
-          risk_flags: res.risk_flags ?? [],
-          benefits_estimate: res.benefits_estimate ?? {
-            total_monthly_value: 0,
-            total_annual_value: 0,
-            breakdown: [],
-          },
-          application_order: res.application_order ?? [],
-          plan_synthesis: res.plan_synthesis ?? "",
-          plan_ai_generated: res.plan_ai_generated ?? false,
-          language: res.language ?? "en",
-        });
+        if (cancelled) return;
+        setData(toResultsData(res));
+        setLoading(false);
+        if (!res.plan_pending) return;
+        return ensureIntakePlan(buildIntakePlan)
+          .then(() => withIntakeState(getIntakeResults))
+          .then((planned) => {
+            if (!cancelled) setData(toResultsData(planned));
+          })
+          .catch(() => undefined); // keep showing matches without an order
       })
       .catch((err) => {
-        // Sessions expire server-side (SESSION_TTL_HOURS); forget the stale
-        // id so the header stops offering a plan that no longer exists.
-        if (err instanceof ApiError && err.status === 404) {
-          clearActiveSession();
-          // The expired session can't report the TTL; ask the server so the
-          // "deleted after N hours" copy matches SESSION_TTL_HOURS.
-          return getHealth()
-            .then((health) => {
-              if (typeof health.session_ttl_hours === "number") {
-                setTtlHours(health.session_ttl_hours);
-              }
-            })
-            .catch(() => undefined)
-            .finally(() => setExpired(true));
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 422) {
+          setNoPlan(true); // stored state no longer matches the server schema
+        } else {
+          setError(err.message || "Failed to load results");
         }
-        setError(err.message || "Failed to load results");
-      })
-      .finally(() => setLoading(false));
-  }, [sessionId]);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const t = makeResultsT(data?.language ?? "en");
 
@@ -277,10 +301,8 @@ export default function Results() {
   if (error || !data) {
     return (
       <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
-        <Alert severity={expired ? "info" : "error"}>
-          {expired
-            ? t("plan_expired", { hours: ttlHours })
-            : error || t("session_not_found")}
+        <Alert severity={noPlan ? "info" : "error"}>
+          {noPlan ? t("no_plan_here") : error || t("failed_to_load")}
         </Alert>
         <Button sx={{ mt: 2 }} onClick={() => navigate("/intake")}>
           {t("start_new_intake")}
@@ -479,7 +501,7 @@ export default function Results() {
                 <PlanList
                   items={data.application_order}
                   matches={matches}
-                  sessionId={sessionId}
+                  fromPlan
                   onShowAll={() => setView("all")}
                   language={data.language}
                 />
@@ -966,7 +988,7 @@ export default function Results() {
                         <ServiceCard
                           service={match.service}
                           matchConfidence={match.match_confidence}
-                          fromSessionId={sessionId}
+                          fromPlan
                         />
                       </Grid>
                     ))}
@@ -1149,33 +1171,6 @@ export default function Results() {
             onChange={(e) => setShareRecipient(e.target.value)}
             helperText={shareChannel === "sms" ? t("phone_helper") : ""}
           />
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: -0.5 }}
-          >
-            {t("save_across_devices")}{" "}
-            <Box
-              component="a"
-              onClick={(e: React.MouseEvent) => {
-                e.preventDefault();
-                setShareOpen(false);
-                navigate(
-                  `/login?return=${encodeURIComponent(
-                    `/results/${sessionId ?? ""}`,
-                  )}`,
-                );
-              }}
-              sx={{
-                color: "primary.main",
-                fontWeight: 600,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
-            >
-              {t("sign_in")}
-            </Box>
-          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShareOpen(false)}>{t("cancel")}</Button>
