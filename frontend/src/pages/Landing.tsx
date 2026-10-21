@@ -313,8 +313,7 @@ export default function Landing() {
       {/* Hero section */}
       <Box
         sx={{
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 60%, ${theme.palette.secondary.dark} 100%)`,
+          background: (theme) => theme.palette.brand.heroGradient,
           color: "primary.contrastText",
           py: { xs: 8, md: 12 },
           px: 2,
@@ -366,7 +365,8 @@ export default function Landing() {
             onClick={() => navigate("/intake")}
             endIcon={<ArrowForwardIcon />}
             sx={{
-              bgcolor: "brand.onBrand",
+              // Inverse of the hero: the pair the theme guarantees for primary.dark.
+              bgcolor: "primary.contrastText",
               color: "primary.dark",
               fontWeight: 700,
               fontSize: "1.1rem",
@@ -374,7 +374,7 @@ export default function Landing() {
               py: 1.5,
               borderRadius: "28px",
               "&:hover": {
-                bgcolor: (theme) => alpha(theme.palette.brand.onBrand, 0.92),
+                bgcolor: (theme) => alpha(theme.palette.primary.contrastText, 0.92),
                 transform: "translateY(-1px)",
               },
               transition: "all 0.2s ease",

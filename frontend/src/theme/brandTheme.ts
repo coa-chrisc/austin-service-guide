@@ -1,7 +1,7 @@
 // MUI themes (light and dark) built from the active city config.
 //
 // Mapping (config role -> MUI):
-//   primary.main=primary, primary.dark=ink, secondary.main=accent,
+//   primary.main=primary, primary.dark=ink (shaded in dark mode, see primaryShades), secondary.main=accent,
 //   secondary.light=accentSoft, background.default=page, background.paper=surface,
 //   text.primary=body, text.secondary=muted, divider=line, error.main=negative,
 //   warning.main=warning, success.main=positiveFill, success.dark=positive,
@@ -15,7 +15,7 @@ import { createTheme, alpha, type Theme } from "@mui/material/styles";
 import type { TypographyVariantsOptions } from "@mui/material/styles";
 import { brandConfig } from "@/hooks/useBrandConfig";
 import { categoryColor, type TextStep, type ThemeColors } from "./cityConfig";
-import { mixHex, resolveTextOn, textCandidates } from "./contrast";
+import { mixHex, primaryShades, resolveTextOn, textCandidates } from "./contrast";
 import type { BrandPalette } from "./palette";
 
 const { theme: cityTheme, serviceGuide, fontStack, categorySlugs } = brandConfig;
@@ -68,6 +68,8 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
     contrastText: textOn(main),
   });
   const ink = colors.ink;
+  const primaryText = textOn(colors.primary);
+  const shades = primaryShades(colors, primaryText);
 
   const brand: BrandPalette = {
     ink,
@@ -89,7 +91,7 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
       const base = series[i % series.length];
       return pass === 0 ? base : mixHex(base, colors.surface, Math.min(0.75, 0.35 * pass));
     },
-    heroGradient: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
+    heroGradient: `linear-gradient(135deg, ${shades.hero[0]} 0%, ${shades.hero[1]} 60%, ${shades.hero[2]} 100%)`,
     category: (slug) => categoryColor(slug, categorySlugs, series, serviceGuide.categoryColors),
     textOn,
   };
@@ -117,7 +119,7 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
   return createTheme({
     palette: {
       mode,
-      primary: tone(colors.primary, { dark: ink }),
+      primary: { main: colors.primary, dark: shades.dark, contrastText: primaryText },
       secondary: tone(colors.accent, { light: colors.accentSoft }),
       background: { default: colors.page, paper: colors.surface },
       text: { primary: colors.body, secondary: colors.muted },

@@ -102,6 +102,30 @@ export function resolveTextOn(fill: string, candidates: readonly Candidate[], mi
 const WHITE = "#ffffff";
 const BLACK = "#000000";
 
+/** `from` if `text` reaches AA on it, else the smallest mix toward `to` that does (`to` if none). */
+function readableShade(from: string, to: string, text: string): string {
+  for (let step = 0; step <= 20; step++) {
+    const shade = step === 0 ? from : mixHex(from, to, step / 20);
+    if (contrastRatio(text, shade) >= AA) return shade;
+  }
+  return to;
+}
+
+/**
+ * Shades that carry primary's text color: primary.dark (MUI hover, gradient
+ * stop) and the hero gradient's stops. primary.dark is ink; in dark mode,
+ * where ink stays a dark brand color under dark text, it moves toward primary
+ * just far enough to read. The hero ends on MUI's default secondary.dark (30%
+ * toward black) when primary's text reads on it, else on a shade toward
+ * primary.dark. Every stop reaches AA under `text` when primary itself does;
+ * checkPreset fails light mode instead of shading ink.
+ */
+export function primaryShades(colors: ThemeColors, text: string) {
+  const dark = readableShade(colors.ink, colors.primary, text);
+  const heroEnd = readableShade(mixHex(colors.accent, BLACK, 0.3), dark, text);
+  return { dark, hero: [colors.primary, dark, heroEnd] as const };
+}
+
 /** `color` if it reaches AA as text on every background, else the smallest mix toward white that does. */
 function ensureText(color: string, backgrounds: readonly string[]): string {
   const passes = (c: string) => backgrounds.every((bg) => contrastRatio(c, bg) >= AA);
@@ -183,6 +207,8 @@ const fmt = (n: number) => n.toFixed(2);
  * - negative as text on surface: same resolution starting from negative itself
  *   (the value becomes palette.brand.negativeText).
  * - body and muted on page and surface, positive on surface: must pass as-is.
+ * - light mode: primary's text on ink (primary.dark) must pass; dark mode shades
+ *   it instead (primaryShades).
  */
 export function checkPreset(config: CityConfig): PresetCheck {
   const errors: string[] = [];
@@ -221,6 +247,17 @@ export function checkPreset(config: CityConfig): PresetCheck {
 
     for (const { color, roles } of textFills(colors, series, categoryColors)) {
       resolve(roles, color, candidates, "text on");
+    }
+    if (mode === "light") {
+      // Skipped when primary itself has no readable text: that error is already reported.
+      const { color: text, ok } = resolveTextOn(colors.primary, candidates);
+      const ratio = contrastRatio(text, colors.ink);
+      if (ok && ratio < AA) {
+        errors.push(
+          `text on primary ${text} on ink ${colors.ink} (primary.dark: hovers, hero) is ${fmt(ratio)}:1, ` +
+            `below ${AA}:1. Change ink or primary.`,
+        );
+      }
     }
     resolve(
       ["surface"],

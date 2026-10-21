@@ -8,6 +8,7 @@ import {
   contrastRatio,
   deriveDarkColors,
   mixHex,
+  primaryShades,
   resolveTextOn,
   textCandidates,
 } from "./contrast";
@@ -126,6 +127,11 @@ describe("failing presets", () => {
     expect(errors.some((e) => e.startsWith("[dark] muted #333333 on") && e.includes("serviceGuide.darkColors"))).toBe(true);
   });
 
+  it("errors when primary's text does not read on ink", () => {
+    const { errors } = checkPreset(withColors({ ink: "#8b8fd4" }));
+    expect(errors.some((e) => e.startsWith("text on primary #ffffff on ink #8b8fd4 (primary.dark"))).toBe(true);
+  });
+
   it("errors when positive text is too light", () => {
     const { errors } = checkPreset(withColors({ positive: "#7fd8a6" }));
     expect(errors.some((e) => e.startsWith("positive #7fd8a6 on surface"))).toBe(true);
@@ -155,6 +161,31 @@ describe("swaps never invent colors", () => {
       const fill = `#${[0, 0, 0].map(() => Math.floor(next() * 256).toString(16).padStart(2, "0")).join("")}`;
       expect(allowed.has(resolveTextOn(fill, candidates).color.toLowerCase())).toBe(true);
     }
+  });
+});
+
+describe("primaryShades", () => {
+  it.each(presetIds)("%s: primary's text reads on primary.dark and every hero stop, both modes", (id) => {
+    const preset = readPreset(id);
+    const light = preset.theme.colors;
+    const modes: [ThemeColors, ThemeColors | undefined][] = [
+      [light, undefined],
+      [deriveDarkColors(light, preset.serviceGuide?.darkColors), light],
+    ];
+    for (const [colors, fallback] of modes) {
+      const text = resolveTextOn(colors.primary, textCandidates(colors, fallback)).color;
+      const { dark, hero } = primaryShades(colors, text);
+      for (const stop of [dark, ...hero]) {
+        expect(contrastRatio(text, stop), `${text} on ${stop}`).toBeGreaterThanOrEqual(AA);
+      }
+    }
+  });
+
+  it("keeps Austin's light ink and MUI's default secondary.dark as-is", () => {
+    const colors = readPreset("austin-travis-tx").theme.colors;
+    const { dark, hero } = primaryShades(colors, "#ffffff");
+    expect(dark).toBe(colors.ink);
+    expect(hero).toEqual([colors.primary, colors.ink, mixHex(colors.accent, "#000000", 0.3)]);
   });
 });
 
