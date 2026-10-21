@@ -134,6 +134,10 @@ function startErrorMessage(err: unknown) {
   // Server and upstream error bodies are raw JSON; residents get plain copy.
   // The raw detail is already captured by the debug trace.
   if (err instanceof ApiError) {
+    // 403: this deployment has raw-audio voice turned off.
+    if (err.status === 403) {
+      return "Voice unavailable: raw-audio voice is turned off for this site. You can keep typing.";
+    }
     return err.status === 400
       ? "Voice chat isn't available right now. You can keep typing."
       : "Voice chat couldn't connect. Please try again or keep typing.";
@@ -538,6 +542,10 @@ export function useRealtimeVoiceSession({
     pcRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
+      const remote = audioRef.current.srcObject;
+      if (remote instanceof MediaStream) {
+        remote.getTracks().forEach((track) => track.stop());
+      }
       audioRef.current.srcObject = null;
       audioRef.current.remove();
       audioRef.current = null;
