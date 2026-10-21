@@ -30,7 +30,7 @@ export default function Login() {
   };
 
   const handleStaffLogin = () => {
-    loginAsStaff("staff@austintexas.gov", "admin");
+    loginAsStaff("staff@example.gov", "admin");
     navigate("/admin");
   };
 
@@ -110,7 +110,7 @@ export default function Login() {
             color="text.secondary"
             sx={{ display: "block", textAlign: "center", mt: 1.5 }}
           >
-            Staff login uses staff@austintexas.gov with admin role
+            Staff login uses staff@example.gov with admin role
           </Typography>
         </CardContent>
       </Card>
