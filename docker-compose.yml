@@ -14,6 +14,9 @@ services:
     environment:
       # Scripted fallback by default; set DEMO_MODE=false and OPENAI_API_KEY for live AI.
       DEMO_MODE: ${DEMO_MODE:-true}
+      # Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.
+      VOICE_PIPELINE_MODE: ${VOICE_PIPELINE_MODE:-intercepted_text}
+      ALLOW_RAW_AUDIO_STREAM: ${ALLOW_RAW_AUDIO_STREAM:-false}
     ports:
       - "8000:8000"
     read_only: true

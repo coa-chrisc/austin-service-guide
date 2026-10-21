@@ -8,7 +8,7 @@ This is a **demonstration application**, not a production system. The "Known gap
 
 | Asset or input | Threat | Main controls in this repository | Residual risk |
 | --- | --- | --- | --- |
-| Resident data (what a resident types or says) | Identifiers (name, SSN, address, phone) reach a model, a log, or a third party | Server keeps no intake state; deterministic redaction before storage or any model call; client pre-flight scrub; logging policy | Redaction is pattern-based and misses some identifiers. Voice audio cannot be redacted before OpenAI hears it. No OpenAI zero-data-retention agreement is in place. |
+| Resident data (what a resident types or says) | Identifiers (name, SSN, address, phone) reach a model, a log, or a third party | Server keeps no intake state; deterministic redaction before storage or any model call; client pre-flight scrub; logging policy | Redaction is pattern-based and misses some identifiers. In the opt-in `realtime_audio` voice mode, audio cannot be redacted before OpenAI hears it. Default voice depends on browser on-device recognition. No OpenAI zero-data-retention agreement is in place. |
 | Client-held intake state | A tampered or oversized state sent to the server | Strict schema with size caps, re-redaction, re-grounding, 256 KiB body limit | The state is not signed. A resident can edit their own state; the server treats it as untrusted input and never as a source of truth for catalog facts. |
 | Model output | The model invents a service, a phone number, or a plan item | Grounding gate on every service id; cards and contact details render only from catalog records | The model still writes free-text replies, plan summaries and per-item reasons. These are length-capped and redacted, but **not fact-checked**. |
 | Catalog integrity | Wrong or stale service data shown as fact | JSON Schema plus validator script | All 87 services are currently **unverified**: no `last_verified_date` or `verified_by` is recorded, and 101 locations have `hours_verified: false`. |
@@ -42,11 +42,16 @@ Name rule: names are removed after "my name is", "my name's", "me llamo" and "mi
 
 - **Server edge.** Applied to typed chat in `process_message` (`backend/app/services/ai.py`), to every message and profile string when state is rebuilt (`session_from_state`), to voice transcripts when they are synced back (`record_realtime_transcript` in `backend/app/services/realtime.py`), and to every string in the opt-in debug log (`_sanitize_debug_value` in `backend/app/services/realtime_debug.py`).
 - **Client pre-flight.** `frontend/src/lib/piiGuard.ts` (`inspectForPII`, `scrubPII`) mirrors the server rules. The chat input (`ChatInterface.tsx`) and the directory search (`ServiceDirectory.tsx`) scrub before sending and show a notice. The server still redacts independently.
-- **Parity check.** `backend/tests/fixtures/pii_cases.json` (139 cases) is run by both `backend/tests/test_pii.py` and `frontend/src/lib/piiGuard.test.ts`, which checks that both implementations give identical output.
+- **Parity check.** `backend/tests/fixtures/pii_cases.json` (160 cases) is run by both `backend/tests/test_pii.py` and `frontend/src/lib/piiGuard.test.ts`, which checks that both implementations give identical output.
 
-Limits, all real: names without a self-identification phrase ("Maria Lopez here"); addresses without a house number or street suffix; numbers spelled out in words; voice audio (see below); and sensitive situations described in plain language, which pass through on purpose because they are often the reason the resident is here. Known over-redaction: a lowercase word right after "my name is <name>" may be removed.
+Limits, all real: names without a self-identification phrase ("Maria Lopez here"); addresses without a house number or street suffix; spoken-number patterns beyond the supported phrasings (spelled-out digit runs and spoken street numbers are covered, see below; unusual phrasings can still be missed); raw voice audio in `realtime_audio` mode (see below); and sensitive situations described in plain language, which pass through on purpose because they are often the reason the resident is here. Known over-redaction: a lowercase word right after "my name is <name>" may be removed.
 
-Voice: audio goes from the browser to OpenAI over WebRTC using an ephemeral client secret. The server never sees the audio, so it cannot redact it before OpenAI hears it. Transcripts are redacted when synced back, and Realtime tracing is turned off (`"tracing": None` in `build_realtime_session_config`).
+Voice has two modes, set by `VOICE_PIPELINE_MODE` (`backend/app/config.py`). The effective mode is served by `GET /api/v1/intake/voice-config`.
+
+- **`intercepted_text` (default).** No raw audio leaves the device. The browser recognizes speech on-device (Web Speech `SpeechRecognition` with `processLocally=true`) and refuses to fall back to cloud recognition. The final transcript is scrubbed in the browser (`piiGuard.ts`), shown to the resident, and sent through the normal text path (`/api/v1/intake/message`), where the server redacts it again before any model call. Replies are spoken with on-device `speechSynthesis` voices only (`localService` voices); phone numbers, street addresses, URLs, emails and eligibility or income-threshold sentences are removed from model text before speaking, and contact details are spoken only from catalog records. Limits: on-device recognition currently needs a recent Chromium browser with the language pack installed (the resident may be offered an explicit download); other browsers get text-only, with a message telling the resident to type. The transcript still goes to OpenAI as text after redaction, with the same pattern-based limits as typed chat. Spoken-number redaction is pattern-based and can miss unusual phrasings.
+- **`realtime_audio` (opt-in).** Streams raw microphone audio to OpenAI's Realtime API over WebRTC using an ephemeral client secret. It is enabled only when `VOICE_PIPELINE_MODE=realtime_audio` AND `ALLOW_RAW_AUDIO_STREAM=true` (and live AI is on). Otherwise `realtime/client-secret`, `realtime/tool` and `realtime/transcript` return 403 before doing any work. The server never sees the audio, so it cannot redact it before OpenAI hears it. Transcripts are redacted when synced back, and Realtime tracing is turned off (`"tracing": None` in `build_realtime_session_config`). This mode is intended only for deployments with an OpenAI zero-data-retention agreement. The app does not check for or verify that agreement; it is the operator's contractual responsibility. The UI shows a "Raw audio streamed to OpenAI" badge and asks for consent before the first start in each page session.
+
+A "Clear voice session" button stops recognition or WebRTC, stops all microphone tracks, cancels speech output and clears the live transcript and voice state. It does not erase the text chat (Start over does that).
 
 ### 4. Catalog grounding
 
@@ -93,7 +98,7 @@ These are not implemented. Do not treat the demo as ready for real resident data
 
 1. **Authentication and authorization.** Staff identity (for example Entra ID) with role-based access. Today `X-Staff-Role` is read but not enforced, admin `GET` routes are open (they serve synthetic data), and the staff "login" in the console is simulated in the browser. Admin catalog writes require `X-Admin-Token` matching `ADMIN_API_TOKEN`, compared in constant time; with the token unset, writes are refused. That is a shared-secret stopgap.
 2. **Vendor agreements.** A data processing agreement with OpenAI, Twilio and SendGrid. If any data could be protected health information, a HIPAA BAA review, including which OpenAI endpoints (Responses, Realtime, transcription) a BAA would cover. Nothing in this repository makes the app HIPAA compliant.
-3. **OpenAI zero data retention.** Apply for Zero Data Retention (or the current equivalent) for the project and confirm it covers Realtime. By default OpenAI may keep API inputs and outputs for a limited time for abuse monitoring, even with `store=False`.
+3. **OpenAI zero data retention.** Apply for Zero Data Retention (or the current equivalent) for the project and confirm it covers Realtime. This is required before enabling `realtime_audio` voice, and the app cannot verify it. By default OpenAI may keep API inputs and outputs for a limited time for abuse monitoring, even with `store=False`.
 4. **Rate limiting and WAF.** None exists in the application or the templates. The intake endpoints call a paid model API, so they need request throttling and abuse protection at the edge.
 5. **Catalog verification.** `python backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) reports 0 errors, 87 unverified services and 101 locations with `hours_verified: false`. `--strict` promotes the unverified warnings to errors, so it fails until staff record verification. Until then the catalog must not be described as verified.
 6. **Privacy-office review of notices.** The wording of the AI notice, the privacy notice and the voice notice has not been reviewed by a privacy office.
@@ -131,7 +136,15 @@ Goal: catch names and addresses the regex layer cannot, without sending the text
 - A named-entity-recognition model, packaged as a container-local service, covering 10 or more languages.
 - Runs inside the deployment boundary (the city's or BCHC's VPC or VNet), with no outbound call for the text it checks.
 - Runs after the existing deterministic rules in `pii.py`, as an additional layer for names without a self-identification phrase and for addresses without a street suffix, before text reaches storage or any model.
-- Needs its own evaluation set per language before any accuracy claim is made. It would still not cover voice audio sent directly to OpenAI; that needs a separate decision (for example, a server-side voice pipeline).
+- Needs its own evaluation set per language before any accuracy claim is made. It would still not cover raw audio sent directly to OpenAI in `realtime_audio` mode; see the voice roadmap below.
+
+### Phase 2 roadmap: voice
+
+**Not implemented. None of the items below exists in this repository.**
+
+- **VPC-isolated speech models.** Open-weight or enterprise speech-to-text and text-to-speech models hosted inside the authority's own network, so recognition and synthesis work in browsers without on-device support and without audio leaving the trust boundary.
+- **Acoustic-stream PII redaction.** Detect and mask spoken identifiers in the audio itself before any audio leaves a trust boundary, rather than only redacting transcripts.
+- **Community-validated multilingual and dialect testing.** Evaluate recognition and spoken replies with low-literacy and visually impaired residents, per language and dialect, before any accuracy or accessibility claim is made.
 
 ## Reporting a vulnerability
 
