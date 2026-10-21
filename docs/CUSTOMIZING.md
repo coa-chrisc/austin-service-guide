@@ -75,7 +75,9 @@ Two more lists sit next to `colors`:
 - **`dataScale`** is exactly five colors, ordered worst to best. It is `theme.palette.brand.dataScale`, used by the admin equity, demand map and partner-gap screens.
 - **`series`** is 3 to 8 colors, available as `theme.palette.brand.series`. The admin reports use them in order. `info.main` is `series[3]` when there are four or more, otherwise `primary`. Category colors cycle through the series (see [Category colors](#category-colors)).
 
-`theme.palette.brand.heroGradient` is a 135-degree gradient from `primary` to `accent`, built for you.
+`theme.palette.brand.heroGradient` is a 135-degree gradient from `primary` through `ink` to a darker `accent` (MUI's default `secondary.dark`), built for you so that primary's text color reads on every stop. If it would not read on the darker accent, the last stop moves toward `ink` until it does.
+
+`ink` must carry primary's text color at 4.5:1, because it is the hover shade and a gradient stop; the build fails otherwise. In dark mode, where `ink` stays dark under dark text, `primary.dark` is derived from `ink` toward `primary` just far enough to read.
 
 ### The contrast rule
 
