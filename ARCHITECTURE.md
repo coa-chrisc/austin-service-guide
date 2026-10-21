@@ -12,7 +12,7 @@ This is a demonstration application. Where something is a stub or not built, thi
 | API | FastAPI, Pydantic v2 | Stateless intake endpoints, catalog and search, admin demo endpoints. Serves the built SPA in the container image (`STATIC_DIR`). |
 | Catalog | YAML files in `backend/app/data/` | 87 services plus categories, life events and crisis resources, loaded into memory at startup. The only data the server holds. |
 | OpenAI Responses API | `gpt-5.5-2026-04-23`, `store=False` | Text intake agent loop, greeting, and plan ordering. Called only from the server. |
-| OpenAI Realtime API | `gpt-realtime-2` over WebRTC | Voice intake. Audio goes directly from the browser. |
+| OpenAI Realtime API | `gpt-realtime-2` over WebRTC | Opt-in `realtime_audio` voice mode only (needs `VOICE_PIPELINE_MODE=realtime_audio` and `ALLOW_RAW_AUDIO_STREAM=true`). Audio goes directly from the browser. Not used in the default `intercepted_text` mode. |
 | Twilio / SendGrid | Optional | Send a list of catalog services by SMS or email. Stubbed when credentials are unset. |
 
 ## Data flow
@@ -44,7 +44,7 @@ flowchart LR
     OAI -->|"text + tool calls"| A
     A -->|"new IntakeState"| UI
     UI <--> SS
-    R -.->|"voice audio (NOT redacted)"| RT
+    R -.->|"raw voice audio (NOT redacted), realtime_audio mode only"| RT
     UI <-->|"WebRTC, ephemeral secret"| RT
     S -->|"mint client secret (API key only)"| RT
     UI -->|"transcript turns"| V
@@ -60,9 +60,10 @@ What crosses each arrow, and whether it is redacted:
 | API to OpenAI Responses | System instructions (with a profile snapshot), the redacted conversation, tool definitions and results (catalog data) | Yes, by `pii.py`. Redaction is pattern-based and has known limits (see PRIVACY.md). Every call uses `store=False`. |
 | OpenAI to API | Model text and tool calls | Tool-call service ids are grounded to the catalog. Model text is not fact-checked; it is redacted with the assistant rules when it re-enters through state. |
 | API to browser | Updated `IntakeState`, reply, matches | Matches and cards come from catalog records. |
-| Browser to OpenAI Realtime | Live audio and transcription | **No.** The server cannot see or redact audio. |
+| Browser to OpenAI Realtime (`realtime_audio` mode only) | Live audio and transcription | **No.** The server cannot see or redact audio. |
 | API to OpenAI Realtime | Client-secret request with session instructions and profile snapshot, using the server's API key | Instructions are built from the redacted state. No inbound request headers are forwarded. |
-| Browser to API (voice transcripts) | Transcript turns of what was said | Yes, redacted when synced (`record_realtime_transcript`). |
+| Browser to API (default `intercepted_text` voice) | The on-device transcript, sent as an ordinary `/message` text turn | Yes: scrubbed in the browser, then re-redacted by the server before any model call. No audio is sent. |
+| Browser to API (`realtime_audio` transcripts) | Transcript turns of what was said | Yes, redacted when synced (`record_realtime_transcript`). |
 | API to Twilio / SendGrid | The recipient, and a message built from catalog names, phone numbers and `/services/{slug}` links | Catalog data only. The recipient is used for that one send and is not stored. |
 
 ## Stateless request lifecycle
@@ -77,7 +78,7 @@ Every intake request follows the same steps (`backend/app/routers/intake.py`):
 6. `state_from_session` converts the result back to a bounded `IntakeState`, and the response returns it.
 7. The server keeps nothing. The browser saves the returned state to `sessionStorage` (`frontend/src/lib/session.ts`).
 
-Endpoints under `/api/v1/intake`: `personas`, `load-persona`, `start`, `message`, `results`, `plan`, `share`, `realtime/client-secret`, `realtime/tool`, `realtime/transcript`, and `realtime/debug*`. The debug endpoints return 404 unless `REALTIME_DEBUG_LOG_ENABLED` is set. `/results` makes no model call. `/plan` uses the model when live AI is on, otherwise the rules sequencer.
+Endpoints under `/api/v1/intake`: `personas`, `load-persona`, `start`, `message`, `results`, `plan`, `share`, `voice-config` (no body, no resident data; returns the effective voice `mode`, `raw_audio_allowed` and `live_ai`), `realtime/client-secret`, `realtime/tool`, `realtime/transcript`, and `realtime/debug*`. `realtime/client-secret`, `realtime/tool` and `realtime/transcript` return 403 unless raw-audio voice is enabled. The debug endpoints return 404 unless `REALTIME_DEBUG_LOG_ENABLED` is set. `/results` makes no model call. `/plan` uses the model when live AI is on, otherwise the rules sequencer.
 
 Because the backend holds no per-resident state, replicas need no session affinity and a restart loses nothing a resident needs.
 

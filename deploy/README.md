@@ -59,7 +59,8 @@ Set via environment variables (see `backend/.env.example` and `backend/app/confi
 | `PUBLIC_ORIGIN` | no | Public `https` origin used to build share links. |
 | `CORS_ORIGINS` | no | Comma-separated allowed origins. The SPA is same-origin, so set it to the public origin. |
 | `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_MAX_TOOL_ITERATIONS` | no | Model settings. |
-| `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_REASONING_EFFORT`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS` | no | Voice intake settings. |
+| `VOICE_PIPELINE_MODE`, `ALLOW_RAW_AUDIO_STREAM` | no | The templates set `intercepted_text` and `false` explicitly. `realtime_audio` streams raw microphone audio to OpenAI and works only when both are set (`realtime_audio` and `true`). Use it only under an OpenAI zero-data-retention agreement, which is the operator's contractual responsibility; the app does not verify it. |
+| `OPENAI_REALTIME_MODEL`, `OPENAI_REALTIME_REASONING_EFFORT`, `OPENAI_REALTIME_VOICE`, `OPENAI_REALTIME_TRANSCRIPTION_MODEL`, `OPENAI_REALTIME_SECRET_TTL_SECONDS` | no | Used only in `realtime_audio` mode. |
 | `REALTIME_DEBUG_LOG_ENABLED`, `REALTIME_DEBUG_LOG_PATH` | no | Keep **off** in production. The trace contains transcript previews and the root filesystem is read-only. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME` | token/key values yes | Optional notifications; stubbed when unset. |
 | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT` | `AZURE_OPENAI_KEY` yes | Legacy fallback, optional. |

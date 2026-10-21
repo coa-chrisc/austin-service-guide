@@ -164,6 +164,30 @@ export function sendIntakeMessage(
   }>("POST", "/api/v1/intake/message", { state, message, language });
 }
 
+/**
+ * How this deployment runs voice. "intercepted_text" (the default) keeps audio
+ * on the device: on-device speech-to-text, then the normal text path.
+ * "realtime_audio" streams raw audio to OpenAI's Realtime API.
+ */
+export type VoicePipelineMode = "intercepted_text" | "realtime_audio";
+
+export interface VoiceConfig {
+  /** Effective mode: "realtime_audio" only when the server allows raw audio. */
+  mode: VoicePipelineMode;
+  raw_audio_allowed: boolean;
+  live_ai: boolean;
+}
+
+/** Deployment voice settings. No body and no resident data. */
+export function getVoiceConfig() {
+  return apiRequest<VoiceConfig>(
+    "GET",
+    "/api/v1/intake/voice-config",
+    undefined,
+    { timeoutMs: 8000 },
+  );
+}
+
 export interface RealtimeClientSecretResponse {
   state: IntakeState;
   model: string;

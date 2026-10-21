@@ -114,10 +114,27 @@ def test_share_validates_recipient(client):
     assert share(channel="email", recipient="a@b.org").status_code == 200
 
 
-def test_realtime_secret_unavailable_without_key(client):
+def _enable_raw_audio_voice(monkeypatch, live_ai=True):
+    """Opt this test into the Realtime (raw-audio) endpoints.
+
+    Call after any ``_start`` / ``_say``: with live AI on, those would try
+    to reach OpenAI.
+    """
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "voice_pipeline_mode", "realtime_audio")
+    monkeypatch.setattr(settings, "allow_raw_audio_stream", True)
+    if live_ai:
+        monkeypatch.setattr(settings, "demo_mode", False)
+        monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+
+
+def test_realtime_secret_unavailable_without_key(client, monkeypatch):
     sid = _start(client)
+    _enable_raw_audio_voice(monkeypatch, live_ai=False)
     res = sid.post("realtime/client-secret")
-    assert res.status_code == 400
+    assert res.status_code == 403
     assert "sk-" not in res.text
 
 
@@ -191,8 +208,9 @@ def test_live_model_payload_never_contains_raw_identifiers(client, monkeypatch):
     assert [item["role"] for item in calls[1]["input"]] == ["assistant", "user"]
 
 
-def test_realtime_user_transcript_is_redacted(client):
+def test_realtime_user_transcript_is_redacted(client, monkeypatch):
     sid = _start(client)
+    _enable_raw_audio_voice(monkeypatch)
     res = sid.post("realtime/transcript", role="user", content=f"my number is {PHONE}")
     body = res.json()
     assert res.status_code == 200
@@ -439,8 +457,10 @@ def test_stated_household_of_two_leaves_has_children_unknown():
 
 # ── Realtime transcript results always carry the redacted text ──────────
 
-def test_realtime_early_returns_include_redacted_content(client):
+def test_realtime_early_returns_include_redacted_content(client, monkeypatch):
     sid = _start(client)
+    done = _completed_session(client)
+    _enable_raw_audio_voice(monkeypatch)
     first = sid.post("realtime/transcript", role="user", content=f"my number is {PHONE}").json()
     assert first["redacted_content"] == "my number is [phone removed]"
 
@@ -451,7 +471,6 @@ def test_realtime_early_returns_include_redacted_content(client):
     assert dup["redacted_content"] == "my number is [phone removed]"
 
     # Completed session: user turns are refused, still redacted.
-    done = _completed_session(client)
     res = done.post("realtime/transcript", role="user", content=f"ssn {SSN}").json()
     assert res["messages"] == [] and res["error"] == "session already completed"
     assert res["redacted"] == ["ssn"]
@@ -459,8 +478,9 @@ def test_realtime_early_returns_include_redacted_content(client):
     assert SSN not in repr(res)
 
 
-def test_realtime_assistant_transcript_strips_read_back_identifiers(client):
+def test_realtime_assistant_transcript_strips_read_back_identifiers(client, monkeypatch):
     sid = _start(client)
+    _enable_raw_audio_voice(monkeypatch)
     spoken = (
         f"I heard {SSN}, you don't need to share that. Call 512-972-5000, "
         "visit 1000 E 11th St, or email info@caritasofaustin.org."

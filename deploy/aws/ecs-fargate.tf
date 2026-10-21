@@ -330,6 +330,9 @@ resource "aws_ecs_task_definition" "app" {
         # Trust X-Forwarded-* only from inside the VPC (the ALB).
         { name = "FORWARDED_ALLOW_IPS", value = data.aws_vpc.this.cidr_block },
         { name = "REALTIME_DEBUG_LOG_ENABLED", value = "false" },
+        # Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.
+        { name = "VOICE_PIPELINE_MODE", value = "intercepted_text" },
+        { name = "ALLOW_RAW_AUDIO_STREAM", value = "false" },
       ]
 
       # Secret values are resolved by ECS at start; they never appear in this file or state output.

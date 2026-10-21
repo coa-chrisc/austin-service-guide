@@ -6,7 +6,7 @@ The short version:
 
 - Residents don't create accounts. The intake asks for zip code, household size, and ranges (income, insurance). It never needs a name, Social Security number, street address, phone number, date of birth, or account/member number.
 - If a resident types one of those anyway, the browser scrubs it before sending, and the backend removes it again **before** the message is kept in the conversation or sent to the AI model. The resident is told it was removed.
-- Voice is different. Audio goes straight from the browser to OpenAI, so it can't be filtered first. For voice we rely on model instructions and on removing identifiers from transcripts after the fact.
+- Voice has two modes. By default (`intercepted_text`) speech is recognized on the resident's device, no raw audio leaves it, and only the scrubbed transcript text is sent like a typed message. The opt-in `realtime_audio` mode sends raw audio straight to OpenAI, so it can't be filtered first; it is meant only for deployments with an OpenAI zero-data-retention agreement. See "Voice".
 - The opening greeting tells residents the guide uses AI from OpenAI and asks them not to share names, Social Security numbers, or account numbers. It does not call the conversation confidential.
 - The server keeps no intake sessions. The conversation, profile, matches, and plan live in the resident's own browser tab (`sessionStorage`) and are sent with each request. The server rebuilds a working copy for that one request, responds, and keeps nothing. "Start over" in the header wipes the browser copy, and closing the tab does too.
 
@@ -48,7 +48,7 @@ The notice is translated for Spanish, Vietnamese, Chinese, and Arabic.
 - **Scripted flow:** the greeting is fixed English text (`DEMO_STEPS[0]` in `app/services/scripted.py`) that contains the English notice. The rest of the scripted flow is also in English.
 - **Live AI:** the model writes the greeting in the resident's language. The greeting prompt (`_live_greeting` in `app/services/ai.py`) gives the model the translated notice and tells it to include it word for word. For languages without a translation, it tells the model to translate the English notice and keep the name "OpenAI". If the model's greeting doesn't mention OpenAI, the backend adds the notice to the end.
 
-The greeting no longer calls the conversation "confidential", because typed text is sent to OpenAI and voice audio goes to OpenAI directly. Demo persona sessions (`POST /api/v1/intake/load-persona`) open with the persona's scripted first message instead of a greeting, so they don't show this notice. They are synthetic residents for staff demos. The landing page and the chat welcome say the same thing in short form ("Uses AI (OpenAI)", don't share names or ID numbers) and make no confidentiality promise.
+The greeting no longer calls the conversation "confidential", because typed text is sent to OpenAI and, in the opt-in `realtime_audio` voice mode, voice audio goes to OpenAI directly. Demo persona sessions (`POST /api/v1/intake/load-persona`) open with the persona's scripted first message instead of a greeting, so they don't show this notice. They are synthetic residents for staff demos. The landing page and the chat welcome say the same thing in short form ("Uses AI (OpenAI)", don't share names or ID numbers) and make no confidentiality promise.
 
 ## PII redaction before the model
 
@@ -84,7 +84,7 @@ The redactor returns the cleaned text and the *types* it found (for example `["p
 
 `frontend/src/lib/piiGuard.ts` (`inspectForPII`, `scrubPII`) is a TypeScript mirror of `pii.py`'s resident rules. The chat input and the directory search scrub what the resident typed before sending it, and show a short notice listing the kinds removed (`PrivacySnackbar`). A permanent privacy notice from the brand config (`copy.privacyNotice`) sits above both boxes (`PrivacyNotice.tsx`). The backend is still the authority and redacts again, so the pre-flight is a convenience for the resident, not a control the server relies on.
 
-The two implementations are kept identical by a shared fixture, `backend/tests/fixtures/pii_cases.json` (139 cases). `backend/tests/test_pii.py` (pytest) and `frontend/src/lib/piiGuard.test.ts` (`npm test`) both run every case and check the same output. Neither side logs the raw text. The pre-flight does not apply to voice.
+The two implementations are kept identical by a shared fixture, `backend/tests/fixtures/pii_cases.json` (160 cases). `backend/tests/test_pii.py` (pytest) and `frontend/src/lib/piiGuard.test.ts` (`npm test`) both run every case and check the same output. Neither side logs the raw text. In default voice mode the browser scrubs the on-device transcript with the same guard; the pre-flight cannot apply to raw audio in `realtime_audio` mode.
 
 The voice model hears the resident directly, so it could read back a number it heard. Assistant voice transcripts are therefore redacted for SSNs, payment cards, dates of birth, ID numbers, and emails (`ASSISTANT_KINDS` in `pii.py`). Phone numbers and addresses are left in, and so are the service email addresses listed in the catalog, because the assistant reads out service contact details on purpose. A resident's phone number or address that the voice assistant repeats back is therefore **not** removed from its transcript.
 
@@ -110,7 +110,7 @@ Pattern-based redaction catches identifiers with a recognizable shape. It does *
 
 - Names that are not introduced by a self-identification phrase ("Maria Lopez here", "ask for Maria", a name typed on its own). The model is told not to ask for or repeat names.
 - Addresses without a house number or street suffix ("the blue house behind the HEB on Riverside").
-- Numbers spelled out in words ("five one two…"), which voice transcription sometimes produces.
+- Unusual phrasings of spoken numbers. Spelled-out digit runs and spoken street numbers are now covered (see "Spoken numbers"), but the rules are pattern-based and can miss phrasings they were not written for.
 - Sensitive situations described in plain language (health conditions, immigration status, abuse). These are often what the resident needs help with, so they pass through to the model on purpose.
 
 The name rule can also remove too much. After "my name is <name>", a word that is not on the rule's stop list, even a lowercase one, may be removed with the name. The rule favors removing a name over keeping a word.
@@ -125,16 +125,33 @@ Every Responses API call passes `store=False` (the installed SDK, `openai` 3.31.
 
 When live AI is off, nothing is sent to OpenAI. The scripted flow runs entirely on the server.
 
-### Voice (Realtime API)
+### Voice
 
-Voice works differently, and its protection is weaker:
+`VOICE_PIPELINE_MODE` selects the voice mode; the browser reads the effective mode from `GET /api/v1/intake/voice-config` (no body, no resident data; returns `mode`, `raw_audio_allowed` and `live_ai`).
+
+#### Default: `intercepted_text`
+
+- No raw audio leaves the device. Speech is recognized in the browser with Web Speech `SpeechRecognition` and `processLocally=true`. If the on-device language pack is downloadable, the resident is offered an explicit "Download speech pack" button. The app never starts recognition with `processLocally=false` and never falls back to cloud recognition. It records no audio and keeps no audio buffers.
+- On-device recognition currently needs a recent Chromium browser with the language pack. Other browsers, or languages with no pack available, get text-only chat and a message telling the resident to type.
+- The final transcript is scrubbed in the browser (`piiGuard.ts`), shown to the resident as the sanitized transcript, and sent through the normal stateless text path (`POST /api/v1/intake/message`). The server redacts it again (`pii.py`) before any model call, exactly as for typed text. The text then goes to OpenAI under the same terms as typed chat (see "Text chat").
+- Replies are spoken with `speechSynthesis` using only on-device voices (`localService`). If none exists for the language, the reply is text only and the UI says so. Phone numbers, street addresses, URLs, emails and eligibility or income-threshold sentences are removed from the model's text before it is spoken. Contact details are spoken only from catalog records (service name, catalog phone and address). On completion, a short summary built from catalog matches (service names) is spoken.
+- At voice start the resident hears and sees: "Welcome to the Service Guide Voice Assistant. To protect your privacy, please do not say your name, street address, phone number, or Social Security number. Simply tell me what kind of help or services you are looking for today."
+- A "Clear voice session" button stops recognition, releases the microphone, cancels speech output and clears the live transcript. It does not erase the text chat; Start over does that.
+
+#### Spoken numbers
+
+Transcribed speech often spells numbers out. `pii.py` and `piiGuard.ts` (kept identical by the shared fixture) now redact a run of seven or more digits that includes at least two spoken number words ("five one two five five five one two three four") as a phone number; a run of four to nine digits with at least one spoken word after an SSN keyword ("my social is one two three ...", "last four of my social is ...") as an SSN; and two to six spoken number words before a street suffix ("twelve oh four main street") as an address. Ordinary small numbers ("I have three kids", "two adults and one child", "about five hundred dollars a month") are left alone. The spoken rules recognize English number words only; Spanish or other spoken numbers are not yet covered. This is pattern-based redaction and can miss unusual phrasings.
+
+#### Opt-in: `realtime_audio` (Realtime API)
+
+This mode is available only when `VOICE_PIPELINE_MODE=realtime_audio` AND `ALLOW_RAW_AUDIO_STREAM=true` (and live AI is on). Otherwise the three realtime endpoints (`client-secret`, `tool`, `transcript`) return 403 before doing any work. It is intended only for deployments with an OpenAI zero-data-retention agreement. The app does not verify such an agreement; that is the operator's contractual responsibility. While it is active the UI shows a "Raw audio streamed to OpenAI" badge, and a consent dialog appears before the first start in each page session. Its protection is weaker:
 
 - The browser asks the backend for a short-lived client secret (`POST /api/v1/intake/realtime/client-secret`, which carries the browser-held state; it expires after `OPENAI_REALTIME_SECRET_TTL_SECONDS`, default 600). The real API key is never sent to the browser, and no inbound request headers are forwarded to OpenAI when the secret is minted.
 - The session instructions are built on the server. They contain the intake rules, the profile snapshot (built from the re-redacted state), and the selected scenario. They do not contain the conversation itself.
 - **Audio streams directly from the browser to OpenAI over WebRTC.** The backend never sees the audio, so it **cannot redact what the resident says before OpenAI hears it**. If a resident reads out their SSN, the voice model and OpenAI's transcription model receive it.
 - Mitigations: the voice instructions tell the model never to ask for or repeat these details and to steer back if they're offered. Resident transcripts are redacted when the browser syncs them back to the backend, so the conversation kept in the browser state and anything later sent to the text model are clean. Realtime tracing is turned off (`"tracing": None`), so sessions are not written to the OpenAI Traces dashboard.
 - The Realtime API has no `store` parameter. Retention of voice sessions follows OpenAI's API data policy for the account.
-- Typed messages: after each send, the browser replaces its local copy of what the resident typed with the redacted `user_message` the backend returns, so the chat history replayed into a voice session never contains the raw identifiers. If the send fails, the browser drops its copy of the message and shows an error, so the resident retypes it. Voice transcripts are likewise swapped for the redacted server copy once synced. If a resident transcript's sync fails, or its result arrives after voice has stopped without a redacted copy, the browser shows "[details removed]" in its place. Client debug events carry only transcript lengths, not text.
+- Typed messages: after each send, the browser replaces its local copy of what the resident typed with the redacted `user_message` the backend returns, so the chat history replayed into a voice session never contains the raw identifiers. If the send fails, the browser drops its copy of the message and shows an error, so the resident retypes it. In `realtime_audio` mode, voice transcripts are likewise swapped for the redacted server copy once synced. If a resident transcript's sync fails, or its result arrives after voice has stopped without a redacted copy, the browser shows "[details removed]" in its place. Client debug events carry only transcript lengths, not text.
 
 ## Sharing results (SMS / email)
 
@@ -168,7 +185,7 @@ This is a demo. Before it handles real residents, it needs at least:
 - **Vendor agreements.** A data processing agreement with OpenAI and the notification vendors. If any data could be protected health information, a HIPAA BAA review, including which OpenAI endpoints (Responses, Realtime, transcription) it covers.
 - **OpenAI retention settings.** By default OpenAI may keep API inputs and outputs for a limited time for abuse monitoring, even with `store=False`. Zero data retention is an organization- or project-level arrangement with OpenAI, not a request header. Apply for Zero Data Retention (or the equivalent current option) for the project, and confirm it covers Realtime.
 - **A retention policy.** The server stores no resident data today, so there is nothing to expire. If a persistent store is ever added, it must be encrypted and covered by records-retention rules. The retention that matters now is OpenAI's, Twilio's and SendGrid's, and any platform logs.
-- **Clear notice to residents before they start.** The greeting, landing page, and chat welcome say the guide uses OpenAI and what not to share, and the voice option says "Your voice is sent to OpenAI to understand you" before the microphone turns on. A real deployment should have this wording reviewed by the City's privacy office and translated with the rest of the intake screen. The brand-config privacy notice (`copy.privacyNotice`) is English-only today.
+- **Clear notice to residents before they start.** The greeting, landing page, and chat welcome say the guide uses OpenAI and what not to share, and the voice option says "Your voice is sent to OpenAI to understand you" before the microphone turns on (that wording applies to `realtime_audio` mode; the voice consent and welcome wording also needs privacy-office review). A real deployment should have this wording reviewed by the City's privacy office and translated with the rest of the intake screen. The brand-config privacy notice (`copy.privacyNotice`) is English-only today.
 - **Logging review.** Twilio/SendGrid error bodies are not logged. Still confirm no recipients, transcripts, or other upstream bodies reach production logs (including platform and load-balancer logs), and keep the debug trace off.
 - **Broader PII review.** Pattern redaction is a safety net, not a guarantee. Names without a self-identification phrase still pass. Add a review of names and other free-text identifiers if the risk assessment calls for it. A container-local multilingual NER layer is listed as future work in [SECURITY.md](../SECURITY.md).
 - **Rate limiting and WAF.** The intake endpoints call a paid model API and have neither.

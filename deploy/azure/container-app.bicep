@@ -128,6 +128,9 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'PUBLIC_ORIGIN', value: publicOrigin }
             { name: 'CORS_ORIGINS', value: publicOrigin }
             { name: 'REALTIME_DEBUG_LOG_ENABLED', value: 'false' }
+            // Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.
+            { name: 'VOICE_PIPELINE_MODE', value: 'intercepted_text' }
+            { name: 'ALLOW_RAW_AUDIO_STREAM', value: 'false' }
             // Container Apps' envoy proxy addresses are not fixed; "*" is acceptable only because
             // ingress is the sole network path to the container.
             { name: 'FORWARDED_ALLOW_IPS', value: '*' }

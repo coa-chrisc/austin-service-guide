@@ -17,6 +17,17 @@ import pytest
 
 from tests.test_intake import Intake
 
+
+def _enable_raw_audio_voice(monkeypatch):
+    from app.config import get_settings
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "voice_pipeline_mode", "realtime_audio")
+    monkeypatch.setattr(settings, "allow_raw_audio_stream", True)
+    monkeypatch.setattr(settings, "demo_mode", False)
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+
+
 SSN = "123-45-6789"
 SCRIPT = [
     "I need food and help with rent",
@@ -67,7 +78,7 @@ def _sizes(containers):
     return {key: len(value) for key, value in containers.items()}
 
 
-def test_full_intake_leaves_no_module_level_state(client):
+def test_full_intake_leaves_no_module_level_state(client, monkeypatch):
     _complete(client)  # warm any lazy, resident-independent caches
     containers = _module_containers()
     before = _sizes(containers)
@@ -76,7 +87,8 @@ def test_full_intake_leaves_no_module_level_state(client):
     intake.post("results")
     intake.post("plan")
     intake.post("results")
-    intake.post("realtime/transcript", role="user", content="hello")
+    _enable_raw_audio_voice(monkeypatch)
+    assert intake.post("realtime/transcript", role="user", content="hello").status_code == 200
     client.post("/api/v1/intake/share", json={
         "channel": "sms", "recipient": "5125551234",
         "service_ids": intake.state["matched_service_ids"],
@@ -189,7 +201,7 @@ def test_ground_service_ids_drops_unknown_and_logs_only_counts(caplog):
     assert "dropped 3" in caplog.text
 
 
-def test_tool_args_are_grounded(client):
+def test_tool_args_are_grounded(client, monkeypatch):
     from app.models import IntakeSession
     from app.services.tools import dispatch_tool
 
@@ -201,6 +213,7 @@ def test_tool_args_are_grounded(client):
     assert json.loads(good)["name"] == svc.name
 
     intake = Intake(client)
+    _enable_raw_audio_voice(monkeypatch)
     res = intake.post("realtime/tool", name="get_service_details", arguments={"slug": "invented"})
     assert res.status_code == 200 and "error" in json.loads(res.json()["output"])
 
@@ -339,7 +352,7 @@ def test_live_plan_ids_are_restricted_to_matches(client, monkeypatch):
 
 # ── (7) Resident text never reaches the logs ────────────────────────────
 
-def test_resident_text_never_logged(client, caplog):
+def test_resident_text_never_logged(client, caplog, monkeypatch):
     phrase = "zebra-marmalade-4471"
     caplog.set_level(logging.DEBUG)
     intake = Intake(client)
@@ -350,7 +363,8 @@ def test_resident_text_never_logged(client, caplog):
             break
     intake.post("results")
     intake.post("plan")
-    intake.post("realtime/transcript", role="user", content=f"also {phrase}")
+    _enable_raw_audio_voice(monkeypatch)
+    assert intake.post("realtime/transcript", role="user", content=f"also {phrase}").status_code == 200
     client.post("/api/v1/intake/share", json={
         "channel": "email", "recipient": f"{phrase}@example.org",
         "service_ids": intake.state["matched_service_ids"],

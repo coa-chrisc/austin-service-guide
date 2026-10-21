@@ -32,7 +32,7 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 ## Demo Highlights
 
 - **AI-powered intake chatbot** that can run with OpenAI's Responses API or fall back to a scripted demo flow.
-- **Realtime voice intake** using OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC, so residents can talk through their situation instead of typing.
+- **Voice intake with on-device speech recognition by default.** In the default `intercepted_text` mode, speech is recognized in the browser (no raw audio leaves the device), the transcript is PII-scrubbed in the browser and again on the server, and the reply is spoken with on-device voices. An opt-in `realtime_audio` mode streams raw audio to OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC and is meant only for deployments with an OpenAI zero-data-retention agreement.
 - **Tool-calling AI workflow** that searches services, extracts profile information, finds matches, changes language, retrieves crisis resources, and completes the intake.
 - **No-account-first, stateless resident experience** so a resident can get recommendations without signing up. The intake state lives in the browser tab, not on the server, and "Start over" clears it.
 - **Need-first navigation**: the landing page leads with need chips (food, healthcare, housing, maternal and child, financial and benefits, mental health), a ZIP select, and a language selector. Chat and voice are the secondary path.
@@ -190,13 +190,15 @@ Useful settings:
 - `OPENAI_MODEL` — model used by the Responses API (default `gpt-5.5-2026-04-23`).
 - `OPENAI_REASONING_EFFORT` — `low` / `medium` / `high` (default `medium`).
 - `OPENAI_MAX_TOOL_ITERATIONS` — safety cap on tool-call rounds per assistant turn (default `6`).
-- `OPENAI_REALTIME_MODEL` — model for the voice intake (default `gpt-realtime-2`).
+- `VOICE_PIPELINE_MODE` — `intercepted_text` (default) or `realtime_audio`. In `intercepted_text` the browser recognizes speech on-device and only scrubbed text reaches the server and model. In `realtime_audio` the browser streams raw microphone audio to OpenAI's Realtime API.
+- `ALLOW_RAW_AUDIO_STREAM` — default `false`. `realtime_audio` takes effect only when `VOICE_PIPELINE_MODE=realtime_audio` AND `ALLOW_RAW_AUDIO_STREAM=true` (and live AI is on); otherwise the server returns 403 on `/api/v1/intake/realtime/client-secret|tool|transcript`. Set it only for a deployment with an OpenAI zero-data-retention agreement; the app does not verify that agreement. The browser reads the effective mode from `GET /api/v1/intake/voice-config`.
+- `OPENAI_REALTIME_MODEL` — model for the `realtime_audio` voice mode (default `gpt-realtime-2`). The Realtime settings below apply only to that mode.
 - `OPENAI_REALTIME_REASONING_EFFORT` — reasoning effort for the voice model (default `medium`).
 - `OPENAI_REALTIME_VOICE` — Realtime voice preset (default `marin`).
 - `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-mini-transcribe`).
 - `OPENAI_REALTIME_SECRET_TTL_SECONDS` — lifetime of the ephemeral client secret returned to the browser (default `600`).
 - `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` — opt-in trace for troubleshooting realtime voice sessions. Off by default; transcripts are short but sensitive, so keep this disabled outside local debugging.
-- `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. Voice intake needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
+- `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. `realtime_audio` voice needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
 - `CORS_ORIGINS` — allowed frontend origins.
 - `PUBLIC_ORIGIN` — origin used to build the service links in SMS/email shares.
 - `ADMIN_API_TOKEN` — shared secret required in the `X-Admin-Token` header for admin catalog writes. Empty (the default) refuses all writes.
@@ -222,7 +224,7 @@ Important limitations:
 - Service data is seeded demo data, not an authoritative live APH catalog.
 - The server keeps no intake sessions; the browser tab holds the intake state, so there is nothing to recover if the tab is closed or "Start over" is used.
 - The service catalog (87 services) is demo data and **unverified**: no service records a verifier or verification date yet (`npm run validate:catalog` reports this).
-- No rate limiting or WAF. Voice audio goes straight to OpenAI and cannot be redacted first. No OpenAI zero-data-retention agreement is in place.
+- No rate limiting or WAF. Default voice keeps audio on the device, but on-device recognition needs a recent Chromium browser with the language pack (other browsers get text only). The opt-in `realtime_audio` mode sends raw audio straight to OpenAI, where it cannot be redacted first. No OpenAI zero-data-retention agreement is in place.
 - Admin authentication is simulated for demonstration.
 - Analytics and reports use demo/generated data.
 - SMS and email send paths stub successfully unless credentials are configured.

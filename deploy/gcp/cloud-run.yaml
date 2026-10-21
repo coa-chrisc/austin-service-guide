@@ -40,6 +40,11 @@ spec:
               value: https://services.example.gov
             - name: REALTIME_DEBUG_LOG_ENABLED
               value: "false"
+            # Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.
+            - name: VOICE_PIPELINE_MODE
+              value: "intercepted_text"
+            - name: ALLOW_RAW_AUDIO_STREAM
+              value: "false"
             # Cloud Run's front end sets X-Forwarded-*; ingress is the only path to the container.
             - name: FORWARDED_ALLOW_IPS
               value: "*"

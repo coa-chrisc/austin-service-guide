@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Box from "@mui/material/Box";
-import { alpha } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
@@ -9,20 +8,22 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
-import Tooltip from "@mui/material/Tooltip";
 import SendIcon from "@mui/icons-material/Send";
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
-import CallEndIcon from "@mui/icons-material/CallEnd";
 import PhoneIcon from "@mui/icons-material/Phone";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChatBubble from "./ChatBubble";
+import OnDeviceVoicePanel from "./OnDeviceVoicePanel";
+import RawAudioBadge from "./RawAudioBadge";
+import RealtimeVoicePanel from "./RealtimeVoicePanel";
+import VoiceConsentDialog from "./VoiceConsentDialog";
+import VoiceWelcome from "./VoiceWelcome";
+import { VoiceMicButton, VoiceNotices } from "./VoiceControls";
+import { useIntakeVoice } from "./useIntakeVoice";
 import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
 import { withIntakeState } from "@/lib/session";
-import { useRealtimeVoiceSession } from "@/hooks/useRealtimeVoiceSession";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import PrivacyNotice from "@/components/common/PrivacyNotice";
 import PrivacySnackbar from "@/components/common/PrivacySnackbar";
@@ -59,10 +60,17 @@ export default function ChatInterface({
   const [crisisResources, setCrisisResources] = useState<CrisisResource[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const didAutoStartVoiceRef = useRef(false);
-  const didSpeakVoiceIntroRef = useRef(false);
   const intakeKeyRef = useRef(intakeKey);
-  const voiceStopRef = useRef<() => void>(() => undefined);
+  const voiceResetRef = useRef<() => void>(() => undefined);
+  // Voice sends through the same text path; bound after handleSend below.
+  const handleSendRef = useRef<(text: string) => Promise<IntakeMessage | null>>(
+    async () => null,
+  );
+  const sendVoiceText = useCallback(
+    (text: string) => handleSendRef.current(text),
+    [],
+  );
+  const showPrivacyToast = useCallback(() => setPrivacyToast(true), []);
 
   const loadCrisisResources = useCallback(async () => {
     if (crisisDetected) return;
@@ -178,16 +186,23 @@ export default function ChatInterface({
     [loadCrisisResources],
   );
 
-  const voice = useRealtimeVoiceSession({
-    onLocalTranscript: handleVoiceLocalTranscript,
-    onLocalTranscriptReplace: handleVoiceLocalTranscriptReplace,
-    onTranscriptSync: handleVoiceTranscriptSync,
-    onToolResult: handleVoiceToolResult,
+  const voice = useIntakeVoice({
+    messages,
+    initialMode,
+    disabled: isLoading || isComplete,
+    sendText: sendVoiceText,
+    onRedacted: showPrivacyToast,
+    realtime: {
+      onLocalTranscript: handleVoiceLocalTranscript,
+      onLocalTranscriptReplace: handleVoiceLocalTranscriptReplace,
+      onTranscriptSync: handleVoiceTranscriptSync,
+      onToolResult: handleVoiceToolResult,
+    },
   });
 
   useEffect(() => {
-    voiceStopRef.current = voice.stop;
-  }, [voice.stop]);
+    voiceResetRef.current = voice.reset;
+  }, [voice.reset]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -196,10 +211,11 @@ export default function ChatInterface({
   // The streaming voice bubble grows token-by-token; smooth-scrolling each
   // delta fights the moving target and makes the bubble look herky-jerky.
   // Use instant scroll so the viewport just stays pinned to the bottom.
+  const liveVoiceText = voice.liveMessage?.content ?? "";
   useEffect(() => {
-    if (!voice.liveTranscript) return;
+    if (!liveVoiceText) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
-  }, [voice.liveTranscript]);
+  }, [liveVoiceText]);
 
   // Re-focus the input after the assistant's reply lands. The TextField is
   // disabled while isLoading is true, so a focus() call from the request's
@@ -213,10 +229,8 @@ export default function ChatInterface({
 
   useEffect(() => {
     if (intakeKeyRef.current !== intakeKey) {
-      voiceStopRef.current();
+      voiceResetRef.current();
       intakeKeyRef.current = intakeKey;
-      didAutoStartVoiceRef.current = false;
-      didSpeakVoiceIntroRef.current = false;
       const convo = initialConversation ?? [];
       setMessages(convo);
       setInputValue("");
@@ -230,49 +244,14 @@ export default function ChatInterface({
 
   useEffect(() => {
     return () => {
-      voiceStopRef.current();
+      voiceResetRef.current();
     };
   }, []);
 
-  // If voice startup fails (mic denied, network blip), unflip the "intro
-  // already spoken" guard so a retry actually replays the greeting.
-  useEffect(() => {
-    if (voice.status === "error") {
-      didSpeakVoiceIntroRef.current = false;
-    }
-  }, [voice.status]);
-
-  const estimateGreetingLockMs = useCallback((text: string) => {
-    if (!text.trim()) return 0;
-    return Math.min(8000, Math.max(2500, text.length * 45));
-  }, []);
-
-  const handleVoiceStart = useCallback(() => {
-    const language = getStoredLanguage();
-    const intro = messages.find((m) => m.role === "assistant")?.content || "";
-    const shouldSpeakIntro = !didSpeakVoiceIntroRef.current && !!intro.trim();
-    const startupMicLockMs = shouldSpeakIntro
-      ? estimateGreetingLockMs(intro)
-      : 0;
-    if (shouldSpeakIntro) didSpeakVoiceIntroRef.current = true;
-    voice.start(language, messages, {
-      speakInitialGreeting: shouldSpeakIntro,
-      startupMicLockMs,
-    });
-  }, [estimateGreetingLockMs, messages, voice.start]);
-
-  useEffect(() => {
-    if (initialMode !== "voice" || didAutoStartVoiceRef.current) return;
-    const timer = window.setTimeout(() => {
-      if (didAutoStartVoiceRef.current) return;
-      didAutoStartVoiceRef.current = true;
-      handleVoiceStart();
-    }, 100);
-    return () => window.clearTimeout(timer);
-  }, [handleVoiceStart, initialMode]);
-
-  const handleSend = async (text: string) => {
-    if (!text.trim() || isLoading || voice.isActive) return;
+  // Resolves to the assistant message it appended (reply or error), or
+  // null when nothing was sent. Voice turns reuse this path.
+  const handleSend = async (text: string): Promise<IntakeMessage | null> => {
+    if (!text.trim() || isLoading || voice.realtime.isActive) return null;
     const activeKey = intakeKey;
     // Client-side pre-flight: send only the scrubbed text. The backend still
     // redacts independently. Never log the raw text.
@@ -298,7 +277,7 @@ export default function ChatInterface({
       const { response, user_message: userMessage } = await withIntakeState(
         (state) => sendIntakeMessage(state, text.trim(), language),
       );
-      if (intakeKeyRef.current !== activeKey) return;
+      if (intakeKeyRef.current !== activeKey) return null;
       // Swap the optimistic raw copy for the stored, redacted one: this state
       // is later replayed into voice sessions. Without a stored copy, drop it.
       setMessages((prev) => [
@@ -318,8 +297,9 @@ export default function ChatInterface({
       if (response.is_complete) {
         setIsComplete(true);
       }
+      return response;
     } catch {
-      if (intakeKeyRef.current !== activeKey) return;
+      if (intakeKeyRef.current !== activeKey) return null;
       const errorMsg: IntakeMessage = {
         role: "assistant",
         content: "I'm sorry, something went wrong. Please try again.",
@@ -331,12 +311,15 @@ export default function ChatInterface({
       // The server never stored (or redacted) this message, so drop the raw
       // optimistic copy; otherwise it would be replayed into a voice session.
       setMessages((prev) => [...prev.filter((m) => m !== userMsg), errorMsg]);
+      return errorMsg;
     } finally {
       if (intakeKeyRef.current === activeKey) {
         setIsLoading(false);
       }
     }
   };
+
+  handleSendRef.current = handleSend;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -349,67 +332,9 @@ export default function ChatInterface({
     handleSend(value);
   };
 
-  const voiceLabel = (() => {
-    switch (voice.status) {
-      case "connecting":
-        return "Connecting voice";
-      case "listening":
-        return "Listening";
-      case "thinking":
-        return "Thinking";
-      case "speaking":
-        return "Assistant speaking";
-      case "finalizing":
-        return "Finalizing plan";
-      case "connected":
-        return "Voice connected";
-      case "error":
-        return "Voice unavailable";
-      default:
-        return "Start voice chat";
-    }
-  })();
-  const voicePulseColor =
-    voice.status === "speaking"
-      ? "secondary.main"
-      : voice.status === "thinking" || voice.status === "finalizing"
-        ? "warning.main"
-        : voice.status === "error"
-          ? "error.main"
-          : "primary.main";
-  const voiceBarsActive =
-    voice.status === "listening" ||
-    voice.status === "speaking" ||
-    voice.status === "thinking" ||
-    voice.status === "finalizing";
-  const voiceDetail = (() => {
-    if (voice.status === "error") {
-      return voice.error || "Voice chat is unavailable.";
-    }
-    if (voice.liveTranscript) {
-      return voice.liveTranscript;
-    }
-    switch (voice.status) {
-      case "connecting":
-        return "Opening secure voice session";
-      case "listening":
-        return "Listening now";
-      case "thinking":
-        return "Preparing response";
-      case "speaking":
-        return "Playing response";
-      case "finalizing":
-        return "Wrapping up your service plan";
-      case "connected":
-        return "Voice session active";
-      default:
-        return "";
-    }
-  })();
-  const liveTranscriptMessage: IntakeMessage | null = voice.liveTranscript
+  const liveTranscriptMessage: IntakeMessage | null = voice.liveMessage
     ? {
-        role: voice.liveTranscriptRole || "assistant",
-        content: voice.liveTranscript,
+        ...voice.liveMessage,
         suggested_buttons: [],
         progress_percent: progress,
         is_complete: false,
@@ -501,6 +426,8 @@ export default function ChatInterface({
           flexDirection: "column",
         }}
       >
+        {voice.welcomeVisible && <VoiceWelcome />}
+
         {messages.length === 0 && !isLoading && initialMode !== "voice" && (
           <Box
             sx={{
@@ -553,14 +480,14 @@ export default function ChatInterface({
               // only for the assistant turn — user bubbles should still
               // fade in normally since nothing was streaming there.
               suppressEntryAnimation={
-                voice.isActive &&
+                voice.realtime.isActive &&
                 idx === arr.length - 1 &&
                 msg.role === "assistant"
               }
             />
           ))}
 
-        {voice.isActive && liveTranscriptMessage && (
+        {liveTranscriptMessage && (
           <ChatBubble
             key="voice-live-bubble"
             message={liveTranscriptMessage}
@@ -698,291 +625,30 @@ export default function ChatInterface({
           bgcolor: "background.paper",
         }}
       >
-        {voice.isActive ? (
-          <Box
-            role="status"
-            aria-label={voiceLabel}
-            sx={(theme) => ({
-              px: { xs: 1.25, sm: 1.5 },
-              py: 1.25,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor:
-                voice.status === "error"
-                  ? alpha(theme.palette.error.main, 0.28)
-                  : alpha(theme.palette.primary.main, 0.18),
-              bgcolor: "background.paper",
-              boxShadow:
-                voice.status === "error"
-                  ? `0 4px 14px ${alpha(theme.palette.error.main, 0.08)}`
-                  : `0 4px 14px ${alpha(theme.palette.text.primary, 0.08)}`,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.25,
-              minHeight: 56,
-            })}
-          >
-            <Avatar
-              sx={(theme) => ({
-                width: 36,
-                height: 36,
-                bgcolor: voicePulseColor,
-                position: "relative",
-                flexShrink: 0,
-                boxShadow: `0 2px 8px ${alpha(theme.palette.text.primary, 0.16)}`,
-                "&::before": voice.isActive
-                  ? {
-                      content: '""',
-                      position: "absolute",
-                      inset: -6,
-                      borderRadius: "50%",
-                      border: "2px solid",
-                      borderColor: voicePulseColor,
-                      opacity: 0.28,
-                      "@media (prefers-reduced-motion: no-preference)": {
-                        animation: "voicePulse 1.8s ease-out infinite",
-                        "@keyframes voicePulse": {
-                          "0%": {
-                            transform: "scale(0.9)",
-                            opacity: 0.32,
-                          },
-                          "70%": {
-                            transform: "scale(1.28)",
-                            opacity: 0,
-                          },
-                          "100%": {
-                            transform: "scale(1.28)",
-                            opacity: 0,
-                          },
-                        },
-                      },
-                    }
-                  : undefined,
-              })}
-            >
-              {voice.isMuted ? (
-                <MicOffIcon sx={{ fontSize: 18 }} />
-              ) : (
-                <MicIcon sx={{ fontSize: 18 }} />
-              )}
-            </Avatar>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  minWidth: 0,
-                }}
-              >
-                <Box
-                  sx={(theme) => ({
-                    px: 0.75,
-                    py: 0.25,
-                    borderRadius: 1,
-                    bgcolor:
-                      voice.status === "error"
-                        ? alpha(theme.palette.error.main, 0.08)
-                        : alpha(theme.palette.primary.main, 0.08),
-                    color:
-                      voice.status === "error" ? "error.main" : "primary.dark",
-                    minWidth: 0,
-                  })}
-                >
-                  <Typography
-                    variant="caption"
-                    fontWeight={800}
-                    sx={{ display: "block", lineHeight: 1.35 }}
-                    noWrap
-                  >
-                    {voiceLabel}
-                  </Typography>
-                </Box>
-                {voiceBarsActive && (
-                  <Box
-                    aria-hidden="true"
-                    sx={(theme) => ({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "3px",
-                      height: 20,
-                      px: 0.75,
-                      borderRadius: 1,
-                      bgcolor:
-                        voice.status === "speaking"
-                          ? alpha(theme.palette.success.main, 0.08)
-                          : alpha(theme.palette.primary.main, 0.06),
-                      flexShrink: 0,
-                    })}
-                  >
-                    {[0, 1, 2, 3].map((i) => (
-                      <Box
-                        key={i}
-                        sx={{
-                          width: 3,
-                          height:
-                            voice.status === "thinking" ||
-                            voice.status === "finalizing"
-                              ? 5
-                              : 10 + (i % 2) * 5,
-                          borderRadius: 2,
-                          bgcolor: voicePulseColor,
-                          opacity:
-                            voice.status === "thinking" ||
-                            voice.status === "finalizing"
-                              ? 0.55
-                              : 0.85,
-                          "@media (prefers-reduced-motion: no-preference)": {
-                            animation:
-                              voice.status === "thinking" ||
-                              voice.status === "finalizing"
-                                ? "voiceDots 1.1s ease-in-out infinite"
-                                : "voiceWave 0.9s ease-in-out infinite",
-                            animationDelay: `${i * 0.12}s`,
-                            "@keyframes voiceWave": {
-                              "0%, 100%": { transform: "scaleY(0.55)" },
-                              "50%": { transform: "scaleY(1.35)" },
-                            },
-                            "@keyframes voiceDots": {
-                              "0%, 100%": {
-                                transform: "translateY(0)",
-                                opacity: 0.4,
-                              },
-                              "50%": {
-                                transform: "translateY(-3px)",
-                                opacity: 1,
-                              },
-                            },
-                          },
-                        }}
-                      />
-                    ))}
-                  </Box>
-                )}
-              </Box>
-              <Typography
-                variant="caption"
-                color={
-                  voice.status === "error" ? "error.main" : "text.secondary"
-                }
-                sx={{
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  mt: 0.25,
-                }}
-              >
-                {voiceDetail}
-              </Typography>
+        {voice.realtime.isActive ? (
+          <>
+            <Box sx={{ display: "flex", mb: 1 }}>
+              <RawAudioBadge />
             </Box>
-            {voice.isActive ? (
-              <>
-                <Tooltip
-                  title={
-                    voice.isMuted ? "Unmute microphone" : "Mute microphone"
-                  }
-                >
-                  <IconButton
-                    size="small"
-                    onClick={voice.toggleMute}
-                    aria-label={
-                      voice.isMuted ? "Unmute microphone" : "Mute microphone"
-                    }
-                    sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: "background.paper",
-                      width: 34,
-                      height: 34,
-                    }}
-                  >
-                    {voice.isMuted ? <MicOffIcon /> : <MicIcon />}
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="End voice chat">
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={voice.stop}
-                    aria-label="End voice chat"
-                    sx={(theme) => ({
-                      border: "1px solid",
-                      borderColor: alpha(theme.palette.error.main, 0.22),
-                      bgcolor: alpha(theme.palette.error.main, 0.06),
-                      width: 34,
-                      height: 34,
-                    })}
-                  >
-                    <CallEndIcon />
-                  </IconButton>
-                </Tooltip>
-              </>
-            ) : (
-              <Tooltip title="Try voice chat again">
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={handleVoiceStart}
-                  disabled={isLoading || isComplete}
-                  aria-label="Try voice chat again"
-                  sx={(theme) => ({
-                    border: "1px solid",
-                    borderColor: alpha(theme.palette.primary.main, 0.22),
-                    bgcolor: alpha(theme.palette.primary.main, 0.06),
-                    width: 34,
-                    height: 34,
-                  })}
-                >
-                  <MicIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
+            <RealtimeVoicePanel
+              voice={voice.realtime}
+              onRetry={voice.start}
+              retryDisabled={isLoading || isComplete}
+              onClear={voice.clear}
+            />
+          </>
+        ) : voice.local.isActive ? (
+          <OnDeviceVoicePanel
+            voice={voice.local}
+            onEnd={voice.end}
+            onClear={voice.clear}
+          />
         ) : (
           <>
-            {voice.status === "error" && (
-              <Alert severity="error" sx={{ mb: 1, borderRadius: 2 }}>
-                {voice.error ||
-                  "Voice chat couldn't start. You can keep typing or try voice again."}
-              </Alert>
-            )}
+            <VoiceNotices voice={voice} />
             <PrivacyNotice sx={{ mb: 1, borderRadius: 2 }} />
             <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-              <Tooltip
-                title={
-                  voice.status === "error"
-                    ? "Try voice chat again"
-                    : "Start voice chat"
-                }
-              >
-                <span>
-                  <IconButton
-                    color="primary"
-                    onClick={handleVoiceStart}
-                    disabled={isLoading || isComplete}
-                    aria-label={
-                      voice.status === "error"
-                        ? "Try voice chat again"
-                        : "Start voice chat"
-                    }
-                    sx={{
-                      bgcolor: "grey.100",
-                      color: "primary.main",
-                      width: 44,
-                      height: 44,
-                      "&:hover": { bgcolor: "grey.200" },
-                      "&:disabled": { bgcolor: "grey.200", color: "grey.500" },
-                    }}
-                  >
-                    {voice.status === "connecting" ? (
-                      <CircularProgress size={20} />
-                    ) : (
-                      <MicIcon sx={{ fontSize: 20 }} />
-                    )}
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <VoiceMicButton voice={voice} />
               <TextField
                 inputRef={inputRef}
                 fullWidth
@@ -1031,6 +697,11 @@ export default function ChatInterface({
           </>
         )}
       </Box>
+      <VoiceConsentDialog
+        open={voice.consentOpen}
+        onCancel={voice.cancelConsent}
+        onAgree={voice.agreeToRawAudio}
+      />
       <PrivacySnackbar
         open={privacyToast}
         onClose={() => setPrivacyToast(false)}

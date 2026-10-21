@@ -215,6 +215,26 @@ const ADDRESS_RE = py(
 );
 const PO_BOX_RE = py(String.raw`\bP\.?\s?O\.?\s*Box\s+\d+`, true);
 
+// Spoken numbers (speech-to-text transcripts). Same as pii.py.
+const SPOKEN_DIGIT = String.raw`(?:(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)\b|\d{1,4}(?!\d))`;
+const SPOKEN_RUN = String.raw`\b${SPOKEN_DIGIT}(?:[\s,-]+${SPOKEN_DIGIT})+`;
+const SSN_SPOKEN_RE = py(
+  String.raw`(?P<pre>\b(?:${SSN_KEYWORDS})\b[\s:#-]*(?:(?:is|es|was)\s+)?)(?P<val>${SPOKEN_RUN})`,
+  true,
+);
+const PHONE_SPOKEN_RE = py(SPOKEN_RUN, true);
+const SPOKEN_NUMBER_WORD =
+  String.raw`(?:zero|oh|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve` +
+  String.raw`|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty` +
+  String.raw`|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b`;
+const SPOKEN_ADDRESS_RE = py(
+  String.raw`\b${SPOKEN_NUMBER_WORD}(?:[\s-]+${SPOKEN_NUMBER_WORD}){1,5}\s+` +
+    String.raw`(?:${STREET_TOKEN}\s+){1,4}` +
+    String.raw`(?:${STREET_SUFFIXES})\b\.?` +
+    String.raw`(?:,?\s*(?:apt|apartment|unit|suite|ste|#)\.?\s*#?\s*[A-Za-z0-9-]+)?`,
+  true,
+);
+
 const NAME_LET = "A-Za-zÀ-ÖØ-öø-ÿ";
 const NAME_UP = "A-ZÀ-ÖØ-Þ";
 const NAME_LOW = "a-zß-öø-ÿ";
@@ -314,6 +334,28 @@ const isIdValue: Accept = (_match, groups) => {
   return digits >= 4 && !ZIP4_OR_PHONE_RE.test(value);
 };
 
+const DIGIT_GROUP_RE = /\p{Nd}+/gu;
+const DIGIT_WORD_RE = /[A-Za-z]+/g;
+
+// [digits, digit words] in a spoken run; each digit word is one digit.
+function spokenCounts(value: string): [number, number] {
+  const words = (value.match(DIGIT_WORD_RE) ?? []).length;
+  const digits = (value.match(DIGIT_GROUP_RE) ?? []).reduce(
+    (sum, group) => sum + Array.from(group).length,
+    0,
+  );
+  return [digits + words, words];
+}
+
+const isSpokenSsn: Accept = (_match, groups) => {
+  const [digits, words] = spokenCounts(groups?.val ?? "");
+  return digits >= 4 && digits <= 9 && words >= 1;
+};
+const isSpokenPhone: Accept = (match) => {
+  const [digits, words] = spokenCounts(match);
+  return digits >= 7 && words >= 2;
+};
+
 // Order matters and matches pii.py.
 const RULES: Array<[PiiKind, RegExp, Accept]> = [
   ["email", EMAIL_RE, always],
@@ -321,12 +363,15 @@ const RULES: Array<[PiiKind, RegExp, Accept]> = [
   ["ssn", SSN_FORMATTED_RE, always],
   ["ssn", SSN_CONTEXT_RE, always],
   ["ssn", SSN_LAST4_RE, always],
+  ["ssn", SSN_SPOKEN_RE, isSpokenSsn],
   ["dob", DOB_RE, always],
   ["id_number", ID_CONTEXT_RE, isIdValue],
   ["phone", PHONE_RE, always],
   ["phone", PHONE_LOCAL_RE, always],
+  ["phone", PHONE_SPOKEN_RE, isSpokenPhone],
   ["address", PO_BOX_RE, always],
   ["address", ADDRESS_RE, always],
+  ["address", SPOKEN_ADDRESS_RE, always],
   ["name", NAME_EXPLICIT_RE, always],
   ["name", NAME_SELF_RE, always],
 ];
