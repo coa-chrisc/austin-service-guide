@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
@@ -604,9 +605,12 @@ export default function ChatInterface({
               fontSize: "1.125rem",
               fontWeight: 700,
               minHeight: 56,
-              background: (theme) =>
-                `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-              boxShadow: "0 6px 18px rgba(0, 91, 187, 0.35)",
+              // Solid primary: text over the primary-to-accent gradient cannot reach AA at both ends.
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
+              "&:hover": { bgcolor: "primary.dark" },
+              boxShadow: (theme) =>
+                `0 6px 18px ${alpha(theme.palette.brand.ink, 0.35)}`,
             }}
           >
             See my plan
@@ -680,7 +684,7 @@ export default function ChatInterface({
                 aria-label="Send message"
                 sx={{
                   bgcolor: "primary.main",
-                  color: "white",
+                  color: "primary.contrastText",
                   width: 44,
                   height: 44,
                   "&:hover": { bgcolor: "primary.dark" },
@@ -688,7 +692,7 @@ export default function ChatInterface({
                 }}
               >
                 {isLoading ? (
-                  <CircularProgress size={20} sx={{ color: "white" }} />
+                  <CircularProgress size={20} sx={{ color: "primary.contrastText" }} />
                 ) : (
                   <SendIcon sx={{ fontSize: 20 }} />
                 )}

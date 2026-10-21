@@ -44,7 +44,8 @@ import {
   type PersonaSummary,
 } from "@/lib/api";
 import { startNewIntakeState } from "@/lib/session";
-import { useBrandConfig } from "@/hooks/useBrandConfig";
+import { alpha, type Theme } from "@mui/material/styles";
+import { brandConfig, useBrandConfig } from "@/hooks/useBrandConfig";
 import NeedNavigator from "@/components/landing/NeedNavigator";
 import type { LifeEvent } from "@/types";
 
@@ -120,6 +121,9 @@ function getIconForEvent(event: LifeEvent): React.ReactNode {
   return <SearchIcon sx={{ fontSize: 36 }} />;
 }
 
+/** Text color that reaches AA on the footer's ink (primary.dark) background. */
+const onInk = (t: Theme) => t.palette.brand.textOn(t.palette.primary.dark);
+
 const FALLBACK_EVENTS: LifeEvent[] = [
   {
     id: "1",
@@ -187,7 +191,7 @@ const FALLBACK_EVENTS: LifeEvent[] = [
   },
   {
     id: "9",
-    name: "New to Austin",
+    name: `New to ${brandConfig.region.cityName}`,
     slug: "new-to-austin",
     description: "Settling in, schools, community resources",
     icon: "immigration",
@@ -311,7 +315,7 @@ export default function Landing() {
         sx={{
           background: (theme) =>
             `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 60%, ${theme.palette.secondary.dark} 100%)`,
-          color: "white",
+          color: "primary.contrastText",
           py: { xs: 8, md: 12 },
           px: 2,
           textAlign: "center",
@@ -324,8 +328,8 @@ export default function Landing() {
             left: 0,
             right: 0,
             bottom: 0,
-            background:
-              "radial-gradient(circle at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 50%)",
+            background: (theme) =>
+              `radial-gradient(circle at 20% 80%, ${alpha(theme.palette.primary.contrastText, 0.06)} 0%, transparent 50%)`,
           },
         }}
       >
@@ -362,7 +366,7 @@ export default function Landing() {
             onClick={() => navigate("/intake")}
             endIcon={<ArrowForwardIcon />}
             sx={{
-              bgcolor: "white",
+              bgcolor: "brand.onBrand",
               color: "primary.dark",
               fontWeight: 700,
               fontSize: "1.1rem",
@@ -370,11 +374,11 @@ export default function Landing() {
               py: 1.5,
               borderRadius: "28px",
               "&:hover": {
-                bgcolor: "rgba(255,255,255,0.92)",
+                bgcolor: (theme) => alpha(theme.palette.brand.onBrand, 0.92),
                 transform: "translateY(-1px)",
               },
               transition: "all 0.2s ease",
-              boxShadow: "0 4px 14px rgba(34, 37, 78, 0.25)",
+              boxShadow: (theme) => `0 4px 14px ${alpha(theme.palette.brand.ink, 0.25)}`,
             }}
           >
             Get Started
@@ -392,7 +396,11 @@ export default function Landing() {
       {demoMode && (
         <Box
           id="demo-launcher"
-          sx={{ bgcolor: "#fff7e6", borderBottom: "1px solid #f0d8a8" }}
+          sx={(theme) => ({
+            bgcolor: alpha(theme.palette.warning.main, 0.12),
+            borderBottom: "1px solid",
+            borderColor: alpha(theme.palette.warning.main, 0.4),
+          })}
         >
           <Container maxWidth="lg" sx={{ py: 4 }}>
             <Box sx={{ mb: 2 }}>
@@ -513,14 +521,16 @@ export default function Landing() {
                     height: 96,
                     borderRadius: "50%",
                     bgcolor: "primary.main",
-                    color: "white",
+                    color: "primary.contrastText",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     mx: "auto",
                     mb: 3,
                     position: "relative",
-                    "& .MuiSvgIcon-root": { color: "white !important" },
+                    "& .MuiSvgIcon-root": {
+                      color: (theme) => `${theme.palette.primary.contrastText} !important`,
+                    },
                   }}
                 >
                   {step.icon}
@@ -533,7 +543,7 @@ export default function Landing() {
                       height: 28,
                       borderRadius: "50%",
                       bgcolor: "secondary.main",
-                      color: "white",
+                      color: "secondary.contrastText",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -561,7 +571,7 @@ export default function Landing() {
       </Container>
 
       {/* Life Events */}
-      <Box sx={{ bgcolor: "#dcf2fd33", py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: (theme) => alpha(theme.palette.brand.primarySoft, 0.2), py: { xs: 6, md: 10 } }}>
         <Container maxWidth="lg">
           <Typography
             variant="h4"
@@ -597,7 +607,7 @@ export default function Landing() {
                         height: "100%",
                         "&:hover": {
                           transform: "translateY(-3px)",
-                          boxShadow: "0 8px 24px rgba(34, 37, 78, 0.14)",
+                          boxShadow: (theme) => `0 8px 24px ${alpha(theme.palette.brand.ink, 0.14)}`,
                         },
                         transition: "transform 0.2s ease, box-shadow 0.2s ease",
                       }}
@@ -611,7 +621,7 @@ export default function Landing() {
                             width: 56,
                             height: 56,
                             borderRadius: "50%",
-                            bgcolor: "#dcf2fd",
+                            bgcolor: "brand.primarySoft",
                             color: "primary.main",
                             display: "flex",
                             alignItems: "center",
@@ -655,7 +665,7 @@ export default function Landing() {
         sx={{
           py: { xs: 6, md: 8 },
           bgcolor: "primary.main",
-          color: "white",
+          color: "primary.contrastText",
           textAlign: "center",
         }}
       >
@@ -696,11 +706,12 @@ export default function Landing() {
             left: 0,
             right: 0,
             height: 3,
-            background: "linear-gradient(90deg, #44499C 0%, #009F4D 100%)",
+            background: (theme) =>
+              `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
           },
         }}
       >
-        <Box sx={{ bgcolor: "primary.dark", color: "white", py: 5, px: 2 }}>
+        <Box sx={{ bgcolor: "primary.dark", color: onInk, py: 5, px: 2 }}>
           <Container maxWidth="lg">
             <Grid container spacing={4} alignItems="center">
               <Grid size={{ xs: 12, md: 5 }}>
@@ -743,9 +754,9 @@ export default function Landing() {
                       to={link.path}
                       underline="hover"
                       sx={{
-                        color: "rgba(255,255,255,0.8)",
+                        color: (theme) => alpha(onInk(theme), 0.8),
                         fontSize: 14,
-                        "&:hover": { color: "white" },
+                        "&:hover": { color: onInk },
                       }}
                     >
                       {link.label}
@@ -777,7 +788,8 @@ export default function Landing() {
               sx={{
                 mt: 4,
                 pt: 3,
-                borderTop: "1px solid rgba(255,255,255,0.12)",
+                borderTop: "1px solid",
+                borderColor: (theme) => alpha(onInk(theme), 0.12),
                 textAlign: "center",
               }}
             >
@@ -800,12 +812,14 @@ export default function Landing() {
                     label: `Call ${brand.serviceGuide.contact.phone311}`,
                     href: `tel:${brand.serviceGuide.contact.phone311}`,
                   },
-                ].map((l) => (
+                ]
+                  .filter((l) => l.href)
+                  .map((l) => (
                   <Link
                     key={l.label}
                     href={l.href}
                     underline="hover"
-                    sx={{ color: "rgba(255,255,255,0.8)", fontSize: 13 }}
+                    sx={{ color: (theme) => alpha(onInk(theme), 0.8), fontSize: 13 }}
                   >
                     {l.label}
                   </Link>

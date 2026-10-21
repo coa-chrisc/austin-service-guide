@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme, type Theme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -35,11 +36,17 @@ const CATEGORY_COLORS: Record<
   System: "default",
 };
 
-const FORMAT_LABEL_COLORS: Record<string, string> = {
-  PDF: "#D32F2F",
-  CSV: "#1E88E5",
-  "PDF + CSV": "#6A1B9A",
+/** Index into theme.palette.brand.series per report format. */
+const FORMAT_SERIES_INDEX: Record<string, number> = {
+  PDF: 0,
+  CSV: 1,
+  "PDF + CSV": 2,
 };
+
+function formatColor(theme: Theme, format: string): string {
+  const { series } = theme.palette.brand;
+  return series[(FORMAT_SERIES_INDEX[format] ?? 0) % series.length];
+}
 
 function formatTimestamp(iso: string) {
   if (!iso) return "Never";
@@ -75,6 +82,7 @@ function downloadCsv(report: AdminReport) {
 
 export default function AdminReports() {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -234,7 +242,7 @@ export default function AdminReports() {
                   >
                     <DescriptionIcon
                       sx={{
-                        color: FORMAT_LABEL_COLORS[report.format] ?? "#999",
+                        color: formatColor(theme, report.format),
                         mt: 0.5,
                       }}
                     />
@@ -268,9 +276,8 @@ export default function AdminReports() {
                       size="small"
                       variant="outlined"
                       sx={{
-                        borderColor:
-                          FORMAT_LABEL_COLORS[report.format] ?? "#999",
-                        color: FORMAT_LABEL_COLORS[report.format] ?? "#666",
+                        borderColor: formatColor(theme, report.format),
+                        color: "text.primary",
                         fontWeight: 600,
                       }}
                     />

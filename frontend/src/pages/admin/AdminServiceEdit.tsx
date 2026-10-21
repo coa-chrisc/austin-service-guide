@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { brandConfig } from "@/hooks/useBrandConfig";
 import { useParams, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -107,7 +108,7 @@ function emptyLocation(): ServiceLocation {
     service_id: "",
     name: "",
     address: "",
-    city: "Austin",
+    city: brandConfig.region.cityName,
     state: "TX",
     zip_code: "",
     latitude: 0,

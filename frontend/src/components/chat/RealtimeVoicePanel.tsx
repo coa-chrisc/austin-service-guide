@@ -169,7 +169,7 @@ export default function RealtimeVoicePanel({
                   ? alpha(theme.palette.error.main, 0.08)
                   : alpha(theme.palette.primary.main, 0.08),
               color:
-                voice.status === "error" ? "error.main" : "primary.dark",
+                voice.status === "error" ? "brand.negativeText" : "primary.dark",
               minWidth: 0,
             })}
           >
@@ -247,7 +247,7 @@ export default function RealtimeVoicePanel({
         <Typography
           variant="caption"
           color={
-            voice.status === "error" ? "error.main" : "text.secondary"
+            voice.status === "error" ? "brand.negativeText" : "text.secondary"
           }
           sx={{
             display: "block",

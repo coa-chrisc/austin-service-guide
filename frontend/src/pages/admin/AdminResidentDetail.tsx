@@ -36,27 +36,32 @@ const MOCK_ACTIVITY = [
     id: 1,
     text: "Completed intake session",
     date: "2026-04-22 10:30 AM",
-    color: "#4caf50",
+    color: "success.main",
   },
   {
     id: 2,
     text: "Matched with 4 services",
     date: "2026-04-22 10:32 AM",
-    color: "#2196f3",
+    color: "info.main",
   },
   {
     id: 3,
     text: 'Saved "Emergency Food Pantry"',
     date: "2026-04-21 3:15 PM",
-    color: "#ff9800",
+    color: "warning.main",
   },
   {
     id: 4,
     text: "Updated profile — added phone",
     date: "2026-04-20 9:00 AM",
-    color: "#9c27b0",
+    color: "secondary.main",
   },
-  { id: 5, text: "First login", date: "2026-04-18 2:45 PM", color: "#607d8b" },
+  {
+    id: 5,
+    text: "First login",
+    date: "2026-04-18 2:45 PM",
+    color: "text.secondary",
+  },
 ];
 
 /* -- mock household members --------------------------------------- */
@@ -72,9 +77,9 @@ function severityIcon(severity: string) {
     case "critical":
       return <ErrorIcon color="error" />;
     case "high":
-      return <WarningAmberIcon sx={{ color: "#f44336" }} />;
+      return <WarningAmberIcon sx={{ color: "error.main" }} />;
     case "medium":
-      return <WarningAmberIcon sx={{ color: "#ff9800" }} />;
+      return <WarningAmberIcon sx={{ color: "warning.main" }} />;
     default:
       return <InfoIcon color="info" />;
   }

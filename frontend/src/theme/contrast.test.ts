@@ -82,9 +82,10 @@ describe("Austin preset", () => {
   });
 
   it("logs swaps in the plan's format", () => {
-    expect(lightSwap("accent")!.message).toBe(
-      "text on accent/positiveFill/series[1] #009F4D: onBrand 3.46 -> body #1a1a1a 5.03",
-    );
+    // Category colors that share the fill are listed too, after the roles.
+    const message = lightSwap("accent")!.message;
+    expect(message).toMatch(/^text on accent\/positiveFill\/series\[1\]/);
+    expect(message).toMatch(/ #009F4D: onBrand 3\.46 -> body #1a1a1a 5\.03$/);
   });
 
   it("keeps primary and ink text on onBrand", () => {

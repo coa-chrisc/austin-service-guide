@@ -15,7 +15,7 @@ import { createTheme, alpha, type Theme } from "@mui/material/styles";
 import type { TypographyVariantsOptions } from "@mui/material/styles";
 import { brandConfig } from "@/hooks/useBrandConfig";
 import { categoryColor, type TextStep, type ThemeColors } from "./cityConfig";
-import { resolveTextOn, textCandidates } from "./contrast";
+import { mixHex, resolveTextOn, textCandidates } from "./contrast";
 import type { BrandPalette } from "./palette";
 
 const { theme: cityTheme, serviceGuide, fontStack, categorySlugs } = brandConfig;
@@ -82,6 +82,13 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
     negativeText: resolveTextOn(colors.surface, [{ role: "negative", color: colors.negative }, ...candidates]).color,
     dataScale,
     series,
+    // First pass uses the preset colors as-is; later passes are tints toward
+    // the surface so more slices than colors stay distinguishable.
+    seriesAt: (i) => {
+      const pass = Math.floor(i / series.length);
+      const base = series[i % series.length];
+      return pass === 0 ? base : mixHex(base, colors.surface, Math.min(0.75, 0.35 * pass));
+    },
     heroGradient: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.accent} 100%)`,
     category: (slug) => categoryColor(slug, categorySlugs, series, serviceGuide.categoryColors),
     textOn,

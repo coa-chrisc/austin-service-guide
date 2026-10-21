@@ -17,6 +17,8 @@ export interface BrandPalette {
   dataScale: readonly string[];
   /** Chart/compare series colors in order. */
   series: readonly string[];
+  /** series[i], cycling with lighter tints after the preset colors run out (for charts with many slices). */
+  seriesAt: (i: number) => string;
   /** CSS gradient, primary to accent. */
   heroGradient: string;
   /** Color for a service category slug: serviceGuide.categoryColors, else series cycled in categories.yaml order. */

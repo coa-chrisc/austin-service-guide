@@ -91,7 +91,7 @@ export default function OnDeviceVoicePanel({
           <Typography
             variant="caption"
             fontWeight={800}
-            color={isError ? "error.main" : "primary.dark"}
+            color={isError ? "brand.negativeText" : "primary.dark"}
             sx={{ display: "block", lineHeight: 1.35 }}
           >
             {label}
@@ -99,7 +99,7 @@ export default function OnDeviceVoicePanel({
           {detail && (
             <Typography
               variant="caption"
-              color={isError ? "error.main" : "text.secondary"}
+              color={isError ? "brand.negativeText" : "text.secondary"}
               sx={{ display: "block", mt: 0.25 }}
             >
               {detail}

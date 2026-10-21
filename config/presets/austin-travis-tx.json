@@ -104,6 +104,29 @@
     },
     "extraFontPackages": [
       "@fontsource/noto-sans"
-    ]
+    ],
+    "categoryColors": {
+      "food": "#FF8F00",
+      "healthcare": "#F83125",
+      "housing": "#009F4D",
+      "employment": "#44499C",
+      "education": "#009CDE",
+      "legal": "#8F5201",
+      "transportation": "#636262",
+      "childcare": "#FFC600",
+      "utilities": "#22254E",
+      "senior": "#005027",
+      "disability": "#9F3CC9",
+      "veterans": "#22254E",
+      "immigration": "#005027",
+      "emergency": "#F83125",
+      "mental_health": "#9F3CC9",
+      "cooling": "#009CDE",
+      "schools": "#44499C",
+      "refugee": "#005027",
+      "smoking_cessation": "#9F3CC9",
+      "nutrition": "#009F4D",
+      "physical_activity": "#FF8F00"
+    }
   }
 }
