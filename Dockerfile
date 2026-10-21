@@ -1,15 +1,20 @@
 # syntax=docker/dockerfile:1
 # Single production image: React SPA (built in stage 1) served by FastAPI (stage 2).
-# Build context must be the repo root and include config/ (brand presets).
+# Build context must be the repo root and include config/ (city config, presets, logos).
+# Pick a city with --build-arg CITY_CONFIG=presets/<id>.json (or the CITY_PRESET=<id> alias).
 
 # ── Stage 1: build the frontend ──────────────────────────────────────
 FROM node:22-slim AS frontend
 WORKDIR /build
+ARG CITY_CONFIG=
 ARG CITY_PRESET=
-ENV CITY_PRESET=${CITY_PRESET}
+ENV CITY_CONFIG=${CITY_CONFIG} \
+    CITY_PRESET=${CITY_PRESET}
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
 COPY config/ config/
+# Category order for palette.brand.category (read by the frontend build).
+COPY backend/app/data/categories.yaml backend/app/data/categories.yaml
 COPY frontend/ frontend/
 RUN cd frontend && npm run build
 

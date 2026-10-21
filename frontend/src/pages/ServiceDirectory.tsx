@@ -153,7 +153,7 @@ export default function ServiceDirectory() {
         Service Directory
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Browse all available services across {brand.cityName}
+        Browse all available services across {brand.region.cityName}
       </Typography>
 
       {/* Search and filters */}

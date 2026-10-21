@@ -339,7 +339,7 @@ export default function Landing() {
               lineHeight: 1.2,
             }}
           >
-            {brand.copy.tagline}
+            {brand.serviceGuide.copy.tagline}
           </Typography>
           <Typography
             variant="h6"
@@ -354,7 +354,7 @@ export default function Landing() {
             }}
           >
             Answer a few simple questions and our AI will match you with city,
-            county, state, and nonprofit services across {brand.cityName}.
+            county, state, and nonprofit services across {brand.region.cityName}.
           </Typography>
           <Button
             variant="contained"
@@ -706,8 +706,8 @@ export default function Landing() {
               <Grid size={{ xs: 12, md: 5 }}>
                 <Box
                   component="img"
-                  src={brand.logo.src}
-                  alt={brand.logo.alt}
+                  src={brand.logoSrc}
+                  alt={brand.agency.name}
                   sx={{
                     height: 40,
                     width: "auto",
@@ -719,7 +719,7 @@ export default function Landing() {
                   variant="body2"
                   sx={{ opacity: 0.7, maxWidth: 320 }}
                 >
-                  Connecting {brand.cityName} residents to the services they need through
+                  Connecting {brand.region.cityName} residents to the services they need through
                   AI-powered guidance.
                 </Typography>
               </Grid>
@@ -782,7 +782,7 @@ export default function Landing() {
               }}
             >
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                {brand.copy.footerDisclaimer}
+                {brand.serviceGuide.copy.footerDisclaimer}
               </Typography>
               <Box
                 sx={{
@@ -794,11 +794,11 @@ export default function Landing() {
                 }}
               >
                 {[
-                  { label: brand.agencyName, href: brand.contact.agencyWebsite },
-                  { label: "Accessibility", href: brand.contact.accessibilityUrl },
+                  { label: brand.agency.name, href: brand.serviceGuide.contact.agencyWebsite },
+                  { label: "Accessibility", href: brand.serviceGuide.contact.accessibilityUrl },
                   {
-                    label: `Call ${brand.contact.phone311}`,
-                    href: `tel:${brand.contact.phone311}`,
+                    label: `Call ${brand.serviceGuide.contact.phone311}`,
+                    href: `tel:${brand.serviceGuide.contact.phone311}`,
                   },
                 ].map((l) => (
                   <Link

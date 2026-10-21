@@ -132,8 +132,8 @@ export default function Header() {
           >
             <Box
               component="img"
-              src={brand.logo.src}
-              alt={brand.logo.alt}
+              src={brand.logoSrc}
+              alt={brand.agency.name}
               sx={{
                 height: { xs: 32, sm: 36 },
                 width: "auto",
@@ -332,8 +332,8 @@ export default function Header() {
         <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
           <Box
             component="img"
-            src={brand.logo.src}
-            alt={brand.logo.alt}
+            src={brand.logoSrc}
+            alt={brand.agency.name}
             sx={{ height: 32, width: "auto" }}
           />
         </Box>
