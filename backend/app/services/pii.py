@@ -162,6 +162,37 @@ _ADDRESS_RE = re.compile(
 )
 _PO_BOX_RE = re.compile(r"\bP\.?\s?O\.?\s*Box\s+\d+", re.IGNORECASE)
 
+# ── Spoken numbers (speech-to-text transcripts) ──────────────────────
+# Dictated identifiers arrive as words ("five one two ...") or a mix of words
+# and digits. A run is any sequence of digit words / short digit groups;
+# whether it is redacted is decided by counting digits in ``_spoken_*``
+# below, so ordinary counts ("I have three kids", "two adults and one
+# child") never qualify. Separators and tokens share no characters, so the
+# run never backtracks into itself.
+_SPOKEN_DIGIT = r"(?:(?:zero|oh|one|two|three|four|five|six|seven|eight|nine)\b|\d{1,4}(?!\d))"
+_SPOKEN_RUN = rf"\b{_SPOKEN_DIGIT}(?:[\s,-]+{_SPOKEN_DIGIT})+"
+# "my social is one two three ..." (and "last four of my social is ...").
+_SSN_SPOKEN_RE = re.compile(
+    rf"(?P<pre>\b(?:{_SSN_KEYWORDS})\b[\s:#-]*(?:(?:is|es|was)\s+)?)(?P<val>{_SPOKEN_RUN})",
+    re.IGNORECASE,
+)
+_PHONE_SPOKEN_RE = re.compile(_SPOKEN_RUN, re.IGNORECASE)
+# "twelve oh four Main Street": two to six number words before the same
+# street tokens and suffixes as ``_ADDRESS_RE``. One spoken number word is
+# not enough ("one long road"). The bounded word run keeps it linear.
+_SPOKEN_NUMBER_WORD = (
+    r"(?:zero|oh|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve"
+    r"|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty"
+    r"|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)\b"
+)
+_SPOKEN_ADDRESS_RE = re.compile(
+    rf"\b{_SPOKEN_NUMBER_WORD}(?:[\s-]+{_SPOKEN_NUMBER_WORD}){{1,5}}\s+"
+    rf"(?:{_STREET_TOKEN}\s+){{1,4}}"
+    rf"(?:{_STREET_SUFFIXES})\b\.?"
+    r"(?:,?\s*(?:apt|apartment|unit|suite|ste|#)\.?\s*#?\s*[A-Za-z0-9-]+)?",
+    re.IGNORECASE,
+)
+
 # Names are only removed right after an explicit self-identification phrase.
 # Name tokens are case-sensitive on purpose, so only the phrases use ``(?i:``.
 _NAME_LET = "A-Za-zÀ-ÖØ-öø-ÿ"
@@ -267,6 +298,32 @@ def _always(_: re.Match[str]) -> bool:
     return True
 
 
+_DIGIT_GROUP_RE = re.compile(r"\d+")
+_DIGIT_WORD_RE = re.compile(r"[A-Za-z]+")
+
+
+def _spoken_counts(value: str) -> tuple[int, int]:
+    """(digits, digit words) in a spoken run; each digit word is one digit."""
+    words = len(_DIGIT_WORD_RE.findall(value))
+    digits = sum(len(group) for group in _DIGIT_GROUP_RE.findall(value))
+    return digits + words, words
+
+
+def _is_spoken_ssn(match: re.Match[str]) -> bool:
+    # Keyword-anchored, so a "last four" is enough. At least one spoken word
+    # and at most nine digits, so "Social Security: 1 800 772 1213" (a phone
+    # number the assistant may read out) is left to the phone rules.
+    digits, words = _spoken_counts(match.group("val"))
+    return 4 <= digits <= 9 and words >= 1
+
+
+def _is_spoken_phone(match: re.Match[str]) -> bool:
+    # At least two spoken digit words, so all-numeral runs such as
+    # "1988-03-15" or "2023 2024" stay with the numeric rules.
+    digits, words = _spoken_counts(match.group(0))
+    return digits >= 7 and words >= 2
+
+
 # (type, pattern, accept-predicate). Order matters: longer / more specific
 # shapes run first so e.g. a card number is not half-eaten by the phone rule.
 _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str]], bool]]] = [
@@ -275,12 +332,15 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str]], bool]]] = [
     ("ssn", _SSN_FORMATTED_RE, _always),
     ("ssn", _SSN_CONTEXT_RE, _always),
     ("ssn", _SSN_LAST4_RE, _always),
+    ("ssn", _SSN_SPOKEN_RE, _is_spoken_ssn),
     ("dob", _DOB_RE, _always),
     ("id_number", _ID_CONTEXT_RE, _is_id_value),
     ("phone", _PHONE_RE, _always),
     ("phone", _PHONE_LOCAL_RE, _always),
+    ("phone", _PHONE_SPOKEN_RE, _is_spoken_phone),
     ("address", _PO_BOX_RE, _always),
     ("address", _ADDRESS_RE, _always),
+    ("address", _SPOKEN_ADDRESS_RE, _always),
     ("name", _NAME_EXPLICIT_RE, _always),
     ("name", _NAME_SELF_RE, _always),
 ]

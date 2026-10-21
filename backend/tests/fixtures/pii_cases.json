@@ -868,5 +868,132 @@
     "kinds": [
       "name"
     ]
+  },
+  {
+    "input": "my number is five one two five five five zero one nine nine",
+    "expected": "my number is [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "Call me at Five One Two, five five five, oh one nine nine.",
+    "expected": "Call me at [phone removed].",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "you can reach me at 512 five five five 0199",
+    "expected": "you can reach me at [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "text me at five-one-two five-five-five one-two-three-four",
+    "expected": "text me at [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "my social security number is one two three four five six seven eight nine",
+    "expected": "my social security number is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "my SSN is one two three 45 6789",
+    "expected": "my SSN is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "last four of my social is one two three four",
+    "expected": "last four of my social is [SSN removed]",
+    "kinds": [
+      "ssn"
+    ]
+  },
+  {
+    "input": "Social Security: 1 800 772 1213",
+    "expected": "Social Security: [phone removed]",
+    "kinds": [
+      "phone"
+    ]
+  },
+  {
+    "input": "I live at twelve oh four Main Street",
+    "expected": "I live at [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "we're at forty five hundred south Congress Avenue apartment two",
+    "expected": "we're at [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "six oh one West Oak Court",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "I have three kids",
+    "expected": "I have three kids",
+    "kinds": []
+  },
+  {
+    "input": "two adults and one child",
+    "expected": "two adults and one child",
+    "kinds": []
+  },
+  {
+    "input": "about five hundred dollars a month",
+    "expected": "about five hundred dollars a month",
+    "kinds": []
+  },
+  {
+    "input": "we've been here two or three months",
+    "expected": "we've been here two or three months",
+    "kinds": []
+  },
+  {
+    "input": "twenty two years on the street",
+    "expected": "twenty two years on the street",
+    "kinds": []
+  },
+  {
+    "input": "one long road",
+    "expected": "one long road",
+    "kinds": []
+  },
+  {
+    "input": "Oh, 2023 2024 were hard",
+    "expected": "Oh, 2023 2024 were hard",
+    "kinds": []
+  },
+  {
+    "input": "my kids are five and seven, and I'm thirty two",
+    "expected": "my kids are five and seven, and I'm thirty two",
+    "kinds": []
+  },
+  {
+    "input": "household of four, two kids, one two bedroom apartment",
+    "expected": "household of four, two kids, one two bedroom apartment",
+    "kinds": []
+  },
+  {
+    "input": "one two three four five six",
+    "expected": "one two three four five six",
+    "kinds": []
   }
 ]
