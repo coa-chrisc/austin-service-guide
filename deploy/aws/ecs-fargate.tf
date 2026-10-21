@@ -67,7 +67,7 @@ variable "admin_api_token_secret_arn" {
 
 variable "public_origin" {
   type        = string
-  description = "Public https origin used for share links, e.g. https://services.example.gov."
+  description = "Public https origin used for service links in SMS/email shares, e.g. https://services.example.gov."
 }
 
 variable "demo_mode" {

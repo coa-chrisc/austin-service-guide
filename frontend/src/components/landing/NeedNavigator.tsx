@@ -83,7 +83,7 @@ export default function NeedNavigator() {
           }}
         >
           {zips.length > 0 && (
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel id="need-nav-zip-label">ZIP code (optional)</InputLabel>
               <Select
                 labelId="need-nav-zip-label"

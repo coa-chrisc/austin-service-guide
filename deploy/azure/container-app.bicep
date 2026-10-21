@@ -21,7 +21,7 @@ param registryServer string = ''
 @description('Versionless or versioned Key Vault secret URI holding the OpenAI API key.')
 param openAiKeySecretUri string
 
-@description('Public https origin used for share links, e.g. https://services.example.gov')
+@description('Public https origin used for service links in SMS/email shares, e.g. https://services.example.gov')
 param publicOrigin string
 
 param demoMode bool = false
