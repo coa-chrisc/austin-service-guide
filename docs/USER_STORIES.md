@@ -753,7 +753,7 @@ so that I can deploy it for my city without modifying code.
 
 Acceptance Criteria:
 
-- All branding (colors, logo, name, tagline, typography) driven by `brand.config.json` (per civic-ai-starter pattern)
+- All branding (colors, logo, name, tagline, typography) driven by `config/city.config.json` (per civic-ai-starter pattern)
 - Theme switching works for the full application including intake, results, map, and admin console
 - Dark mode derived from brand config or configured explicitly
 
