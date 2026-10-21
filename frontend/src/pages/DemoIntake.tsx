@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -80,7 +80,6 @@ function TypingIndicator() {
 export default function DemoIntake() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sessionId = "" } = useParams<{ sessionId: string }>();
   const state = location.state as DemoState | null;
 
   const fullSequence = useMemo<IntakeMessage[]>(() => {
@@ -131,7 +130,7 @@ export default function DemoIntake() {
   useEffect(() => {
     if (!state || fullSequence.length === 0) {
       // No state — user navigated directly. Skip straight to results.
-      navigate(`/results/${sessionId}`, { replace: true });
+      navigate("/results", { replace: true });
       return;
     }
 
@@ -176,7 +175,7 @@ export default function DemoIntake() {
   };
 
   const handleViewPlan = () => {
-    navigate(`/results/${sessionId}`);
+    navigate("/results");
   };
 
   if (!state) return null;

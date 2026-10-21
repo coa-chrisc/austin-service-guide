@@ -13,19 +13,21 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import MicIcon from "@mui/icons-material/Mic";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatInterface from "@/components/chat/ChatInterface";
-import { startIntake, getIntakePlanSummary } from "@/lib/api";
+import { buildIntakePlan, startIntake } from "@/lib/api";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import {
-  getActiveSession,
-  setActiveSession,
-  clearActiveSession,
+  clearIntakeState,
+  ensureIntakePlan,
+  hasCompletedPlan,
+  loadIntakeState,
+  startNewIntakeState,
 } from "@/lib/session";
-import type { IntakeSession } from "@/types";
+import type { IntakeMessage } from "@/types";
 
 type IntakeMode = "text" | "voice";
 type Phase = "checking" | "choosing" | "recovering" | "starting" | "ready";
 
-// Mirrors backend `_canonical_life_event_slug` in app/services/ai.py.
+// Mirrors backend `canonical_life_event_slug` in app/services/life_events.py.
 // Keep these in sync; the backend is the source of truth for canonical slugs.
 const LIFE_EVENT_ALIASES: Record<string, string> = {
   "job-loss": "lost-job",
@@ -139,10 +141,13 @@ function eventCopy(event?: string) {
 export default function Intake() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [session, setSession] = useState<IntakeSession | null>(null);
+  // The chat to show; `key` changes whenever a different intake starts.
+  const [intake, setIntake] = useState<{
+    key: number;
+    conversation: IntakeMessage[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("checking");
-  const [recoveredId, setRecoveredId] = useState<string | null>(null);
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [confirmStartOver, setConfirmStartOver] = useState(false);
   const [selectedMode, setSelectedMode] = useState<IntakeMode>("text");
@@ -172,30 +177,21 @@ export default function Intake() {
       return;
     }
 
-    const existing = getActiveSession();
-    if (existing) {
-      setPhase("checking");
-      setPlanSummary(null);
-      getIntakePlanSummary(existing)
-        .then((res) => {
-          if (intakeRequestIdRef.current !== requestId) return;
-          if (res.status === "completed" && res.match_count > 0) {
-            setRecoveredId(existing);
-            setPlanSummary(res.summary);
-            setPhase("recovering");
-            return;
-          }
-          clearActiveSession();
-          setPhase("choosing");
-        })
-        .catch(() => {
-          if (intakeRequestIdRef.current !== requestId) return;
-          clearActiveSession();
-          setPhase("choosing");
-        });
-    } else {
-      setPhase("choosing");
+    // The intake lives in this tab's sessionStorage: offer the finished
+    // plan, or pick an unfinished conversation back up.
+    const existing = loadIntakeState();
+    if (existing && hasCompletedPlan(existing)) {
+      setPlanSummary(existing.plan?.summary || null);
+      setPhase("recovering");
+      return;
     }
+    if (existing && existing.status === "in_progress") {
+      setIntake({ key: requestId, conversation: existing.conversation });
+      setPhase("ready");
+      return;
+    }
+    if (existing) clearIntakeState();
+    setPhase("choosing");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -208,9 +204,10 @@ export default function Intake() {
     setPhase("starting");
     const language = getStoredLanguage();
     startIntake(language, lifeEvent, focus, mode)
-      .then((s) => {
+      .then((res) => {
         if (intakeRequestIdRef.current !== requestId) return;
-        setSession(s);
+        startNewIntakeState(res.state);
+        setIntake({ key: requestId, conversation: res.state.conversation });
         setPhase("ready");
       })
       .catch((err) => {
@@ -230,28 +227,27 @@ export default function Intake() {
       });
   };
 
-  const handleComplete = (sessionId: string) => {
-    setActiveSession(sessionId);
-    navigate(`/results/${sessionId}`);
+  const handleComplete = () => {
+    // Start building the plan now; the results page waits on the same request.
+    void ensureIntakePlan(buildIntakePlan).catch(() => undefined);
+    navigate("/results");
   };
 
-  const handleResumePlan = () => {
-    if (recoveredId) navigate(`/results/${recoveredId}`);
-  };
+  const handleResumePlan = () => navigate("/results");
 
   const handleStartOver = () => {
     if (!confirmStartOver) {
       setConfirmStartOver(true);
       return;
     }
-    clearActiveSession();
-    setRecoveredId(null);
+    clearIntakeState();
+    setPlanSummary(null);
     setConfirmStartOver(false);
     intakeRequestIdRef.current += 1;
     setPhase("choosing");
   };
 
-  if (phase === "recovering" && recoveredId) {
+  if (phase === "recovering") {
     return (
       <Box
         sx={{
@@ -291,8 +287,8 @@ export default function Intake() {
               color="text.secondary"
               sx={{ mb: planSummary ? 1.5 : 3, lineHeight: 1.6 }}
             >
-              You have a saved service plan. Pick up where you left off, or
-              start a fresh conversation.
+              You made a service plan earlier in this browser tab. Pick up
+              where you left off, or start a fresh conversation.
             </Typography>
             {planSummary && (
               <Box
@@ -315,7 +311,7 @@ export default function Intake() {
             )}
             {confirmStartOver && (
               <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-                This will clear your saved plan. Are you sure?
+                This will clear your plan from this tab. Are you sure?
               </Alert>
             )}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -512,12 +508,13 @@ export default function Intake() {
     );
   }
 
-  if (!session) return null;
+  if (!intake) return null;
 
   return (
     <Box sx={{ height: "calc(100vh - 64px)" }}>
       <ChatInterface
-        session={session}
+        intakeKey={intake.key}
+        initialConversation={intake.conversation}
         initialMode={selectedMode}
         onComplete={handleComplete}
       />

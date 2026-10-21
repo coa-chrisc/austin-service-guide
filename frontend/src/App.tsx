@@ -63,12 +63,14 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/intake" element={<Intake />} />
-                <Route path="/results/:sessionId" element={<Results />} />
+                <Route path="/results" element={<Results />} />
+                {/* Old share links: the plan now lives only in the tab that made it. */}
+                <Route path="/results/*" element={<Results />} />
                 <Route path="/services" element={<ServiceDirectory />} />
                 <Route path="/services/:slug" element={<ServiceDetail />} />
                 <Route path="/map" element={<MapView />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/demo/:sessionId" element={<DemoIntake />} />
+                <Route path="/demo" element={<DemoIntake />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Box>

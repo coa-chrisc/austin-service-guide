@@ -21,14 +21,15 @@ import CloseIcon from "@mui/icons-material/Close";
 import ServiceMap, {
   getCategoryDisplayName,
 } from "@/components/map/ServiceMap";
-import { getMapPins, getIntakeResults } from "@/lib/api";
+import { getMapPins } from "@/lib/api";
+import { hasCompletedPlan, loadIntakeState } from "@/lib/session";
 import type { MapPin } from "@/types";
 
 export default function MapView() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("session");
+  const fromPlan = searchParams.get("plan") === "1";
   const [pins, setPins] = useState<MapPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export default function MapView() {
   const [planServiceIds, setPlanServiceIds] = useState<Set<string> | null>(
     null,
   );
-  const [showOnlyPlan, setShowOnlyPlan] = useState<boolean>(!!sessionId);
+  const [showOnlyPlan, setShowOnlyPlan] = useState<boolean>(fromPlan);
 
   useEffect(() => {
     getMapPins()
@@ -47,32 +48,19 @@ export default function MapView() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Plan services come from this tab's intake state; pins are catalog data.
   useEffect(() => {
-    if (!sessionId) {
+    const state = loadIntakeState();
+    if (!fromPlan || !state || !hasCompletedPlan(state)) {
       setPlanServiceIds(null);
+      setShowOnlyPlan(false);
       return;
     }
-    let cancelled = false;
-    getIntakeResults(sessionId)
-      .then((res) => {
-        if (cancelled) return;
-        const ids = new Set(res.application_order.map((i) => i.service_id));
-        if (ids.size === 0) {
-          setPlanServiceIds(null);
-          setShowOnlyPlan(false);
-          return;
-        }
-        setPlanServiceIds(ids);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setPlanServiceIds(null);
-        setShowOnlyPlan(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId]);
+    const ids = state.plan?.items.length
+      ? state.plan.items.map((i) => i.service_id)
+      : state.matched_service_ids;
+    setPlanServiceIds(new Set(ids));
+  }, [fromPlan]);
 
   const categories = useMemo(() => {
     const cats = new Set(pins.map((p) => p.category));

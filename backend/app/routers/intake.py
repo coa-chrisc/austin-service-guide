@@ -1,7 +1,14 @@
-"""Intake conversation router."""
+"""Intake conversation router.
+
+Stateless: the browser holds the intake state (``IntakeState``) in
+sessionStorage and sends it with every request; each endpoint rebuilds a
+working session from it, does its work, and returns the updated state. The
+server keeps nothing between requests.
+"""
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from typing import Any, Literal
@@ -11,58 +18,71 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.config import get_settings
-from app.models import IntakeMessageRequest, IntakeStartRequest, ResidentProfile
-from app.services.ai import (
+from app.models import (
+    MAX_MATCHED_IDS,
+    IntakeMessageRequest,
+    IntakeSession,
+    IntakeStartRequest,
+    IntakeState,
+    IntakeStatus,
+)
+from app.services import catalog
+from app.services.ai import process_message, start_persona_session, start_session
+from app.services.grounding import ground_service_ids
+from app.services.i18n import (
+    PLAN_SUMMARY_I18N,
+    translate_match_reasoning,
+    translate_risk_flag,
+    translate_sequence_reason,
+    translate_service_description,
+)
+from app.services.intake_state import normalize_language, session_from_state, state_from_session
+from app.services.matching import calculate_benefits
+from app.services.notify import send_email, send_sms
+from app.services.personas import get_persona, list_personas
+from app.services.plan import build_application_order
+from app.services.realtime import (
     build_realtime_session_config,
     execute_realtime_tool,
-    generate_plan_summary,
+    record_realtime_transcript,
+)
+from app.services.realtime_debug import (
     get_realtime_debug_events,
     get_realtime_debug_sessions,
-    get_application_order,
-    get_session,
-    process_message,
     record_realtime_debug_event,
-    record_realtime_transcript,
-    start_persona_session,
-    start_session,
 )
-from app.services.notify import send_email, send_sms
-from app.services.pii import redact
-from app.services.personas import list_personas
 
 router = APIRouter(prefix="/api/v1/intake", tags=["intake"])
 
 # Upper bound on one client debug event's serialized ``detail``.
 _MAX_DEBUG_DETAIL_CHARS = 32_000
-
-
-def _profile_debug_snapshot(profile: ResidentProfile | None) -> dict[str, Any] | None:
-    if profile is None:
-        return None
-    return {
-        "zip_code": profile.zip_code,
-        "housing_situation": profile.housing_situation,
-        "household_size": profile.household_size,
-        "employment_status": profile.employment_status,
-        "income_bracket": profile.income_bracket,
-        "insurance_status": profile.insurance_status,
-        "has_children": profile.has_children,
-        "veteran_status": profile.veteran_status,
-        "has_disability": profile.has_disability,
-        "immediate_needs": profile.immediate_needs,
-        "languages_spoken": profile.languages_spoken,
-        "crisis_indicators": profile.crisis_indicators,
-    }
-
+# Random per-voice-session id the browser generates for the opt-in debug log.
+_TRACE_ID_PATTERN = r"^[A-Za-z0-9_-]{0,80}$"
+# Services listed in a share message.
+_MAX_SHARED_SERVICES = 8
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _PHONE_RE = re.compile(r"^\+?\d{10,15}$")
 
 
+# ── Request bodies ───────────────────────────────────────────────────
+
+class StateRequest(BaseModel):
+    state: IntakeState
+
+
 class ShareRequest(BaseModel):
     channel: Literal["sms", "email"]
     recipient: str = Field(min_length=3, max_length=200)
-    language: str = "en"
+    service_ids: list[str] = Field(min_length=1, max_length=MAX_MATCHED_IDS)
+    language: str = Field(default="en", max_length=16)
+
+    @field_validator("service_ids")
+    @classmethod
+    def _bound_ids(cls, value: list[str]) -> list[str]:
+        if any(len(v) > 100 for v in value):
+            raise ValueError("service id too long")
+        return value
 
     @model_validator(mode="after")
     def _check_recipient(self) -> "ShareRequest":
@@ -82,21 +102,28 @@ class LoadPersonaRequest(BaseModel):
 
 
 class RealtimeSecretRequest(BaseModel):
-    language: str = Field(default="en", max_length=16)
+    state: IntakeState
+    language: str = Field(default="", max_length=16)
+    trace_id: str = Field(default="", pattern=_TRACE_ID_PATTERN)
 
 
 class RealtimeToolRequest(BaseModel):
+    state: IntakeState
     name: str = Field(min_length=1, max_length=100)
     arguments: dict[str, Any] = Field(default_factory=dict)
     call_id: str = Field(default="", max_length=200)
+    trace_id: str = Field(default="", pattern=_TRACE_ID_PATTERN)
 
 
 class RealtimeTranscriptRequest(BaseModel):
+    state: IntakeState
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=5000)
+    trace_id: str = Field(default="", pattern=_TRACE_ID_PATTERN)
 
 
 class RealtimeDebugEventRequest(BaseModel):
+    trace_id: str = Field(min_length=1, pattern=_TRACE_ID_PATTERN)
     event: str = Field(min_length=1, max_length=120)
     source: str = Field(default="client", max_length=40)
     status: str | None = Field(default=None, max_length=80)
@@ -112,6 +139,17 @@ class RealtimeDebugEventRequest(BaseModel):
         return value
 
 
+def _state(session: IntakeSession) -> dict[str, Any]:
+    return state_from_session(session).model_dump()
+
+
+def _require_in_progress(session: IntakeSession) -> None:
+    if session.status == IntakeStatus.completed:
+        raise HTTPException(status_code=400, detail="Intake already completed")
+
+
+# ── Start / message / persona ────────────────────────────────────────
+
 @router.get("/personas")
 async def get_personas():
     """List available demo personas for the ?demo=1 launcher."""
@@ -120,145 +158,247 @@ async def get_personas():
 
 @router.post("/load-persona")
 async def load_persona(body: LoadPersonaRequest):
-    """Create a session pre-seeded by a demo persona and return its id.
-
-    The frontend should route to /intake/{session_id} after this call —
-    the seeded profile is a hypothesis the LLM can refine through normal
-    conversation.
-    """
+    """Return a completed intake state pre-seeded by a demo persona."""
     session = await start_persona_session(body.persona_id)
     if session is None:
-        raise HTTPException(status_code=404, detail=f"Unknown persona: {body.persona_id}")
-    last = session.conversation[-1] if session.conversation else None
-    from app.services.personas import get_persona
+        raise HTTPException(status_code=404, detail="Unknown persona")
     persona = get_persona(body.persona_id)
-    script = []
-    opening_message = ""
-    if persona is not None:
-        opening_message = persona.opening_message
-        script = [
-            {"role": t.role, "content": t.content, "delay_ms": t.delay_ms}
-            for t in persona.script
-        ]
+    last = session.conversation[-1] if session.conversation else None
     return {
-        "session_id": session.id,
+        "state": _state(session),
         "language": session.language,
         "entry_source": session.entry_source,
         "status": session.status.value,
         "conversation": [m.model_dump() for m in session.conversation],
         "last_message": last.model_dump() if last else None,
-        "opening_message": opening_message,
-        "script": script,
+        "opening_message": persona.opening_message if persona else "",
+        "script": [
+            {"role": t.role, "content": t.content, "delay_ms": t.delay_ms}
+            for t in (persona.script if persona else [])
+        ],
     }
 
 
 @router.post("/start")
 async def start_intake(body: IntakeStartRequest | None = None):
-    """Create a new intake session and return the greeting."""
-    language = body.language if body else "en"
-    life_event = body.life_event if body else None
-    focus = body.focus if body else None
-    mode = body.mode if body else "text"
+    """Start an intake and return its initial state and greeting."""
+    body = body or IntakeStartRequest()
     session = await start_session(
-        language=language, life_event=life_event, focus=focus, mode=mode
+        language=body.language, life_event=body.life_event, focus=body.focus, mode=body.mode
     )
     return {
-        "session_id": session.id,
+        "state": _state(session),
         "language": session.language,
         "greeting": session.conversation[0].model_dump() if session.conversation else None,
     }
 
 
-def _require_realtime_debug_enabled() -> None:
-    """Reject debug-endpoint access when disk-backed traces are disabled.
-
-    The realtime debug endpoints expose short transcript previews and are
-    intended only for local troubleshooting. Gating them on the same env
-    flag that enables the on-disk log avoids leaking traces in any
-    deployment that did not opt into them.
-    """
-    if not get_settings().realtime_debug_log_enabled:
-        raise HTTPException(status_code=404, detail="Not found")
-
-
-@router.get("/realtime/debug/sessions")
-async def read_realtime_debug_sessions(
-    limit: int = Query(default=20, ge=1, le=100),
-):
-    """Return recent Realtime voice debug sessions."""
-    _require_realtime_debug_enabled()
-    return {"sessions": get_realtime_debug_sessions(limit=limit)}
-
-
-@router.post("/{session_id}/message")
-async def send_message(session_id: str, body: IntakeMessageRequest):
-    """Send a user message and receive the assistant's response."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if session.status.value == "completed":
-        raise HTTPException(status_code=400, detail="Session already completed")
-
-    response = await process_message(session_id, body.message, body.language)
-    # The stored (PII-redacted) copy of the resident's message, so the client
-    # can replace its optimistic local copy — that history is replayed into
-    # voice sessions.
-    user_message = next(
-        (m for m in reversed(session.conversation) if m.role.value == "user"),
-        None,
-    )
+@router.post("/message")
+async def send_message(body: IntakeMessageRequest):
+    """Send a resident message; returns the reply and the updated state."""
+    session = session_from_state(body.state)
+    _require_in_progress(session)
+    reply, user_message = await process_message(session, body.message, body.language)
     return {
-        "session_id": session_id,
-        "response": response.model_dump(),
-        "user_message": user_message.model_dump() if user_message else None,
+        "state": _state(session),
+        "response": reply.model_dump(),
+        # The stored (PII-redacted) copy of the resident's message, so the
+        # client can replace its optimistic local copy.
+        "user_message": user_message.model_dump(),
         "status": session.status.value,
     }
 
 
-@router.post("/{session_id}/realtime/client-secret")
-async def create_realtime_client_secret(
-    session_id: str,
-    body: RealtimeSecretRequest | None = None,
-):
-    """Create an ephemeral Realtime client secret for browser voice intake."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if session.status.value == "completed":
-        raise HTTPException(status_code=400, detail="Session already completed")
+# ── Results / plan / share ───────────────────────────────────────────
+
+@router.post("/results")
+async def get_results(body: StateRequest):
+    """Hydrate results for a client-held intake state. No model calls.
+
+    Matches are re-read from the catalog for the grounded service ids; risk
+    flags and benefit estimates are recomputed from the profile.
+    """
+    session = session_from_state(body.state)
+    plan = session.plan
+    benefits = calculate_benefits(session.extracted_profile, session.matches) if session.matches else {}
+    sequencing = [item.model_dump() for item in plan.items] if plan else []
+    plan_synthesis = plan.summary if plan else ""
+
+    lang = session.language or "en"
+    matches_payload = [m.model_dump() for m in session.matches]
+    risk_flags_payload = [r.model_dump() for r in session.risk_flags]
+
+    if lang != "en":
+        # Localize service descriptions + match reasoning so the plan reads
+        # in the resident's language. Untranslated services fall through
+        # to English.
+        for m in matches_payload:
+            sid = m["service"].get("id")
+            translated_desc = translate_service_description(sid, lang) if sid else None
+            if translated_desc:
+                m["service"]["description"] = translated_desc
+            m["match_reasoning"] = translate_match_reasoning(m.get("match_reasoning", ""), lang)
+
+        for item in sequencing:
+            translated_reason = translate_sequence_reason(item.get("category", ""), lang)
+            if translated_reason:
+                item["reason"] = translated_reason
+
+        for rf in risk_flags_payload:
+            translated_rf = translate_risk_flag(rf.get("risk_type", ""), lang)
+            if translated_rf:
+                rf["description"] = translated_rf["description"]
+                rf["label"] = translated_rf["label"]
+
+        if plan is not None and not plan_synthesis:
+            plan_synthesis = PLAN_SUMMARY_I18N.get(lang, "")
+
+    return {
+        "state": _state(session),
+        "status": session.status.value,
+        "language": lang,
+        "profile": session.extracted_profile.model_dump(),
+        "matches": matches_payload,
+        "risk_flags": risk_flags_payload,
+        "benefits_estimate": benefits,
+        "application_order": sequencing,
+        "plan_synthesis": plan_synthesis,
+        "plan_ai_generated": bool(plan and plan.ai_generated),
+        # True when there are matches but no plan yet: call POST /plan.
+        "plan_pending": bool(session.matches) and plan is None,
+        "conversation_length": len(session.conversation),
+    }
+
+
+@router.post("/plan")
+async def build_plan(body: StateRequest):
+    """Build the ordered plan for a completed intake and return it in the state.
+
+    Uses the model when live AI is on (ids grounded to the matched services),
+    otherwise the rules sequencer. Nothing is cached on the server.
+    """
+    session = session_from_state(body.state)
+    if session.status != IntakeStatus.completed or not session.matches:
+        raise HTTPException(status_code=400, detail="Complete the intake first.")
+    if session.plan is None:
+        session.plan = await build_application_order(session)
+    return {"state": _state(session), "plan": session.plan.model_dump()}
+
+
+def _share_text(services: list, origin: str, extra: int) -> str:
+    lines = ["Your Austin Service Guide matches:", ""]
+    for i, svc in enumerate(services, start=1):
+        line = f"{i}. {svc.name}"
+        if svc.phone:
+            line += f" — {svc.phone}"
+        lines.append(line)
+        lines.append(f"   {origin}/services/{svc.slug}")
+    if extra:
+        lines.append("")
+        lines.append(f"…and {extra} more. Browse all services at {origin}/services")
+    return "\n".join(lines)
+
+
+def _share_html(services: list, origin: str, extra: int) -> str:
+    items = "".join(
+        f"<li><strong>{html.escape(svc.name)}</strong>"
+        f"{f' — {html.escape(svc.phone)}' if svc.phone else ''}<br>"
+        f'<a href="{html.escape(origin)}/services/{html.escape(svc.slug)}">'
+        f"{html.escape(origin)}/services/{html.escape(svc.slug)}</a></li>"
+        for svc in services
+    )
+    more = (
+        f'<p>…and {extra} more. <a href="{html.escape(origin)}/services">'
+        "Browse all services</a></p>"
+        if extra else ""
+    )
+    return f"<h2>Your Austin Service Guide matches</h2><ol>{items}</ol>{more}"
+
+
+@router.post("/share")
+async def share_results(body: ShareRequest):
+    """Send a list of catalog services to the resident via SMS or email.
+
+    The message is built only from catalog data for the grounded service
+    ids: names, phone numbers, and /services/{slug} links. The recipient is
+    used for this one send and is never stored or logged unmasked.
+    """
+    ids = ground_service_ids(body.service_ids)
+    services = [svc for svc in (catalog.get_service_by_id(sid) for sid in ids) if svc]
+    if not services:
+        raise HTTPException(status_code=400, detail="No matching services to share.")
+
+    origin = get_settings().public_origin.rstrip("/")
+    shown = services[:_MAX_SHARED_SERVICES]
+    extra = len(services) - len(shown)
+    text_body = _share_text(shown, origin, extra)
+
+    try:
+        if body.channel == "sms":
+            result = await send_sms(to=body.recipient, body=text_body)
+        else:
+            result = await send_email(
+                to=body.recipient,
+                subject="Your Austin Service Guide matches",
+                text=text_body,
+                html=_share_html(shown, origin, extra),
+            )
+    except (RuntimeError, httpx.HTTPError) as exc:
+        # notify.py raises RuntimeError when Twilio/SendGrid reject the send.
+        raise HTTPException(
+            status_code=502, detail="Could not send right now. Please try again."
+        ) from exc
+
+    return {
+        **{k: v for k, v in result.items() if k != "to"},
+        "service_count": len(services),
+    }
+
+
+# ── Realtime voice ───────────────────────────────────────────────────
+
+def _require_realtime_debug_enabled() -> None:
+    """Reject debug-endpoint access unless the opt-in debug file log is on."""
+    if not get_settings().realtime_debug_log_enabled:
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+@router.post("/realtime/client-secret")
+async def create_realtime_client_secret(body: RealtimeSecretRequest):
+    """Create an ephemeral Realtime client secret for browser voice intake.
+
+    The session instructions are built from the client-sent state. Only the
+    server's API key is sent to OpenAI; no inbound request headers are
+    forwarded.
+    """
+    session = session_from_state(body.state)
+    _require_in_progress(session)
+    if body.language:
+        session.language = normalize_language(body.language, session.language)
 
     settings = get_settings()
-    record_realtime_debug_event(
-        session_id,
-        {
-            "event": "client_secret_requested",
-            "source": "server",
-            "status": session.status.value,
-            "detail": {
-                "language": body.language if body else session.language,
-                "session_language": session.language,
-                "model": settings.openai_realtime_model,
-                "reasoning_effort": settings.openai_realtime_reasoning_effort,
-            },
+    trace_id = body.trace_id
+    record_realtime_debug_event(trace_id, {
+        "event": "client_secret_requested",
+        "source": "server",
+        "status": session.status.value,
+        "detail": {
+            "language": session.language,
+            "model": settings.openai_realtime_model,
+            "reasoning_effort": settings.openai_realtime_reasoning_effort,
         },
-    )
+    })
     if not settings.use_live_ai:
-        record_realtime_debug_event(
-            session_id,
-            {
-                "event": "client_secret_failed",
-                "source": "server",
-                "status": "live_ai_disabled",
-                "detail": {"demo_mode": settings.demo_mode},
-            },
-        )
+        record_realtime_debug_event(trace_id, {
+            "event": "client_secret_failed",
+            "source": "server",
+            "status": "live_ai_disabled",
+            "detail": {"demo_mode": settings.demo_mode},
+        })
         raise HTTPException(
             status_code=400,
             detail="Realtime voice requires OPENAI_API_KEY and DEMO_MODE=false.",
         )
-
-    if body and body.language and body.language != session.language:
-        session.language = body.language
 
     payload = {
         "expires_after": {
@@ -279,331 +419,111 @@ async def create_realtime_client_secret(
             )
             res.raise_for_status()
     except httpx.HTTPStatusError as exc:
-        detail = exc.response.text or "OpenAI Realtime client secret failed"
-        record_realtime_debug_event(
-            session_id,
-            {
-                "event": "client_secret_failed",
-                "source": "server",
-                "status": str(exc.response.status_code),
-                "detail": {"error": detail},
-            },
-        )
-        # Upstream error bodies can include account/key hints; keep them in
-        # the opt-in debug trace only.
+        record_realtime_debug_event(trace_id, {
+            "event": "client_secret_failed",
+            "source": "server",
+            "status": str(exc.response.status_code),
+            # Upstream error bodies can include account/key hints; keep them
+            # in the opt-in debug trace only.
+            "detail": {"error": exc.response.text or "OpenAI Realtime client secret failed"},
+        })
         raise HTTPException(
             status_code=502, detail="Realtime voice is temporarily unavailable."
         ) from exc
     except httpx.HTTPError as exc:
-        record_realtime_debug_event(
-            session_id,
-            {
-                "event": "client_secret_failed",
-                "source": "server",
-                "status": type(exc).__name__,
-                "detail": {"error": str(exc)},
-            },
-        )
+        record_realtime_debug_event(trace_id, {
+            "event": "client_secret_failed",
+            "source": "server",
+            "status": type(exc).__name__,
+            "detail": {"error": type(exc).__name__},
+        })
         raise HTTPException(
             status_code=502,
             detail=f"OpenAI Realtime client secret failed: {type(exc).__name__}",
         ) from exc
 
     data = res.json()
-    record_realtime_debug_event(
-        session_id,
-        {
-            "event": "client_secret_created",
-            "source": "server",
-            "status": session.status.value,
-            "detail": {
-                "client_session_id": data.get("session", {}).get("id"),
-                "expires_at": data.get("expires_at"),
-            },
+    record_realtime_debug_event(trace_id, {
+        "event": "client_secret_created",
+        "source": "server",
+        "status": session.status.value,
+        "detail": {
+            "client_session_id": data.get("session", {}).get("id"),
+            "expires_at": data.get("expires_at"),
         },
-    )
+    })
     return {
-        "session_id": session_id,
+        "state": _state(session),
         "model": settings.openai_realtime_model,
         "session_config": payload["session"],
         "client_secret": data,
     }
 
 
-@router.post("/{session_id}/realtime/tool")
-async def run_realtime_tool(session_id: str, body: RealtimeToolRequest):
-    """Execute a Realtime tool call against the current intake session."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
+@router.post("/realtime/tool")
+async def run_realtime_tool(body: RealtimeToolRequest):
+    """Execute a Realtime tool call against the client-sent state."""
+    session = session_from_state(body.state)
     result = execute_realtime_tool(
-        session_id,
-        body.name,
-        body.arguments,
-        call_id=body.call_id,
+        session, body.name, body.arguments, call_id=body.call_id, trace_id=body.trace_id
     )
-    return {
-        "session_id": session_id,
-        "call_id": body.call_id,
-        **result,
-    }
+    return {"state": _state(session), "call_id": body.call_id, **result}
 
 
-@router.post("/{session_id}/realtime/transcript")
-async def sync_realtime_transcript(
-    session_id: str,
-    body: RealtimeTranscriptRequest,
-):
-    """Persist a committed Realtime transcript message into chat history."""
-    record_realtime_debug_event(
-        session_id,
-        {
-            "event": "transcript_sync_requested",
-            "source": "server",
-            "detail": {
-                "role": body.role,
-                "content_length": len(body.content),
-                # Redact before truncating so a clipped identifier can't slip through.
-                "content_preview": redact(body.content).text[:240],
-            },
+@router.post("/realtime/transcript")
+async def sync_realtime_transcript(body: RealtimeTranscriptRequest):
+    """Add a committed Realtime transcript turn to the client-sent state."""
+    session = session_from_state(body.state)
+    result = record_realtime_transcript(session, body.role, body.content)
+    record_realtime_debug_event(body.trace_id, {
+        "event": "transcript_synced",
+        "source": "server",
+        "status": result["status"],
+        "detail": {
+            "role": body.role,
+            "content_length": len(body.content),
+            "redacted_types": result["redacted"],
+            "message_count": len(result["messages"]),
+            "progress_percent": result["progress_percent"],
+            "is_complete": result["is_complete"],
+            "crisis_detected": result["crisis_detected"],
+            "error": result.get("error"),
+            "conversation_length": len(session.conversation),
+            # Field names only — never profile values.
+            "profile_fields_filled": sorted(
+                name for name, value in session.extracted_profile
+                if value not in (None, "", [], ["en"])
+            ),
         },
-    )
-    result = record_realtime_transcript(session_id, body.role, body.content)
-    if result is None:
-        record_realtime_debug_event(
-            session_id,
-            {
-                "event": "transcript_sync_failed",
-                "source": "server",
-                "status": "not_found",
-                "detail": {"role": body.role},
-            },
-        )
-        raise HTTPException(status_code=404, detail="Session not found")
-    session = get_session(session_id)
-    record_realtime_debug_event(
-        session_id,
-        {
-            "event": "transcript_synced",
-            "source": "server",
-            "status": result["status"],
-            "detail": {
-                "role": body.role,
-                "message_count": len(result["messages"]),
-                "progress_percent": result["progress_percent"],
-                "is_complete": result["is_complete"],
-                "crisis_detected": result["crisis_detected"],
-                "error": result.get("error"),
-                "session_status": session.status.value if session else None,
-                "conversation_length": len(session.conversation) if session else None,
-                "profile": _profile_debug_snapshot(
-                    session.extracted_profile if session else None
-                ),
-            },
-        },
-    )
-    return {
-        "session_id": session_id,
-        **result,
-    }
+    })
+    return {"state": _state(session), **result}
 
 
-@router.post("/{session_id}/realtime/debug")
-async def write_realtime_debug_event(
-    session_id: str,
-    body: RealtimeDebugEventRequest,
-):
-    """Record a client-side Realtime voice debug event for this session."""
+@router.get("/realtime/debug/sessions")
+async def read_realtime_debug_sessions(limit: int = Query(default=20, ge=1, le=100)):
+    """Return recent voice debug traces from the opt-in debug file."""
     _require_realtime_debug_enabled()
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    entry = record_realtime_debug_event(
-        session_id,
-        {
-            "event": body.event,
-            "source": body.source,
-            "status": body.status,
-            "detail": body.detail,
-        },
-    )
+    return {"sessions": get_realtime_debug_sessions(limit=limit)}
+
+
+@router.post("/realtime/debug")
+async def write_realtime_debug_event(body: RealtimeDebugEventRequest):
+    """Record a client-side voice debug event in the opt-in debug file."""
+    _require_realtime_debug_enabled()
+    entry = record_realtime_debug_event(body.trace_id, {
+        "event": body.event,
+        "source": body.source,
+        "status": body.status,
+        "detail": body.detail,
+    })
     return {"ok": True, "event": entry}
 
 
-@router.get("/{session_id}/realtime/debug")
+@router.get("/realtime/debug/{trace_id}")
 async def read_realtime_debug_events(
-    session_id: str,
+    trace_id: str,
     limit: int = Query(default=200, ge=1, le=500),
 ):
-    """Return recent Realtime voice debug events for this session."""
+    """Return recent debug events for one voice trace."""
     _require_realtime_debug_enabled()
-    session = get_session(session_id)
-    events = get_realtime_debug_events(session_id, limit=limit)
-    if not session and not events:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return {"session_id": session_id, "events": events}
-
-
-@router.get("/{session_id}/results")
-async def get_results(session_id: str):
-    """Return matching results after intake completion."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    from app.services.matching import calculate_benefits
-    from app.services.i18n import (
-        translate_match_reasoning,
-        translate_service_description,
-        translate_sequence_reason,
-        translate_risk_flag,
-        PLAN_SUMMARY_I18N,
-    )
-
-    benefits = {}
-    sequencing: list[dict] = []
-    plan_synthesis = ""
-    plan_ai_generated = False
-    if session.matches:
-        benefits = calculate_benefits(session.extracted_profile, session.matches)
-        plan = await get_application_order(session)
-        sequencing = plan["items"]
-        plan_synthesis = plan["summary"]
-        plan_ai_generated = plan["ai_generated"]
-
-    lang = session.language or "en"
-    matches_payload = [m.model_dump() for m in session.matches]
-    risk_flags_payload = [r.model_dump() for r in session.risk_flags]
-
-    if lang != "en":
-        # Localize service descriptions + match reasoning so the plan reads
-        # in the resident's language. Untranslated services fall through
-        # to English.
-        for m in matches_payload:
-            sid = m["service"].get("id")
-            translated_desc = translate_service_description(sid, lang) if sid else None
-            if translated_desc:
-                m["service"]["description"] = translated_desc
-            m["match_reasoning"] = translate_match_reasoning(
-                m.get("match_reasoning", ""), lang
-            )
-
-        for item in sequencing:
-            translated_reason = translate_sequence_reason(item.get("category", ""), lang)
-            if translated_reason:
-                item["reason"] = translated_reason
-
-        for rf in risk_flags_payload:
-            translated_rf = translate_risk_flag(rf.get("risk_type", ""), lang)
-            if translated_rf:
-                rf["description"] = translated_rf["description"]
-                rf["label"] = translated_rf["label"]
-
-        if not plan_synthesis:
-            plan_synthesis = PLAN_SUMMARY_I18N.get(lang, "")
-
-    return {
-        "session_id": session_id,
-        "status": session.status.value,
-        "language": lang,
-        "profile": session.extracted_profile.model_dump(),
-        "matches": matches_payload,
-        "risk_flags": risk_flags_payload,
-        "benefits_estimate": benefits,
-        "application_order": sequencing,
-        "plan_synthesis": plan_synthesis,
-        "plan_ai_generated": plan_ai_generated,
-        "conversation_length": len(session.conversation),
-        # Share text quotes this; sessions are deleted this long after start.
-        "session_ttl_hours": get_settings().session_ttl_hours,
-    }
-
-
-@router.get("/{session_id}/summary")
-async def get_plan_summary(session_id: str):
-    """Return a one-sentence resident-facing summary of a saved plan."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-
-    summary = await generate_plan_summary(session)
-    return {
-        "session_id": session_id,
-        "summary": summary,
-        "match_count": len(session.matches),
-        "started_at": session.created_at.isoformat(),
-        "status": session.status.value,
-    }
-
-
-@router.post("/{session_id}/share")
-async def share_results(session_id: str, body: ShareRequest):
-    """Send the matched-service summary to the resident via SMS or email."""
-    session = get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    if not session.matches:
-        raise HTTPException(
-            status_code=400, detail="No matches yet — complete the intake first."
-        )
-
-    settings = get_settings()
-    origin = settings.public_origin.rstrip("/")
-
-    # Build a plain-text summary (works for SMS, doubles as email body)
-    lines = [
-        "Your Austin Service Guide matches:",
-        "",
-    ]
-    for i, m in enumerate(session.matches[:8], start=1):
-        svc = m.service
-        line = f"{i}. {svc.name}"
-        if svc.phone:
-            line += f" — {svc.phone}"
-        lines.append(line)
-        lines.append(f"   {origin}/services/{svc.slug}")
-    expiry_note = (
-        f"For your privacy, this results link expires within "
-        f"{settings.session_ttl_hours} hours."
-    )
-    if len(session.matches) > 8:
-        lines.append("")
-        lines.append(f"…and {len(session.matches) - 8} more at:")
-        lines.append(f"{origin}/results/{session_id}")
-        lines.append(expiry_note)
-
-    text_body = "\n".join(lines)
-
-    try:
-        if body.channel == "sms":
-            result = await send_sms(to=body.recipient, body=text_body)
-        else:
-            html_body = (
-                "<h2>Your Austin Service Guide matches</h2>"
-                "<ol>"
-                + "".join(
-                    f'<li><strong>{m.service.name}</strong>'
-                    f'{f" — {m.service.phone}" if m.service.phone else ""}<br>'
-                    f'<a href="{origin}/services/{m.service.slug}">'
-                    f"{origin}/services/{m.service.slug}</a></li>"
-                    for m in session.matches[:8]
-                )
-                + "</ol>"
-                f'<p><a href="{origin}/results/{session_id}">'
-                f"View all matches</a></p>"
-                f"<p>{expiry_note}</p>"
-            )
-            result = await send_email(
-                to=body.recipient,
-                subject="Your Austin Service Guide matches",
-                text=text_body,
-                html=html_body,
-            )
-    except (RuntimeError, httpx.HTTPError) as exc:
-        # notify.py raises RuntimeError when Twilio/SendGrid reject the send.
-        raise HTTPException(
-            status_code=502, detail="Could not send right now. Please try again."
-        ) from exc
-
-    return result
+    return {"trace_id": trace_id, "events": get_realtime_debug_events(trace_id, limit=limit)}

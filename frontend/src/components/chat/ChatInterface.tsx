@@ -21,22 +21,27 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ChatBubble from "./ChatBubble";
 import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
+import { withIntakeState } from "@/lib/session";
 import { useRealtimeVoiceSession } from "@/hooks/useRealtimeVoiceSession";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
-import type { IntakeMessage, IntakeSession, CrisisResource } from "@/types";
+import type { IntakeMessage, CrisisResource } from "@/types";
 
 interface ChatInterfaceProps {
-  session: IntakeSession;
-  onComplete?: (sessionId: string) => void;
+  /** Changes whenever a different intake is shown; resets the chat. */
+  intakeKey: number;
+  /** Conversation from the stored intake state when the chat mounts. */
+  initialConversation: IntakeMessage[];
+  onComplete?: () => void;
   initialMode?: "text" | "voice";
 }
 
 export default function ChatInterface({
-  session,
+  intakeKey,
+  initialConversation,
   onComplete,
   initialMode = "text",
 }: ChatInterfaceProps) {
-  const initialMessages = session.conversation ?? [];
+  const initialMessages = initialConversation ?? [];
   const [messages, setMessages] = useState<IntakeMessage[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +55,7 @@ export default function ChatInterface({
   const inputRef = useRef<HTMLInputElement>(null);
   const didAutoStartVoiceRef = useRef(false);
   const didSpeakVoiceIntroRef = useRef(false);
-  const sessionIdRef = useRef(session.id);
+  const intakeKeyRef = useRef(intakeKey);
   const voiceStopRef = useRef<() => void>(() => undefined);
 
   const loadCrisisResources = useCallback(async () => {
@@ -168,7 +173,6 @@ export default function ChatInterface({
   );
 
   const voice = useRealtimeVoiceSession({
-    sessionId: session.id,
     onLocalTranscript: handleVoiceLocalTranscript,
     onLocalTranscriptReplace: handleVoiceLocalTranscriptReplace,
     onTranscriptSync: handleVoiceTranscriptSync,
@@ -202,12 +206,12 @@ export default function ChatInterface({
   }, [isLoading, isComplete, voice.isActive]);
 
   useEffect(() => {
-    if (sessionIdRef.current !== session.id) {
+    if (intakeKeyRef.current !== intakeKey) {
       voiceStopRef.current();
-      sessionIdRef.current = session.id;
+      intakeKeyRef.current = intakeKey;
       didAutoStartVoiceRef.current = false;
       didSpeakVoiceIntroRef.current = false;
-      const convo = session.conversation ?? [];
+      const convo = initialConversation ?? [];
       setMessages(convo);
       setInputValue("");
       setIsLoading(false);
@@ -216,7 +220,7 @@ export default function ChatInterface({
       setCrisisDetected(false);
       setCrisisResources([]);
     }
-  }, [session.id, session.conversation]);
+  }, [intakeKey, initialConversation]);
 
   useEffect(() => {
     return () => {
@@ -263,7 +267,7 @@ export default function ChatInterface({
 
   const handleSend = async (text: string) => {
     if (!text.trim() || isLoading || voice.isActive) return;
-    const activeSessionId = session.id;
+    const activeKey = intakeKey;
 
     const userMsg: IntakeMessage = {
       role: "user",
@@ -280,12 +284,10 @@ export default function ChatInterface({
 
     try {
       const language = getStoredLanguage();
-      const { response, userMessage } = await sendIntakeMessage(
-        activeSessionId,
-        text.trim(),
-        language,
+      const { response, user_message: userMessage } = await withIntakeState(
+        (state) => sendIntakeMessage(state, text.trim(), language),
       );
-      if (sessionIdRef.current !== activeSessionId) return;
+      if (intakeKeyRef.current !== activeKey) return;
       // Swap the optimistic raw copy for the stored, redacted one: this state
       // is later replayed into voice sessions. Without a stored copy, drop it.
       setMessages((prev) => [
@@ -306,7 +308,7 @@ export default function ChatInterface({
         setIsComplete(true);
       }
     } catch {
-      if (sessionIdRef.current !== activeSessionId) return;
+      if (intakeKeyRef.current !== activeKey) return;
       const errorMsg: IntakeMessage = {
         role: "assistant",
         content: "I'm sorry, something went wrong. Please try again.",
@@ -319,7 +321,7 @@ export default function ChatInterface({
       // optimistic copy; otherwise it would be replayed into a voice session.
       setMessages((prev) => [...prev.filter((m) => m !== userMsg), errorMsg]);
     } finally {
-      if (sessionIdRef.current === activeSessionId) {
+      if (intakeKeyRef.current === activeKey) {
         setIsLoading(false);
       }
     }
@@ -656,7 +658,7 @@ export default function ChatInterface({
             variant="contained"
             size="large"
             fullWidth
-            onClick={() => onComplete?.(session.id)}
+            onClick={() => onComplete?.()}
             endIcon={<ArrowForwardIcon />}
             sx={{
               borderRadius: "28px",

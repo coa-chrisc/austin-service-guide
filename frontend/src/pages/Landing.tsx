@@ -43,6 +43,7 @@ import {
   loadPersona,
   type PersonaSummary,
 } from "@/lib/api";
+import { startNewIntakeState } from "@/lib/session";
 import type { LifeEvent } from "@/types";
 
 const PERSONA_ICONS: Record<string, React.ReactNode> = {
@@ -284,7 +285,8 @@ export default function Landing() {
     try {
       const res = await loadPersona(id);
       const personaLabel = personas.find((p) => p.id === id)?.label;
-      navigate(`/demo/${res.session_id}`, {
+      startNewIntakeState(res.state);
+      navigate("/demo", {
         state: {
           openingMessage: res.opening_message,
           script: res.script,

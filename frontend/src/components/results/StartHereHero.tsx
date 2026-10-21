@@ -19,14 +19,15 @@ import { makeResultsT } from "@/lib/resultsI18n";
 interface StartHereHeroProps {
   topItem: ApplicationOrderItem;
   topMatch?: ServiceMatch;
-  sessionId?: string;
+  /** Opened from the resident's plan: detail pages link back to it. */
+  fromPlan?: boolean;
   language?: string;
 }
 
 export default function StartHereHero({
   topItem,
   topMatch,
-  sessionId,
+  fromPlan,
   language,
 }: StartHereHeroProps) {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export default function StartHereHero({
         `${primaryLocation.address}, ${primaryLocation.city}, ${primaryLocation.state} ${primaryLocation.zip_code}`,
       )}`
     : null;
-  const sessionQs = sessionId ? `?session=${sessionId}` : "";
+  const planQs = fromPlan ? "?plan=1" : "";
 
   return (
     <Box>
@@ -146,7 +147,7 @@ export default function StartHereHero({
               fullWidth
               endIcon={<ArrowForwardIcon />}
               onClick={() =>
-                navigate(`/services/${topItem.service_slug}${sessionQs}`)
+                navigate(`/services/${topItem.service_slug}${planQs}`)
               }
               sx={{
                 minHeight: 56,

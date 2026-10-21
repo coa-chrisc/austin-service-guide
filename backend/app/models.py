@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, date
+from datetime import date
 from enum import Enum
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ---------------------------------------------------------------------------
@@ -193,29 +193,159 @@ class ServiceMatch(BaseModel):
     referral_status: str = ""
 
 
+class PlanItem(BaseModel):
+    """One step of the resident's plan. Names/slugs are re-read from the catalog."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rank: int = Field(ge=1, le=50)
+    service_id: str = Field(max_length=100)
+    service_slug: str = Field(default="", max_length=200)
+    service_name: str = Field(default="", max_length=300)
+    category: str = Field(default="", max_length=64)
+    reason: str = Field(default="", max_length=600)
+
+
+class IntakePlan(BaseModel):
+    """Ordered next steps built once the intake completes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    summary: str = Field(default="", max_length=1200)
+    items: list[PlanItem] = Field(default_factory=list, max_length=20)
+    ai_generated: bool = False
+
+
 class IntakeSession(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid4()))
+    """Per-request working copy of one resident's intake.
+
+    Built from the client-held ``IntakeState`` at the start of a request and
+    serialized back into one before the response returns. Never stored on
+    the server (see ``app/services/intake_state.py``).
+    """
+
     language: str = "en"
     conversation: list[IntakeMessage] = Field(default_factory=list)
     extracted_profile: ResidentProfile = Field(default_factory=ResidentProfile)
     status: IntakeStatus = IntakeStatus.in_progress
+    # Catalog-hydrated from ``IntakeState.matched_service_ids``.
     matches: list[ServiceMatch] = Field(default_factory=list)
+    # Recomputed from the profile; never taken from the client.
     risk_flags: list[RiskFlag] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    # Full Responses-API input items (user messages, assistant messages,
-    # reasoning items, function_calls, function_call_outputs). Replayed
-    # verbatim each turn so the model has its own tool-call history.
-    responses_input: list[dict[str, Any]] = Field(default_factory=list)
-    # Where this session originated. "" for organic, "life-event:<slug>",
-    # or "persona:<persona_id>" for demo personas. Surfaced in admin views.
+    # Where this intake originated. "" for organic, "life-event:<slug>",
+    # or "persona:<persona_id>" for demo personas.
     entry_source: str = ""
-    # Optional persona-specific instructions appended to system prompt.
-    # Set when a session is loaded from a demo persona; empty otherwise.
+    # Scenario/persona instructions appended to the system prompt. Derived
+    # on the server from ``entry_source``; never taken from the client.
     persona_note: str = ""
     # User turns answered outside the scripted demo steps (crisis response,
     # life-event scenario follow-up). Subtracted when picking the next
     # scripted step so no question is skipped.
     scripted_turns_skipped: int = 0
+    plan: IntakePlan | None = None
+
+
+# ---------------------------------------------------------------------------
+# Client-held intake state (the wire format)
+# ---------------------------------------------------------------------------
+#
+# The browser keeps this in sessionStorage and sends it with every intake
+# request; the server returns the updated copy and keeps nothing. Treat
+# every field as untrusted input: the limits below are enforced by
+# validation (422), the request body size by middleware (413), and
+# app/services/intake_state.py re-redacts messages, re-grounds service ids
+# against the catalog, and re-derives anything that reaches the prompt.
+
+INTAKE_STATE_VERSION = 1
+MAX_STATE_MESSAGES = 200
+MAX_MESSAGE_CHARS = 10_000
+MAX_BUTTONS = 12
+MAX_BUTTON_CHARS = 200
+MAX_PROFILE_TEXT = 200
+MAX_PROFILE_LIST = 30
+MAX_PROFILE_LIST_ITEM = 100
+MAX_SCHOOL_CHILDREN = 15
+MAX_MATCHED_IDS = 50
+
+_LANGUAGE_PATTERN = r"^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})?$"
+_ENTRY_SOURCE_PATTERN = r"^(|life-event:[a-z0-9-]{1,64}|persona:[A-Za-z0-9_-]{1,100})$"
+
+
+class StateMessage(BaseModel):
+    """A visible conversation turn. Only resident and assistant roles."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "assistant"]
+    content: str = Field(max_length=MAX_MESSAGE_CHARS)
+    suggested_buttons: list[Annotated[str, Field(max_length=MAX_BUTTON_CHARS)]] = Field(
+        default_factory=list, max_length=MAX_BUTTONS
+    )
+    progress_percent: int = Field(default=0, ge=0, le=100)
+    is_complete: bool = False
+    crisis_detected: bool = False
+
+
+def _check_profile_bounds(profile: ResidentProfile) -> ResidentProfile:
+    for name, value in profile:
+        if isinstance(value, str) and len(value) > MAX_PROFILE_TEXT:
+            raise ValueError(f"profile.{name} is longer than {MAX_PROFILE_TEXT} characters")
+        if isinstance(value, list):
+            limit = MAX_SCHOOL_CHILDREN if name == "school_age_children" else MAX_PROFILE_LIST
+            if len(value) > limit:
+                raise ValueError(f"profile.{name} has more than {limit} items")
+            for item in value:
+                texts = (
+                    [item.grade, item.district, *item.concerns]
+                    if isinstance(item, SchoolAgeChild) else [item]
+                )
+                if isinstance(item, SchoolAgeChild) and len(item.concerns) > MAX_PROFILE_LIST:
+                    raise ValueError(f"profile.{name} item has too many concerns")
+                if any(len(str(t)) > MAX_PROFILE_LIST_ITEM for t in texts):
+                    raise ValueError(f"profile.{name} item is too long")
+    if profile.household_size is not None and not 0 <= profile.household_size <= 50:
+        raise ValueError("profile.household_size must be between 0 and 50")
+    return profile
+
+
+class IntakeState(BaseModel):
+    """Everything the intake flows need between requests, held by the browser."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal[1] = INTAKE_STATE_VERSION
+    language: str = Field(default="en", pattern=_LANGUAGE_PATTERN)
+    status: Literal["in_progress", "completed"] = "in_progress"
+    conversation: list[StateMessage] = Field(
+        default_factory=list, max_length=MAX_STATE_MESSAGES
+    )
+    profile: ResidentProfile = Field(default_factory=ResidentProfile)
+    entry_source: str = Field(default="", pattern=_ENTRY_SOURCE_PATTERN)
+    scripted_turns_skipped: int = Field(default=0, ge=-50, le=MAX_STATE_MESSAGES)
+    matched_service_ids: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=MAX_MATCHED_IDS
+    )
+    plan: IntakePlan | None = None
+
+    @field_validator("profile", mode="before")
+    @classmethod
+    def _profile_known_fields_only(cls, value: Any) -> Any:
+        if isinstance(value, dict):
+            unknown = set(value) - set(ResidentProfile.model_fields)
+            if unknown:
+                raise ValueError(f"unknown profile fields: {sorted(unknown)}")
+            children = value.get("school_age_children")
+            if isinstance(children, list):
+                allowed = set(SchoolAgeChild.model_fields)
+                for child in children:
+                    if isinstance(child, dict) and set(child) - allowed:
+                        raise ValueError("unknown school_age_children fields")
+        return value
+
+    @field_validator("profile")
+    @classmethod
+    def _profile_bounds(cls, value: ResidentProfile) -> ResidentProfile:
+        return _check_profile_bounds(value)
 
 
 # ---------------------------------------------------------------------------
@@ -341,8 +471,9 @@ class IntakeStartRequest(BaseModel):
 
 
 class IntakeMessageRequest(BaseModel):
+    state: IntakeState
     message: str = Field(min_length=1, max_length=4000)
-    language: str = Field(default="en", max_length=16)
+    language: str = Field(default="", max_length=16)
 
 
 class MapPin(BaseModel):

@@ -9,16 +9,17 @@ import type { ApplicationOrderItem } from "@/lib/api";
 interface PlanItemRowProps {
   item: ApplicationOrderItem;
   rank: number;
-  sessionId?: string;
+  /** Opened from the resident's plan: detail pages link back to it. */
+  fromPlan?: boolean;
 }
 
 export default function PlanItemRow({
   item,
   rank,
-  sessionId,
+  fromPlan,
 }: PlanItemRowProps) {
   const navigate = useNavigate();
-  const sessionQs = sessionId ? `?session=${sessionId}` : "";
+  const planQs = fromPlan ? "?plan=1" : "";
 
   return (
     <Card
@@ -29,7 +30,7 @@ export default function PlanItemRow({
       }}
     >
       <CardActionArea
-        onClick={() => navigate(`/services/${item.service_slug}${sessionQs}`)}
+        onClick={() => navigate(`/services/${item.service_slug}${planQs}`)}
         aria-label={`View details for ${item.service_name}`}
         sx={{ p: 1.5, minHeight: 56 }}
       >

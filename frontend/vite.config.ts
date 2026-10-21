@@ -138,14 +138,6 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            urlPattern: /\/api\/v1\/intake\/[^/]+\/results$/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "intake-results",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
             urlPattern: /\/api\/v1\/services\b/,
             handler: "StaleWhileRevalidate",
             options: {

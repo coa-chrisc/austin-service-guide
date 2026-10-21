@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -46,9 +45,6 @@ class Settings(BaseSettings):
     # Shared secret for admin catalog writes (POST/PATCH/DELETE under
     # /api/v1/admin), sent as the X-Admin-Token header. Empty = writes off.
     admin_api_token: str = ""
-    # Intake sessions (and results/share links built on them) are purged
-    # this many hours after they start. Counted from creation, not access.
-    session_ttl_hours: int = Field(default=24, ge=1)
 
     # CORS origins allowed by the API. Keep in sync with backend/.env.example.
     cors_origins: str = (
@@ -89,7 +85,9 @@ class Settings(BaseSettings):
         """True when we should call a real model rather than the scripted demo."""
         return not self.demo_mode and self.has_openai
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # "ignore" so a leftover key from an older .env (e.g. SESSION_TTL_HOURS)
+    # doesn't stop the app from starting.
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 @lru_cache

@@ -1,4 +1,8 @@
-"""Regression tests for the scripted intake flow and intake endpoints."""
+"""Regression tests for the scripted intake flow and intake endpoints.
+
+The server is stateless: each helper keeps the client-held intake state
+and sends it with every request, the way the browser does.
+"""
 
 from __future__ import annotations
 
@@ -8,16 +12,43 @@ HOUSEHOLD_Q = "how many people are in your household"
 ZIP_Q = "What zip code do you live in"
 
 
+class Intake:
+    """Test double for the browser: holds the state between requests."""
+
+    def __init__(self, client, **start):
+        self.client = client
+        res = client.post("/api/v1/intake/start", json=start)
+        assert res.status_code == 200, res.text
+        self.state = res.json()["state"]
+
+    def post(self, path, **body):
+        res = self.client.post(f"/api/v1/intake/{path}", json={"state": self.state, **body})
+        if res.status_code == 200 and "state" in res.json():
+            self.state = res.json()["state"]
+        return res
+
+    def say_raw(self, text, **extra):
+        return self.post("message", message=text, **extra)
+
+    def say(self, text, **extra):
+        res = self.say_raw(text, **extra)
+        assert res.status_code == 200, res.text
+        return res.json()["response"]["content"]
+
+    @property
+    def profile(self):
+        return self.state["profile"]
+
+    def stored_text(self):
+        return repr(self.state)
+
+
 def _start(client, **body):
-    res = client.post("/api/v1/intake/start", json=body)
-    assert res.status_code == 200
-    return res.json()["session_id"]
+    return Intake(client, **body)
 
 
-def _say(client, sid, text):
-    res = client.post(f"/api/v1/intake/{sid}/message", json={"message": text})
-    assert res.status_code == 200, res.text
-    return res.json()["response"]["content"]
+def _say(client, intake, text):
+    return intake.say(text)
 
 
 def test_life_event_entry_still_asks_household_size(client):
@@ -27,7 +58,7 @@ def test_life_event_entry_still_asks_household_size(client):
     assert HOUSEHOLD_Q in _say(client, sid, "cost")
     assert ZIP_Q in _say(client, sid, "2 people")
     _say(client, sid, "78744")
-    profile = client.get(f"/api/v1/intake/{sid}/results").json()["profile"]
+    profile = sid.post("results").json()["profile"]
     assert profile["household_size"] == 2
     assert profile["zip_code"] == "78744"
     assert set(profile["immediate_needs"]) >= {"smoking_cessation", "nutrition"}
@@ -42,10 +73,16 @@ def test_crisis_turn_does_not_skip_next_scripted_question(client):
 
 def test_message_validation(client):
     sid = _start(client)
-    url = f"/api/v1/intake/{sid}/message"
-    assert client.post(url, json={"message": ""}).status_code == 422
-    assert client.post(url, json={"message": "x" * 4001}).status_code == 422
-    assert client.post("/api/v1/intake/nope/message", json={"message": "hi"}).status_code == 404
+    assert sid.say_raw("").status_code == 422
+    assert sid.say_raw("x" * 4001).status_code == 422
+    # No state at all is a validation error, not a lookup.
+    assert client.post("/api/v1/intake/message", json={"message": "hi"}).status_code == 422
+
+
+def test_completed_intake_refuses_more_messages(client):
+    done = _completed_session(client)
+    assert done.state["status"] == "completed"
+    assert done.say_raw("one more thing").status_code == 400
 
 
 def test_start_rejects_oversized_focus(client):
@@ -62,18 +99,24 @@ def _completed_session(client):
 
 
 def test_share_validates_recipient(client):
-    sid = _completed_session(client)
-    url = f"/api/v1/intake/{sid}/share"
-    assert client.post(url, json={"channel": "email", "recipient": "xyz"}).status_code == 422
-    assert client.post(url, json={"channel": "sms", "recipient": "hello"}).status_code == 422
-    ok = client.post(url, json={"channel": "sms", "recipient": "(512) 555-1234"})
-    assert ok.status_code == 200 and ok.json()["to"] == "5125551234"
-    assert client.post(url, json={"channel": "email", "recipient": "a@b.org"}).status_code == 200
+    ids = _completed_session(client).state["matched_service_ids"]
+    url = "/api/v1/intake/share"
+
+    def share(**body):
+        return client.post(url, json={"service_ids": ids, **body})
+
+    assert share(channel="email", recipient="xyz").status_code == 422
+    assert share(channel="sms", recipient="hello").status_code == 422
+    ok = share(channel="sms", recipient="(512) 555-1234")
+    assert ok.status_code == 200 and ok.json()["ok"] is True
+    # The recipient is not echoed back.
+    assert "5125551234" not in ok.text
+    assert share(channel="email", recipient="a@b.org").status_code == 200
 
 
 def test_realtime_secret_unavailable_without_key(client):
     sid = _start(client)
-    res = client.post(f"/api/v1/intake/{sid}/realtime/client-secret", json={})
+    res = sid.post("realtime/client-secret")
     assert res.status_code == 400
     assert "sk-" not in res.text
 
@@ -84,19 +127,13 @@ SSN = "123-45-6789"
 PHONE = "512-555-0199"
 
 
-def _stored_text(sid):
-    from app.services.ai import get_session
-
-    session = get_session(sid)
-    return repr([m.content for m in session.conversation]) + repr(session.responses_input)
+def _stored_text(intake):
+    return intake.stored_text()
 
 
 def test_text_message_is_redacted_before_storage(client):
     sid = _start(client)
-    res = client.post(
-        f"/api/v1/intake/{sid}/message",
-        json={"message": f"I need food. My SSN is {SSN} and my phone is {PHONE}"},
-    )
+    res = sid.say_raw(f"I need food. My SSN is {SSN} and my phone is {PHONE}")
     body = res.json()
     assert res.status_code == 200
     assert body["user_message"]["content"] == (
@@ -110,10 +147,7 @@ def test_text_message_is_redacted_before_storage(client):
 
 def test_redaction_notice_follows_session_language(client):
     sid = _start(client, language="es")
-    res = client.post(
-        f"/api/v1/intake/{sid}/message",
-        json={"message": f"Necesito comida, mi teléfono es {PHONE}", "language": "es"},
-    )
+    res = sid.say_raw(f"Necesito comida, mi teléfono es {PHONE}", language="es")
     assert res.json()["response"]["content"].startswith("Por tu privacidad")
 
 
@@ -152,12 +186,14 @@ def test_live_model_payload_never_contains_raw_identifiers(client, monkeypatch):
     assert SSN not in payload and PHONE not in payload
     assert "[SSN removed]" in payload and "[phone removed]" in payload
     assert "Never ask for, repeat, or store" in calls[1]["instructions"]
+    # Only visible conversation text is replayed; nothing from a prior
+    # turn's reasoning or tool loop.
+    assert [item["role"] for item in calls[1]["input"]] == ["assistant", "user"]
 
 
 def test_realtime_user_transcript_is_redacted(client):
     sid = _start(client)
-    url = f"/api/v1/intake/{sid}/realtime/transcript"
-    res = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"})
+    res = sid.post("realtime/transcript", role="user", content=f"my number is {PHONE}")
     body = res.json()
     assert res.status_code == 200
     assert body["messages"][0]["content"] == "my number is [phone removed]"
@@ -165,22 +201,27 @@ def test_realtime_user_transcript_is_redacted(client):
     assert PHONE not in _stored_text(sid)
 
     # Assistant turns quote catalog phone numbers on purpose; leave them.
-    res = client.post(url, json={"role": "assistant", "content": "Call 512-972-5000 to apply."})
+    res = sid.post("realtime/transcript", role="assistant", content="Call 512-972-5000 to apply.")
     assert res.json()["messages"][0]["content"] == "Call 512-972-5000 to apply."
+    assert sid.state["conversation"][-1]["content"] == "Call 512-972-5000 to apply."
 
 
 def test_debug_log_values_are_redacted():
-    from app.services.ai import _sanitize_debug_value
+    from app.services.realtime_debug import _sanitize_debug_value
 
     cleaned = _sanitize_debug_value({"content_preview": f"ssn {SSN}", "args": [PHONE]})
     assert SSN not in repr(cleaned) and PHONE not in repr(cleaned)
 
 
 def test_realtime_instructions_include_privacy_rules(client, monkeypatch):
-    from app.services.ai import build_realtime_session_config, get_session
+    from app.models import IntakeState
+    from app.services.intake_state import session_from_state
+    from app.services.realtime import build_realtime_session_config
 
     sid = _start(client)
-    config = build_realtime_session_config(get_session(sid))
+    config = build_realtime_session_config(
+        session_from_state(IntakeState.model_validate(sid.state))
+    )
     assert "Voice privacy" in config["instructions"]
     assert config["tracing"] is None
 
@@ -220,7 +261,7 @@ def test_scripted_flow_skips_known_fields_after_lost_job(client):
     # Household, zip, housing and employment are all known: go to income.
     assert "monthly income" in reply
     assert "health insurance" in _say(client, sid, "Under $1,000")
-    profile = client.get(f"/api/v1/intake/{sid}/results").json()["profile"]
+    profile = sid.profile
     assert profile["household_size"] == 3
     assert profile["zip_code"] == "78744"
     assert profile["housing_situation"] == "renting"
@@ -235,7 +276,7 @@ def test_lost_job_opener_does_not_re_ask_stated_housing(client):
         "I lost my job last month and I'm behind on rent. I rent an apartment in 78744.",
     )
     assert "housing situation" not in reply
-    profile = client.get(f"/api/v1/intake/{sid}/results").json()["profile"]
+    profile = sid.profile
     assert profile["housing_situation"] == "renting"
     assert profile["zip_code"] == "78744"
 
@@ -251,11 +292,11 @@ def test_scripted_flow_still_asks_unknown_fields_in_order(client):
 
 
 def test_scripted_greeting_discloses_ai_and_never_says_confidential(client):
-    from app.services.ai import _DEMO_STEPS, get_session
+    from app.services.scripted import DEMO_STEPS
 
     sid = _start(client)
-    greeting = get_session(sid).conversation[0].content
-    assert greeting == _DEMO_STEPS[0]["message"]
+    greeting = sid.state["conversation"][0]["content"]
+    assert greeting == DEMO_STEPS[0]["message"]
     assert "confidential" not in greeting.lower()
     assert "OpenAI" in greeting and "Social Security" in greeting
 
@@ -299,7 +340,6 @@ def _fake_openai(monkeypatch, output_text):
 
 
 def test_live_greeting_prompt_requires_translated_ai_notice(client, monkeypatch):
-    from app.services.ai import get_session
     from app.services.i18n import AI_NOTICE_I18N
 
     calls = _fake_openai(monkeypatch, "¡Hola! ¿Qué te trae por aquí hoy?")
@@ -309,17 +349,15 @@ def test_live_greeting_prompt_requires_translated_ai_notice(client, monkeypatch)
     assert AI_NOTICE_I18N["es"] in prompt
     assert "confidential" not in prompt.replace("confidential or private", "")
     # The model left the notice out, so the backend appends it.
-    greeting = get_session(sid).conversation[0].content
+    greeting = sid.state["conversation"][0]["content"]
     assert greeting.endswith(AI_NOTICE_I18N["es"])
 
 
 def test_live_greeting_keeps_model_text_when_notice_present(client, monkeypatch):
-    from app.services.ai import get_session
-
     text = "Welcome! This guide uses AI (OpenAI) to help. What brings you here?"
     _fake_openai(monkeypatch, text)
     sid = _start(client)
-    assert get_session(sid).conversation[0].content == text
+    assert sid.state["conversation"][0]["content"] == text
 
 
 # ── Housing / children inference never excludes residents who may qualify ─
@@ -332,10 +370,10 @@ _HOMELESS_SERVICES = (
 )
 
 
-def _session_profile(sid):
-    from app.services.ai import get_session
+def _session_profile(intake):
+    from app.models import ResidentProfile
 
-    return get_session(sid).extracted_profile
+    return ResidentProfile.model_validate(intake.profile)
 
 
 def _not_excluded(slug, profile):
@@ -387,8 +425,8 @@ def test_household_of_two_does_not_rule_out_family_services(client):
 
 
 def test_stated_household_of_two_leaves_has_children_unknown():
-    from app.models import IntakeMessage, MessageRole
-    from app.services.ai import IntakeSession, _capture_stated_facts
+    from app.models import IntakeMessage, IntakeSession, MessageRole
+    from app.services.scripted import _capture_stated_facts
 
     session = IntakeSession()
     session.conversation.append(
@@ -403,22 +441,18 @@ def test_stated_household_of_two_leaves_has_children_unknown():
 
 def test_realtime_early_returns_include_redacted_content(client):
     sid = _start(client)
-    url = f"/api/v1/intake/{sid}/realtime/transcript"
-    first = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"}).json()
+    first = sid.post("realtime/transcript", role="user", content=f"my number is {PHONE}").json()
     assert first["redacted_content"] == "my number is [phone removed]"
 
     # Duplicate of the stored turn: nothing stored, but still redacted.
-    dup = client.post(url, json={"role": "user", "content": f"my number is {PHONE}"}).json()
+    dup = sid.post("realtime/transcript", role="user", content=f"my number is {PHONE}").json()
     assert dup["messages"] == []
     assert dup["redacted"] == ["phone"]
     assert dup["redacted_content"] == "my number is [phone removed]"
 
     # Completed session: user turns are refused, still redacted.
     done = _completed_session(client)
-    res = client.post(
-        f"/api/v1/intake/{done}/realtime/transcript",
-        json={"role": "user", "content": f"ssn {SSN}"},
-    ).json()
+    res = done.post("realtime/transcript", role="user", content=f"ssn {SSN}").json()
     assert res["messages"] == [] and res["error"] == "session already completed"
     assert res["redacted"] == ["ssn"]
     assert res["redacted_content"] == "ssn [SSN removed]"
@@ -427,12 +461,11 @@ def test_realtime_early_returns_include_redacted_content(client):
 
 def test_realtime_assistant_transcript_strips_read_back_identifiers(client):
     sid = _start(client)
-    url = f"/api/v1/intake/{sid}/realtime/transcript"
     spoken = (
         f"I heard {SSN}, you don't need to share that. Call 512-972-5000, "
         "visit 1000 E 11th St, or email info@caritasofaustin.org."
     )
-    body = client.post(url, json={"role": "assistant", "content": spoken}).json()
+    body = sid.post("realtime/transcript", role="assistant", content=spoken).json()
     expected = (
         "I heard [SSN removed], you don't need to share that. Call 512-972-5000, "
         "visit 1000 E 11th St, or email info@caritasofaustin.org."
@@ -447,7 +480,7 @@ def test_realtime_assistant_transcript_strips_read_back_identifiers(client):
 def test_debug_sanitizer_preclips_huge_strings():
     import time
 
-    from app.services.ai import _sanitize_debug_value
+    from app.services.realtime_debug import _sanitize_debug_value
 
     started = time.perf_counter()
     cleaned = _sanitize_debug_value({"blob": "a" * 1_000_000, f"ssn {SSN}": 1})
@@ -461,78 +494,28 @@ def test_debug_event_detail_size_is_bounded(client, monkeypatch):
 
     monkeypatch.setattr(get_settings(), "realtime_debug_log_enabled", True)
     monkeypatch.setattr(get_settings(), "realtime_debug_log_path", "/dev/null")
-    sid = _start(client)
-    url = f"/api/v1/intake/{sid}/realtime/debug"
-    too_big = client.post(url, json={"event": "x", "detail": {"blob": "a" * 40_000}})
+    url = "/api/v1/intake/realtime/debug"
+    event = {"trace_id": "trace-1", "event": "x"}
+    too_big = client.post(url, json={**event, "detail": {"blob": "a" * 40_000}})
     assert too_big.status_code == 422
-    ok = client.post(url, json={"event": "x", "detail": {"blob": "a" * 2_000}})
+    ok = client.post(url, json={**event, "detail": {"blob": "a" * 2_000}})
     assert ok.status_code == 200
+    assert client.post(url, json={**event, "trace_id": "../etc"}).status_code == 422
 
 
-# ── Plan task cancelled by expiry ───────────────────────────────────────
-
-def test_application_order_survives_plan_task_cancelled_by_purge(client):
-    import asyncio
-
-    from app.services import ai
-
-    sid = _completed_session(client)
-    session = ai.get_session(sid)
-
-    async def scenario():
-        never = asyncio.get_running_loop().create_future()
-        task = asyncio.ensure_future(never)
-        ai._plan_tasks[sid] = task
-        ai._plan_cache.pop(sid, None)
-        waiter = asyncio.ensure_future(ai.get_application_order(session, wait_seconds=5))
-        await asyncio.sleep(0)
-        # What _purge_expired_sessions does to an expired session.
-        del ai._sessions[sid]
-        ai._plan_tasks.pop(sid, None)
-        task.cancel()
-        return await waiter
-
-    result = asyncio.run(scenario())
-    assert result["ai_generated"] is False and result["items"]
-    assert sid not in ai._plan_cache
+def test_debug_endpoints_hidden_when_log_disabled(client):
+    url = "/api/v1/intake/realtime/debug"
+    assert client.post(url, json={"trace_id": "t", "event": "x"}).status_code == 404
+    assert client.get(f"{url}/t").status_code == 404
+    assert client.get(f"{url}/sessions").status_code == 404
 
 
-def test_application_order_not_cached_after_session_expired(client):
-    import asyncio
+# ── No session expiry machinery remains ─────────────────────────────────
 
-    from app.services import ai
-
-    sid = _completed_session(client)
-    session = ai.get_session(sid)
-    plan = {"summary": "s", "items": [], "ai_generated": True}
-
-    async def scenario():
-        gate = asyncio.Event()
-
-        async def build():
-            await gate.wait()
-            return plan
-
-        ai._plan_tasks[sid] = asyncio.ensure_future(build())
-        ai._plan_cache.pop(sid, None)
-        waiter = asyncio.ensure_future(ai.get_application_order(session, wait_seconds=5))
-        await asyncio.sleep(0)
-        del ai._sessions[sid]  # expired while the plan was still building
-        gate.set()
-        return await waiter
-
-    assert asyncio.run(scenario()) == plan
-    assert sid not in ai._plan_cache
-    ai._plan_tasks.pop(sid, None)
-
-
-def test_results_and_health_expose_session_ttl(client):
-    from app.config import get_settings
-
-    sid = _completed_session(client)
-    ttl = get_settings().session_ttl_hours
-    assert client.get(f"/api/v1/intake/{sid}/results").json()["session_ttl_hours"] == ttl
-    assert client.get("/api/v1/health").json()["session_ttl_hours"] == ttl
+def test_health_has_no_session_ttl(client):
+    assert "session_ttl_hours" not in client.get("/api/v1/health").json()
+    done = _completed_session(client)
+    assert "session_ttl_hours" not in done.post("results").json()
 
 
 @pytest.mark.parametrize(
@@ -545,6 +528,6 @@ def test_results_and_health_expose_session_ttl(client):
     ],
 )
 def test_housing_answer_needs_a_home_to_mean_own_home(answer, expected):
-    from app.services.ai import _extract_housing
+    from app.services.scripted import _extract_housing
 
     assert _extract_housing(answer) == expected
