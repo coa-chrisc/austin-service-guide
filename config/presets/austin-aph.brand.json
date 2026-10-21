@@ -68,8 +68,8 @@
   },
   "contact": {
     "phone311": "311",
-    "agencyWebsite": "https://www.austintexas.gov/department/public-health",
-    "accessibilityUrl": "https://www.austintexas.gov/accessibility"
+    "agencyWebsite": "https://www.austintexas.gov/health",
+    "accessibilityUrl": "https://www.austintexas.gov/city-manager/americans-disabilities-act-ada"
   },
   "pwa": {
     "themeColor": "#005bbb",
