@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/services.schema.json",
+  "title": "Service catalog entry",
+  "description": "One service in the resident service catalog. One YAML file per service under backend/app/data/services/. Cross-file rules (unique id/slug, category references, location service_id) are enforced by backend/scripts/validate_catalog.py, not by this schema.",
+  "type": "object",
+  "required": ["id", "slug", "name", "provider_name", "categories", "eligibility_summary", "status"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1, "description": "Stable unique identifier for the service (for example svc-age). Never reuse or change once published."},
+    "slug": {"type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "URL-safe unique name, lowercase words joined by hyphens. Must match the file name."},
+    "name": {"type": "string", "minLength": 1, "description": "Public name of the service or program."},
+    "provider_name": {"type": "string", "minLength": 1, "description": "Organization that delivers the service."},
+    "description": {"type": "string", "description": "Plain-language summary of what the service provides."},
+    "eligibility_summary": {"type": "string", "minLength": 1, "description": "Plain-language statement of who qualifies. Required so residents are never shown a service without knowing who it is for."},
+    "eligibility_requires": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Hard eligibility gates the matching engine checks against the resident profile. All listed gates must be satisfied.",
+      "items": {"enum": ["veteran", "homeless_or_unstable_housing", "refugee_or_immigrant", "disability", "older_adult", "older_adult_or_disability", "has_children", "youth", "other_criteria"]}
+    },
+    "how_to_apply": {"type": "string", "description": "Steps a resident takes to get the service."},
+    "cost": {"type": "string", "description": "Plain-language description of cost to the resident."},
+    "cost_type": {"enum": ["free", "sliding_scale", "flat_fee", "insurance", "varies"], "description": "Machine-readable cost category."},
+    "website_url": {"type": "string", "description": "Public web page for the service. May be empty if none exists (validator warns)."},
+    "phone": {"type": "string", "description": "Main contact phone. A service must have this or at least one location phone."},
+    "email": {"type": "string", "description": "Public contact email, if any."},
+    "languages_offered": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Language codes the service can be delivered in (for example en, es)."},
+    "accessibility_features": {"type": "array", "items": {"type": "string"}, "description": "Accessibility features, for example Wheelchair accessible."},
+    "status": {"enum": ["active", "inactive", "seasonal"], "description": "Whether the service is currently offered."},
+    "categories": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Category slugs (the slug field in categories.yaml, for example healthcare). At least one. Validity against categories.yaml is checked by the validator."
+    },
+    "locations": {"type": "array", "items": {"$ref": "#/$defs/location"}, "description": "Physical sites. May be empty for phone-only or online-only services."},
+    "documents": {"type": "array", "items": {"$ref": "#/$defs/document"}, "description": "Documents a resident should bring or submit."},
+    "last_verified_date": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) a person last confirmed this entry against the provider. Optional; absent means unverified."},
+    "verified_by": {"type": "string", "minLength": 1, "description": "Name or role of the person who last verified this entry. Optional; absent means unverified."}
+  },
+  "anyOf": [
+    {"required": ["phone"], "properties": {"phone": {"type": "string", "minLength": 1}}},
+    {"required": ["locations"], "properties": {"locations": {"contains": {"required": ["phone"], "properties": {"phone": {"type": "string", "minLength": 1}}}}}}
+  ],
+  "$defs": {
+    "document": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "description": "Document name."},
+        "description": {"type": "string", "description": "Details about the document."},
+        "is_required": {"type": "boolean", "description": "True if the document is mandatory."}
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": ["name", "address", "city", "state", "zip_code", "latitude", "longitude"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "description": "Unique location identifier."},
+        "service_id": {"type": "string", "description": "Must equal the parent service id (checked by the validator)."},
+        "name": {"type": "string", "minLength": 1, "description": "Site name, for example Main Campus."},
+        "address": {"type": "string", "minLength": 1, "description": "Street address."},
+        "city": {"type": "string", "minLength": 1, "description": "City."},
+        "state": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "Two-letter state code."},
+        "zip_code": {"type": "string", "pattern": "^[0-9]{5}(-[0-9]{4})?$", "description": "ZIP code as a quoted string."},
+        "latitude": {"type": "number", "minimum": -90, "maximum": 90, "description": "Latitude in decimal degrees."},
+        "longitude": {"type": "number", "minimum": -180, "maximum": 180, "description": "Longitude in decimal degrees."},
+        "phone": {"type": "string", "description": "Phone for this site."},
+        "is_primary": {"type": "boolean", "description": "True for the main site."},
+        "hours": {
+          "type": "object",
+          "description": "Opening hours keyed by lowercase day name; values are display strings such as 8:00 AM - 5:00 PM or Closed.",
+          "propertyNames": {"enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]},
+          "additionalProperties": {"type": "string"}
+        },
+        "hours_verified": {"type": "boolean", "description": "True only if a person confirmed these hours with the provider."}
+      }
+    }
+  }
+}

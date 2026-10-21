@@ -1,0 +1,78 @@
+{
+  "appName": "Metro Service Guide",
+  "shortName": "MSG",
+  "agencyName": "Metro Public Health",
+  "cityName": "Metro City",
+  "description": "FICTIONAL DEMO CITY. Find services you're eligible for in Metro City — a white-label demonstration, not a real agency.",
+  "logo": {
+    "src": "/brand/metro-logo.svg",
+    "alt": "Metro Public Health (fictional demo logo)"
+  },
+  "palette": {
+    "primary": {
+      "main": "#0F5C6E",
+      "light": "#4A8A9A",
+      "dark": "#083A46",
+      "contrastText": "#FFFFFF"
+    },
+    "secondary": {
+      "main": "#A63D00",
+      "light": "#F6E3D6",
+      "dark": "#6E2900",
+      "contrastText": "#FFFFFF"
+    },
+    "background": {
+      "default": "#F3F8F9",
+      "paper": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#0B2F38",
+      "secondary": "#4A5F66"
+    },
+    "error": "#B3261E",
+    "warning": "#9A5200",
+    "success": "#1B6E3A",
+    "info": "#0B6BA8"
+  },
+  "darkPalette": {
+    "primary": {
+      "main": "#7CC4D4",
+      "light": "#A8DAE5",
+      "dark": "#0F5C6E",
+      "contrastText": "#000000"
+    },
+    "secondary": {
+      "main": "#F0A878",
+      "light": "#F6E3D6",
+      "dark": "#A63D00",
+      "contrastText": "#000000"
+    },
+    "background": {
+      "default": "#0E1A1D",
+      "paper": "#16272B"
+    },
+    "text": {
+      "primary": "#E6F1F3",
+      "secondary": "#A3B8BD"
+    },
+    "error": "#FF8A80",
+    "warning": "#FFB74D",
+    "success": "#6FD39A",
+    "info": "#64B5F6"
+  },
+  "fontFamily": "Helvetica,Arial,sans-serif",
+  "copy": {
+    "tagline": "Find services you may qualify for — in minutes",
+    "footerDisclaimer": "Metro Public Health | Metro City (fictional demonstration city)",
+    "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
+  },
+  "contact": {
+    "phone311": "311",
+    "agencyWebsite": "https://example.org/metro-public-health",
+    "accessibilityUrl": "https://example.org/metro-public-health/accessibility"
+  },
+  "pwa": {
+    "themeColor": "#0F5C6E",
+    "backgroundColor": "#F3F8F9"
+  }
+}
