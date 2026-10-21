@@ -11,8 +11,10 @@ import type { IntakeState } from "@/types";
 
 const KEY_PREFIX = "asg.intake.";
 const STATE_KEY = `${KEY_PREFIX}state`;
-// Pre-stateless builds kept a results-link id in localStorage.
+// Pre-stateless builds kept a results-link id in localStorage and cached
+// /results responses (profile + matches) in this service-worker cache.
 const LEGACY_LOCAL_KEY = "asg.activeSession";
+const LEGACY_RESULTS_CACHE = "intake-results";
 
 /** Fired on window whenever the stored intake state is saved or cleared. */
 export const INTAKE_STATE_EVENT = "asg:intake-state";
@@ -20,6 +22,17 @@ export const INTAKE_STATE_EVENT = "asg:intake-state";
 let epoch = 0;
 let queue: Promise<unknown> = Promise.resolve();
 let planPromise: { epoch: number; promise: Promise<IntakeState> } | null = null;
+// Fallback copy for when sessionStorage is blocked (site data disabled), so
+// the intake still works for this page's lifetime.
+let memoryState: IntakeState | null = null;
+
+function purgeLegacyResultsCache(): void {
+  if (typeof caches === "undefined") return;
+  caches.delete(LEGACY_RESULTS_CACHE).catch(() => undefined);
+}
+
+// Old builds may have left residents' results on disk; drop them on load.
+purgeLegacyResultsCache();
 
 function notify(): void {
   window.dispatchEvent(new Event(INTAKE_STATE_EVENT));
@@ -29,20 +42,21 @@ export function loadIntakeState(): IntakeState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(STATE_KEY);
-    if (!raw) return null;
+    if (!raw) return memoryState;
     const parsed = JSON.parse(raw) as IntakeState;
     return parsed && parsed.version === 1 ? parsed : null;
   } catch {
-    return null;
+    return memoryState;
   }
 }
 
 export function saveIntakeState(state: IntakeState): void {
   if (typeof window === "undefined") return;
+  memoryState = state;
   try {
     window.sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
   } catch {
-    /* storage disabled or full — the in-memory UI still works this tab */
+    /* storage disabled or full — memoryState keeps this page working */
   }
   notify();
 }
@@ -52,6 +66,8 @@ export function clearIntakeState(): void {
   if (typeof window === "undefined") return;
   epoch += 1;
   planPromise = null;
+  memoryState = null;
+  purgeLegacyResultsCache();
   try {
     const keys: string[] = [];
     for (let i = 0; i < window.sessionStorage.length; i++) {
