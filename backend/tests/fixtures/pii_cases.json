@@ -819,5 +819,54 @@
     "input": "Hola, necesito ayuda con la renta",
     "expected": "Hola, necesito ayuda con la renta",
     "kinds": []
+  },
+  {
+    "input": "My name is: Maria Lopez",
+    "expected": "My name is: [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is Maria Lopez",
+    "expected": "my name is [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My name is\nMaria Lopez",
+    "expected": "My name is\n[name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "I'm Maria Lopez",
+    "expected": "I'm [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "my name is maria\nneed food",
+    "expected": "my name is [name removed]\nneed food",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "My name is — Ana",
+    "expected": "My name is — [name removed]",
+    "kinds": [
+      "name"
+    ]
+  },
+  {
+    "input": "Mi nombre es: Juan Perez",
+    "expected": "Mi nombre es: [name removed]",
+    "kinds": [
+      "name"
+    ]
   }
 ]

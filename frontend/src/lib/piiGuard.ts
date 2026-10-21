@@ -262,12 +262,12 @@ const NAME_DESC_GUARD = notStop(NAME_STOP_DESCRIPTOR);
 const NAME_CONT_GUARD = notStop(NAME_STOP_CONTINUATION);
 
 const NAME_EXPLICIT_RE = py(
-  String.raw`(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)[ \t]+)` +
-    String.raw`(?P<val>${NAME_FUNC_GUARD}${NAME_ANY}(?:[ \t]+${NAME_CONT_GUARD}${NAME_ANY}){0,2})`,
+  String.raw`(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))` +
+    String.raw`(?P<val>${NAME_FUNC_GUARD}${NAME_ANY}(?:[ \t  ]+${NAME_CONT_GUARD}${NAME_ANY}){0,2})`,
 );
 const NAME_SELF_RE = py(
-  String.raw`(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)[ \t]+)` +
-    String.raw`(?P<val>${NAME_DESC_GUARD}${NAME_CAP}(?:[ \t]+${NAME_DESC_GUARD}${NAME_CAP}){1,2})`,
+  String.raw`(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))` +
+    String.raw`(?P<val>${NAME_DESC_GUARD}${NAME_CAP}(?:[ \t  ]+${NAME_DESC_GUARD}${NAME_CAP}){1,2})`,
 );
 
 /* ---- Helpers ---- */

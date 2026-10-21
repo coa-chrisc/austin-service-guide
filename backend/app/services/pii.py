@@ -222,14 +222,14 @@ _NAME_CONT_GUARD = _not_stop(_NAME_STOP_CONTINUATION)
 # case; the run stops at the first function/verb stopword, punctuation or digit
 # (over-redacting is acceptable, leaking a name is not).
 _NAME_EXPLICIT_RE = re.compile(
-    r"(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)[ \t]+)"
-    rf"(?P<val>{_NAME_FUNC_GUARD}{_NAME_ANY}(?:[ \t]+{_NAME_CONT_GUARD}{_NAME_ANY}){{0,2}})"
+    r"(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))"
+    rf"(?P<val>{_NAME_FUNC_GUARD}{_NAME_ANY}(?:[ \t  ]+{_NAME_CONT_GUARD}{_NAME_ANY}){{0,2}})"
 )
 # "I am Maria Lopez" / "this is Maria Lopez": ambiguous phrases, so two to
 # three Capitalized, non-stoplisted words are required.
 _NAME_SELF_RE = re.compile(
-    r"(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)[ \t]+)"
-    rf"(?P<val>{_NAME_DESC_GUARD}{_NAME_CAP}(?:[ \t]+{_NAME_DESC_GUARD}{_NAME_CAP}){{1,2}})"
+    r"(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))"
+    rf"(?P<val>{_NAME_DESC_GUARD}{_NAME_CAP}(?:[ \t  ]+{_NAME_DESC_GUARD}{_NAME_CAP}){{1,2}})"
 )
 
 
