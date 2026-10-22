@@ -169,7 +169,7 @@ export default function RealtimeVoicePanel({
                   ? alpha(theme.palette.error.main, 0.08)
                   : alpha(theme.palette.primary.main, 0.08),
               color:
-                voice.status === "error" ? "brand.negativeText" : "primary.dark",
+                voice.status === "error" ? "brand.negativeText" : "brand.inkText",
               minWidth: 0,
             })}
           >

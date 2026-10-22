@@ -299,14 +299,14 @@ export default function Intake() {
                   mb: 3,
                   p: 1.75,
                   borderRadius: 2,
-                  bgcolor: "primary.50",
+                  bgcolor: "brand.primarySoft",
                   border: "1px solid",
                   borderColor: "primary.light",
                 }}
               >
                 <Typography
                   variant="body2"
-                  sx={{ color: "primary.dark", lineHeight: 1.5 }}
+                  sx={{ color: "brand.inkText", lineHeight: 1.5 }}
                 >
                   {planSummary}
                 </Typography>

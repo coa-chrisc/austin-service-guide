@@ -262,7 +262,7 @@ export default function MapView() {
               zIndex: 1000,
               bgcolor: "background.paper",
               boxShadow: 2,
-              "&:hover": { bgcolor: "grey.100" },
+              "&:hover": { bgcolor: "action.hover" },
             }}
           >
             <ListIcon color="primary" />

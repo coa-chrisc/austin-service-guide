@@ -48,7 +48,7 @@ function TypingIndicator() {
           px: 2,
           py: 1.5,
           borderRadius: "16px 16px 16px 4px",
-          bgcolor: "grey.100",
+          bgcolor: "brand.subtle",
           border: "1px solid",
           borderColor: "divider",
         }}

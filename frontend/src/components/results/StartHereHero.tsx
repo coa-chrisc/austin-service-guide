@@ -190,7 +190,7 @@ export default function StartHereHero({
                     height: 24,
                     fontSize: 12,
                     fontWeight: 600,
-                    bgcolor: status.open ? "success.50" : "transparent",
+                    bgcolor: status.open ? (theme) => alpha(theme.palette.success.main, 0.12) : "transparent",
                     color: status.open ? "success.dark" : "text.secondary",
                     borderColor: status.open ? "success.light" : "divider",
                   }}
@@ -204,9 +204,9 @@ export default function StartHereHero({
               sx={{
                 p: 2,
                 borderRadius: 2,
-                bgcolor: "primary.50",
+                bgcolor: "brand.primarySoft",
                 border: "1px solid",
-                borderColor: "primary.100",
+                borderColor: "primary.light",
               }}
             >
               <Typography

@@ -386,8 +386,8 @@ export default function AdminResidentDetail() {
                           width: 28,
                           height: 28,
                           fontSize: 14,
-                          bgcolor: "grey.300",
-                          color: "grey.700",
+                          bgcolor: "action.selected",
+                          color: "text.secondary",
                         }}
                       >
                         {m.name.charAt(0)}

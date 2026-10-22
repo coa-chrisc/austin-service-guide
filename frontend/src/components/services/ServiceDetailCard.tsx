@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -159,7 +160,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
           <Grid size={{ xs: 12, md: 5 }}>
             <Card
               variant="outlined"
-              sx={{ borderRadius: 2, bgcolor: "grey.50", mb: 3 }}
+              sx={{ borderRadius: 2, bgcolor: "brand.subtle", mb: 3 }}
             >
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
@@ -311,7 +312,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                                   fontSize: 11,
                                   fontWeight: 600,
                                   bgcolor: status.open
-                                    ? "success.50"
+                                    ? (theme) => alpha(theme.palette.success.main, 0.12)
                                     : "transparent",
                                   color: status.open
                                     ? "success.dark"
