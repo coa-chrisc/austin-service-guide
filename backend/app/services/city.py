@@ -27,6 +27,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Mapping
+
+from dotenv import dotenv_values
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 _HERE = Path(__file__).resolve()
@@ -115,6 +117,26 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         timezone=tz,
         **({"languages": tuple(languages)} if isinstance(languages, list) and languages else {}),
     )
+
+
+#: Read from the process environment only, never from backend/.env: the
+#: frontend build reads the CITY_* ones from the shell as well.
+PROCESS_ENV_ONLY = ("CITY_CONFIG", "CITY_PRESET", "CITY_CONFIG_DIR", "CITY_DATA_DIR", "STATIC_DIR")
+
+
+def check_env_file(path: str | Path = ".env", environ: Mapping[str, str] | None = None) -> None:
+    """Fail when ``path`` sets a variable that only the process environment can set.
+
+    pydantic-settings reads .env into Settings but not into os.environ, so a
+    CITY_DATA_DIR there would be ignored and the bundled Austin data served.
+    """
+    environ = os.environ if environ is None else environ
+    stray = [k for k, v in dotenv_values(path).items() if k in PROCESS_ENV_ONLY and v and environ.get(k) != v]
+    if stray:
+        raise CityConfigError(
+            f"{_PREFIX} {', '.join(stray)} in {path} would be ignored; set them in the shell or "
+            "container environment instead (the frontend build reads them from there too)."
+        )
 
 
 @lru_cache(maxsize=1)

@@ -13,7 +13,7 @@ from app.config import get_settings
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import admin, intake, services
 from app.services.catalog import load_seed_data
-from app.services.city import get_city
+from app.services.city import check_env_file, get_city
 from app.spa import mount_spa
 
 
@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
+check_env_file()
 settings = get_settings()
 city = get_city()
 api_title = settings.app_name or f"{city.app_name} API"

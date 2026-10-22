@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "city.config.schema.json",
-  "title": "Austin Service Guide city configuration",
+  "title": "Civic Service Guide city configuration",
   "description": "One deployment = one city config. The shared keys (id, appName, agency, region, brand, theme, map) have the same shape and meaning as in Austin Health Pulse, so one agency file can drive both apps. Health Pulse-only keys are accepted and ignored. Service Guide-only settings live in the optional serviceGuide block.",
   "type": "object",
   "required": [
