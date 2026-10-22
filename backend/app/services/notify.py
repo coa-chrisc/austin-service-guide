@@ -15,6 +15,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.services.city import get_city
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ async def send_email(
         "personalizations": [{"to": [{"email": to}]}],
         "from": {
             "email": settings.sendgrid_from_email,
-            "name": settings.sendgrid_from_name,
+            "name": settings.sendgrid_from_name or get_city().app_name,
         },
         "subject": subject,
         "content": [

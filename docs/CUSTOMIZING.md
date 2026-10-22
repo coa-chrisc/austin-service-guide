@@ -37,7 +37,7 @@ With Docker, pass the build argument: `docker build --build-arg CITY_CONFIG=pres
 
 | Key | Where it shows |
 | --- | --- |
-| `appName` | Browser tab title, the chat welcome ("Welcome to …"), the shared plan text, the PWA name, and the backend's scripted greeting and system prompt opening line |
+| `appName` | Browser tab title, the chat welcome ("Welcome to …"), the shared plan text, the PWA name, the backend's scripted greeting and system prompt opening line, and the email sender name (unless `SENDGRID_FROM_NAME` is set) |
 | `agency.name` | Logo alt text, the footer agency link, and the backend system prompt ("… portal") |
 | `agency.shortName` | Initials on the generated logo tile when `brand.logoUrl` is `null`; the PWA short name unless `serviceGuide.shortName` is set |
 | `agency.parent` | Default footer disclaimer ("Agency \| Parent") and the backend system prompt |
