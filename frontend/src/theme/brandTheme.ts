@@ -15,7 +15,7 @@ import { createTheme, alpha, type Theme } from "@mui/material/styles";
 import type { TypographyVariantsOptions } from "@mui/material/styles";
 import { brandConfig } from "@/hooks/useBrandConfig";
 import { categoryColor, type TextStep, type ThemeColors } from "./cityConfig";
-import { mixHex, primaryShades, resolveTextOn, textCandidates } from "./contrast";
+import { mixHex, primaryShades, resolveInkText, resolveTextOn, textCandidates } from "./contrast";
 import type { BrandPalette } from "./palette";
 
 const { theme: cityTheme, serviceGuide, fontStack, categorySlugs } = brandConfig;
@@ -82,6 +82,7 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
     positive: colors.positive,
     // Same resolution as checkPreset's "negative text on surface".
     negativeText: resolveTextOn(colors.surface, [{ role: "negative", color: colors.negative }, ...candidates]).color,
+    inkText: resolveInkText(colors, candidates).color,
     dataScale,
     series,
     // First pass uses the preset colors as-is; later passes are tints toward

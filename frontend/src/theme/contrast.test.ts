@@ -9,6 +9,7 @@ import {
   deriveDarkColors,
   mixHex,
   primaryShades,
+  resolveInkText,
   resolveTextOn,
   textCandidates,
 } from "./contrast";
@@ -132,6 +133,11 @@ describe("failing presets", () => {
     expect(errors.some((e) => e.startsWith("text on primary #ffffff on ink #8b8fd4 (primary.dark"))).toBe(true);
   });
 
+  it("errors when a dark soft tint is light (body text on it fails)", () => {
+    const { errors } = checkPreset(withColors({}, { ...austin.serviceGuide!.darkColors, accentSoft: "#dff0e3" }));
+    expect(errors.some((e) => e.startsWith("[dark] body") && e.includes("on accentSoft #dff0e3"))).toBe(true);
+  });
+
   it("errors when positive text is too light", () => {
     const { errors } = checkPreset(withColors({ positive: "#7fd8a6" }));
     expect(errors.some((e) => e.startsWith("positive #7fd8a6 on surface"))).toBe(true);
@@ -186,6 +192,26 @@ describe("primaryShades", () => {
     const { dark, hero } = primaryShades(colors, "#ffffff");
     expect(dark).toBe(colors.ink);
     expect(hero).toEqual([colors.primary, colors.ink, mixHex(colors.accent, "#000000", 0.3)]);
+  });
+});
+
+describe("resolveInkText", () => {
+  it.each(presetIds)("%s: ink text reads on page, surface and primarySoft in both modes", (id) => {
+    const preset = readPreset(id);
+    const light = preset.theme.colors;
+    const dark = deriveDarkColors(light, preset.serviceGuide?.darkColors);
+    for (const [colors, fallback] of [[light, undefined], [dark, light]] as const) {
+      const { color, ok } = resolveInkText(colors, textCandidates(colors, fallback));
+      expect(ok).toBe(true);
+      for (const bg of [colors.page, colors.surface, colors.primarySoft]) {
+        expect(contrastRatio(color, bg)).toBeGreaterThanOrEqual(AA);
+      }
+    }
+  });
+
+  it("keeps Austin's light ink", () => {
+    const colors = readPreset("austin-travis-tx").theme.colors;
+    expect(resolveInkText(colors, textCandidates(colors)).color).toBe(colors.ink);
   });
 });
 

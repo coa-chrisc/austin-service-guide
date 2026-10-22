@@ -112,6 +112,22 @@ function readableShade(from: string, to: string, text: string): string {
 }
 
 /**
+ * brand.inkText: ink-colored text (labels, plan summaries) on page, surface and
+ * primarySoft. ink when it reads on all three, else primary, else the first
+ * text candidate that does; ok = false when none does.
+ */
+export function resolveInkText(colors: ThemeColors, candidates: readonly Candidate[]): TextChoice {
+  const fills = [colors.page, colors.surface, colors.primarySoft];
+  const list = [{ role: "ink", color: colors.ink }, { role: "primary", color: colors.primary }, ...candidates];
+  const rated = list.map((c) => ({ ...c, ratio: Math.min(...fills.map((f) => contrastRatio(c.color, f))) }));
+  const first = rated[0];
+  const pass = rated.find((c) => c.ratio >= AA);
+  if (pass) return { ...pass, ok: true, first };
+  const best = rated.reduce((a, b) => (b.ratio > a.ratio ? b : a));
+  return { ...best, ok: false, first };
+}
+
+/**
  * Shades that carry primary's text color: primary.dark (MUI hover, gradient
  * stop) and the hero gradient's stops. primary.dark is ink; in dark mode,
  * where ink stays a dark brand color under dark text, it moves toward primary
@@ -206,7 +222,9 @@ const fmt = (n: number) => n.toFixed(2);
  *   no passing candidate is an error.
  * - negative as text on surface: same resolution starting from negative itself
  *   (the value becomes palette.brand.negativeText).
- * - body and muted on page and surface, positive on surface: must pass as-is.
+ * - body and muted on page and surface, body on primarySoft and accentSoft,
+ *   positive on surface: must pass as-is.
+ * - ink text (brand.inkText) on page, surface and primarySoft: resolved, error if none.
  * - light mode: primary's text on ink (primary.dark) must pass; dark mode shades
  *   it instead (primaryShades).
  */
@@ -259,6 +277,13 @@ export function checkPreset(config: CityConfig): PresetCheck {
         );
       }
     }
+    const ink = resolveInkText(colors, candidates);
+    if (!ink.ok) {
+      errors.push(
+        `${tag}ink text: no preset color reaches ${AA}:1 on page, surface and primarySoft ` +
+          `(best ${ink.role} ${ink.color} ${fmt(ink.ratio)}).`,
+      );
+    }
     resolve(
       ["surface"],
       colors.surface,
@@ -272,6 +297,8 @@ export function checkPreset(config: CityConfig): PresetCheck {
       ["muted", "page"],
       ["muted", "surface"],
       ["positive", "surface"],
+      ["body", "primarySoft"],
+      ["body", "accentSoft"],
     ];
     for (const [fg, bg] of fixed) {
       const ratio = contrastRatio(colors[fg], colors[bg]);

@@ -13,6 +13,8 @@ export interface BrandPalette {
   positive: string;
   /** Text color for error/"worse" messages on surface: negative when it reaches 4.5:1, else the contrast-resolved preset color. */
   negativeText: string;
+  /** Ink-colored text that reads on page, surface and primarySoft: ink, else primary, else the contrast-resolved preset color. */
+  inkText: string;
   /** Five stops, worst to best. */
   dataScale: readonly string[];
   /** Chart/compare series colors in order. */
