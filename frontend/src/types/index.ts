@@ -217,6 +217,7 @@ export interface AnalyticsOverview {
   crisis_detections: number;
   top_categories: Array<Record<string, unknown>>;
   daily_sessions: DailySessionCount[];
+  council_districts: Array<{ id: string; label: string; zips: string[] }>;
 }
 
 export interface DemographicBucket {

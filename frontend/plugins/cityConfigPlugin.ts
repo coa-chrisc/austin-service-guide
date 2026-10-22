@@ -24,7 +24,21 @@ const FRONTEND_ROOT = path.resolve(here, "..");
 export const REPO_ROOT = path.resolve(FRONTEND_ROOT, "..");
 export const CONFIG_DIR = path.join(REPO_ROOT, "config");
 export const SCHEMA_PATH = path.join(CONFIG_DIR, "city.config.schema.json");
-export const CATEGORIES_PATH = path.join(REPO_ROOT, "backend/app/data/categories.yaml");
+
+/**
+ * Data pack categories file, resolved like backend/app/services/data_pack.py:
+ * CITY_DATA_DIR unset -> backend/app/data; absolute -> as-is; relative -> under config/.
+ */
+export function categoriesPath(env: Record<string, string | undefined> = process.env): string {
+  const raw = env.CITY_DATA_DIR?.trim();
+  const dir = !raw
+    ? path.join(REPO_ROOT, "backend/app/data")
+    : path.isAbsolute(raw)
+      ? raw
+      : path.resolve(CONFIG_DIR, raw);
+  return path.join(dir, "categories.yaml");
+}
+export const CATEGORIES_PATH = categoriesPath();
 
 const FONT_WEIGHTS = [400, 500, 600, 700];
 const FONTS_ID = "virtual:theme-fonts";
@@ -88,7 +102,7 @@ export function selectConfig(env: Record<string, string | undefined> = process.e
  * Category slugs in file order. categories.yaml is a flat list of maps, so a
  * line match on `slug:` is enough and avoids a YAML dependency.
  */
-export function readCategorySlugs(file = CATEGORIES_PATH): string[] {
+export function readCategorySlugs(file = categoriesPath()): string[] {
   if (!fs.existsSync(file)) {
     throw new CityConfigError(`${PREFIX} ${path.relative(REPO_ROOT, file)} not found (category order for palette.brand.category).`);
   }

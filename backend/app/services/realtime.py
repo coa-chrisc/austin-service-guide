@@ -13,6 +13,7 @@ from typing import Any
 from app.config import get_settings
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
 from app.services import catalog
+from app.services.city import get_city
 from app.services.pii import ASSISTANT_KINDS, redact
 from app.services.prompts import build_instructions
 from app.services.realtime_debug import record_realtime_debug_event, summarize_tool_output
@@ -144,7 +145,7 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
     transcription: dict[str, Any] = {
         "model": settings.openai_realtime_transcription_model,
         "prompt": (
-            "Austin Service Guide intake conversation. Residents may discuss "
+            f"{get_city().app_name} intake conversation. Residents may discuss "
             "housing, food, healthcare, employment, childcare, legal help, "
             "transportation, benefits, zip codes, income, and household size."
         ),

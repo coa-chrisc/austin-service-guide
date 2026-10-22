@@ -1,0 +1,109 @@
+# Local matching rules for the rules-based matching engine
+# (app/services/matching.py). Optional file, and every key is optional: a
+# pack without a key simply skips that rule.
+#
+# Service references are catalog slugs (services/<slug>.yaml), so names and
+# phone numbers come from the catalog. A slug that is not in the catalog is
+# ignored at runtime; backend/tests/test_data_pack_content.py checks that
+# every slug here exists.
+
+# ZIPs with elevated heat vulnerability (urban heat island, low tree canopy,
+# lower AC penetration). A resident with a chronic condition in one of these
+# ZIPs gets cooling services, and the ZIP counts toward the heat-risk flag.
+high_heat_zips:
+- "78741"
+- "78744"
+- "78753"
+- "78758"
+- "78617"
+- "78702"
+- "78721"
+- "78724"
+- "78754"
+- "78722"
+- "78723"
+- "78745"
+
+# Services that directly answer a crisis indicator, most local first. They
+# skip the relevance filter, eligibility gates and the match cap, and lead the
+# application plan. Indicators: domestic_violence, immediate_danger,
+# suicidal_ideation, homelessness.
+crisis_services:
+  domestic_violence: [safe-alliance]
+  immediate_danger: [safe-alliance]
+  suicidal_ideation: [integral-care]
+  homelessness: [echo-coordinated-entry]
+
+# "Prevention services" listed on each risk flag, keyed by risk type. Each
+# entry is either {service: <catalog slug>} (rendered as the service name) or
+# {text: <display text>} for an organization that is not in the catalog.
+# The domestic_violence and mental_health_crisis flags also list the national
+# hotlines and the local crisis lines tagged with crisis_topic in
+# crisis_resources.yaml; entries here are added after those.
+prevention_services:
+  homelessness:
+  - service: foundation-communities
+  - service: caritas-of-austin
+  - service: salvation-army-austin
+  housing_instability:
+  - service: foundation-communities
+  - service: austin-tenants-council
+  food_insecurity:
+  - service: central-texas-food-bank
+  - service: snap-enrollment-assistance
+  - service: austin-public-health-wic
+  uninsured:
+  - service: community-care-health-centers
+  - service: peoples-community-clinic
+  - service: medicaid-enrollment-assistance
+  social_isolation:
+  - service: age-of-central-texas
+  - service: meals-on-wheels-central-texas
+  child_mental_health_risk:
+  - service: communities-in-schools
+  - service: vida-clinic-schools
+  - text: Integral Care youth services
+  heat_vulnerable:
+  - service: cooling-center-network
+  - service: heat-relief-ac-assistance
+  - service: customer-assistance-program
+
+# Estimated monthly value of matched benefits (results page "estimated
+# value"). The first estimate listing a matched service's slug wins. A free
+# service with no estimate here counts a small generic value.
+benefit_estimates:
+- services: [snap-enrollment-assistance]
+  label: SNAP Benefits
+  monthly_value: 234        # ~$234 per person per month, Texas average
+  per_household_member: true
+- services: [austin-public-health-wic]
+  label: WIC Benefits
+  monthly_value: 75
+- services: [customer-assistance-program]
+  label: CAP Utility Discount
+  monthly_value: 45
+- services: [austin-energy-bill-assistance]
+  label: Utility Assistance (one-time avg.)
+  monthly_value: 150
+- services: [capital-metro-transit]
+  label: Reduced Transit Pass
+  monthly_value: 41.25      # half-fare monthly pass
+- services: [central-texas-food-bank, st-mary-cathedral-food-pantry]
+  label: Food Bank (estimated grocery value)
+  monthly_value: 120
+- services: [meals-on-wheels-central-texas]
+  label: Meals on Wheels (20 meals)
+  monthly_value: 200
+- services: [medicaid-enrollment-assistance]
+  label: Medicaid Coverage (estimated value)
+  monthly_value: 550
+- services: [community-care-health-centers]
+  label: Sliding-Scale Healthcare Savings
+  monthly_value: 80
+  only_if_uninsured: true
+- services: [head-start-austin]
+  label: Head Start (childcare value)
+  monthly_value: 800
+- services: [foundation-communities]
+  label: Affordable Housing Savings
+  monthly_value: 400

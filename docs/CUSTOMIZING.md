@@ -1,6 +1,8 @@
-# Rebranding for your agency
+# Deploying for your place
 
-Everything an agency normally changes lives in one city config file. You don't need to edit any components. The same file format is used by [Austin Health Pulse](https://github.com/coa-chrisc/austin-health-pulse), so a health department can keep one config for both apps (see [Using the same file as Austin Health Pulse](#using-the-same-file-as-austin-health-pulse)).
+To deploy this app for your own agency you change two things, and neither needs a source edit: the **city config** (identity, text, colors, logo, map, a few settings) and a **data pack** (your services, categories, crisis lines and other local data). The default config and the bundled pack describe Austin, Texas. They are the reference deployment and demo content. A short [checklist](#checklist-for-a-new-deployment) is at the end of the config sections.
+
+The city config comes first. You don't need to edit any components. The same file format is used by [Austin Health Pulse](https://github.com/coa-chrisc/austin-health-pulse), so a health department can keep one config for both apps (see [Using the same file as Austin Health Pulse](#using-the-same-file-as-austin-health-pulse)).
 
 ## 1. Start from a preset
 
@@ -24,7 +26,7 @@ The config is checked against [`config/city.config.schema.json`](../config/city.
 
 To make your config the default, copy it over `config/city.config.json` (keep `$schema` pointing at `./city.config.schema.json` in that location).
 
-The backend reads the same file for its identity lines. Run it with the same variable so both sides agree:
+The backend reads the same file for the app name, the agency lines, and the time zone. Run it with the same variable so both sides agree:
 
 ```bash
 cd backend
@@ -37,13 +39,13 @@ With Docker, pass the build argument: `docker build --build-arg CITY_CONFIG=pres
 
 | Key | Where it shows |
 | --- | --- |
-| `appName` | Browser tab title, the chat welcome ("Welcome to …"), the shared plan text, the PWA name, the backend's scripted greeting and system prompt opening line, and the email sender name (unless `SENDGRID_FROM_NAME` is set) |
+| `appName` | Browser tab title, the chat welcome ("Welcome to …"), the shared plan text, the PWA name, the backend's scripted greeting and system prompt opening line, the SMS and email share text, the realtime transcription prompt, the OpenAPI title (unless `APP_NAME` is set), and the email sender name (unless `SENDGRID_FROM_NAME` is set) |
 | `agency.name` | Logo alt text, the footer agency link, and the backend system prompt ("… portal") |
 | `agency.shortName` | Initials on the generated logo tile when `brand.logoUrl` is `null`; the PWA short name unless `serviceGuide.shortName` is set |
 | `agency.parent` | Default footer disclaimer ("Agency \| Parent") and the backend system prompt |
-| `region.name` | Read and validated; no screen in this app prints it today |
-| `region.cityName` | Landing and directory text ("services across Austin"), the admin "All Austin" filter, the admin service form's default city, and the "You told us you're new to …" intake notice |
-| `region.state` | Read and validated; no screen prints it today |
+| `region.name` | Not printed on screen. The backend's PII name rule skips it, like `region.cityName` |
+| `region.cityName` | Landing and directory text ("services across Austin"), the admin "All Austin" filter, the admin service form's default city, and the "You told us you're new to …" intake notice. The backend's PII name rule also skips it, so "I'm Austin Resident" is not redacted as a name |
+| `region.state` | Two-letter code. Used for new catalog locations in the admin service editor |
 
 ## 3. Colors
 
@@ -153,7 +155,17 @@ The browser-tab icon is generated at build time from your colors.
 
 ## 8. Map
 
-`map.center` (`[lat, lng]`), `zoom`, `minZoom`, and `maxZoom` set the starting view of the resident map and the admin demand map. Map tiles come from OpenStreetMap's public tile server; for heavy traffic read its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+`map.center` (`[lat, lng]`), `zoom`, `minZoom`, and `maxZoom` set the starting view of the resident map and the admin demand map. Map tiles come from OpenStreetMap's public tile server unless you set a tile server at build time. OSM's server is fine for a demo, but it is not meant for production traffic (see its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/)). To use another provider, set both variables when you build (in the shell, in `frontend/.env`, or as Docker build args):
+
+```bash
+VITE_MAP_TILE_URL='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+VITE_MAP_TILE_ATTRIBUTION='&copy; OpenStreetMap contributors &copy; CARTO'
+```
+
+- The URL is a Leaflet template: `{z}/{x}/{y}` are required, and `{s}` picks a subdomain. It must be `https://`.
+- The attribution is HTML shown in the map corner. It is required with a custom URL; the build fails without it.
+- Both values are built into the browser bundle, so any API key in the URL is public. Use a key your provider lets you restrict to your domain.
+- The offline service worker caches tiles from the URL's host for 60 days. Check that your provider's terms allow that.
 
 ## 9. The `serviceGuide` block
 
@@ -173,6 +185,8 @@ Everything specific to this app sits in one optional block. Every key is optiona
 | `categoryColors` | See below | Series colors |
 | `extraFontPackages` | Extra scripts | None |
 | `pwa.themeColor`, `pwa.backgroundColor` | PWA manifest | `primary` and `page` |
+| `timezone` | IANA zone, for example `America/Chicago`. Drives "open now" and next-open hours on the backend. An unknown zone fails backend startup | UTC, so set it |
+| `languages` | Language codes in the selector, in display order, from `en, es, zh, hi, ar, vi, fr, ko`. Must include `en` | All eight |
 
 The privacy notice is English-only.
 
@@ -190,23 +204,63 @@ The guard compares each file against `frontend/src/theme/themeGuard.baseline.jso
 
 ```bash
 cd frontend
-CITY_CONFIG=presets/my-city.json npm run build      # schema, logo, fonts, contrast gate
+export CITY_CONFIG=presets/my-city.json CITY_DATA_DIR=data/my-city
+npm run build                                       # schema, logo, fonts, contrast gate, categories
 npm test                                            # includes the theme guard
+CITY_DATA_DIR=data/my-city npm run validate:catalog   # your catalog against the schema
 cd ../backend
-CITY_CONFIG=presets/my-city.json python -m pytest -q
+python -m compileall -q app
 ```
 
-The City of Austin and Austin Public Health names, logos, and palette identify the City. Replace them in your deployment.
+The backend test suite includes tests of the bundled Austin content, so it is a check of this repository, not of your pack. A bad pack fails backend startup with a message that names the file.
 
-## What is NOT covered by the city config
+The City of Austin and Austin Public Health names, logos, and palette identify the City. Replace them in your deployment. The Austin presets use a generated logo tile (`logoUrl` is `null`), not a City logo.
 
-The city config covers identity, text, colors, type, shape, logo and map. These remain Austin-specific and need your own content:
+## Your data pack
 
-- **The service catalog**: YAML under `backend/app/data/services/` (plus `categories.yaml`).
-- **Crisis resources**: `backend/app/data/crisis_resources.yaml`, and the keyword check that triggers them.
-- **Life events and personas**: `life_events.yaml`, `backend/app/services/personas.py`, and the scripted intake's sample answers.
-- **Most of the backend prompt**: only the opening identity sentence and the scripted greeting come from the config. The rest of `prompts.py` (tools, tone, Austin-area guidance) is unchanged.
-- **Admin demo data** in `seed_data.py`, and the ZIP codes offered as quick answers in the scripted flow.
+The city config says who you are. The data pack says what is there: your services and the other local data. The bundled pack in `backend/app/data/` is the Austin reference. To make your own:
+
+```bash
+cp -r backend/app/data config/data/my-city
+```
+
+Then set `CITY_DATA_DIR=data/my-city` for the backend, for the frontend build, and as a Docker build argument. A relative value resolves under `config/`, and the Docker image already copies `config/`, so the pack ships with it. An absolute path is used as-is. Unset means the bundled Austin pack. A missing directory, or one with no `categories.yaml`, fails startup instead of serving another city's data.
+
+Replace the files in your copy (and delete the Austin `README.md`):
+
+| File | What it does |
+| --- | --- |
+| `services/<slug>.yaml` | One service per file. The service catalog. Required. |
+| `categories.yaml` | Service categories. Required. The frontend build reads it too. |
+| `life_events.yaml` | Life-event entry points on the landing page. Required, may be `[]`. |
+| `crisis_resources.yaml` | Local crisis lines. Required, may be `[]`. A `crisis_topic` (`mental_health` or `domestic_violence`) puts a local line into the crisis response. 988, 911 and the National DV Hotline are national defaults in code. |
+| `zip_centroids.yaml` | ZIP centers for distance filtering, and the ZIP buttons in the scripted demo flow (`featured`). Optional. |
+| `matching_rules.yaml` | Heat-risk ZIPs, crisis-direct and prevention services (by slug), benefit estimates. Optional. |
+| `service_translations.yaml` | Translated service descriptions. Optional. |
+| `personas.yaml` | Demo personas. Optional. With none, the demo launcher is hidden. |
+| `admin_demo.yaml` | Synthetic data for the admin console, including `council_districts`. Optional. With none, admin views are empty. |
+
+Field-by-field schemas, validation rules and the loader are in [backend/app/data/README.md](../backend/app/data/README.md). Do not repeat them here.
+
+Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
+
+## What is still Austin-specific
+
+- **The bundled data pack's content.** It is the reference pack. Nothing in your deployment uses it once `CITY_DATA_DIR` points at your own.
+- **Speech defaults.** On-device speech recognition and synthesis default to `en-US`.
+- **The model prompt assumes a US setting.** It names no place, but it talks about 988, 911, SNAP and Medicaid.
+- **The Austin presets and the City's names and logos.** Replace them.
+
+## Checklist for a new deployment
+
+1. **City config.** Copy a preset to `config/presets/<id>.json`; set `appName`, `agency`, `region`, colors, `map`, contact links and `serviceGuide.timezone` (and `languages` if you offer fewer).
+2. **Logo.** Put it under `config/brand/<id>/` and set `brand.logoUrl`, or leave it `null` for the generated tile.
+3. **Data pack.** Copy `backend/app/data` to `config/data/<id>/` and replace the files.
+4. **Map tiles.** Set `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` for production (see [Map](#8-map)).
+5. **Environment variables.** `CITY_CONFIG=presets/<id>.json` and `CITY_DATA_DIR=data/<id>` for the build and the runtime; then the usual `OPENAI_API_KEY`, `PUBLIC_ORIGIN`, `CORS_ORIGINS`, `ADMIN_API_TOKEN` (see [deploy/README.md](../deploy/README.md)).
+6. **Verify.** Run the build, tests and catalog check in [Check your work](#11-check-your-work) with your variables set.
+
+The admin console has no real authentication, and the privacy, security and legal reviews in [SECURITY.md](../SECURITY.md) still apply.
 
 The backend fails at startup with a `CityConfigError` if the selected config is missing or malformed. It does not fall back to Austin, so a mistyped `CITY_CONFIG` can't silently greet residents as the wrong city. It looks for `config/` in `CITY_CONFIG_DIR`, then next to the `app` folder (`/app/config` in the Docker image), then at the repository root.
 

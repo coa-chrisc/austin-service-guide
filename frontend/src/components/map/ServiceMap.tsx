@@ -12,6 +12,7 @@ import MyLocationIcon from "@mui/icons-material/MyLocation";
 import type { MapPin } from "@/types";
 import { haversineMiles } from "@/lib/geo";
 import { brandConfig } from "@/hooks/useBrandConfig";
+import { TILE_ATTRIBUTION, TILE_URL } from "@/lib/mapTiles";
 
 const {
   center: MAP_CENTER,
@@ -397,8 +398,8 @@ export default function ServiceMap({
           {fitBounds && mapReady && <FitBounds pins={filteredPins} />}
 
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={TILE_ATTRIBUTION}
+            url={TILE_URL}
             maxZoom={19}
             keepBuffer={4}
             updateWhenZooming={false}

@@ -1,8 +1,11 @@
 """City identity for the backend, read from the same config the frontend builds from.
 
-Only identity lines use this (the scripted greeting and the agency/app sentence
-in the system prompt). The catalog, personas, crisis resources and the rest of
-the prompt stay Austin-specific.
+The backend uses it for the app and agency names (scripted greeting, system
+prompt identity sentence, email sender default, share text, realtime
+transcription prompt, OpenAPI title), the optional timezone for open-now hours,
+and the place names the PII name rule skips. Place-specific data (catalog,
+crisis lines, personas, ...) comes from the data pack (data_pack.py), not from
+here. The system prompt names no place.
 
 Resolution (first match wins):
   1. CITY_CONFIG   path under config/, e.g. ``presets/my-city.json``
@@ -25,6 +28,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Mapping
 
+from dotenv import dotenv_values
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 _HERE = Path(__file__).resolve()
 _PREFIX = "[city-config]"
 
@@ -43,9 +49,11 @@ class CityIdentity:
     city_name: str
     state: str
     phone311: str
+    timezone: str = "UTC"
+    languages: tuple[str, ...] = ("en", "es", "zh", "hi", "ar", "vi", "fr", "ko")
 
 
-def _config_dir(env: Mapping[str, str]) -> Path:
+def config_dir(env: Mapping[str, str]) -> Path:
     explicit = (env.get("CITY_CONFIG_DIR") or "").strip()
     candidates = [Path(explicit)] if explicit else [_HERE.parents[2] / "config", _HERE.parents[3] / "config"]
     for c in candidates:
@@ -81,14 +89,21 @@ def _text(data: object, *keys: str) -> str:
 def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
     """Read and check the identity fields. Raises CityConfigError on any problem."""
     env = os.environ if env is None else env
-    path = _config_path(env, _config_dir(env))
+    path = _config_path(env, config_dir(env))
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise CityConfigError(f"{_PREFIX} cannot read {path.name}: {exc}") from exc
     if not isinstance(data, dict):
         raise CityConfigError(f"{_PREFIX} {path.name} must be a JSON object.")
-    contact = (data.get("serviceGuide") or {}).get("contact") or {}
+    sg = data.get("serviceGuide") or {}
+    contact = sg.get("contact") or {}
+    tz = sg.get("timezone", "UTC")
+    try:
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise CityConfigError(f"{_PREFIX} serviceGuide.timezone {tz!r} is not a known IANA time zone.") from exc
+    languages = sg.get("languages")
     phone = contact.get("phone311") if isinstance(contact, dict) else None
     return CityIdentity(
         app_name=_text(data, "appName"),
@@ -99,7 +114,29 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         city_name=_text(data, "region", "cityName"),
         state=_text(data, "region", "state"),
         phone311=phone if isinstance(phone, str) and phone.strip() else "311",
+        timezone=tz,
+        **({"languages": tuple(languages)} if isinstance(languages, list) and languages else {}),
     )
+
+
+#: Read from the process environment only, never from backend/.env: the
+#: frontend build reads the CITY_* ones from the shell as well.
+PROCESS_ENV_ONLY = ("CITY_CONFIG", "CITY_PRESET", "CITY_CONFIG_DIR", "CITY_DATA_DIR", "STATIC_DIR")
+
+
+def check_env_file(path: str | Path = ".env", environ: Mapping[str, str] | None = None) -> None:
+    """Fail when ``path`` sets a variable that only the process environment can set.
+
+    pydantic-settings reads .env into Settings but not into os.environ, so a
+    CITY_DATA_DIR there would be ignored and the bundled Austin data served.
+    """
+    environ = os.environ if environ is None else environ
+    stray = [k for k, v in dotenv_values(path).items() if k in PROCESS_ENV_ONLY and v and environ.get(k) != v]
+    if stray:
+        raise CityConfigError(
+            f"{_PREFIX} {', '.join(stray)} in {path} would be ignored; set them in the shell or "
+            "container environment instead (the frontend build reads them from there too)."
+        )
 
 
 @lru_cache(maxsize=1)

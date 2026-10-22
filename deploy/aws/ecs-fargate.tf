@@ -32,7 +32,7 @@ variable "image_uri" {
 
 variable "city_slug" {
   type        = string
-  description = "Short lowercase name used to prefix resources, e.g. austin."
+  description = "Short lowercase name used to prefix resources, e.g. my-city."
 }
 
 variable "vpc_id" {

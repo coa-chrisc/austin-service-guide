@@ -67,3 +67,35 @@ def test_missing_or_escaping_config_raises():
         load_city(_env(CITY_CONFIG="../backend/requirements.txt"))
     with pytest.raises(CityConfigError):
         load_city({"CITY_CONFIG_DIR": "/nonexistent-dir"})
+
+
+def test_timezone_and_languages_from_config():
+    assert load_city(_env()).timezone == "America/Chicago"
+    assert load_city(_env(CITY_PRESET="cedar-ridge-county")).timezone == "America/Los_Angeles"
+    assert "en" in load_city(_env()).languages
+
+
+def test_timezone_absent_is_utc_and_unknown_zone_fails(tmp_path):
+    cfg = json.loads((CONFIG_DIR / "city.config.json").read_text())
+    del cfg["serviceGuide"]["timezone"]
+    (tmp_path / "city.config.json").write_text(json.dumps(cfg))
+    assert load_city({"CITY_CONFIG_DIR": str(tmp_path)}).timezone == "UTC"
+    cfg["serviceGuide"]["timezone"] = "Mars/Olympus"
+    (tmp_path / "city.config.json").write_text(json.dumps(cfg))
+    with pytest.raises(CityConfigError):
+        load_city({"CITY_CONFIG_DIR": str(tmp_path)})
+
+
+def test_env_file_selectors_fail_loudly(tmp_path):
+    from app.services.city import CityConfigError, check_env_file
+
+    env_file = tmp_path / ".env"
+    env_file.write_text("OPENAI_MODEL=x\nCITY_DATA_DIR=data/my-city\n")
+    with pytest.raises(CityConfigError, match="CITY_DATA_DIR"):
+        check_env_file(env_file, environ={})
+    # Same value already in the process environment (compose env_file): fine.
+    check_env_file(env_file, environ={"CITY_DATA_DIR": "data/my-city"})
+    # Settings-only keys and a missing file are fine.
+    (tmp_path / "ok.env").write_text("OPENAI_MODEL=x\n")
+    check_env_file(tmp_path / "ok.env", environ={})
+    check_env_file(tmp_path / "missing.env", environ={})

@@ -106,17 +106,9 @@ export default function AdminAnalytics() {
     setSearchParams(next, { replace: true });
   };
 
-  const DISTRICTS: Array<{ id: string; label: string; zips: string[] }> = [
-    {
-      id: "1",
-      label: "District 1 (East)",
-      zips: ["78702", "78721", "78722", "78723", "78724"],
-    },
-    { id: "2", label: "District 2 (Southeast)", zips: ["78744", "78745"] },
-    { id: "3", label: "District 3 (Southside)", zips: ["78741", "78704"] },
-    { id: "4", label: "District 4 (North)", zips: ["78753", "78758"] },
-  ];
-  const activeDistrict = DISTRICTS.find((d) => d.id === district);
+  // Geographic filter chips come from the data pack's admin demo data.
+  const districts = analytics?.council_districts ?? [];
+  const activeDistrict = districts.find((d) => d.id === district);
   const filterShare = useMemo(() => {
     if (zip) return 0.06;
     if (activeDistrict) {
@@ -241,61 +233,63 @@ export default function AdminAnalytics() {
       </Box>
 
       {/* -- geographic filter ---------------------------------------- */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent
-          sx={{
-            p: 2,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <LocationOnIcon fontSize="small" sx={{ color: "text.secondary" }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-            View by:
-          </Typography>
-          <Chip
-            label={`All ${region.cityName}`}
-            size="small"
-            variant={!district && !zip ? "filled" : "outlined"}
-            color={!district && !zip ? "primary" : "default"}
-            onClick={() => setFilter("district", "")}
-          />
-          {DISTRICTS.map((d) => (
+      {districts.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent
+            sx={{
+              p: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <LocationOnIcon fontSize="small" sx={{ color: "text.secondary" }} />
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+              View by:
+            </Typography>
             <Chip
-              key={d.id}
-              label={d.label}
+              label={`All ${region.cityName}`}
               size="small"
-              variant={district === d.id ? "filled" : "outlined"}
-              color={district === d.id ? "primary" : "default"}
-              onClick={() => setFilter("district", d.id)}
+              variant={!district && !zip ? "filled" : "outlined"}
+              color={!district && !zip ? "primary" : "default"}
+              onClick={() => setFilter("district", "")}
             />
-          ))}
-          {activeDistrict && (
-            <>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ ml: 1, mr: 0.5 }}
-              >
-                ZIPs:
-              </Typography>
-              {activeDistrict.zips.map((z) => (
-                <Chip
-                  key={z}
-                  label={z}
-                  size="small"
-                  variant={zip === z ? "filled" : "outlined"}
-                  color={zip === z ? "secondary" : "default"}
-                  onClick={() => setFilter("zip", z)}
-                />
-              ))}
-            </>
-          )}
-        </CardContent>
-      </Card>
-      {(district || zip) && (
+            {districts.map((d) => (
+              <Chip
+                key={d.id}
+                label={d.label}
+                size="small"
+                variant={district === d.id ? "filled" : "outlined"}
+                color={district === d.id ? "primary" : "default"}
+                onClick={() => setFilter("district", d.id)}
+              />
+            ))}
+            {activeDistrict && (
+              <>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ ml: 1, mr: 0.5 }}
+                >
+                  ZIPs:
+                </Typography>
+                {activeDistrict.zips.map((z) => (
+                  <Chip
+                    key={z}
+                    label={z}
+                    size="small"
+                    variant={zip === z ? "filled" : "outlined"}
+                    color={zip === z ? "secondary" : "default"}
+                    onClick={() => setFilter("zip", z)}
+                  />
+                ))}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+      {districts.length > 0 && (district || zip) && (
         <Alert severity="info" sx={{ mb: 3 }}>
           Showing {zip ? `ZIP ${zip}` : activeDistrict?.label} —{" "}
           {(filterShare * 100).toFixed(0)}% of citywide sessions in this slice.

@@ -7,7 +7,18 @@ from pathlib import Path
 
 import pytest
 
+from app.services import pii
+from app.services.city import load_city
 from app.services.pii import ASSISTANT_KINDS, PLACEHOLDERS, redact
+
+_DEFAULT_CITY = load_city({})
+
+
+@pytest.fixture(autouse=True)
+def _default_city_config(monkeypatch):
+    # The shared fixture assumes config/city.config.json, whatever CITY_CONFIG
+    # / CITY_PRESET say; piiGuard.test.ts pins the same file.
+    monkeypatch.setattr(pii, "get_city", lambda: _DEFAULT_CITY)
 
 
 @pytest.mark.parametrize(
@@ -150,7 +161,7 @@ def test_dashed_phone_after_id_keyword_is_redacted_as_phone_for_residents():
 
 @pytest.mark.parametrize(
     "unit",
-    ["a", "7", "a1", "a.", "id ", "number ", "phone : ", "1 "],
+    ["a", "7", "a1", "a.", "id ", "number ", "phone : ", "1 ", "zip ", "zip code ", "I'm Greater "],
 )
 def test_redact_is_fast_on_200kb_without_matches(unit):
     import time
@@ -200,6 +211,39 @@ def test_name_is_not_an_assistant_kind():
     assert "name" not in ASSISTANT_KINDS
     text = "I'm Maria Lopez"
     assert redact(text, kinds=ASSISTANT_KINDS).text == text
+
+
+# Place-name stopwords come from the city config, not from code. Mirrored in
+# frontend/src/lib/piiGuard.city.test.ts with the same preset and cases.
+_CEDAR_RIDGE_CASES = [
+    ("I'm Cedar Ridge Resident", "I'm Cedar Ridge Resident"),
+    ("this is Oregon Coast", "this is [name removed]"),
+    ("I'm Austin Lopez", "I'm [name removed]"),
+    ("I'm Texas Born", "I'm [name removed]"),
+    ("I'm Maria Lopez", "I'm [name removed]"),
+    # The preset's state (OR) is not a stopword: state names can be first names.
+    ("I'm Oregon Smith", "I'm [name removed]"),
+]
+
+
+@pytest.mark.parametrize(("text", "expected"), _CEDAR_RIDGE_CASES)
+def test_place_stopwords_follow_the_city_config(monkeypatch, text, expected):
+    cedar_ridge = load_city({"CITY_PRESET": "cedar-ridge-county"})
+    monkeypatch.setattr(pii, "get_city", lambda: cedar_ridge)
+    assert redact(text).text == expected
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("I'm Cedar Ridge Resident", "I'm [name removed] Resident"),
+        ("this is Oregon Coast", "this is [name removed]"),
+        ("I'm Texas Born", "I'm [name removed]"),
+        ("I'm Georgia Smith", "I'm [name removed]"),
+    ],
+)
+def test_other_places_are_not_stopwords_under_the_default_config(text, expected):
+    assert redact(text).text == expected
 
 
 _FIXTURE = Path(__file__).parent / "fixtures" / "pii_cases.json"

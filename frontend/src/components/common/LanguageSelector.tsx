@@ -7,8 +7,9 @@ import ListItemText from "@mui/material/ListItemText";
 import TranslateIcon from "@mui/icons-material/Translate";
 import CheckIcon from "@mui/icons-material/Check";
 import ListItemIcon from "@mui/material/ListItemIcon";
+import { brandConfig } from "@/hooks/useBrandConfig";
 
-const LANGUAGES = [
+const ALL_LANGUAGES = [
   { code: "en", label: "English" },
   { code: "es", label: "Español" },
   { code: "zh", label: "中文" },
@@ -18,6 +19,9 @@ const LANGUAGES = [
   { code: "fr", label: "Français" },
   { code: "ko", label: "한국어" },
 ];
+
+// Only the configured languages, in configured order.
+const LANGUAGES = brandConfig.serviceGuide.languages.flatMap((code) => ALL_LANGUAGES.filter((l) => l.code === code));
 
 export function getStoredLanguage(): string {
   try {

@@ -1,0 +1,68 @@
+# Approximate ZIP code centers for the "services near this ZIP" radius
+# search. Optional file: a ZIP not listed here (or a pack without this file)
+# is not radius-filtered.
+#
+# featured: true  -> offered as a quick-reply button on the scripted intake's
+#                   ZIP question, in file order (first 5 entries if none are
+#                   featured). "Other" is always appended.
+#
+# Always quote ZIP codes so YAML keeps leading zeros.
+- zip: "78701"
+  latitude: 30.2700
+  longitude: -97.7430
+- zip: "78702"
+  latitude: 30.2590
+  longitude: -97.7160
+  featured: true
+- zip: "78704"
+  latitude: 30.2400
+  longitude: -97.7620
+- zip: "78705"
+  latitude: 30.2920
+  longitude: -97.7410
+- zip: "78721"
+  latitude: 30.2710
+  longitude: -97.6900
+- zip: "78722"
+  latitude: 30.2830
+  longitude: -97.7160
+- zip: "78723"
+  latitude: 30.3020
+  longitude: -97.6920
+- zip: "78724"
+  latitude: 30.2900
+  longitude: -97.6300
+- zip: "78741"
+  latitude: 30.2270
+  longitude: -97.7290
+  featured: true
+- zip: "78744"
+  latitude: 30.1700
+  longitude: -97.7400
+- zip: "78745"
+  latitude: 30.2000
+  longitude: -97.8000
+  featured: true
+- zip: "78748"
+  latitude: 30.1700
+  longitude: -97.8200
+- zip: "78751"
+  latitude: 30.3090
+  longitude: -97.7260
+- zip: "78752"
+  latitude: 30.3240
+  longitude: -97.7100
+- zip: "78753"
+  latitude: 30.3700
+  longitude: -97.6800
+  featured: true
+- zip: "78754"
+  latitude: 30.3630
+  longitude: -97.6550
+- zip: "78757"
+  latitude: 30.3550
+  longitude: -97.7370
+- zip: "78758"
+  latitude: 30.3900
+  longitude: -97.7090
+  featured: true

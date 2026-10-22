@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from app.models import IntakeSession
+from app.services.city import get_city
 
 
 def session_life_event_slug(session: IntakeSession) -> str:
@@ -176,8 +177,8 @@ def life_event_context(life_event: str) -> str:
         "veteran": {
             "alias": "veteran-transition",
         },
-        "new-to-austin": {
-            "label": "New to Austin",
+        "new-to-area": {
+            "label": f"New to {get_city().city_name}",
             "categories": "utilities, healthcare, transportation, education, food",
             "first": (
                 "Ask what they need help setting up first: healthcare, food, "
@@ -374,7 +375,7 @@ def needs_from_life_event(life_event: str) -> list[str]:
         "transportation": ["transportation"],
         "mental-health": ["mental_health", "healthcare"],
         "back-to-school": ["education", "schools"],
-        "new-to-austin": ["utilities", "transportation", "education", "food", "housing", "healthcare"],
+        "new-to-area": ["utilities", "transportation", "education", "food", "housing", "healthcare"],
         "retiring": ["senior", "healthcare", "transportation"],
         "aging-parent": ["senior", "healthcare", "transportation"],
         "young-adult": ["education", "employment", "housing"],

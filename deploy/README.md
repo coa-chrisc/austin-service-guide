@@ -13,18 +13,18 @@ These are **starter templates**, not a turnkey production setup. Review them aga
 | `azure/container-app.bicep` | `az bicep build` compiles with no errors or warnings | `az deployment group create`; no live Azure subscription |
 | `gcp/cloud-run.yaml` | YAML parses | `gcloud run services replace`; no live GCP project |
 
-The container needs no database or persistent volume: the backend is stateless and holds no resident data. The browser keeps the intake state in `sessionStorage` and sends it with every request (see `docs/PRIVACY.md` and `ARCHITECTURE.md`), so any number of replicas works without session affinity, and restarting or replacing an instance loses nothing a resident needs. The only server-side state is the service catalog, loaded from the YAML baked into the image. The replica defaults in the templates are `desired_count = 2` (AWS), and `minReplicas` 1 / `maxReplicas` 3 (Azure) and `minScale` 1 / `maxScale` 3 (GCP); change them freely.
+The container needs no database or persistent volume: the backend is stateless and holds no resident data. The browser keeps the intake state in `sessionStorage` and sends it with every request (see `docs/PRIVACY.md` and `ARCHITECTURE.md`), so any number of replicas works without session affinity, and restarting or replacing an instance loses nothing a resident needs. The only server-side state is the data pack (service catalog and the other place data), loaded from the YAML baked into the image. The replica defaults in the templates are `desired_count = 2` (AWS), and `minReplicas` 1 / `maxReplicas` 3 (Azure) and `minScale` 1 / `maxScale` 3 (GCP); change them freely.
 
 ## Deployment modes
 
-### Mode A: BCHC-managed, single tenant
+### Mode A: hosting partner, single tenant
 
-The Big Cities Health Coalition runs one container per city, each in its own isolated cloud project or account, with its own secrets and its own brand preset.
+A hosting partner runs one container per city, each in its own isolated cloud project or account, with its own secrets, brand preset and data pack.
 
-1. Build the image for the city: `docker build --build-arg CITY_CONFIG=presets/<city>.json -t <registry>/service-guide-<city>:<tag> .`
-2. Deploy it into that city's isolated project with the template for BCHC's cloud.
-3. BCHC issues a hostname (for example `<city>.example.org`) with a managed TLS certificate.
-4. The city adds a DNS `CNAME` from its own name (for example `services.<city>.gov`) to the BCHC hostname. For AWS use the `alb_dns_name` output; for Azure the `fqdn` output; for Cloud Run the domain mapping target. Issue the certificate for the city name, not just the BCHC one.
+1. Build the image for the city: `docker build --build-arg CITY_CONFIG=presets/<city>.json --build-arg CITY_DATA_DIR=data/<city> -t <registry>/service-guide-<city>:<tag> .`
+2. Deploy it into that city's isolated project with the template for the partner's cloud.
+3. The partner issues a hostname (for example `<city>.example.org`) with a managed TLS certificate.
+4. The city adds a DNS `CNAME` from its own name (for example `services.<city>.gov`) to the partner's hostname. For AWS use the `alb_dns_name` output; for Azure the `fqdn` output; for Cloud Run the domain mapping target. Issue the certificate for the city name, not just the partner's.
 
 Do not share a container, project, or secret across cities.
 
@@ -33,8 +33,8 @@ Do not share a container, project, or secret across cities.
 The city builds, pushes, and runs the image in its own account.
 
 ```bash
-# 1. Build and push (CITY_CONFIG selects the city config under config/)
-docker build --build-arg CITY_CONFIG=presets/<city>.json -t <registry>/service-guide:<tag> .
+# 1. Build and push (CITY_CONFIG selects the city config and CITY_DATA_DIR the data pack, both under config/)
+docker build --build-arg CITY_CONFIG=presets/<city>.json --build-arg CITY_DATA_DIR=data/<city> -t <registry>/service-guide:<tag> .
 docker push <registry>/service-guide:<tag>
 
 # 2. Deploy (one of)
@@ -64,15 +64,23 @@ Set via environment variables (see `backend/.env.example` and `backend/app/confi
 | `REALTIME_DEBUG_LOG_ENABLED`, `REALTIME_DEBUG_LOG_PATH` | no | Keep **off** in production. The trace contains transcript previews and the root filesystem is read-only. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME` | token/key values yes | Optional notifications; stubbed when unset. `SENDGRID_FROM_NAME` defaults to the city config's `appName`. |
 | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_KEY`, `AZURE_OPENAI_DEPLOYMENT` | `AZURE_OPENAI_KEY` yes | Legacy fallback, optional. |
+| `CITY_DATA_DIR` | no | Data pack location (see above). Unset means the bundled Austin pack. |
+| `APP_NAME` | no | Overrides the city config's `appName` for the OpenAPI title. |
 | `STATIC_DIR` | no | Set to `/app/static` in the image; enables serving the SPA. |
 | `PORT` | no | Listen port (default 8000). |
 | `FORWARDED_ALLOW_IPS` | no | Proxy IPs trusted for `X-Forwarded-*` headers (passed to uvicorn `--forwarded-allow-ips`). Image default is `127.0.0.1`. Set it to your load balancer's address or CIDR. `*` trusts any sender and is only appropriate when the platform ingress is the sole network path to the container (as on Cloud Run and Container Apps). The AWS template uses the VPC CIDR. |
 
 The OpenAI key is a billing credential: restrict the project's spend limit and rotate it per city.
 
-## CITY_CONFIG, brand, and catalog
+## CITY_CONFIG, brand, and data pack
 
-`CITY_CONFIG` (for example `presets/<city>.json`) is a Docker build argument; `CITY_PRESET=<city>` is an alias. The frontend build reads it to select a city config under `config/`, so branding is fixed into the image at build time. The image also carries `config/` and sets the same variable at runtime, where the backend reads it for its greeting and prompt identity line. The service catalog is YAML under `backend/app/data/services/` (plus `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`) and is baked into the image; change it by rebuilding. Local run: `docker compose up --build` (override with `CITY_CONFIG=presets/<city>.json` or `CITY_PRESET=<city>`).
+`CITY_CONFIG` (for example `presets/<city>.json`) is a Docker build argument; `CITY_PRESET=<city>` is an alias. The frontend build reads it to select a city config under `config/`, so branding is fixed into the image at build time. The image also carries `config/` and sets the same variable at runtime, where the backend reads it for the app name and the `serviceGuide.timezone` (open-now hours; UTC if unset).
+
+`CITY_DATA_DIR` selects the data pack: the service catalog, categories, life events, crisis lines, ZIP centers, matching rules, demo personas and admin demo data. Unset means the bundled Austin reference pack in `backend/app/data/`. A relative value such as `data/<city>` resolves under `config/` (so `config/data/<city>/`, which the image already copies); an absolute path is used as-is. It is a build argument (the frontend reads `categories.yaml` from the pack) and is set at runtime too. Change the pack by rebuilding. File formats are in [backend/app/data/README.md](../backend/app/data/README.md); the full walkthrough is in [docs/CUSTOMIZING.md](../docs/CUSTOMIZING.md).
+
+Map tiles come from OpenStreetMap's public server unless you pass `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` at build time (both are required together). OSM's server is not meant for production traffic. See [docs/CUSTOMIZING.md](../docs/CUSTOMIZING.md#8-map).
+
+Local run: `docker compose up --build` (override with `CITY_CONFIG=presets/<city>.json` or `CITY_PRESET=<city>`, and `CITY_DATA_DIR=data/<city>`). The local image is tagged `civic-service-guide:local`.
 
 ## Health checks
 

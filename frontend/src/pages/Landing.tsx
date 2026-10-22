@@ -49,20 +49,18 @@ import { brandConfig, useBrandConfig } from "@/hooks/useBrandConfig";
 import NeedNavigator from "@/components/landing/NeedNavigator";
 import type { LifeEvent } from "@/types";
 
+// Keyed by the persona id's theme prefix (the part before the first "-"),
+// so ids stay free to name the place, e.g. "equity-<neighborhood>-zh".
 const PERSONA_ICONS: Record<string, React.ReactNode> = {
-  "heat-outdoor-worker": <PsychologyIcon sx={{ fontSize: 28 }} />,
-  "schools-anxious-student": <SchoolIcon sx={{ fontSize: 28 }} />,
-  "equity-east-austin": <HomeWorkIcon sx={{ fontSize: 28 }} />,
-  "refugee-food": <PublicIcon sx={{ fontSize: 28 }} />,
+  heat: <PsychologyIcon sx={{ fontSize: 28 }} />,
+  schools: <SchoolIcon sx={{ fontSize: 28 }} />,
+  equity: <HomeWorkIcon sx={{ fontSize: 28 }} />,
+  refugee: <PublicIcon sx={{ fontSize: 28 }} />,
 };
 
 function iconForPersonaId(id: string): React.ReactNode {
-  // Match longest base id; strips trailing language suffixes like -vi/-es/-zh/-ar.
-  const base = id.replace(/-[a-z]{2}(?:-[a-zA-Z]{2,4})?$/, "");
-  return (
-    PERSONA_ICONS[id] ??
-    PERSONA_ICONS[base] ?? <PublicIcon sx={{ fontSize: 28 }} />
-  );
+  const theme = id.split("-")[0];
+  return PERSONA_ICONS[theme] ?? <PublicIcon sx={{ fontSize: 28 }} />;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -192,7 +190,7 @@ const FALLBACK_EVENTS: LifeEvent[] = [
   {
     id: "9",
     name: `New to ${brandConfig.region.cityName}`,
-    slug: "new-to-austin",
+    slug: "new-to-area",
     description: "Settling in, schools, community resources",
     icon: "immigration",
     related_categories: [],
@@ -392,8 +390,8 @@ export default function Landing() {
 
       <NeedNavigator />
 
-      {/* Demo persona launcher (?demo=1) */}
-      {demoMode && (
+      {/* Demo persona launcher (?demo=1); hidden when the data pack has no personas */}
+      {demoMode && personas.length > 0 && (
         <Box
           id="demo-launcher"
           sx={(theme) => ({

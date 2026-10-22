@@ -75,6 +75,7 @@
     "maxZoom": 16
   },
   "serviceGuide": {
+    "timezone": "America/Chicago",
     "shortName": "MSG",
     "description": "FICTIONAL DEMO CITY. Find services you're eligible for in Metro City — a white-label demonstration, not a real agency. Map defaults to the geographic center of the contiguous US (a placeholder, not a real city).",
     "copy": {

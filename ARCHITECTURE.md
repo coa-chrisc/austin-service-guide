@@ -1,6 +1,6 @@
 # Architecture
 
-This page describes how the Austin Service Guide is built and how resident data moves through it. It matches the code in this repository. For the security claims behind it, see [SECURITY.md](SECURITY.md); for what is collected and sent to OpenAI, see [docs/PRIVACY.md](docs/PRIVACY.md).
+This page describes how the Civic Service Guide is built and how resident data moves through it. It matches the code in this repository. For the security claims behind it, see [SECURITY.md](SECURITY.md); for what is collected and sent to OpenAI, see [docs/PRIVACY.md](docs/PRIVACY.md).
 
 This is a demonstration application. Where something is a stub or not built, this page says so.
 
@@ -116,10 +116,12 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `realtime.py` | Realtime voice session config, voice tool execution, transcript recording |
 | `realtime_debug.py` | Opt-in redacted file log for voice troubleshooting |
 | `catalog.py` | In-memory catalog store: search, filter, CRUD |
-| `catalog_loader.py` | Loads and validates the YAML catalog at startup |
-| `seed_data.py` | Legacy hard-coded data, plus synthetic admin demo data |
+| `data_pack.py` | Resolves the data pack directory from `CITY_DATA_DIR` |
+| `catalog_loader.py` | Loads and validates the pack's YAML (catalog, categories, life events, crisis lines, ZIP centers, matching rules, translations) at startup |
+| `city.py` | Reads the city config for app name, agency, timezone and place names |
+| `seed_data.py` | Legacy hard-coded data, plus synthetic admin demo data (from the pack's `admin_demo.yaml`) |
 | `life_events.py` | Life-event scenarios and their starting needs |
-| `personas.py` | Demo personas (synthetic residents) |
+| `personas.py` | Demo personas (synthetic residents), loaded from the pack's `personas.yaml` |
 | `i18n.py` | Hand-translated notices and plan strings for es, vi, zh, ar |
 | `hours.py` | Open-now and next-open calculation |
 | `notify.py` | Twilio and SendGrid senders with demo stubs and masked logging |
@@ -139,8 +141,9 @@ Tests: `npm test` runs vitest (`frontend/src/lib/piiGuard.test.ts` checks the Ty
 ## Configuration and white-label flow
 
 ```text
-config/city.config.json        active config (Austin Public Health values)
+config/city.config.json        active config (Austin Public Health values, the reference deployment)
 config/presets/<id>.json       named presets (austin-travis-tx, bchc-demo-city, cedar-ridge-county)
+config/data/<id>/              optional data pack for your place (CITY_DATA_DIR=data/<id>)
 config/brand/<id>/             logos
 config/city.config.schema.json schema they are validated against
         |
@@ -154,19 +157,19 @@ useBrandConfig() / brandTheme.ts
         -> palette, fonts, header/footer/logo, privacy notice, contact links, map center
 ```
 
-The brand is fixed into the image at build time. The backend reads the same file (`backend/app/services/city.py`) at startup for the scripted greeting, the system prompt's identity sentence and the default email sender name; a missing or malformed config stops startup. Not configurable: the rest of the model prompt, the catalog, crisis resources, life events, personas, and the admin console's demo data are all Austin-specific. See `docs/CUSTOMIZING.md`.
+The brand is fixed into the image at build time. The backend reads the same file (`backend/app/services/city.py`) at startup for the app name (scripted greeting, system prompt identity sentence, default email sender name, SMS and email share text, realtime transcription prompt, OpenAPI title) and the optional `serviceGuide.timezone` that drives open-now hours; a missing or malformed config stops startup. Everything local to a place sits in a data pack (`backend/app/services/data_pack.py`): `CITY_DATA_DIR` unset means the bundled Austin reference pack in `backend/app/data/`, an absolute path is used as-is, and a relative path resolves under `config/` (so `data/my-city` is `config/data/my-city`, which the Docker image ships). The frontend build reads `categories.yaml` from the same pack (`frontend/plugins/cityConfigPlugin.ts`). Pack file formats are in [backend/app/data/README.md](backend/app/data/README.md). The model prompt (`prompts.py`) names no place, though it assumes a US setting. What stays Austin-specific is the content of the bundled pack, and speech defaults to `en-US`. See `docs/CUSTOMIZING.md`.
 
-Catalog data flow: YAML in `backend/app/data/services/` is validated against `config/services.schema.json` by `backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) and loaded at startup by `catalog_loader.py`. All 87 services are currently unverified; see SECURITY.md.
+Catalog data flow: YAML in the data pack's `services/` folder (`backend/app/data/services/` for the bundled pack) is validated against `config/services.schema.json` by `backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) and loaded at startup by `catalog_loader.py`. All 87 services are currently unverified; see SECURITY.md.
 
 ## Deployment modes
 
 Both modes run the same image (`Dockerfile`), which needs no database or volume. Templates are starters and have not been applied to live cloud accounts (see [deploy/README.md](deploy/README.md)).
 
-- **Mode A: BCHC-managed, single tenant.** The Big Cities Health Coalition runs one container per city in an isolated cloud project, each with its own secrets and brand preset. The city points a DNS `CNAME` (for example `services.<city>.gov`) at the BCHC-issued hostname. No container, project or secret is shared across cities.
+- **Mode A: hosting partner, single tenant.** A hosting partner runs one container per city in an isolated cloud project, each with its own secrets, brand preset and data pack. The city points a DNS `CNAME` (for example `services.<city>.gov`) at the partner-issued hostname. No container, project or secret is shared across cities.
 - **Mode B: sovereign municipal cloud.** The city builds, pushes and runs the image in its own account, using the AWS, Azure or GCP template in `deploy/`.
 
-## Implemented and Phase 2 (summary)
+## Implemented and roadmap (summary)
 
 Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label city config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
 
-Not implemented (Phase 2 roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, rate limiting and WAF, vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#phase-2-grant-funded-engineering-roadmap).
+Not implemented (roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, rate limiting and WAF, vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#engineering-roadmap).

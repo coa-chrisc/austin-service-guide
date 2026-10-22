@@ -9,6 +9,8 @@
 - `backend/`: FastAPI API. Main entry point is `backend/app/main.py`.
 - `backend/app/routers/`: API route modules for admin, intake, and services.
 - `backend/app/services/`: domain services, seed data, matching, AI, notifications, catalog, and hours logic.
+- `backend/app/data/`: the bundled data pack (YAML), see `backend/app/data/README.md`. Place-specific content goes in a data pack (`CITY_DATA_DIR`), not in source.
+- `config/`: city config, presets, logos, schemas; `docs/CUSTOMIZING.md` explains how to deploy for another place.
 - `backend/.env.example`: environment template. Do not commit real secrets.
 
 ## Build, Test, and Development Commands
@@ -34,7 +36,7 @@ React components and page files use `PascalCase` (`ServiceDetailCard.tsx`). Hook
 
 ## Testing Guidelines
 
-Backend tests use pytest: from `backend/`, run `pip install -r requirements-dev.txt` then `python -m pytest`. They force the scripted (no-AI) flow. The frontend has no test framework; use `npm run build` as the required frontend verification step and manually exercise key resident/admin flows. When adding tests, colocate frontend tests near the component or page they cover and add backend tests under `backend/tests/` with names like `test_services.py`.
+Backend tests use pytest: from `backend/`, run `pip install -r requirements-dev.txt` then `python -m pytest`. They force the scripted (no-AI) flow. The frontend uses vitest (`npm test`); `npm run build` and `npm test` are the required frontend checks, plus manual checks of key resident/admin flows. When adding tests, colocate frontend tests near the component or page they cover and add backend tests under `backend/tests/` with names like `test_services.py`.
 
 ## Commit & Pull Request Guidelines
 

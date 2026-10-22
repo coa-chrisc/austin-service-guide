@@ -1,6 +1,6 @@
 """In-memory service catalog store.
 
-Loaded from seed_data at application startup.  Provides search, filtering,
+Loaded from the data pack (``catalog_loader``) at application startup.  Provides search, filtering,
 and CRUD operations for the service directory.
 """
 
@@ -19,6 +19,7 @@ from app.models import (
     ServiceLocation,
     ServiceStatus,
 )
+from app.services import catalog_loader
 from app.services.hours import is_open_now, next_open_label, service_open_now
 
 
@@ -34,13 +35,16 @@ _crisis_resources: list[CrisisResource] = []
 # ── Bootstrap ─────────────────────────────────────────────────────────
 
 def load_seed_data() -> None:
-    """Import seed data and populate the in-memory stores."""
-    from app.services.seed_data import (
-        CATEGORIES,
-        CRISIS_RESOURCES,
-        LIFE_EVENTS,
-        SERVICES,
-    )
+    """Read the data pack and populate the in-memory stores.
+
+    Fails if a service names a category slug missing from categories.yaml.
+    """
+    categories = catalog_loader.load_categories()
+    services = catalog_loader.load_services()
+    known = {c.slug for c in categories}
+    bad = [(s.slug, c) for s in services for c in s.categories if c not in known]
+    if bad:
+        raise ValueError(f"Unknown category slugs in the data pack: {bad[:5]}")
 
     _services.clear()
     _services_by_slug.clear()
@@ -48,10 +52,10 @@ def load_seed_data() -> None:
     _life_events.clear()
     _crisis_resources.clear()
 
-    for cat in CATEGORIES:
+    for cat in categories:
         _categories[cat.id] = cat.model_copy()
 
-    for svc in SERVICES:
+    for svc in services:
         _services[svc.id] = svc
         _services_by_slug[svc.slug] = svc
 
@@ -62,8 +66,8 @@ def load_seed_data() -> None:
             if cat.slug in s.categories and s.status != "inactive"
         )
 
-    _life_events.extend(LIFE_EVENTS)
-    _crisis_resources.extend(CRISIS_RESOURCES)
+    _life_events.extend(catalog_loader.load_life_events())
+    _crisis_resources.extend(catalog_loader.load_crisis_resources())
 
 
 # ── Haversine helper ──────────────────────────────────────────────────
@@ -170,19 +174,9 @@ def get_all_services(
         ]
 
     if zip_code:
-        # Approximate center for Austin zip codes
-        zip_centers: dict[str, tuple[float, float]] = {
-            "78701": (30.2700, -97.7430), "78702": (30.2590, -97.7160),
-            "78704": (30.2400, -97.7620), "78705": (30.2920, -97.7410),
-            "78721": (30.2710, -97.6900), "78722": (30.2830, -97.7160),
-            "78723": (30.3020, -97.6920), "78724": (30.2900, -97.6300),
-            "78741": (30.2270, -97.7290), "78744": (30.1700, -97.7400),
-            "78745": (30.2000, -97.8000), "78748": (30.1700, -97.8200),
-            "78751": (30.3090, -97.7260), "78752": (30.3240, -97.7100),
-            "78753": (30.3700, -97.6800), "78754": (30.3630, -97.6550),
-            "78757": (30.3550, -97.7370), "78758": (30.3900, -97.7090),
-        }
-        center = zip_centers.get(zip_code)
+        # Approximate ZIP center from the pack; unknown ZIPs are not filtered.
+        centroid = catalog_loader.load_zip_centroids().get(zip_code)
+        center = (centroid.latitude, centroid.longitude) if centroid else None
         if center:
             def _within_radius(svc: Service) -> bool:
                 for loc in svc.locations:

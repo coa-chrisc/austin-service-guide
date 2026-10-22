@@ -10,6 +10,7 @@ import re
 from typing import Any
 
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole, ResidentProfile
+from app.services.catalog_loader import load_zip_centroids
 from app.services.city import CityIdentity, get_city
 from app.services.i18n import AI_NOTICE_I18N
 from app.services.life_events import canonical_life_event_slug, session_life_event_slug
@@ -27,6 +28,13 @@ def welcome_message(city: CityIdentity) -> str:
     )
 
 
+def zip_buttons(limit: int = 5) -> list[str]:
+    """ZIP quick replies from the pack: featured ZIPs (else the first few), then "Other"."""
+    centroids = list(load_zip_centroids().values())
+    featured = [c.zip for c in centroids if c.featured] or [c.zip for c in centroids[:limit]]
+    return [*featured, "Other"]
+
+
 DEMO_STEPS: list[dict[str, Any]] = [
     {
         "message": welcome_message(get_city()),
@@ -36,7 +44,7 @@ DEMO_STEPS: list[dict[str, Any]] = [
     {"message": "Thank you for sharing that. Let me ask a few quick questions so I can find the best resources for you.\n\nFirst, how many people are in your household, including yourself?",
      "buttons": ["Just me", "2 people", "3-4 people", "5 or more"], "progress": 15},
     {"message": "Got it. What zip code do you live in? This helps me find services near you.",
-     "buttons": ["78741", "78702", "78745", "78753", "78758", "Other"], "progress": 30},
+     "buttons": zip_buttons(), "progress": 30},
     {"message": "Thanks! Now, what best describes your current housing situation?",
      "buttons": ["I rent", "I own my home", "Staying with friends/family", "Currently without housing", "Other"], "progress": 40},
     {"message": "And what's your current employment situation?",

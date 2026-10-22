@@ -73,9 +73,10 @@ tmp/
 images/
 
 # ── Claude Code local state ───────────────────────────────────
-.claude/cache/
-.claude/sessions/
-.claude/context-layer/
+**/.claude/cache/
+**/.claude/sessions/
+**/.claude/context-layer/
+**/.claude/settings.local.json
 
 # Dedupe script output (advisory; regenerate with backend/scripts/dedupe_catalog.py)
 backend/dedupe_review.csv

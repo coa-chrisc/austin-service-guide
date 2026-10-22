@@ -1,8 +1,8 @@
 # AI Coding Agent README
 
-This document is for AI coding agents, automation assistants, and developers who want to understand, extend, or reuse the Austin Service Guide demo for another public agency or civic-service project.
+This document is for AI coding agents, automation assistants, and developers who want to understand, extend, or reuse the Civic Service Guide demo for another public agency or civic-service project.
 
-The project is a working demonstration of a resident-facing service navigation portal for Austin Public Health (APH). It combines a React frontend, FastAPI backend, seeded service catalog, AI intake assistant with tool calling, service matching, maps, saved plans, sharing, and admin dashboards.
+The project is a working demonstration of a resident-facing service navigation portal for a public agency. The bundled config and data describe Austin, Texas (the reference deployment). It combines a React frontend, FastAPI backend, seeded service catalog, AI intake assistant with tool calling, service matching, maps, saved plans, sharing, and admin dashboards.
 
 ## What This Demo Does
 
@@ -53,7 +53,8 @@ This is demo software. Do not treat it as production-ready for real resident dat
 - AI intake, tool calling, scripted fallback, crisis response: `backend/app/services/ai.py`
 - Service matching, risk flags, benefits estimates, application order: `backend/app/services/matching.py`
 - In-memory service catalog queries and CRUD helpers: `backend/app/services/catalog.py`
-- Seed service, resident, staff, analytics, reports data: `backend/app/services/seed_data.py`
+- Place-specific data (catalog, categories, life events, crisis lines, ZIP centers, matching rules, personas, admin demo data): the data pack, resolved by `backend/app/services/data_pack.py` from `CITY_DATA_DIR`; bundled Austin pack in `backend/app/data/`, format in `backend/app/data/README.md`
+- Legacy hard-coded data and the loader for the admin demo data: `backend/app/services/seed_data.py`
 - Open-now parsing and next-open labels: `backend/app/services/hours.py`
 - SMS/email stubs and integrations: `backend/app/services/notify.py`
 
@@ -111,7 +112,7 @@ The model does not own source-of-truth data. It calls local tools. This is reusa
 - Library/social service kiosk tools
 - Veteran or senior service navigation
 
-Adapt by changing `seed_data.py`, service categories, tool descriptions, and matching rules.
+Adapt by writing your own data pack (see `docs/CUSTOMIZING.md`), then reviewing tool descriptions and matching rules.
 
 ### 2. No-Account-First Flow
 
@@ -135,14 +136,15 @@ Use this checklist when adapting the demo.
 
 ### Branding And Content
 
-- Replace APH language in `README.md`, `Landing.tsx`, and `brandTheme.ts`.
-- Update logo assets in `config/brand/<id>/` (see `docs/CUSTOMIZING.md`).
+- Branding comes from the city config, not source. Copy a preset, edit it, and set `CITY_CONFIG` (see `docs/CUSTOMIZING.md`). Do not edit `Landing.tsx` or `brandTheme.ts` for names or colors.
+- Update logo assets in `config/brand/<id>/`.
+- Set `serviceGuide.timezone` (open-now hours) and `serviceGuide.languages` if you offer fewer languages.
 - Adjust tone: public health, housing, workforce, emergency management, library services, or general city services each need different copy.
 - Review all crisis and emergency language with subject-matter experts.
 
 ### Service Catalog
 
-- Replace `CATEGORIES`, `LIFE_EVENTS`, `SERVICES`, and crisis resources in `backend/app/services/seed_data.py`.
+- Copy `backend/app/data/` to `config/data/<id>/`, set `CITY_DATA_DIR=data/<id>`, and replace the YAML (`services/`, `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`, and the optional files). Formats are in `backend/app/data/README.md`.
 - Keep stable `slug` values for URLs.
 - Add `hours` and `hours_verified` if open-now filtering matters.
 - Add latitude/longitude for map display.
@@ -151,7 +153,7 @@ Use this checklist when adapting the demo.
 
 ### Matching Logic
 
-Customize `backend/app/services/matching.py`:
+Local ZIP lists, crisis-direct and prevention services and benefit estimates go in the pack's `matching_rules.yaml`. For logic changes, edit `backend/app/services/matching.py`:
 
 - `_NEED_TO_CATEGORIES`: maps resident words to categories.
 - `_score_service`: ranks services.
@@ -163,14 +165,14 @@ For production, document every matching rule and make it reviewable by program o
 
 ### AI Instructions And Tools
 
-Customize in `backend/app/services/ai.py`:
+Customize in `backend/app/services/`:
 
-- `_build_instructions`: role, tone, safety, and agency scope.
-- `_TOOL_SCHEMAS`: tool names and parameters exposed to the model.
-- `_dispatch_tool`: local tool execution.
-- `_needs_from_life_event`: landing-page pathway seeding.
-- `_check_crisis` and `_crisis_response`: urgent safety handling.
-- `_DEMO_STEPS`: offline scripted intake.
+- `prompts.py`: role, tone, safety, and scope of the text agent.
+- `tool_schemas.py`: tool names and parameters exposed to the model.
+- `tools.py`: local tool execution.
+- `life_events.py`: landing-page pathway seeding.
+- `scenarios.py`: the crisis keyword check and follow-ups. Local crisis lines go in the pack's `crisis_resources.yaml`.
+- `scripted.py`: offline scripted intake.
 
 When adapting tools, keep outputs structured and compact. The model should receive enough information to help, not entire databases.
 

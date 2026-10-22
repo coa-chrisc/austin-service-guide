@@ -1,6 +1,6 @@
-- id: le-new-austin
+- id: le-new-to-area
   name: New to Austin
-  slug: new_to_austin
+  slug: new_to_area
   description: Just moved to Austin? Find resources to help you settle in, from utilities to healthcare.
   icon: LocationCity
   related_categories:

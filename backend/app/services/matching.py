@@ -6,6 +6,8 @@ risk assessment and estimated benefit value.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from app.models import (
     ResidentProfile,
     RiskFlag,
@@ -14,6 +16,11 @@ from app.models import (
     ServiceMatch,
 )
 from app.services import catalog
+from app.services.catalog_loader import (
+    PreventionEntry,
+    load_matching_rules,
+    local_crisis_lines,
+)
 from app.services.eligibility import eligibility_note, unconfirmed_gates
 
 
@@ -86,12 +93,10 @@ _NEED_TO_CATEGORIES: dict[str, list[str]] = {
     "heat stroke": ["cooling", "healthcare", "emergency"],
 }
 
-# Zips with elevated heat-vulnerability (urban heat island, low tree canopy,
-# lower AC penetration). Used by the heat-vulnerable rule below.
-_HIGH_HEAT_ZIPS: set[str] = {
-    "78741", "78744", "78753", "78758", "78617",
-    "78702", "78721", "78724", "78754", "78722", "78723", "78745",
-}
+
+def _high_heat_zips() -> set[str]:
+    """ZIPs with elevated heat vulnerability, from the pack's matching rules."""
+    return set(load_matching_rules().high_heat_zips)
 
 
 def _matching_categories(profile: ResidentProfile) -> set[str]:
@@ -129,7 +134,7 @@ def _matching_categories(profile: ResidentProfile) -> set[str]:
     if (
         profile.is_outdoor_worker
         or profile.has_ac is False
-        or (profile.has_chronic_conditions and profile.zip_code in _HIGH_HEAT_ZIPS)
+        or (profile.has_chronic_conditions and profile.zip_code in _high_heat_zips())
     ):
         cats.add("cooling")
         cats.add("utilities")
@@ -204,24 +209,23 @@ def _score_service(service: Service, profile: ResidentProfile, target_cats: set[
     return min(100, score)
 
 
-# Services that directly answer a crisis indicator, most local first.
-# They skip the relevance filter, eligibility gates, and the match cap, and
-# lead the application plan. Slugs are checked against the catalog in tests.
-_CRISIS_SERVICES: dict[str, list[str]] = {
-    "domestic_violence": ["safe-alliance"],
-    "immediate_danger": ["safe-alliance"],
-    "suicidal_ideation": ["integral-care"],
-    "homelessness": ["echo-coordinated-entry"],
-}
-
 _MAX_MATCHES = 15
+
+
+def crisis_services() -> dict[str, list[str]]:
+    """Crisis indicator -> service slugs that directly answer it, most local
+    first (``crisis_services`` in the pack's matching rules). They skip the
+    relevance filter, eligibility gates, and the match cap, and lead the
+    application plan."""
+    return load_matching_rules().crisis_services
 
 
 def _crisis_slugs(profile: ResidentProfile) -> list[str]:
     """Crisis-direct service slugs for the profile, in indicator order."""
     out: list[str] = []
+    rules = crisis_services()
     for indicator in profile.crisis_indicators:
-        for slug in _CRISIS_SERVICES.get(indicator, []):
+        for slug in rules.get(indicator, []):
             if slug not in out:
                 out.append(slug)
     return out
@@ -278,7 +282,7 @@ def _to_match(
 def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
     """Return services ranked by relevance to the resident profile.
 
-    Crisis-direct services (``_CRISIS_SERVICES``) come first and do not
+    Crisis-direct services (``crisis_services()``) come first and do not
     count toward the cap. Services with ``eligibility_requires`` gates the
     profile contradicts are dropped. Gates the profile cannot confirm keep
     the service, but capped at "low" confidence and ranked after every
@@ -329,6 +333,25 @@ def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
 
 # ── Risk Assessment ───────────────────────────────────────────────────
 
+def _entry_label(entry: PreventionEntry) -> str | None:
+    if entry.text is not None:
+        return entry.text
+    svc = catalog.get_service_by_slug(entry.service or "")
+    return svc.name if svc else None
+
+
+def _prevention(risk_type: str, *, lead: Sequence[str] = (), tail: Sequence[str] = ()) -> list[str]:
+    """Prevention services for a risk flag: ``lead``, the pack's entries for
+    ``risk_type`` (catalog names or display text), then ``tail``."""
+    entries = load_matching_rules().prevention_services.get(risk_type, [])
+    pack = [label for label in map(_entry_label, entries) if label]
+    return [*lead, *pack, *tail]
+
+
+def _crisis_line_labels(topic: str) -> list[str]:
+    return [f"{r.name} ({r.phone})" for r in local_crisis_lines(topic)]
+
+
 def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
     """Identify risk factors from the resident profile."""
     flags: list[RiskFlag] = []
@@ -340,7 +363,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical,
             description="Currently experiencing homelessness",
             contributing_factors=["No stable housing", profile.employment_status or "Unknown employment"],
-            prevention_services=["Foundation Communities", "Caritas of Austin", "Salvation Army"],
+            prevention_services=_prevention("homelessness"),
         ))
     elif profile.housing_situation in ("unstable",):
         flags.append(RiskFlag(
@@ -348,7 +371,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.high,
             description="At risk of homelessness — unstable housing situation",
             contributing_factors=["Unstable housing"],
-            prevention_services=["Foundation Communities", "Austin Tenants' Council"],
+            prevention_services=_prevention("housing_instability"),
         ))
 
     # Food insecurity
@@ -360,7 +383,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.high,
             description="High risk of food insecurity based on income and stated need",
             contributing_factors=["Low income", "Food identified as immediate need"],
-            prevention_services=["Central Texas Food Bank", "SNAP", "WIC"],
+            prevention_services=_prevention("food_insecurity"),
         ))
 
     # Uninsured
@@ -371,7 +394,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=sev,
             description="No health insurance coverage",
             contributing_factors=["Uninsured status"],
-            prevention_services=["CommUnity Care", "People's Community Clinic", "Medicaid Enrollment"],
+            prevention_services=_prevention("uninsured"),
         ))
 
     # Crisis indicators
@@ -381,7 +404,11 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical,
             description="Indicators of domestic violence or unsafe home environment",
             contributing_factors=["Self-reported safety concern"],
-            prevention_services=["SAFE Alliance (512-267-7233)", "National DV Hotline (1-800-799-7233)"],
+            prevention_services=_prevention(
+                "domestic_violence",
+                lead=_crisis_line_labels("domestic_violence"),
+                tail=["National DV Hotline (1-800-799-7233)"],
+            ),
         ))
 
     if "suicidal_ideation" in profile.crisis_indicators:
@@ -390,7 +417,10 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical,
             description="Indicators of suicidal ideation or severe mental health crisis",
             contributing_factors=["Self-reported mental health crisis"],
-            prevention_services=["988 Suicide & Crisis Lifeline", "Integral Care (512-472-4357)"],
+            prevention_services=_prevention(
+                "mental_health_crisis",
+                lead=["988 Suicide & Crisis Lifeline", *_crisis_line_labels("mental_health")],
+            ),
         ))
 
     if "homelessness" in profile.crisis_indicators:
@@ -400,7 +430,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
                 severity=RiskSeverity.high,
                 description="At risk of or currently experiencing homelessness",
                 contributing_factors=["Self-reported homelessness concern"],
-                prevention_services=["Foundation Communities", "Salvation Army", "Caritas of Austin"],
+                prevention_services=_prevention("homelessness"),
             ))
 
     # Social isolation (senior alone)
@@ -411,7 +441,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.medium,
             description="Older adult living alone — potential social isolation risk",
             contributing_factors=["Age 70+", "Single-person household"],
-            prevention_services=["AGE of Central Texas", "Meals on Wheels"],
+            prevention_services=_prevention("social_isolation"),
         ))
 
     # Heat vulnerability — combined risk from outdoor work, no AC, chronic
@@ -423,7 +453,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
         heat_factors.append("No working AC at home")
     if profile.has_chronic_conditions:
         heat_factors.append("Chronic condition compounding heat risk")
-    if profile.zip_code in _HIGH_HEAT_ZIPS:
+    if profile.zip_code in _high_heat_zips():
         heat_factors.append(f"High-heat zip ({profile.zip_code})")
 
     # Child mental-health risk — when any school-age child has a flagged
@@ -444,11 +474,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical if severe_concern else RiskSeverity.high,
             description="School-age child with mental-health concerns reported by household.",
             contributing_factors=flagged_children,
-            prevention_services=[
-                "Communities In Schools of Central Texas",
-                "Vida Clinic — School-Based Mental Health",
-                "Integral Care youth services",
-            ],
+            prevention_services=_prevention("child_mental_health_risk"),
         ))
 
     if len(heat_factors) >= 2:
@@ -462,11 +488,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=sev,
             description="Elevated risk of heat-related illness during summer heat advisories",
             contributing_factors=heat_factors,
-            prevention_services=[
-                "Austin–Travis County Cooling Center Network",
-                "Heat Relief & AC Repair Assistance (Family Eldercare)",
-                "Customer Assistance Program (CAP)",
-            ],
+            prevention_services=_prevention("heat_vulnerable"),
         ))
 
     return flags
@@ -482,47 +504,22 @@ def calculate_benefits(
     breakdown: list[dict] = []
     total_monthly = 0.0
 
+    estimates = load_matching_rules().benefit_estimates
+    uninsured = profile.insurance_status == "uninsured"
+
     for m in matched_services:
         svc = m.service
         value = 0.0
         label = svc.name
 
-        # Rough estimates for common programs
-        if "svc-snap" in svc.id or "snap" in svc.slug:
-            # SNAP: ~$234/person/month average in TX
-            persons = profile.household_size or 1
-            value = 234.0 * persons
-            label = "SNAP Benefits"
-        elif "svc-wic" in svc.id or "wic" in svc.slug:
-            value = 75.0
-            label = "WIC Benefits"
-        elif "svc-cap" in svc.id:
-            value = 45.0
-            label = "CAP Utility Discount"
-        elif "svc-ae-assist" in svc.id:
-            value = 150.0
-            label = "Utility Assistance (one-time avg.)"
-        elif "svc-capmetro" in svc.id:
-            value = 41.25  # half-fare monthly pass
-            label = "Reduced Transit Pass"
-        elif "svc-ctfb" in svc.id:
-            value = 120.0
-            label = "Food Bank (estimated grocery value)"
-        elif "svc-mow" in svc.id:
-            value = 200.0
-            label = "Meals on Wheels (20 meals)"
-        elif "svc-medicaid" in svc.id:
-            value = 550.0
-            label = "Medicaid Coverage (estimated value)"
-        elif "svc-commcare" in svc.id and profile.insurance_status == "uninsured":
-            value = 80.0
-            label = "Sliding-Scale Healthcare Savings"
-        elif "svc-headstart" in svc.id:
-            value = 800.0
-            label = "Head Start (childcare value)"
-        elif "svc-foundation" in svc.id:
-            value = 400.0
-            label = "Affordable Housing Savings"
+        est = next(
+            (e for e in estimates
+             if svc.slug in e.services and (uninsured or not e.only_if_uninsured)),
+            None,
+        )
+        if est:
+            value = est.monthly_value * ((profile.household_size or 1) if est.per_household_member else 1)
+            label = est.label
         elif svc.cost_type == "free":
             # Generic free service modest value
             value = 25.0

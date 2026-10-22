@@ -35,7 +35,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     email: "Email",
     phone_number: "Phone number",
     email_address: "Email address",
-    phone_helper: "Include country code, e.g. +15125551234",
+    phone_helper: "Include country code, e.g. +15555550100",
     save_across_devices: "Want to keep your plan across devices?",
     sign_in: "Sign in",
     share_intro:
@@ -109,7 +109,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     email: "Correo electrónico",
     phone_number: "Número de teléfono",
     email_address: "Dirección de correo",
-    phone_helper: "Incluya el código de país, p. ej. +15125551234",
+    phone_helper: "Incluya el código de país, p. ej. +15555550100",
     save_across_devices: "¿Quiere conservar su plan en todos los dispositivos?",
     sign_in: "Iniciar sesión",
     share_intro:
@@ -183,7 +183,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     email: "Email",
     phone_number: "Số điện thoại",
     email_address: "Địa chỉ email",
-    phone_helper: "Bao gồm mã quốc gia, ví dụ +15125551234",
+    phone_helper: "Bao gồm mã quốc gia, ví dụ +15555550100",
     save_across_devices: "Bạn muốn giữ kế hoạch trên các thiết bị?",
     sign_in: "Đăng nhập",
     share_intro:
@@ -257,7 +257,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     email: "电子邮件",
     phone_number: "电话号码",
     email_address: "电子邮件地址",
-    phone_helper: "请包含国家代码，例如 +15125551234",
+    phone_helper: "请包含国家代码，例如 +15555550100",
     save_across_devices: "想在不同设备上保存您的计划吗？",
     sign_in: "登录",
     share_intro:
@@ -329,7 +329,7 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     email: "بريد إلكتروني",
     phone_number: "رقم الهاتف",
     email_address: "عنوان البريد الإلكتروني",
-    phone_helper: "أدرج رمز الدولة، مثل +15125551234",
+    phone_helper: "أدرج رمز الدولة، مثل +15555550100",
     save_across_devices: "هل تريد الاحتفاظ بخطتك عبر الأجهزة؟",
     sign_in: "تسجيل الدخول",
     share_intro:

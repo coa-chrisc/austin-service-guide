@@ -1,6 +1,6 @@
 // STARTER TEMPLATE - review before use. Not validated against a live Azure subscription.
 //   az deployment group create -g <rg> -f container-app.bicep -p image=<acr>/service-guide:1.0.0 \
-//     citySlug=austin openAiKeySecretUri=https://<vault>.vault.azure.net/secrets/openai-api-key publicOrigin=https://services.example.gov
+//     citySlug=my-city openAiKeySecretUri=https://<vault>.vault.azure.net/secrets/openai-api-key publicOrigin=https://services.example.gov
 //
 // After deploy, grant the output `identityPrincipalId` the "Key Vault Secrets User" role on the vault
 // (the Container App will not start until it can read the secret), and grant it AcrPull if the image is in a private ACR.

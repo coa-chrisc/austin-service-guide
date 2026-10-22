@@ -9,11 +9,17 @@ services:
         # City config: CITY_CONFIG=presets/<id>.json, or the CITY_PRESET=<id> alias.
         CITY_CONFIG: ${CITY_CONFIG:-}
         CITY_PRESET: ${CITY_PRESET:-}
-    image: austin-service-guide:local
+        # Data pack: relative = under config/ (e.g. data/<id>), absolute = as-is. Unset = backend/app/data.
+        CITY_DATA_DIR: ${CITY_DATA_DIR:-}
+        # Map tiles (unset = OpenStreetMap). A custom URL needs its attribution.
+        VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
+        VITE_MAP_TILE_ATTRIBUTION: ${VITE_MAP_TILE_ATTRIBUTION:-}
+    image: civic-service-guide:local
     env_file:
       - path: backend/.env
         required: false
     environment:
+      CITY_DATA_DIR: ${CITY_DATA_DIR:-}
       # Scripted fallback by default; set DEMO_MODE=false and OPENAI_API_KEY for live AI.
       DEMO_MODE: ${DEMO_MODE:-true}
       # Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.

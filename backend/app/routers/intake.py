@@ -27,6 +27,7 @@ from app.models import (
     IntakeStatus,
 )
 from app.services import catalog
+from app.services.city import get_city
 from app.services.ai import process_message, start_persona_session, start_session
 from app.services.grounding import ground_service_ids
 from app.services.i18n import (
@@ -286,7 +287,7 @@ async def build_plan(body: StateRequest):
 
 
 def _share_text(services: list, origin: str, extra: int) -> str:
-    lines = ["Your Austin Service Guide matches:", ""]
+    lines = [f"Your {get_city().app_name} matches:", ""]
     for i, svc in enumerate(services, start=1):
         line = f"{i}. {svc.name}"
         if svc.phone:
@@ -312,7 +313,7 @@ def _share_html(services: list, origin: str, extra: int) -> str:
         "Browse all services</a></p>"
         if extra else ""
     )
-    return f"<h2>Your Austin Service Guide matches</h2><ol>{items}</ol>{more}"
+    return f"<h2>Your {html.escape(get_city().app_name)} matches</h2><ol>{items}</ol>{more}"
 
 
 @router.post("/share")
@@ -339,7 +340,7 @@ async def share_results(body: ShareRequest):
         else:
             result = await send_email(
                 to=body.recipient,
-                subject="Your Austin Service Guide matches",
+                subject=f"Your {get_city().app_name} matches",
                 text=text_body,
                 html=_share_html(shown, origin, extra),
             )

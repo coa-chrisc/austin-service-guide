@@ -30,7 +30,10 @@ repetition is only allowed where a match can start at most once per run
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from typing import Callable, Collection, NamedTuple
+
+from app.services.city import get_city
 
 PLACEHOLDERS: dict[str, str] = {
     "email": "[email removed]",
@@ -152,9 +155,20 @@ _NOT_STREET_WORDS = (
     r"|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?"
 )
 _STREET_TOKEN = rf"(?!(?:{_NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*"
+# A ZIP code named as one ("zip 60614", "my zip code is 02134") is matched by
+# the ``zip`` alternative and left alone (``_not_zip``), so it is never read
+# as a house number. Elsewhere a 5-digit number can be a house number
+# ("12345 Research Blvd"); a bare ZIP survives because a street suffix must
+# follow it within four non-stopword tokens ("I live in 60614",
+# "60614 near Clark St").
+_ZIP_CONTEXT = (
+    r"(?P<zip>\b(?:zip(?:\s*code)?|postal\s+code|c[oó]digo\s+postal)\b[\s:#-]*"
+    r"(?:(?:is|es|was)\s+)?\d{5}(?:-\d{4})?(?!\d))"
+)
 _ADDRESS_RE = re.compile(
-    # House number: 1-6 digits, never a 786xx/787xx Austin zip code.
-    r"(?<![\d$,.])(?!7[86]\d{3}\b)\d{1,6}[A-Za-z]?\s+"
+    rf"{_ZIP_CONTEXT}|"
+    # House number: 1-6 digits.
+    r"(?<![\d$,.])\d{1,6}[A-Za-z]?\s+"
     rf"(?:{_STREET_TOKEN}\s+){{1,4}}"
     rf"(?:{_STREET_SUFFIXES})\b\.?"
     r"(?:,?\s*(?:apt|apartment|unit|suite|ste|#)\.?\s*#?\s*[A-Za-z0-9-]+)?",
@@ -225,7 +239,7 @@ _NAME_STOP_DESCRIPTOR = (
     r"|november|december|veterans?|unemployed|disabled|pregnant|retired"
     r"|homeless|single|married|divorced|widowed|separated|student|citizen"
     r"|resident|immigrant|refugee|senior|elderly|deaf|blind|sick|diabetic"
-    r"|spanish|english|mexican|texas|austin|american|african|asian|black|white"
+    r"|spanish|english|mexican|american|african|asian|black|white"
     r"|hispanic|latino|latina|latinx|native|indian|chinese|vietnamese|korean"
     r"|filipino|cuban|salvadoran|guatemalan|honduran|venezuelan|haitian|french"
     r"|german|arabic|catholic|christian|muslim|jewish|buddhist|hindu|currently"
@@ -246,7 +260,6 @@ _NAME_CAP = (
 )
 _NAME_ANY = rf"[{_NAME_LET}]+(?:['’-][{_NAME_LET}]+)*"
 _NAME_FUNC_GUARD = _not_stop(_NAME_STOP_FUNC)
-_NAME_DESC_GUARD = _not_stop(_NAME_STOP_DESCRIPTOR)
 _NAME_CONT_GUARD = _not_stop(_NAME_STOP_CONTINUATION)
 
 # "my name is maria lopez": the phrase is explicit, so up to 3 tokens in any
@@ -256,12 +269,39 @@ _NAME_EXPLICIT_RE = re.compile(
     r"(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))"
     rf"(?P<val>{_NAME_FUNC_GUARD}{_NAME_ANY}(?:[ \t  ]+{_NAME_CONT_GUARD}{_NAME_ANY}){{0,2}})"
 )
-# "I am Maria Lopez" / "this is Maria Lopez": ambiguous phrases, so two to
-# three Capitalized, non-stoplisted words are required.
-_NAME_SELF_RE = re.compile(
-    r"(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))"
-    rf"(?P<val>{_NAME_DESC_GUARD}{_NAME_CAP}(?:[ \t  ]+{_NAME_DESC_GUARD}{_NAME_CAP}){{1,2}})"
-)
+
+# The deployment's own place names ("I'm Greater Austin Resident") are descriptors
+# too: city name and region name from the city config, each as a whole
+# phrase ("greater\s+austin"). State names are left out on purpose: many
+# are first names (Georgia, Virginia, Carolina), and leaking a name is worse
+# than over-redacting "I'm Texas Born".
+_REGEX_SPECIAL_RE = re.compile(r"[.*+?^$()\[\]{}|\\]")
+
+
+def _place_stopwords(places: tuple[str, ...]) -> str:
+    """``|phrase`` stopword alternatives, one per non-empty place name."""
+    out = ""
+    for place in places:
+        words = [_REGEX_SPECIAL_RE.sub(r"\\\g<0>", word) for word in place.split()]
+        if words:
+            out += "|" + r"\s+".join(words)
+    return out
+
+
+def _city_places() -> tuple[str, ...]:
+    city = get_city()
+    return (city.city_name, city.region_name)
+
+
+@lru_cache(maxsize=4)
+def _name_self_re(places: tuple[str, ...]) -> re.Pattern[str]:
+    # "I am Maria Lopez" / "this is Maria Lopez": ambiguous phrases, so two
+    # to three Capitalized words that are neither stopwords nor place names.
+    guard = _not_stop(_NAME_STOP_DESCRIPTOR + _place_stopwords(places))
+    return re.compile(
+        r"(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))"
+        rf"(?P<val>{guard}{_NAME_CAP}(?:[ \t  ]+{guard}{_NAME_CAP}){{1,2}})"
+    )
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -288,14 +328,18 @@ _ZIP4_OR_PHONE_RE = re.compile(r"\d{5}-\d{4}|(?:1-)?\d{3}-\d{3}-\d{4}")
 def _is_id_value(match: re.Match[str]) -> bool:
     value = match.group("val")
     digits = sum(ch.isdigit() for ch in value)
-    # Needs real digit content, and is not a ZIP+4 ("78744-1234") or a dashed
-    # phone number ("Medicaid: 1-800-252-8263"). Phones are left to the phone
+    # Needs real digit content, and is not a ZIP+4 ("60614-1234") or a dashed
+    # phone number ("Medicaid: 1-800-555-0100"). Phones are left to the phone
     # rule, so assistant text (which skips it) keeps service numbers.
     return digits >= 4 and not _ZIP4_OR_PHONE_RE.fullmatch(value)
 
 
 def _always(_: re.Match[str]) -> bool:
     return True
+
+
+def _not_zip(match: re.Match[str]) -> bool:
+    return match.group("zip") is None
 
 
 _DIGIT_GROUP_RE = re.compile(r"\d+")
@@ -339,10 +383,10 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str]], bool]]] = [
     ("phone", _PHONE_LOCAL_RE, _always),
     ("phone", _PHONE_SPOKEN_RE, _is_spoken_phone),
     ("address", _PO_BOX_RE, _always),
-    ("address", _ADDRESS_RE, _always),
+    ("address", _ADDRESS_RE, _not_zip),
     ("address", _SPOKEN_ADDRESS_RE, _always),
     ("name", _NAME_EXPLICIT_RE, _always),
-    ("name", _NAME_SELF_RE, _always),
+    # ("name", _name_self_re(...)) is appended in ``redact``: it reads the city config.
 ]
 
 
@@ -365,7 +409,8 @@ def redact(
     found: set[str] = set()
     kept = {value.lower() for value in keep}
 
-    for kind, pattern, accept in _RULES:
+    rules = [*_RULES, ("name", _name_self_re(_city_places()), _always)]
+    for kind, pattern, accept in rules:
         if kinds is not None and kind not in kinds:
             continue
         placeholder = PLACEHOLDERS[kind]
