@@ -11,10 +11,12 @@ vi.mock("@/hooks/useBrandConfig", async () => {
 
 const CEDAR_RIDGE_CASES: Array<[string, string]> = [
   ["I'm Cedar Ridge Resident", "I'm Cedar Ridge Resident"],
-  ["this is Oregon Coast", "this is Oregon Coast"],
+  ["this is Oregon Coast", "this is [name removed]"],
   ["I'm Austin Lopez", "I'm [name removed]"],
   ["I'm Texas Born", "I'm [name removed]"],
   ["I'm Maria Lopez", "I'm [name removed]"],
+  // The preset's state (OR) is not a stopword: state names can be first names.
+  ["I'm Oregon Smith", "I'm [name removed]"],
 ];
 
 describe("piiGuard place stopwords follow the city config", () => {

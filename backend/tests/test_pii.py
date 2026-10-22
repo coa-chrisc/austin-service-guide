@@ -217,10 +217,12 @@ def test_name_is_not_an_assistant_kind():
 # frontend/src/lib/piiGuard.city.test.ts with the same preset and cases.
 _CEDAR_RIDGE_CASES = [
     ("I'm Cedar Ridge Resident", "I'm Cedar Ridge Resident"),
-    ("this is Oregon Coast", "this is Oregon Coast"),
+    ("this is Oregon Coast", "this is [name removed]"),
     ("I'm Austin Lopez", "I'm [name removed]"),
     ("I'm Texas Born", "I'm [name removed]"),
     ("I'm Maria Lopez", "I'm [name removed]"),
+    # The preset's state (OR) is not a stopword: state names can be first names.
+    ("I'm Oregon Smith", "I'm [name removed]"),
 ]
 
 
@@ -236,7 +238,8 @@ def test_place_stopwords_follow_the_city_config(monkeypatch, text, expected):
     [
         ("I'm Cedar Ridge Resident", "I'm [name removed] Resident"),
         ("this is Oregon Coast", "this is [name removed]"),
-        ("I'm Texas Born", "I'm Texas Born"),
+        ("I'm Texas Born", "I'm [name removed]"),
+        ("I'm Georgia Smith", "I'm [name removed]"),
     ],
 )
 def test_other_places_are_not_stopwords_under_the_default_config(text, expected):

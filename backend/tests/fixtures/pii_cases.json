@@ -782,8 +782,10 @@
   },
   {
     "input": "I live in 10001 off 8th Ave",
-    "expected": "I live in 10001 off 8th Ave",
-    "kinds": []
+    "expected": "I live in [address removed]",
+    "kinds": [
+      "address"
+    ]
   },
   {
     "input": "zip code 98101 Pike Pl",
@@ -829,6 +831,27 @@
   {
     "input": "60614 Clark St",
     "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "60614 off Clark St",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "I live at 4521 off Main St",
+    "expected": "I live at [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "I live at 4521 Between Creeks Dr",
+    "expected": "I live at [address removed]",
     "kinds": [
       "address"
     ]

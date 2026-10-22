@@ -206,8 +206,7 @@ const NOT_STREET_WORDS =
   String.raw`the|on|in|at|a|an|of|to|for|my|our|from|near|by|and|or|with|but|no|not` +
   String.raw`|years?|months?|weeks?|days?|hours?|people|persons?|kids?|children|adults?` +
   String.raw`|dollars?|times?|am|pm|i|we|me|it|is|was` +
-  String.raw`|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?` +
-  String.raw`|off|around|behind|past|across|along|between`;
+  String.raw`|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?`;
 const STREET_TOKEN = String.raw`(?!(?:${NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*`;
 // A ZIP named as one ("zip 60614") is matched by the `zip` alternative and
 // left alone (`notZip`), so it is never read as a house number. Same as pii.py.
@@ -293,25 +292,9 @@ const NAME_EXPLICIT_RE = py(
   String.raw`(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))` +
     String.raw`(?P<val>${NAME_FUNC_GUARD}${NAME_ANY}(?:[ \t  ]+${NAME_CONT_GUARD}${NAME_ANY}){0,2})`,
 );
-// The deployment's own place names ("I'm Texas Resident") are descriptors
-// too: city name, region name and full state name from the city config, each
-// as a whole phrase. Same as pii.py, which reads the same config.
-const US_STATE_NAMES: Record<string, string> = {
-  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
-  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
-  FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
-  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
-  ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
-  MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
-  NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
-  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
-  OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
-  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
-  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin",
-  WY: "Wyoming", PR: "Puerto Rico", GU: "Guam", VI: "Virgin Islands",
-  AS: "American Samoa", MP: "Northern Mariana Islands",
-};
-
+// The deployment's own place names ("I'm Greater Austin Resident") are descriptors
+// too: city name and region name from the city config, each as a whole
+// phrase. No state names (Georgia, Virginia are first names). Same as pii.py.
 function placeStopwords(places: string[]): string {
   let out = "";
   for (const place of places) {
@@ -325,7 +308,7 @@ function placeStopwords(places: string[]): string {
 }
 
 const { region } = brandConfig;
-const PLACES = [region.cityName, region.name, US_STATE_NAMES[region.state.toUpperCase()] ?? ""];
+const PLACES = [region.cityName, region.name];
 const NAME_SELF_GUARD = notStop(NAME_STOP_DESCRIPTOR + placeStopwords(PLACES));
 const NAME_SELF_RE = py(
   String.raw`(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))` +

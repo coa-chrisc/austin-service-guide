@@ -153,7 +153,6 @@ _NOT_STREET_WORDS = (
     r"|years?|months?|weeks?|days?|hours?|people|persons?|kids?|children|adults?"
     r"|dollars?|times?|am|pm|i|we|me|it|is|was"
     r"|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?"
-    r"|off|around|behind|past|across|along|between"
 )
 _STREET_TOKEN = rf"(?!(?:{_NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*"
 # A ZIP code named as one ("zip 60614", "my zip code is 02134") is matched by
@@ -161,7 +160,7 @@ _STREET_TOKEN = rf"(?!(?:{_NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*"
 # as a house number. Elsewhere a 5-digit number can be a house number
 # ("12345 Research Blvd"); a bare ZIP survives because a street suffix must
 # follow it within four non-stopword tokens ("I live in 60614",
-# "60614 off Clark St").
+# "60614 near Clark St").
 _ZIP_CONTEXT = (
     r"(?P<zip>\b(?:zip(?:\s*code)?|postal\s+code|c[oó]digo\s+postal)\b[\s:#-]*"
     r"(?:(?:is|es|was)\s+)?\d{5}(?:-\d{4})?(?!\d))"
@@ -271,26 +270,11 @@ _NAME_EXPLICIT_RE = re.compile(
     rf"(?P<val>{_NAME_FUNC_GUARD}{_NAME_ANY}(?:[ \t  ]+{_NAME_CONT_GUARD}{_NAME_ANY}){{0,2}})"
 )
 
-# The deployment's own place names ("I'm Texas Resident") are descriptors
-# too. They come from the city config: city name, region name and the full
-# state name, each as a whole phrase ("greater\s+austin"). The 2-letter
-# state code is left out: an all-capitals code never matches a name token,
-# and "Al" (AL) is a first name.
-_US_STATE_NAMES = {
-    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
-    "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
-    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
-    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
-    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
-    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
-    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
-    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
-    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
-    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
-    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin",
-    "WY": "Wyoming", "PR": "Puerto Rico", "GU": "Guam", "VI": "Virgin Islands",
-    "AS": "American Samoa", "MP": "Northern Mariana Islands",
-}
+# The deployment's own place names ("I'm Greater Austin Resident") are descriptors
+# too: city name and region name from the city config, each as a whole
+# phrase ("greater\s+austin"). State names are left out on purpose: many
+# are first names (Georgia, Virginia, Carolina), and leaking a name is worse
+# than over-redacting "I'm Texas Born".
 _REGEX_SPECIAL_RE = re.compile(r"[.*+?^$()\[\]{}|\\]")
 
 
@@ -306,7 +290,7 @@ def _place_stopwords(places: tuple[str, ...]) -> str:
 
 def _city_places() -> tuple[str, ...]:
     city = get_city()
-    return (city.city_name, city.region_name, _US_STATE_NAMES.get(city.state.upper(), ""))
+    return (city.city_name, city.region_name)
 
 
 @lru_cache(maxsize=4)

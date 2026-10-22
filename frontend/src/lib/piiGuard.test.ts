@@ -45,7 +45,8 @@ describe("piiGuard place stopwords under the default config", () => {
   it.each([
     ["I'm Cedar Ridge Resident", "I'm [name removed] Resident"],
     ["this is Oregon Coast", "this is [name removed]"],
-    ["I'm Texas Born", "I'm Texas Born"],
+    ["I'm Texas Born", "I'm [name removed]"],
+    ["I'm Georgia Smith", "I'm [name removed]"],
   ])("scrubPII: %j", (input, expected) => {
     expect(scrubPII(input).text).toBe(expected);
   });

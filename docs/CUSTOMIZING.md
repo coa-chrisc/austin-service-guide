@@ -45,7 +45,7 @@ With Docker, pass the build argument: `docker build --build-arg CITY_CONFIG=pres
 | `agency.parent` | Default footer disclaimer ("Agency \| Parent") and the backend system prompt |
 | `region.name` | Not printed on screen. The backend's PII name rule skips it, like `region.cityName` |
 | `region.cityName` | Landing and directory text ("services across Austin"), the admin "All Austin" filter, the admin service form's default city, and the "You told us you're new to …" intake notice. The backend's PII name rule also skips it, so "I'm Austin Resident" is not redacted as a name |
-| `region.state` | Not printed on screen. The backend's PII name rule skips the full state name for this code (for example `TX` and "Texas") |
+| `region.state` | Two-letter code. Used for new catalog locations in the admin service editor |
 
 ## 3. Colors
 
