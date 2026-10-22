@@ -307,4 +307,6 @@ CITY_CONFIG=presets/cedar-ridge-county.json npm run build   # from frontend/: bu
 
 ## License
 
-Licensed under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and redistribute this work with attribution and under the terms of the license.
+[MIT](LICENSE). Use it, change it, and redistribute it, including in commercial or closed-source work. The one condition is attribution: keep the copyright and license notice in copies of the code. It builds on the MIT-licensed [civic-ai-starter](https://github.com/crypticpy/civic-ai-starter).
+
+The license covers the code, not names or logos. The City of Austin and Austin Public Health names and marks are not licensed for reuse; the presets in `config/presets/` show where your own go.
