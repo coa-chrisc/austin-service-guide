@@ -4,7 +4,7 @@ import { useBrandConfig } from "@/hooks/useBrandConfig";
 
 /** Permanent privacy notice (brand copy). Static text: no live-region role, so screen readers read it in page order, once. */
 export default function PrivacyNotice({ sx }: { sx?: SxProps<Theme> }) {
-  const { copy } = useBrandConfig();
+  const { copy } = useBrandConfig().serviceGuide;
   return (
     <Alert
       severity="info"

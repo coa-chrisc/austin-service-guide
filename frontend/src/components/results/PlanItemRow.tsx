@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
@@ -26,7 +27,7 @@ export default function PlanItemRow({
       variant="outlined"
       sx={{
         borderRadius: 2,
-        "&:hover": { boxShadow: "0 4px 12px rgba(0,0,0,0.08)" },
+        "&:hover": { boxShadow: (t) => `0 4px 12px ${alpha(t.palette.brand.ink, 0.08)}` },
       }}
     >
       <CardActionArea

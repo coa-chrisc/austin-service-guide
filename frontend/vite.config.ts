@@ -1,161 +1,48 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
-import fs from "fs";
+import cityConfigPlugin, { loadCityConfig, logSwaps } from "./plugins/cityConfigPlugin";
 
 /* ------------------------------------------------------------------ */
-/*  Brand config: CITY_PRESET=<name> -> config/presets/<name>.brand.json */
-/*  unset -> config/brand.config.json. Validated against brand.schema.   */
+/*  City config: CITY_CONFIG=presets/<id>.json or CITY_PRESET=<id>;     */
+/*  unset -> config/city.config.json. Validated (schema, files, fonts,  */
+/*  WCAG contrast) by plugins/cityConfigPlugin.ts; any error fails.     */
 /* ------------------------------------------------------------------ */
 
-const CONFIG_DIR = path.resolve(__dirname, "../config");
-
-type JsonObj = Record<string, any>;
-
-function readJson(file: string): JsonObj {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf-8"));
-  } catch (err) {
-    throw new Error(`[brand] Cannot read ${file}: ${(err as Error).message}`);
-  }
-}
-
-/** Minimal validator for the schema keywords brand.schema.json uses. */
-function checkSchema(
-  node: JsonObj,
-  value: any,
-  at: string,
-  root: JsonObj,
-  errors: string[],
-): void {
-  if (node.$ref) {
-    const target = node.$ref
-      .replace(/^#\//, "")
-      .split("/")
-      .reduce((o: JsonObj, k: string) => o[k], root);
-    node = { ...target, ...node, $ref: undefined };
-  }
-  if (node.type === "object") {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      errors.push(`${at}: expected an object`);
-      return;
-    }
-    for (const key of node.required ?? []) {
-      if (!(key in value)) errors.push(`${at}.${key}: missing required field`);
-    }
-    for (const key of Object.keys(value)) {
-      const sub = node.properties?.[key];
-      if (sub) checkSchema(sub, value[key], `${at}.${key}`, root, errors);
-      else if (node.additionalProperties === false)
-        errors.push(`${at}.${key}: unknown field`);
-    }
-  } else if (node.type === "array") {
-    if (!Array.isArray(value)) {
-      errors.push(`${at}: expected an array`);
-      return;
-    }
-    if (node.minItems != null && value.length < node.minItems)
-      errors.push(`${at}: needs at least ${node.minItems} items`);
-    if (node.maxItems != null && value.length > node.maxItems)
-      errors.push(`${at}: allows at most ${node.maxItems} items`);
-    value.forEach((v: any, i: number) =>
-      node.items ? checkSchema(node.items, v, `${at}[${i}]`, root, errors) : undefined,
-    );
-  } else if (node.type === "number") {
-    if (typeof value !== "number" || !Number.isFinite(value))
-      errors.push(`${at}: expected a number`);
-    else {
-      if (node.minimum != null && value < node.minimum)
-        errors.push(`${at}: must be >= ${node.minimum}`);
-      if (node.maximum != null && value > node.maximum)
-        errors.push(`${at}: must be <= ${node.maximum}`);
-    }
-  } else if (node.type === "string") {
-    if (typeof value !== "string") errors.push(`${at}: expected a string`);
-    else {
-      if (node.minLength && value.length < node.minLength)
-        errors.push(`${at}: must not be empty`);
-      if (node.pattern && !new RegExp(node.pattern).test(value))
-        errors.push(`${at}: "${value}" does not match ${node.pattern}`);
-    }
-  }
-}
-
-function loadBrandConfig(): JsonObj {
-  const preset = process.env.CITY_PRESET?.trim();
-  let file = path.join(CONFIG_DIR, "brand.config.json");
-  if (preset) {
-    file = path.join(CONFIG_DIR, "presets", `${preset}.brand.json`);
-    if (!/^[a-z0-9-]+$/i.test(preset) || !fs.existsSync(file)) {
-      const known = fs
-        .readdirSync(path.join(CONFIG_DIR, "presets"))
-        .filter((f) => f.endsWith(".brand.json"))
-        .map((f) => f.replace(".brand.json", ""));
-      throw new Error(
-        `[brand] Unknown CITY_PRESET "${preset}". Available presets: ${known.join(", ")}. ` +
-          `Unset CITY_PRESET to use config/brand.config.json.`,
-      );
-    }
-  }
-  const brand = readJson(file);
-  const schema = readJson(path.join(CONFIG_DIR, "brand.schema.json"));
-  const errors: string[] = [];
-  checkSchema(schema, brand, "brand", schema, errors);
-  if (errors.length) {
-    throw new Error(
-      `[brand] ${path.relative(CONFIG_DIR, file)} is invalid:\n  ${errors.join("\n  ")}`,
-    );
-  }
-  const logoFile = path.join(__dirname, "public", brand.logo.src);
-  if (!fs.existsSync(logoFile)) {
-    throw new Error(`[brand] logo.src ${brand.logo.src} not found in frontend/public`);
-  }
-  return brand;
-}
-
-const brand = loadBrandConfig();
-const isPngLogo = brand.logo.src.toLowerCase().endsWith(".png");
-const escapeAttr = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-
-const brandHtmlPlugin = (): Plugin => ({
-  name: "brand-html",
-  transformIndexHtml: (html) =>
-    html
-      .replaceAll("%BRAND_APP_NAME%", escapeAttr(brand.appName))
-      .replaceAll("%BRAND_DESCRIPTION%", escapeAttr(brand.description)),
-});
+const city = loadCityConfig();
+logSwaps(city);
+const { config: brand } = city;
 
 export default defineConfig({
   define: {
-    __BRAND_CONFIG__: JSON.stringify(brand),
+    __CITY_CONFIG__: JSON.stringify(brand),
   },
   plugins: [
     react(),
-    brandHtmlPlugin(),
+    cityConfigPlugin(city),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: [brand.logo.src.replace(/^\//, ""), "vite.svg"],
       manifest: {
         name: brand.appName,
-        short_name: brand.shortName,
-        description: brand.description,
-        theme_color: brand.pwa.themeColor,
-        background_color: brand.pwa.backgroundColor,
+        short_name: brand.serviceGuide.shortName,
+        description: brand.serviceGuide.description,
+        theme_color: brand.serviceGuide.pwa.themeColor,
+        background_color: brand.serviceGuide.pwa.backgroundColor,
         display: "standalone",
         start_url: "/",
         scope: "/",
-        icons: isPngLogo
-          ? [
-              { src: brand.logo.src, sizes: "192x192", type: "image/png", purpose: "any maskable" },
-              { src: brand.logo.src, sizes: "512x512", type: "image/png", purpose: "any maskable" },
-            ]
-          : [
-              { src: brand.logo.src, sizes: "any", type: "image/svg+xml", purpose: "any" },
-            ],
+        icons:
+          city.logoExt === "svg"
+            ? [{ src: brand.logoSrc, sizes: "any", type: "image/svg+xml", purpose: "any" }]
+            : [
+                { src: brand.logoSrc, sizes: "192x192", type: `image/${city.logoExt}`, purpose: "any maskable" },
+                { src: brand.logoSrc, sizes: "512x512", type: `image/${city.logoExt}`, purpose: "any maskable" },
+              ],
       },
       workbox: {
+        // Default app shell plus the logo the city-config plugin emits.
+        globPatterns: ["**/*.{js,wasm,css,html}", "brand/logo.*"],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
@@ -167,8 +54,17 @@ export default defineConfig({
             },
           },
           {
+            // Self-hosted @fontsource files (hashed names, so cache-first is safe).
+            urlPattern: /\/assets\/[^/]+\.woff2?$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts",
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
             urlPattern:
-              /^https:\/\/(fonts\.googleapis\.com|fonts\.gstatic\.com|unpkg\.com|\{s\}\.tile\.openstreetmap\.org)\/.*/,
+              /^https:\/\/(unpkg\.com|\{s\}\.tile\.openstreetmap\.org)\/.*/,
             handler: "CacheFirst",
             options: {
               cacheName: "external-assets",

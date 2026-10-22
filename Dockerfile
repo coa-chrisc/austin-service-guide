@@ -1,21 +1,31 @@
 # syntax=docker/dockerfile:1
 # Single production image: React SPA (built in stage 1) served by FastAPI (stage 2).
-# Build context must be the repo root and include config/ (brand presets).
+# Build context must be the repo root and include config/ (city config, presets, logos).
+# Pick a city with --build-arg CITY_CONFIG=presets/<id>.json (or the CITY_PRESET=<id> alias).
 
 # ── Stage 1: build the frontend ──────────────────────────────────────
 FROM node:22-slim AS frontend
 WORKDIR /build
+ARG CITY_CONFIG=
 ARG CITY_PRESET=
-ENV CITY_PRESET=${CITY_PRESET}
+ENV CITY_CONFIG=${CITY_CONFIG} \
+    CITY_PRESET=${CITY_PRESET}
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
 COPY config/ config/
+# Category order for palette.brand.category (read by the frontend build).
+COPY backend/app/data/categories.yaml backend/app/data/categories.yaml
 COPY frontend/ frontend/
 RUN cd frontend && npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────
 FROM python:3.12-slim AS runtime
-ENV PYTHONDONTWRITEBYTECODE=1 \
+# The backend reads the same city config for its identity lines (greeting, prompt).
+ARG CITY_CONFIG=
+ARG CITY_PRESET=
+ENV CITY_CONFIG=${CITY_CONFIG} \
+    CITY_PRESET=${CITY_PRESET} \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -34,6 +44,7 @@ RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 
 COPY backend/app ./app
+COPY config/ ./config/
 COPY --from=frontend /build/frontend/dist ./static
 
 USER 10001:10001

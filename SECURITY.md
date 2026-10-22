@@ -63,7 +63,7 @@ Limit: the model still writes the conversational reply, the plan summary and the
 
 ### 5. White-label configuration
 
-Branding and city-specific copy are data, not code. `config/brand.config.json` is the active config, validated against `config/brand.schema.json`. Presets live in `config/presets/` (`austin-aph.brand.json`, and `bchc-demo-city.brand.json` for a fictional "Metro Public Health"). The `CITY_PRESET` build variable selects one; `frontend/vite.config.ts` validates it and fails the build on an unknown preset. The config drives the palette and fonts, PWA manifest, page title, header, footer and logo, the privacy notice text, contact links and map center.
+Branding and city-specific copy are data, not code. `config/city.config.json` is the active config, validated against `config/city.config.schema.json`. Presets live in `config/presets/` (`austin-travis-tx.json`, `bchc-demo-city.json` for a fictional "Metro Public Health", and `cedar-ridge-county.json` for a fictional county). The `CITY_CONFIG` build variable (or the `CITY_PRESET` alias) selects one; `frontend/plugins/cityConfigPlugin.ts` validates it and fails the build on an unknown preset or on text below 4.5:1 contrast. The backend reads the same file for its greeting and prompt identity line. The config drives the palette and fonts, PWA manifest, page title, header, footer and logo, the privacy notice text, contact links and map center.
 
 Not yet configurable: the backend model prompts and greeting (`prompts.py`, `realtime.py`, `scripted.py`) are Austin-specific, and so are the catalog, crisis resources, life events, personas, and the admin console's demo data. A second city today also needs those replaced.
 

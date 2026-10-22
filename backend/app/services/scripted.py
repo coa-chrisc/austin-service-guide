@@ -10,20 +10,26 @@ import re
 from typing import Any
 
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole, ResidentProfile
+from app.services.city import CityIdentity, get_city
 from app.services.i18n import AI_NOTICE_I18N
 from app.services.life_events import canonical_life_event_slug, session_life_event_slug
 from app.services.matching import assess_risks, calculate_benefits, match_services
 
+def welcome_message(city: CityIdentity) -> str:
+    """Scripted greeting; the app name comes from the city config."""
+    return (
+        f"Welcome to the {city.app_name}! I'm here to help you find "
+        "city and community services that fit your needs. It takes about "
+        "3-5 minutes.\n\n"
+        f"{AI_NOTICE_I18N['en']}\n\n"
+        "What brings you here today? Are you looking for help with something "
+        "specific, or would you like me to walk you through a few questions?"
+    )
+
+
 DEMO_STEPS: list[dict[str, Any]] = [
     {
-        "message": (
-            "Welcome to the Austin Service Guide! I'm here to help you find "
-            "city and community services that fit your needs. It takes about "
-            "3-5 minutes.\n\n"
-            f"{AI_NOTICE_I18N['en']}\n\n"
-            "What brings you here today? Are you looking for help with something "
-            "specific, or would you like me to walk you through a few questions?"
-        ),
+        "message": welcome_message(get_city()),
         "buttons": ["Walk me through it", "I need help with food", "I need healthcare", "I need housing help", "I lost my job"],
         "progress": 0,
     },

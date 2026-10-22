@@ -1,0 +1,132 @@
+{
+  "$schema": "./city.config.schema.json",
+  "id": "austin-travis-tx",
+  "appName": "Austin Service Guide",
+  "agency": {
+    "name": "Austin Public Health",
+    "shortName": "APH",
+    "parent": "City of Austin"
+  },
+  "region": {
+    "name": "Greater Austin",
+    "cityName": "Austin",
+    "state": "TX"
+  },
+  "brand": {
+    "logoUrl": "brand/austin-travis-tx/aph-logo.png"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#44499C",
+      "primarySoft": "#dcf2fd",
+      "accent": "#009F4D",
+      "accentSoft": "#dff0e3",
+      "ink": "#22254E",
+      "onBrand": "#ffffff",
+      "page": "#f7f6f5",
+      "surface": "#ffffff",
+      "subtle": "#f3f4f6",
+      "body": "#1a1a1a",
+      "muted": "#636262",
+      "line": "#C6C5C4",
+      "noData": "#C6C5C4",
+      "positive": "#005027",
+      "positiveFill": "#009F4D",
+      "negative": "#F83125",
+      "warning": "#FF8F00",
+      "scrim": "#000000"
+    },
+    "dataScale": [
+      "#F83125",
+      "#FF8F00",
+      "#FFC600",
+      "#009F4D",
+      "#005027"
+    ],
+    "series": [
+      "#44499C",
+      "#009F4D",
+      "#FF8F00",
+      "#009CDE",
+      "#9F3CC9",
+      "#8F5201"
+    ],
+    "typography": {
+      "fontPackage": "@fontsource/geist",
+      "family": "Geist",
+      "fallback": "Helvetica, Aptos, sans-serif",
+      "baseSize": 16,
+      "sizes": {}
+    },
+    "radius": {
+      "chip": "0.25rem",
+      "control": "0.5rem",
+      "card": "0.75rem",
+      "panel": "1rem"
+    }
+  },
+  "map": {
+    "center": [
+      30.2672,
+      -97.7431
+    ],
+    "zoom": 11,
+    "minZoom": 9,
+    "maxZoom": 16
+  },
+  "serviceGuide": {
+    "shortName": "ASG",
+    "description": "Find services you're eligible for in Austin — built by Austin Public Health.",
+    "copy": {
+      "tagline": "Find services you're eligible for — in minutes",
+      "footerDisclaimer": "Austin Public Health | City of Austin & Travis County",
+      "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
+    },
+    "contact": {
+      "phone311": "311",
+      "agencyWebsite": "https://www.austintexas.gov/health",
+      "accessibilityUrl": "https://www.austintexas.gov/city-manager/americans-disabilities-act-ada"
+    },
+    "darkColors": {
+      "primary": "#8b8fd4",
+      "accent": "#4dd68f",
+      "accentSoft": "#dff0e3",
+      "ink": "#44499C",
+      "onBrand": "#000000",
+      "page": "#121214",
+      "surface": "#1e1e24",
+      "body": "#e8e8ec",
+      "muted": "#a0a0a8",
+      "positive": "#4dd68f",
+      "positiveFill": "#4dd68f",
+      "negative": "#ff6b63",
+      "warning": "#ffb040"
+    },
+    "extraFontPackages": [
+      "@fontsource/noto-sans"
+    ],
+    "categoryColors": {
+      "food": "#FF8F00",
+      "healthcare": "#F83125",
+      "housing": "#009F4D",
+      "employment": "#44499C",
+      "education": "#009CDE",
+      "legal": "#8F5201",
+      "transportation": "#636262",
+      "childcare": "#FFC600",
+      "utilities": "#22254E",
+      "senior": "#005027",
+      "disability": "#9F3CC9",
+      "veterans": "#22254E",
+      "immigration": "#005027",
+      "emergency": "#F83125",
+      "mental_health": "#9F3CC9",
+      "cooling": "#009CDE",
+      "schools": "#44499C",
+      "refugee": "#005027",
+      "smoking_cessation": "#9F3CC9",
+      "nutrition": "#009F4D",
+      "physical_activity": "#FF8F00"
+    }
+  }
+}

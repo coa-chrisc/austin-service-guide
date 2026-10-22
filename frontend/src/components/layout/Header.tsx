@@ -17,7 +17,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import ListAltIcon from "@mui/icons-material/ListAlt";
@@ -102,7 +102,7 @@ export default function Header() {
             left: 0,
             right: 0,
             height: 3,
-            background: "linear-gradient(90deg, #44499C 0%, #009F4D 100%)",
+            background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
           },
         }}
       >
@@ -132,8 +132,8 @@ export default function Header() {
           >
             <Box
               component="img"
-              src={brand.logo.src}
-              alt={brand.logo.alt}
+              src={brand.logoSrc}
+              alt={brand.agency.name}
               sx={{
                 height: { xs: 32, sm: 36 },
                 width: "auto",
@@ -192,10 +192,11 @@ export default function Header() {
                 textTransform: "none",
                 px: 2,
                 mr: 1,
-                background: (t) =>
-                  `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
-                color: "white",
-                boxShadow: "0 2px 6px rgba(0,91,187,0.25)",
+                // Solid primary: text over the primary-to-accent gradient cannot reach AA at both ends.
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                boxShadow: (t) => `0 2px 6px ${alpha(t.palette.brand.ink, 0.25)}`,
+                "&:hover": { bgcolor: "primary.dark" },
               }}
             >
               View my plan
@@ -211,14 +212,10 @@ export default function Header() {
                 width: 40,
                 height: 40,
                 mr: 0.5,
-                color: "white",
-                background: (t) =>
-                  `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.secondary.main})`,
-                boxShadow: "0 2px 6px rgba(0,91,187,0.25)",
-                "&:hover": {
-                  background: (t) =>
-                    `linear-gradient(135deg, ${t.palette.primary.dark}, ${t.palette.secondary.dark})`,
-                },
+                color: "primary.contrastText",
+                bgcolor: "primary.main",
+                boxShadow: (t) => `0 2px 6px ${alpha(t.palette.brand.ink, 0.25)}`,
+                "&:hover": { bgcolor: "primary.dark" },
               }}
             >
               <AssignmentTurnedInIcon fontSize="small" />
@@ -332,8 +329,8 @@ export default function Header() {
         <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
           <Box
             component="img"
-            src={brand.logo.src}
-            alt={brand.logo.alt}
+            src={brand.logoSrc}
+            alt={brand.agency.name}
             sx={{ height: 32, width: "auto" }}
           />
         </Box>

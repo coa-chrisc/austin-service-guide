@@ -136,7 +136,7 @@ Use this checklist when adapting the demo.
 ### Branding And Content
 
 - Replace APH language in `README.md`, `Landing.tsx`, and `brandTheme.ts`.
-- Update logo assets in `frontend/public/`.
+- Update logo assets in `config/brand/<id>/` (see `docs/CUSTOMIZING.md`).
 - Adjust tone: public health, housing, workforce, emergency management, library services, or general city services each need different copy.
 - Review all crisis and emergency language with subject-matter experts.
 

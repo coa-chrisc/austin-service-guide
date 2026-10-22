@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "@mui/material/styles";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -94,6 +96,8 @@ const GEO_COLS: GridColDef[] = [
 ];
 
 export default function AdminEquity() {
+  const theme = useTheme();
+  const { region } = useBrandConfig();
   const [data, setData] = useState<EquityData | null>(null);
   /* extended response shape from the API */
   const [extended, setExtended] = useState<{
@@ -276,7 +280,8 @@ export default function AdminEquity() {
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              This score measures how equitably portal services reach Austin
+              This score measures how equitably portal services reach{" "}
+              {region.cityName}
               communities compared to census demographics.
             </Typography>
           </Box>
@@ -372,7 +377,7 @@ export default function AdminEquity() {
                           height={56}
                           showHighlight
                           showTooltip
-                          colors={["#D32F2F"]}
+                          colors={[theme.palette.brand.dataScale[0]]}
                         />
                       </Box>
                     </Box>
@@ -396,8 +401,16 @@ export default function AdminEquity() {
             <BarChart
               height={300}
               series={[
-                { data: racePortal, label: "Portal %", color: "#1976d2" },
-                { data: raceCensus, label: "Census %", color: "#bdbdbd" },
+                {
+                  data: racePortal,
+                  label: "Portal %",
+                  color: theme.palette.primary.main,
+                },
+                {
+                  data: raceCensus,
+                  label: "Census %",
+                  color: theme.palette.brand.noData,
+                },
               ]}
               xAxis={[{ data: raceGroups, scaleType: "band" }]}
             />
@@ -487,7 +500,11 @@ export default function AdminEquity() {
             <LineChart
               height={280}
               series={[
-                { data: trendScores, label: "Equity Score", color: "#2e7d32" },
+                {
+                  data: trendScores,
+                  label: "Equity Score",
+                  color: theme.palette.success.main,
+                },
               ]}
               xAxis={[{ data: trendWeeks, scaleType: "band" }]}
             />

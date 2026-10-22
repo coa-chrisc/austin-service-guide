@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
@@ -120,12 +121,12 @@ export default function ChatBubble({
                   fontFamily:
                     'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
                   fontSize: "0.875em",
-                  bgcolor: "rgba(0,0,0,0.06)",
+                  bgcolor: (theme) => alpha(theme.palette.text.primary, 0.08),
                   px: 0.5,
                   borderRadius: "3px",
                 },
                 "& pre": {
-                  bgcolor: "rgba(0,0,0,0.06)",
+                  bgcolor: (theme) => alpha(theme.palette.text.primary, 0.08),
                   p: 1,
                   borderRadius: 1,
                   overflowX: "auto",

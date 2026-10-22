@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "@mui/material/styles";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -86,6 +88,8 @@ const DEMAND_COLS: GridColDef[] = [
 ];
 
 export default function AdminAnalytics() {
+  const theme = useTheme();
+  const { region } = useBrandConfig();
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [demographics, setDemographics] = useState<DemographicsData | null>(
     null,
@@ -252,7 +256,7 @@ export default function AdminAnalytics() {
             View by:
           </Typography>
           <Chip
-            label="All Austin"
+            label={`All ${region.cityName}`}
             size="small"
             variant={!district && !zip ? "filled" : "outlined"}
             color={!district && !zip ? "primary" : "default"}
@@ -359,7 +363,7 @@ export default function AdminAnalytics() {
                     {
                       data: ageData.map((d) => d.value),
                       label: "Count",
-                      color: "#1976d2",
+                      color: theme.palette.primary.main,
                     },
                   ]}
                   yAxis={[

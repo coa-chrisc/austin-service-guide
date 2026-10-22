@@ -1,0 +1,567 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "city.config.schema.json",
+  "title": "Austin Service Guide city configuration",
+  "description": "One deployment = one city config. The shared keys (id, appName, agency, region, brand, theme, map) have the same shape and meaning as in Austin Health Pulse, so one agency file can drive both apps. Health Pulse-only keys are accepted and ignored. Service Guide-only settings live in the optional serviceGuide block.",
+  "type": "object",
+  "required": [
+    "id",
+    "appName",
+    "agency",
+    "region",
+    "brand",
+    "theme",
+    "map"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "rem": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 6
+    },
+    "length": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d+)?(rem|px)$"
+    }
+  },
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Preset id; also the config/data/<id>/ directory name."
+    },
+    "appName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agency": {
+      "type": "object",
+      "required": [
+        "name",
+        "shortName",
+        "parent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shortName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "parent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parent government, e.g. 'City of Austin'."
+        }
+      }
+    },
+    "region": {
+      "type": "object",
+      "required": [
+        "name",
+        "cityName",
+        "state"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name for the area the ZIP set covers, used as a proper noun in UI copy ('across X', 'the X average', 'X ZIPs'), e.g. 'Greater Austin' or 'Harris County'. It should describe the ZIP set accurately: the averages are taken across these ZIPs."
+        },
+        "cityName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "required": [
+        "logoUrl"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "logoUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^brand/(?!.*\\.\\.)[A-Za-z0-9._/-]+\\.(svg|png|webp)$",
+          "description": "Path to the logo file, relative to config/ (for example brand/my-city/logo.svg), or null for the default icon. The key name is kept for compatibility; it is a file path, not a URL."
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "description": "The single place to change colors, font, text sizes and corner radius. Each color becomes a --color-<kebab-key> CSS variable and a Tailwind utility (bg-primary, text-on-brand, border-line, ...).",
+      "required": [
+        "colors",
+        "dataScale",
+        "series",
+        "typography",
+        "radius"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "colors": {
+          "type": "object",
+          "required": [
+            "primary",
+            "primarySoft",
+            "accent",
+            "accentSoft",
+            "ink",
+            "onBrand",
+            "page",
+            "surface",
+            "subtle",
+            "body",
+            "muted",
+            "line",
+            "noData",
+            "positive",
+            "positiveFill",
+            "negative",
+            "warning",
+            "scrim"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "$ref": "#/$defs/hex",
+              "description": "Buttons, links, active nav, section headings."
+            },
+            "primarySoft": {
+              "$ref": "#/$defs/hex",
+              "description": "Tinted panels."
+            },
+            "accent": {
+              "$ref": "#/$defs/hex",
+              "description": "Logo tile, Explore button, favicon, highlights."
+            },
+            "accentSoft": {
+              "$ref": "#/$defs/hex",
+              "description": "Soft accent tint."
+            },
+            "ink": {
+              "$ref": "#/$defs/hex",
+              "description": "Header/footer background, headings, big numbers."
+            },
+            "onBrand": {
+              "$ref": "#/$defs/hex",
+              "description": "Text and icons on primary, ink, accent and positiveFill."
+            },
+            "page": {
+              "$ref": "#/$defs/hex",
+              "description": "Page background."
+            },
+            "surface": {
+              "$ref": "#/$defs/hex",
+              "description": "Cards, popovers, tooltips."
+            },
+            "subtle": {
+              "$ref": "#/$defs/hex",
+              "description": "Progress tracks, empty slots."
+            },
+            "body": {
+              "$ref": "#/$defs/hex",
+              "description": "Body text."
+            },
+            "muted": {
+              "$ref": "#/$defs/hex",
+              "description": "Secondary text."
+            },
+            "line": {
+              "$ref": "#/$defs/hex",
+              "description": "Borders and dividers."
+            },
+            "noData": {
+              "$ref": "#/$defs/hex",
+              "description": "Map/chart fill for missing data."
+            },
+            "positive": {
+              "$ref": "#/$defs/hex",
+              "description": "'Better' text and numbers."
+            },
+            "positiveFill": {
+              "$ref": "#/$defs/hex",
+              "description": "'Better' bars, fills, and short labels (checked for contrast on surface)."
+            },
+            "negative": {
+              "$ref": "#/$defs/hex",
+              "description": "'Worse' text and fills, errors."
+            },
+            "warning": {
+              "$ref": "#/$defs/hex",
+              "description": "Caution icons."
+            },
+            "scrim": {
+              "$ref": "#/$defs/hex",
+              "description": "Modal/overlay backdrop, used at 20-60% opacity."
+            }
+          }
+        },
+        "dataScale": {
+          "type": "array",
+          "description": "Map/gauge scale, worst to best (--color-scale-1..5).",
+          "items": {
+            "$ref": "#/$defs/hex"
+          },
+          "minItems": 5,
+          "maxItems": 5
+        },
+        "series": {
+          "type": "array",
+          "description": "Compare/chart series colors in order (--color-series-1..N).",
+          "items": {
+            "$ref": "#/$defs/hex"
+          },
+          "minItems": 3,
+          "maxItems": 8
+        },
+        "typography": {
+          "type": "object",
+          "required": [
+            "fontPackage",
+            "family",
+            "fallback",
+            "baseSize"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "fontPackage": {
+              "type": "string",
+              "pattern": "^@fontsource/[a-z0-9-]+$",
+              "description": "Font package installed in app/ (npm install <pkg>). Weights 400, 500, 600 and 700 are loaded."
+            },
+            "family": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9 ]+$",
+              "description": "Family name the package registers, e.g. 'Geist'."
+            },
+            "fallback": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9 ,-]+$",
+              "description": "Fallback stack, e.g. 'Helvetica, Aptos, sans-serif'."
+            },
+            "baseSize": {
+              "type": "number",
+              "minimum": 12,
+              "maximum": 24,
+              "description": "Root font size in px at the browser default of 16; emitted as a percentage so visitor font-size settings still apply. Scales every rem (text and spacing)."
+            },
+            "sizes": {
+              "type": "object",
+              "description": "Optional rem overrides per text step; unset steps keep the defaults.",
+              "additionalProperties": false,
+              "properties": {
+                "3xs": {
+                  "$ref": "#/$defs/rem"
+                },
+                "2xs": {
+                  "$ref": "#/$defs/rem"
+                },
+                "xs": {
+                  "$ref": "#/$defs/rem"
+                },
+                "sm": {
+                  "$ref": "#/$defs/rem"
+                },
+                "base": {
+                  "$ref": "#/$defs/rem"
+                },
+                "lg": {
+                  "$ref": "#/$defs/rem"
+                },
+                "xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "2xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "3xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "4xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "5xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "6xl": {
+                  "$ref": "#/$defs/rem"
+                },
+                "7xl": {
+                  "$ref": "#/$defs/rem"
+                }
+              }
+            }
+          }
+        },
+        "radius": {
+          "type": "object",
+          "description": "Corner radii for rounded-chip, rounded-control, rounded-card and rounded-panel.",
+          "required": [
+            "chip",
+            "control",
+            "card",
+            "panel"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "chip": {
+              "$ref": "#/$defs/length"
+            },
+            "control": {
+              "$ref": "#/$defs/length"
+            },
+            "card": {
+              "$ref": "#/$defs/length"
+            },
+            "panel": {
+              "$ref": "#/$defs/length"
+            }
+          }
+        }
+      }
+    },
+    "map": {
+      "type": "object",
+      "required": [
+        "center",
+        "zoom",
+        "minZoom",
+        "maxZoom"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "center": {
+          "type": "array",
+          "description": "[lat, lng]",
+          "prefixItems": [
+            {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "zoom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 19
+        },
+        "minZoom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 19
+        },
+        "maxZoom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 19
+        }
+      }
+    },
+    "showBuildStory": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "featuredZips": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "dataQualityNotes": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "serviceGuideUrl": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "data": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "dataSources": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "dataAsOf": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "pipeline": {
+      "description": "Austin Health Pulse only. Accepted with any value and ignored by the Service Guide."
+    },
+    "serviceGuide": {
+      "type": "object",
+      "description": "Service Guide-only settings. Optional as a whole and per key; anything missing gets a default built from the shared keys.",
+      "additionalProperties": false,
+      "properties": {
+        "shortName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short name for home-screen icons (12 characters or fewer recommended). Default: agency.shortName."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "One-sentence description for the HTML meta description and PWA manifest. Default: built from appName, region.cityName and agency.name."
+        },
+        "copy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tagline": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Short value statement shown on the landing page."
+            },
+            "footerDisclaimer": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Footer line naming the agency and jurisdiction."
+            },
+            "privacyNotice": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Notice shown above the chat input telling residents not to enter personal identifiers."
+            }
+          }
+        },
+        "contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "phone311": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Non-emergency city information line (for example 311)."
+            },
+            "agencyWebsite": {
+              "type": "string",
+              "pattern": "^https?://",
+              "description": "Agency home page URL."
+            },
+            "accessibilityUrl": {
+              "type": "string",
+              "pattern": "^https?://",
+              "description": "Accessibility statement URL."
+            }
+          }
+        },
+        "darkColors": {
+          "type": "object",
+          "description": "Dark-mode values for the theme.colors roles. Every key is optional; missing ones are derived from theme.colors at build time.",
+          "additionalProperties": false,
+          "properties": {
+            "primary": {
+              "$ref": "#/$defs/hex"
+            },
+            "primarySoft": {
+              "$ref": "#/$defs/hex"
+            },
+            "accent": {
+              "$ref": "#/$defs/hex"
+            },
+            "accentSoft": {
+              "$ref": "#/$defs/hex"
+            },
+            "ink": {
+              "$ref": "#/$defs/hex"
+            },
+            "onBrand": {
+              "$ref": "#/$defs/hex"
+            },
+            "page": {
+              "$ref": "#/$defs/hex"
+            },
+            "surface": {
+              "$ref": "#/$defs/hex"
+            },
+            "subtle": {
+              "$ref": "#/$defs/hex"
+            },
+            "body": {
+              "$ref": "#/$defs/hex"
+            },
+            "muted": {
+              "$ref": "#/$defs/hex"
+            },
+            "line": {
+              "$ref": "#/$defs/hex"
+            },
+            "noData": {
+              "$ref": "#/$defs/hex"
+            },
+            "positive": {
+              "$ref": "#/$defs/hex"
+            },
+            "positiveFill": {
+              "$ref": "#/$defs/hex"
+            },
+            "negative": {
+              "$ref": "#/$defs/hex"
+            },
+            "warning": {
+              "$ref": "#/$defs/hex"
+            },
+            "scrim": {
+              "$ref": "#/$defs/hex"
+            }
+          }
+        },
+        "categoryColors": {
+          "type": "object",
+          "description": "Optional color per service category slug (backend/app/data/categories.yaml). Categories not listed take theme.series colors in category order.",
+          "propertyNames": {
+            "pattern": "^[a-z0-9_-]+$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/hex"
+          }
+        },
+        "extraFontPackages": {
+          "type": "array",
+          "description": "Extra @fontsource packages appended to the font stack after typography.family, for scripts the main font does not cover. Each must be installed in frontend/. Weights 400, 500, 600 and 700 are loaded.",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^@fontsource/[a-z0-9-]+$"
+          }
+        },
+        "pwa": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "themeColor": {
+              "$ref": "#/$defs/hex",
+              "description": "Browser toolbar color for the installed app. Default: theme.colors.primary."
+            },
+            "backgroundColor": {
+              "$ref": "#/$defs/hex",
+              "description": "Splash-screen background color. Default: theme.colors.page."
+            }
+          }
+        }
+      }
+    }
+  }
+}

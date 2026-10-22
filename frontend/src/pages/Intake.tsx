@@ -22,6 +22,7 @@ import {
   loadIntakeState,
   startNewIntakeState,
 } from "@/lib/session";
+import { useBrandConfig } from "@/hooks/useBrandConfig";
 import type { IntakeMessage } from "@/types";
 
 type IntakeMode = "text" | "voice";
@@ -86,7 +87,7 @@ const LIFE_EVENT_COPY: Record<string, { heading: string; body: string }> = {
     body: "Our guide can help look for VA benefits, housing, healthcare, jobs, and related services. We'll ask a few questions to narrow it down.",
   },
   "new-to-austin": {
-    heading: "You told us you're new to Austin.",
+    heading: "You told us you're new to {city}.",
     body: "Our guide can help look for support with healthcare, food, transportation, schools, utilities, and other basics. We'll ask a few questions to see what would help first.",
   },
   "legal-trouble": {
@@ -131,14 +132,16 @@ const LIFE_EVENT_COPY: Record<string, { heading: string; body: string }> = {
   },
 };
 
-function eventCopy(event?: string) {
+function eventCopy(event: string | undefined, cityName: string) {
   if (!event) return null;
   const normalized = event.trim().toLowerCase().replace(/_/g, "-");
   const canonical = LIFE_EVENT_ALIASES[normalized] ?? normalized;
-  return LIFE_EVENT_COPY[canonical] || null;
+  const copy = LIFE_EVENT_COPY[canonical];
+  return copy ? { ...copy, heading: copy.heading.replace("{city}", cityName) } : null;
 }
 
 export default function Intake() {
+  const { region } = useBrandConfig();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // The chat to show; `key` changes whenever a different intake starts.
@@ -162,7 +165,7 @@ export default function Intake() {
         .map((s) => s.trim())
         .filter(Boolean)
     : undefined;
-  const scenarioCopy = eventCopy(lifeEvent);
+  const scenarioCopy = eventCopy(lifeEvent, region.cityName);
   const skipRecovery = !!lifeEvent || searchParams.get("fresh") === "1";
 
   useEffect(() => {

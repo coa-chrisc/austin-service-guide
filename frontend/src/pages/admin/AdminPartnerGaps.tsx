@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -17,6 +18,7 @@ import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 import { getAdminPartnerGaps, type PartnerGapsResponse } from "../../lib/api";
 
 export default function AdminPartnerGaps() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [data, setData] = useState<PartnerGapsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,7 +183,7 @@ export default function AdminPartnerGaps() {
                           height={48}
                           showHighlight
                           showTooltip
-                          colors={["#D32F2F"]}
+                          colors={[theme.palette.brand.dataScale[0]]}
                         />
                       </Box>
                     </Box>

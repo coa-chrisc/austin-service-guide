@@ -14,7 +14,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Drawer from "@mui/material/Drawer";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import ListIcon from "@mui/icons-material/List";
 import CloseIcon from "@mui/icons-material/Close";
@@ -146,7 +146,8 @@ export default function MapView() {
                 : "primary.contrastText",
               borderColor: planActive ? "primary.contrastText" : undefined,
               "&:hover": {
-                bgcolor: planActive ? "rgba(255,255,255,0.12)" : "primary.dark",
+                bgcolor: (t) =>
+                  planActive ? alpha(t.palette.primary.contrastText, 0.12) : t.palette.primary.dark,
               },
             }}
           >

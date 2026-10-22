@@ -1,0 +1,106 @@
+{
+  "$schema": "../city.config.schema.json",
+  "id": "bchc-demo-city",
+  "appName": "Metro Service Guide",
+  "agency": {
+    "name": "Metro Public Health",
+    "shortName": "MPH",
+    "parent": "Metro City (fictional)"
+  },
+  "region": {
+    "name": "Metro City",
+    "cityName": "Metro City",
+    "state": "KS"
+  },
+  "brand": {
+    "logoUrl": "brand/bchc-demo-city/metro-logo.svg"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#0F5C6E",
+      "primarySoft": "#E1EEF1",
+      "accent": "#A63D00",
+      "accentSoft": "#F6E3D6",
+      "ink": "#083A46",
+      "onBrand": "#FFFFFF",
+      "page": "#F3F8F9",
+      "surface": "#FFFFFF",
+      "subtle": "#E6EEF0",
+      "body": "#0B2F38",
+      "muted": "#4A5F66",
+      "line": "#C9D6D9",
+      "noData": "#C9D6D9",
+      "positive": "#1B6E3A",
+      "positiveFill": "#1B6E3A",
+      "negative": "#B3261E",
+      "warning": "#9A5200",
+      "scrim": "#000000"
+    },
+    "dataScale": [
+      "#B3261E",
+      "#D9822B",
+      "#E8C547",
+      "#4A9A6A",
+      "#1B6E3A"
+    ],
+    "series": [
+      "#0F5C6E",
+      "#A63D00",
+      "#1B6E3A",
+      "#0B6BA8",
+      "#6B4C9A",
+      "#9A5200"
+    ],
+    "typography": {
+      "fontPackage": "@fontsource/noto-sans",
+      "family": "Noto Sans",
+      "fallback": "Helvetica, Arial, sans-serif",
+      "baseSize": 16,
+      "sizes": {}
+    },
+    "radius": {
+      "chip": "1rem",
+      "control": "0.25rem",
+      "card": "0.5rem",
+      "panel": "0.5rem"
+    }
+  },
+  "map": {
+    "center": [
+      39.8283,
+      -98.5795
+    ],
+    "zoom": 4,
+    "minZoom": 3,
+    "maxZoom": 16
+  },
+  "serviceGuide": {
+    "shortName": "MSG",
+    "description": "FICTIONAL DEMO CITY. Find services you're eligible for in Metro City — a white-label demonstration, not a real agency. Map defaults to the geographic center of the contiguous US (a placeholder, not a real city).",
+    "copy": {
+      "tagline": "Find services you may qualify for — in minutes",
+      "footerDisclaimer": "Metro Public Health | Metro City (fictional demonstration city)",
+      "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
+    },
+    "contact": {
+      "phone311": "311",
+      "agencyWebsite": "https://example.org/metro-public-health",
+      "accessibilityUrl": "https://example.org/metro-public-health/accessibility"
+    },
+    "darkColors": {
+      "primary": "#7CC4D4",
+      "accent": "#F0A878",
+      "accentSoft": "#F6E3D6",
+      "ink": "#0F5C6E",
+      "onBrand": "#000000",
+      "page": "#0E1A1D",
+      "surface": "#16272B",
+      "body": "#E6F1F3",
+      "muted": "#A3B8BD",
+      "positive": "#6FD39A",
+      "positiveFill": "#6FD39A",
+      "negative": "#FF8A80",
+      "warning": "#FFB74D"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -51,7 +52,7 @@ export default function StartHereHero({
           overflow: "hidden",
           border: "2px solid",
           borderColor: "primary.main",
-          boxShadow: "0 8px 24px rgba(0, 91, 187, 0.18)",
+          boxShadow: (t) => `0 8px 24px ${alpha(t.palette.brand.ink, 0.18)}`,
           mb: 2.5,
         }}
       >

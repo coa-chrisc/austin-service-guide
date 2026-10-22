@@ -14,24 +14,13 @@ import Alert from "@mui/material/Alert";
 import RuleIcon from "@mui/icons-material/Rule";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
+import { useTheme } from "@mui/material/styles";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import { getAdminEligibilityRules, type EligibilityRule } from "../../lib/api";
 
-const CATEGORY_COLORS: Record<string, string> = {
-  food: "#43A047",
-  housing: "#1E88E5",
-  healthcare: "#E53935",
-  childcare: "#8E24AA",
-  veterans: "#546E7A",
-  utilities: "#00ACC1",
-  senior: "#5D4037",
-  disability: "#7CB342",
-  immigration: "#EC407A",
-  emergency: "#D32F2F",
-};
-
 export default function AdminEligibility() {
+  const theme = useTheme();
   const [rules, setRules] = useState<EligibilityRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -113,8 +102,10 @@ export default function AdminEligibility() {
           label={params.value}
           size="small"
           sx={{
-            bgcolor: CATEGORY_COLORS[params.value] ?? "#999",
-            color: "#fff",
+            bgcolor: theme.palette.brand.category(params.value),
+            color: theme.palette.brand.textOn(
+              theme.palette.brand.category(params.value),
+            ),
             fontWeight: 600,
             textTransform: "capitalize",
           }}

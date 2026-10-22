@@ -8,6 +8,7 @@ snapshot always reflects the profile the request arrived with.
 from __future__ import annotations
 
 from app.models import IntakeSession
+from app.services.city import CityIdentity, get_city
 
 LANGUAGE_NAMES: dict[str, str] = {
     "en": "English",
@@ -82,6 +83,15 @@ def format_known_facts(session: IntakeSession) -> str:
     return ", ".join(parts) if parts else "none yet"
 
 
+def identity_sentence(city: CityIdentity) -> str:
+    """Opening line of the system prompt; names come from the city config."""
+    return (
+        f"You are the intake assistant for the {city.app_name}, a "
+        f"{city.agency_parent} / {city.agency_name} portal that helps residents "
+        "discover social services and benefits they may qualify for."
+    )
+
+
 def build_instructions(session: IntakeSession) -> str:
     """System instructions sent every Responses API call."""
     lang_code = (session.language or "en").split("-")[0].lower()
@@ -101,9 +111,7 @@ def build_instructions(session: IntakeSession) -> str:
     )
 
     base = (
-        "You are the intake assistant for the Austin Service Guide, a "
-        "City of Austin / Austin Public Health portal that helps residents "
-        "discover social services and benefits they may qualify for.\n\n"
+        f"{identity_sentence(get_city())}\n\n"
         "Your job: have a brief, warm, non-clinical conversation (5-8 "
         "exchanges) to understand the resident's situation, then surface "
         "concrete services that fit. Ask one question at a time. Never "

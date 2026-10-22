@@ -67,9 +67,9 @@ tmp/
 .tmp/
 
 # ── Local source assets kept out of the repo ──────────────────
-# Heavyweight brand PDF (deployed copy lives at frontend/public/aph-logo.png)
+# Heavyweight brand PDF (the deployed logo lives under config/brand/<id>/)
 *.pdf
-# Source-only image folder; deployed assets go into frontend/public/
+# Source-only image folder; deployed assets go into config/brand/<id>/
 images/
 
 # ── Claude Code local state ───────────────────────────────────

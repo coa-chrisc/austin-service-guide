@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cedar Ridge County Health Department (fictional demo logo)">
+  <rect width="512" height="512" fill="#5B2A6E"/>
+  <path d="M96 400L256 112l160 288z" fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linejoin="round"/>
+  <path d="M256 250v96M208 298h96" stroke="#F2C14E" stroke-width="32" stroke-linecap="round"/>
+</svg>

@@ -1,7 +1,9 @@
 import { createElement, Fragment, type ReactNode } from "react";
 
 const MARK_STYLE = {
-  backgroundColor: "rgba(255, 235, 59, 0.45)",
+  // Theme-independent: tints with the surrounding text color, so it works in light and dark.
+  backgroundColor: "color-mix(in srgb, currentColor 22%, transparent)",
+  color: "inherit",
   borderRadius: 2,
   padding: "0 1px",
 } as const;

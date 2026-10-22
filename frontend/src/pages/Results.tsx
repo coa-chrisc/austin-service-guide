@@ -26,7 +26,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import MapIcon from "@mui/icons-material/Map";
 import PhoneIcon from "@mui/icons-material/Phone";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -142,6 +142,8 @@ export default function Results() {
   const navigate = useNavigate();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+  // Print is always black on white paper, whatever the screen mode.
+  const printLine = alpha(theme.palette.common.black, 0.2);
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -358,14 +360,14 @@ export default function Results() {
       <style>{`
         @media print {
           @page { margin: 0.5in; }
-          body { background: white !important; }
+          body { background: ${theme.palette.common.white} !important; }
           header, nav, .no-print, .MuiDrawer-root, .MuiDialog-root,
           .MuiSnackbar-root, .MuiFab-root { display: none !important; }
-          .results-root .MuiAccordion-root { break-inside: avoid; box-shadow: none !important; border: 1px solid #ddd !important; }
+          .results-root .MuiAccordion-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root { display: block !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root > .MuiGrid-root { max-width: 100% !important; flex-basis: 100% !important; padding: 4px 0 !important; break-inside: avoid; }
-          .results-root .MuiCard-root { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; background: white !important; color: #111 !important; }
-          .results-root [class*="MuiCardContent-root"] { color: #111 !important; }
+          .results-root .MuiCard-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; background: ${theme.palette.common.white} !important; color: ${theme.palette.common.black} !important; }
+          .results-root [class*="MuiCardContent-root"] { color: ${theme.palette.common.black} !important; }
         }
       `}</style>
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
@@ -565,9 +567,10 @@ export default function Results() {
               sx={{
                 mb: 4,
                 borderRadius: 3,
+                // primary to ink, not to accent: text over the accent end cannot reach AA.
                 background: (theme) =>
-                  `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                color: "white",
+                  `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                color: "primary.contrastText",
               }}
             >
               <CardContent sx={{ p: { xs: 3, md: 4 } }}>
@@ -591,7 +594,7 @@ export default function Results() {
                       mt: 3,
                       p: 2.5,
                       borderRadius: 2,
-                      bgcolor: "rgba(0,0,0,0.18)",
+                      bgcolor: (theme) => alpha(theme.palette.brand.ink, 0.25),
                       display: "flex",
                       flexWrap: "wrap",
                       alignItems: "center",
@@ -652,8 +655,9 @@ export default function Results() {
                               size="small"
                               label={`${b.service} · ${formatCurrency(b.monthly_value)}${t("per_month")}`}
                               sx={{
-                                bgcolor: "rgba(255,255,255,0.18)",
-                                color: "white",
+                                bgcolor: (theme) =>
+                                  alpha(theme.palette.primary.contrastText, 0.18),
+                                color: "primary.contrastText",
                                 fontWeight: 500,
                               }}
                             />
@@ -673,9 +677,13 @@ export default function Results() {
                     startIcon={<MapIcon />}
                     onClick={() => navigate("/map")}
                     sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.primary.contrastText, 0.2),
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: (theme) =>
+                          alpha(theme.palette.primary.contrastText, 0.3),
+                      },
                     }}
                   >
                     {t("view_on_map")}
@@ -685,9 +693,13 @@ export default function Results() {
                     startIcon={<PrintIcon />}
                     onClick={handlePrint}
                     sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.primary.contrastText, 0.2),
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: (theme) =>
+                          alpha(theme.palette.primary.contrastText, 0.3),
+                      },
                     }}
                   >
                     {t("save_as_pdf")}
@@ -697,9 +709,13 @@ export default function Results() {
                     startIcon={<ShareIcon />}
                     onClick={handleShare}
                     sx={{
-                      bgcolor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                      "&:hover": { bgcolor: "rgba(255,255,255,0.3)" },
+                      bgcolor: (theme) =>
+                        alpha(theme.palette.primary.contrastText, 0.2),
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: (theme) =>
+                          alpha(theme.palette.primary.contrastText, 0.3),
+                      },
                     }}
                   >
                     {t("send_to_me")}
@@ -760,7 +776,7 @@ export default function Results() {
                             height: 32,
                             borderRadius: "50%",
                             bgcolor: "primary.main",
-                            color: "white",
+                            color: "primary.contrastText",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -964,7 +980,7 @@ export default function Results() {
                   mb: 2,
                   borderRadius: "12px !important",
                   "&::before": { display: "none" },
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                  boxShadow: (theme) => `0 1px 3px ${alpha(theme.palette.brand.ink, 0.08)}`,
                 }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>

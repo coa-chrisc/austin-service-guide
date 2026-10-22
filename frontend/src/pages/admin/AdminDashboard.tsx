@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -29,37 +30,37 @@ const RECENT_ACTIVITY = [
     id: 1,
     text: "New resident signed up from 78741",
     time: "5 min ago",
-    color: "#4caf50",
+    color: "success.main",
   },
   {
     id: 2,
     text: "Intake session completed — 4 services matched",
     time: "12 min ago",
-    color: "#2196f3",
+    color: "info.main",
   },
   {
     id: 3,
     text: 'Service "SNAP Benefits" updated by admin',
     time: "28 min ago",
-    color: "#ff9800",
+    color: "warning.main",
   },
   {
     id: 4,
     text: "Language switch detected: EN -> ES",
     time: "45 min ago",
-    color: "#9c27b0",
+    color: "secondary.main",
   },
   {
     id: 5,
-    text: "Crisis keyword flagged in session #4812",
+    text: "Crisis keyword flagged in session #4812", // theme-exempt: not a color (session id)
     time: "1 hr ago",
-    color: "#f44336",
+    color: "error.main",
   },
   {
     id: 6,
     text: "CSV export requested by staff user",
     time: "2 hr ago",
-    color: "#607d8b",
+    color: "text.secondary",
   },
 ];
 
@@ -71,21 +72,6 @@ interface MetricCardProps {
   icon: React.ReactNode;
   loading?: boolean;
 }
-
-// Distinct slice colors drawn from the brand theme (primary, secondary, info,
-// warning, error) plus complementary tints so 8+ languages never repeat.
-const LANGUAGE_PALETTE = [
-  "#44499C",
-  "#009F4D",
-  "#009CDE",
-  "#FF8F00",
-  "#F83125",
-  "#8E5BB5",
-  "#00A99D",
-  "#C2185B",
-  "#8D6E63",
-  "#6e72b8",
-];
 
 function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
   const positive = (change ?? 0) >= 0;
@@ -156,6 +142,7 @@ function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
 
 /* ---------- main component ---------------------------------------- */
 export default function AdminDashboard() {
+  const theme = useTheme();
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [languageData, setLanguageData] = useState<
     Array<{ language: string; sessions: number; percentage: number }>
@@ -228,11 +215,13 @@ export default function AdminDashboard() {
   }>;
   const catNames = topCategories.map((c) => c.name ?? c.category ?? "");
   const catCounts = topCategories.map((c) => c.count ?? c.match_count ?? 0);
-  const catColors = topCategories.map((c) => c.color ?? "#1976d2");
+  const catColors = topCategories.map(
+    (c) => c.color ?? theme.palette.primary.main,
+  );
 
   const pieData = languageData.map((l, i) => ({
     id: i,
-    color: LANGUAGE_PALETTE[i % LANGUAGE_PALETTE.length],
+    color: theme.palette.brand.seriesAt(i),
     value: l.sessions,
     label: l.language,
   }));
@@ -305,7 +294,7 @@ export default function AdminDashboard() {
                     {
                       data: sessionCounts,
                       label: "Sessions",
-                      color: "#1976d2",
+                      color: theme.palette.primary.main,
                     },
                   ]}
                   xAxis={[{ data: sessionDates, scaleType: "band" }]}
@@ -374,7 +363,7 @@ export default function AdminDashboard() {
                     {
                       data: catCounts,
                       label: "Matches",
-                      color: catColors[0] ?? "#1976d2",
+                      color: catColors[0] ?? theme.palette.primary.main,
                     },
                   ]}
                   yAxis={[{ data: catNames, scaleType: "band" }]}

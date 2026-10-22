@@ -21,7 +21,7 @@ The container needs no database or persistent volume: the backend is stateless a
 
 The Big Cities Health Coalition runs one container per city, each in its own isolated cloud project or account, with its own secrets and its own brand preset.
 
-1. Build the image for the city: `docker build --build-arg CITY_PRESET=<city> -t <registry>/service-guide-<city>:<tag> .`
+1. Build the image for the city: `docker build --build-arg CITY_CONFIG=presets/<city>.json -t <registry>/service-guide-<city>:<tag> .`
 2. Deploy it into that city's isolated project with the template for BCHC's cloud.
 3. BCHC issues a hostname (for example `<city>.example.org`) with a managed TLS certificate.
 4. The city adds a DNS `CNAME` from its own name (for example `services.<city>.gov`) to the BCHC hostname. For AWS use the `alb_dns_name` output; for Azure the `fqdn` output; for Cloud Run the domain mapping target. Issue the certificate for the city name, not just the BCHC one.
@@ -33,8 +33,8 @@ Do not share a container, project, or secret across cities.
 The city builds, pushes, and runs the image in its own account.
 
 ```bash
-# 1. Build and push (CITY_PRESET selects the brand preset under config/presets/)
-docker build --build-arg CITY_PRESET=<city> -t <registry>/service-guide:<tag> .
+# 1. Build and push (CITY_CONFIG selects the city config under config/)
+docker build --build-arg CITY_CONFIG=presets/<city>.json -t <registry>/service-guide:<tag> .
 docker push <registry>/service-guide:<tag>
 
 # 2. Deploy (one of)
@@ -70,9 +70,9 @@ Set via environment variables (see `backend/.env.example` and `backend/app/confi
 
 The OpenAI key is a billing credential: restrict the project's spend limit and rotate it per city.
 
-## CITY_PRESET, brand, and catalog
+## CITY_CONFIG, brand, and catalog
 
-`CITY_PRESET` is a Docker build argument. The frontend build reads it to select a brand preset under `config/presets/`, so branding is fixed into the image at build time. The service catalog is YAML under `backend/app/data/services/` (plus `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`) and is baked into the image; change it by rebuilding. Local run: `docker compose up --build` (override with `CITY_PRESET=<city>`).
+`CITY_CONFIG` (for example `presets/<city>.json`) is a Docker build argument; `CITY_PRESET=<city>` is an alias. The frontend build reads it to select a city config under `config/`, so branding is fixed into the image at build time. The image also carries `config/` and sets the same variable at runtime, where the backend reads it for its greeting and prompt identity line. The service catalog is YAML under `backend/app/data/services/` (plus `categories.yaml`, `life_events.yaml`, `crisis_resources.yaml`) and is baked into the image; change it by rebuilding. Local run: `docker compose up --build` (override with `CITY_CONFIG=presets/<city>.json` or `CITY_PRESET=<city>`).
 
 ## Health checks
 

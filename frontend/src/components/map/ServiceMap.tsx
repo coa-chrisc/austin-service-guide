@@ -7,92 +7,81 @@ import Chip from "@mui/material/Chip";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
+import { alpha, useTheme, type Theme } from "@mui/material/styles";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import type { MapPin } from "@/types";
 import { haversineMiles } from "@/lib/geo";
 import { brandConfig } from "@/hooks/useBrandConfig";
 
-const { center: MAP_CENTER, zoom: DEFAULT_ZOOM } = brandConfig.map;
+const {
+  center: MAP_CENTER,
+  zoom: DEFAULT_ZOOM,
+  minZoom: MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+} = brandConfig.map;
 
-/* ── Category visual config ─────────────────────────────────────────── */
+/* ── Category visual config (colors come from theme.palette.brand.category) ─ */
 
+/** Glyph markup per category; "{{glyph}}" is replaced with a contrast-safe color for the marker fill. */
 interface CategoryStyle {
-  color: string;
   svg: string;
 }
 
 const CATEGORY_STYLES: Record<string, CategoryStyle> = {
   food: {
-    color: "#FF8F00",
-    svg: `<path d="M4 2v5h2v7h2V7h2V2H8V6H7V2H6v4H5V2H4zm8 0v6h2v8h2V2h-4z" fill="white"/>`,
+    svg: `<path d="M4 2v5h2v7h2V7h2V2H8V6H7V2H6v4H5V2H4zm8 0v6h2v8h2V2h-4z" fill="{{glyph}}"/>`,
   },
   healthcare: {
-    color: "#F83125",
-    svg: `<path d="M6 2v4H2v4h4v4h4v-4h4V6h-4V2H6z" fill="white"/>`,
+    svg: `<path d="M6 2v4H2v4h4v4h4v-4h4V6h-4V2H6z" fill="{{glyph}}"/>`,
   },
   housing: {
-    color: "#009F4D",
-    svg: `<path d="M8 1L1 7h2v7h4v-4h2v4h4V7h2L8 1z" fill="white"/>`,
+    svg: `<path d="M8 1L1 7h2v7h4v-4h2v4h4V7h2L8 1z" fill="{{glyph}}"/>`,
   },
   employment: {
-    color: "#44499C",
-    svg: `<path d="M6 2v2H2v10h12V4h-4V2H6zm2 0h0zm-4 4h8v6H4V6z" fill="white"/><rect x="5" y="3" width="6" height="1" fill="white"/>`,
+    svg: `<path d="M6 2v2H2v10h12V4h-4V2H6zm2 0h0zm-4 4h8v6H4V6z" fill="{{glyph}}"/><rect x="5" y="3" width="6" height="1" fill="{{glyph}}"/>`,
   },
   education: {
-    color: "#009CDE",
-    svg: `<path d="M8 1L1 5l7 4 7-4-7-4zM3 7v4l5 3 5-3V7L8 10 3 7z" fill="white"/>`,
+    svg: `<path d="M8 1L1 5l7 4 7-4-7-4zM3 7v4l5 3 5-3V7L8 10 3 7z" fill="{{glyph}}"/>`,
   },
   legal: {
-    color: "#8F5201",
-    svg: `<path d="M8 1L3 4v1h10V4L8 1zM3 6v2l1 4h1L4 8V6H3zm9 0v2l-1 4h-1l1-4V6h1zM3 13v1h10v-1H3z" fill="white"/>`,
+    svg: `<path d="M8 1L3 4v1h10V4L8 1zM3 6v2l1 4h1L4 8V6H3zm9 0v2l-1 4h-1l1-4V6h1zM3 13v1h10v-1H3z" fill="{{glyph}}"/>`,
   },
   transportation: {
-    color: "#636262",
-    svg: `<path d="M5 1C3.3 1 2 2.3 2 4v6l1 2v1.5c0 .3.2.5.5.5h1c.3 0 .5-.2.5-.5V13h6v.5c0 .3.2.5.5.5h1c.3 0 .5-.2.5-.5V12l1-2V4c0-1.7-1.3-3-3-3H5zm0 2h6c.6 0 1 .4 1 1v3H4V4c0-.6.4-1 1-1zM4.5 10a1 1 0 110 2 1 1 0 010-2zm7 0a1 1 0 110 2 1 1 0 010-2z" fill="white"/>`,
+    svg: `<path d="M5 1C3.3 1 2 2.3 2 4v6l1 2v1.5c0 .3.2.5.5.5h1c.3 0 .5-.2.5-.5V13h6v.5c0 .3.2.5.5.5h1c.3 0 .5-.2.5-.5V12l1-2V4c0-1.7-1.3-3-3-3H5zm0 2h6c.6 0 1 .4 1 1v3H4V4c0-.6.4-1 1-1zM4.5 10a1 1 0 110 2 1 1 0 010-2zm7 0a1 1 0 110 2 1 1 0 010-2z" fill="{{glyph}}"/>`,
   },
   childcare: {
-    color: "#FFC600",
-    svg: `<path d="M8 2a3 3 0 100 6 3 3 0 000-6zM4 10c-1.1 0-2 .9-2 2v2h12v-2c0-1.1-.9-2-2-2H4z" fill="white"/>`,
+    svg: `<path d="M8 2a3 3 0 100 6 3 3 0 000-6zM4 10c-1.1 0-2 .9-2 2v2h12v-2c0-1.1-.9-2-2-2H4z" fill="{{glyph}}"/>`,
   },
   utilities: {
-    color: "#22254E",
-    svg: `<path d="M7 1L4 8h3v7l5-9H9L11 1H7z" fill="white"/>`,
+    svg: `<path d="M7 1L4 8h3v7l5-9H9L11 1H7z" fill="{{glyph}}"/>`,
   },
   senior: {
-    color: "#008743",
-    svg: `<path d="M8 2a2 2 0 100 4 2 2 0 000-4zM7 7c-1.7 0-3 1.3-3 3v1h2l.5 4h3L10 11h2v-1c0-1.7-1.3-3-3-3H7z" fill="white"/>`,
+    svg: `<path d="M8 2a2 2 0 100 4 2 2 0 000-4zM7 7c-1.7 0-3 1.3-3 3v1h2l.5 4h3L10 11h2v-1c0-1.7-1.3-3-3-3H7z" fill="{{glyph}}"/>`,
   },
   disability: {
-    color: "#9F3CC9",
-    svg: `<path d="M8 1.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM7 5.5v3l-2 4h2l1.5-3L10 13h2l-3-5V5.5H7z" fill="white"/>`,
+    svg: `<path d="M8 1.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM7 5.5v3l-2 4h2l1.5-3L10 13h2l-3-5V5.5H7z" fill="{{glyph}}"/>`,
   },
   veterans: {
-    color: "#22254E",
-    svg: `<path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5l-3.7 1.8.7-4.1-3-2.9 4.2-.7L8 1z" fill="white"/>`,
+    svg: `<path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.5l-3.7 1.8.7-4.1-3-2.9 4.2-.7L8 1z" fill="{{glyph}}"/>`,
   },
   immigration: {
-    color: "#005027",
-    svg: `<path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2c.4 0 .8.4 1.1 1H6.9c.3-.6.7-1 1.1-1zM4.1 6h2.4C6.3 6.6 6.2 7.3 6.2 8H3.1c0-.7.4-1.4 1-2zm0 4h2.1c.1.7.2 1.4.3 2H4.1a5 5 0 01-1-2zm3.9 3c-.4 0-.8-.4-1.1-1h2.2c-.3.6-.7 1-1.1 1zm1.5-3H6.5c-.1-.6-.2-1.3-.2-2h3.4c0 .7-.1 1.4-.2 2zm.4-4H6.1c.2-.6.4-1.2.6-2h2.6c.2.8.4 1.4.6 2zm2 0h-1.4c.1-.6.2-1.3.3-2h2.1a5 5 0 011 2z" fill="white"/>`,
+    svg: `<path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2c.4 0 .8.4 1.1 1H6.9c.3-.6.7-1 1.1-1zM4.1 6h2.4C6.3 6.6 6.2 7.3 6.2 8H3.1c0-.7.4-1.4 1-2zm0 4h2.1c.1.7.2 1.4.3 2H4.1a5 5 0 01-1-2zm3.9 3c-.4 0-.8-.4-1.1-1h2.2c-.3.6-.7 1-1.1 1zm1.5-3H6.5c-.1-.6-.2-1.3-.2-2h3.4c0 .7-.1 1.4-.2 2zm.4-4H6.1c.2-.6.4-1.2.6-2h2.6c.2.8.4 1.4.6 2zm2 0h-1.4c.1-.6.2-1.3.3-2h2.1a5 5 0 011 2z" fill="{{glyph}}"/>`,
   },
   emergency: {
-    color: "#F83125",
-    svg: `<path d="M1 13h14L8 1 1 13zm7.5-2h-1v-1h1v1zm0-2h-1V7h1v2z" fill="white"/>`,
+    svg: `<path d="M1 13h14L8 1 1 13zm7.5-2h-1v-1h1v1zm0-2h-1V7h1v2z" fill="{{glyph}}"/>`,
   },
   mental_health: {
-    color: "#9F3CC9",
-    svg: `<path d="M8 2C5.2 2 3 4.2 3 7c0 1.9 1 3.5 2.5 4.3V13h5v-1.7C12 10.5 13 8.9 13 7c0-2.8-2.2-5-5-5zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm-2 3h4v1H6V7z" fill="white"/>`,
+    svg: `<path d="M8 2C5.2 2 3 4.2 3 7c0 1.9 1 3.5 2.5 4.3V13h5v-1.7C12 10.5 13 8.9 13 7c0-2.8-2.2-5-5-5zm0 2c.6 0 1 .4 1 1s-.4 1-1 1-1-.4-1-1 .4-1 1-1zm-2 3h4v1H6V7z" fill="{{glyph}}"/>`,
   },
-  // Public-health program categories added after the original set; colors
-  // match backend/app/data/categories.yaml.
-  cooling: { color: "#0288D1", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
-  schools: { color: "#5E35B1", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
-  refugee: { color: "#00897B", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
-  smoking_cessation: { color: "#6A1B9A", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
-  nutrition: { color: "#2E7D32", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
-  physical_activity: { color: "#EF6C00", svg: `<circle cx="8" cy="8" r="4" fill="white"/>` },
+  // Public-health program categories added after the original set.
+  cooling: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
+  schools: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
+  refugee: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
+  smoking_cessation: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
+  nutrition: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
+  physical_activity: { svg: `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>` },
   financial: {
-    color: "#008743",
-    svg: `<path d="M8 2a6 6 0 100 12A6 6 0 008 2zm.5 3v1c1 .2 1.5.7 1.5 1.5 0 .7-.5 1.2-1.5 1.4v1.5c.3 0 .6-.1.9-.3l.6.8c-.4.3-1 .5-1.5.6V12h-1v-1.5C6.5 10.3 6 9.8 6 9c0-.8.5-1.3 1.5-1.5V6c-.2 0-.4.1-.7.2L6.2 5.4c.4-.3.9-.4 1.3-.4V4h1zM7 7.7c-.3.1-.5.3-.5.6 0 .3.2.5.5.6V7.7zm1 2.7c.3-.1.5-.3.5-.6s-.2-.5-.5-.6v1.2z" fill="white"/>`,
+    svg: `<path d="M8 2a6 6 0 100 12A6 6 0 008 2zm.5 3v1c1 .2 1.5.7 1.5 1.5 0 .7-.5 1.2-1.5 1.4v1.5c.3 0 .6-.1.9-.3l.6.8c-.4.3-1 .5-1.5.6V12h-1v-1.5C6.5 10.3 6 9.8 6 9c0-.8.5-1.3 1.5-1.5V6c-.2 0-.4.1-.7.2L6.2 5.4c.4-.3.9-.4 1.3-.4V4h1zM7 7.7c-.3.1-.5.3-.5.6 0 .3.2.5.5.6V7.7zm1 2.7c.3-.1.5-.3.5-.6s-.2-.5-.5-.6v1.2z" fill="{{glyph}}"/>`,
   },
 };
 
@@ -140,24 +129,30 @@ export function getCategoryDisplayName(category: string): string {
   );
 }
 
-function getCategoryColor(category: string): string {
+function getCategoryColor(category: string, theme: Theme): string {
   const slug = getCategorySlug(category);
-  return CATEGORY_STYLES[slug]?.color ?? "#757575";
+  return brandConfig.categorySlugs.includes(slug)
+    ? theme.palette.brand.category(slug)
+    : theme.palette.brand.noData;
 }
 
 const iconCache = new Map<string, L.DivIcon>();
 
-function createCategoryIcon(category: string): L.DivIcon {
+function createCategoryIcon(category: string, theme: Theme): L.DivIcon {
   const slug = getCategorySlug(category);
-  if (iconCache.has(slug)) return iconCache.get(slug)!;
+  const color = getCategoryColor(category, theme);
+  const key = `${theme.palette.mode}:${slug}:${color}`;
+  if (iconCache.has(key)) return iconCache.get(key)!;
 
-  const style = CATEGORY_STYLES[slug];
-  const color = style?.color ?? "#757575";
-  const svgInner = style?.svg ?? `<circle cx="8" cy="8" r="4" fill="white"/>`;
+  const { common, brand } = theme.palette;
+  const glyph = brand.textOn(color);
+  const svgInner = (
+    CATEGORY_STYLES[slug]?.svg ?? `<circle cx="8" cy="8" r="4" fill="{{glyph}}"/>`
+  ).split("{{glyph}}").join(glyph);
 
   const icon = L.divIcon({
-    html: `<svg viewBox="0 0 40 52" width="40" height="52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35))">
-      <path d="M20 0C9 0 0 9 0 20c0 15 20 32 20 32s20-17 20-32C40 9 31 0 20 0z" fill="${color}" stroke="white" stroke-width="2"/>
+    html: `<svg viewBox="0 0 40 52" width="40" height="52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 4px ${alpha(brand.ink, 0.35)})">
+      <path d="M20 0C9 0 0 9 0 20c0 15 20 32 20 32s20-17 20-32C40 9 31 0 20 0z" fill="${color}" stroke="${common.white}" stroke-width="2"/>
       <circle cx="20" cy="18" r="12" fill="${color}"/>
       <svg x="10" y="8" width="20" height="20" viewBox="0 0 16 16">${svgInner}</svg>
     </svg>`,
@@ -167,7 +162,7 @@ function createCategoryIcon(category: string): L.DivIcon {
     popupAnchor: [0, -48],
   });
 
-  iconCache.set(slug, icon);
+  iconCache.set(key, icon);
   return icon;
 }
 
@@ -270,6 +265,7 @@ export default function ServiceMap({
   fitBounds = false,
 }: ServiceMapProps) {
   const navigate = useNavigate();
+  const theme = useTheme();
   const [userPosition, setUserPosition] = useState<[number, number] | null>(
     null,
   );
@@ -368,13 +364,15 @@ export default function ServiceMap({
                 sx={{
                   fontWeight: 600,
                   fontSize: 12,
-                  bgcolor: isSelected ? getCategoryColor(cat) : "transparent",
-                  color: isSelected ? "white" : "text.secondary",
-                  borderColor: getCategoryColor(cat),
+                  bgcolor: isSelected ? getCategoryColor(cat, theme) : "transparent",
+                  color: isSelected
+                    ? theme.palette.brand.textOn(getCategoryColor(cat, theme))
+                    : "text.secondary",
+                  borderColor: getCategoryColor(cat, theme),
                   border: "1px solid",
                   "&:hover": {
                     bgcolor: isSelected
-                      ? getCategoryColor(cat)
+                      ? getCategoryColor(cat, theme)
                       : "action.hover",
                   },
                 }}
@@ -389,6 +387,8 @@ export default function ServiceMap({
         <MapContainer
           center={MAP_CENTER}
           zoom={DEFAULT_ZOOM}
+          minZoom={MIN_ZOOM}
+          maxZoom={MAX_ZOOM}
           style={{ height: "100%", width: "100%", zIndex: 1 }}
           scrollWheelZoom
           whenReady={handleMapReady}
@@ -417,7 +417,7 @@ export default function ServiceMap({
               <Marker
                 key={pin.id}
                 position={[pin.latitude, pin.longitude]}
-                icon={createCategoryIcon(pin.category)}
+                icon={createCategoryIcon(pin.category, theme)}
                 opacity={isHighlighted ? 1 : nearestActive ? 0.55 : 1}
               >
                 <Popup>
@@ -437,8 +437,10 @@ export default function ServiceMap({
                       label={getCategoryDisplayName(pin.category)}
                       size="small"
                       sx={{
-                        bgcolor: getCategoryColor(pin.category),
-                        color: "white",
+                        bgcolor: getCategoryColor(pin.category, theme),
+                        color: theme.palette.brand.textOn(
+                          getCategoryColor(pin.category, theme),
+                        ),
                         fontSize: 12,
                         height: 24,
                         fontWeight: 600,
@@ -511,11 +513,11 @@ export default function ServiceMap({
               position={userPosition}
               icon={L.divIcon({
                 html: `<div style="
-                  background: #009CDE;
+                  background: ${theme.palette.info.main};
                   width: 18px; height: 18px;
                   border-radius: 50%;
-                  border: 3px solid white;
-                  box-shadow: 0 0 0 3px rgba(0,156,222,0.3), 0 2px 8px rgba(0,0,0,0.3);
+                  border: 3px solid ${theme.palette.common.white};
+                  box-shadow: 0 0 0 3px ${alpha(theme.palette.info.main, 0.3)}, 0 2px 8px ${alpha(theme.palette.brand.ink, 0.3)};
                 "></div>`,
                 className: "",
                 iconSize: [18, 18],
@@ -549,7 +551,7 @@ export default function ServiceMap({
               fontWeight: 600,
               bgcolor: nearestActive ? "primary.main" : "background.paper",
               color: nearestActive ? "primary.contrastText" : "text.primary",
-              boxShadow: "0 2px 6px rgba(34, 37, 78, 0.2)",
+              boxShadow: `0 2px 6px ${alpha(theme.palette.brand.ink, 0.2)}`,
               borderColor: "primary.main",
             }}
           />
@@ -564,8 +566,8 @@ export default function ServiceMap({
               right: 16,
               zIndex: 1000,
               bgcolor: "background.paper",
-              boxShadow: "0 2px 6px rgba(34, 37, 78, 0.2)",
-              "&:hover": { bgcolor: "grey.100" },
+              boxShadow: `0 2px 6px ${alpha(theme.palette.brand.ink, 0.2)}`,
+              "&:hover": { bgcolor: "action.hover" },
               width: 44,
               height: 44,
             }}

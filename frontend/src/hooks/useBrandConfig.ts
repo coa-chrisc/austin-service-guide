@@ -1,55 +1,24 @@
 /**
- * Active city brand configuration.
+ * Active city configuration.
  *
- * The JSON is chosen at build time by vite.config.ts (CITY_PRESET=<name>
- * selects config/presets/<name>.brand.json; unset uses config/brand.config.json),
- * validated against config/brand.schema.json, and injected as __BRAND_CONFIG__.
+ * The JSON is chosen at build time (CITY_CONFIG=presets/<id>.json, or the
+ * CITY_PRESET=<id> alias; unset uses config/city.config.json), validated by
+ * frontend/plugins/cityConfigPlugin.ts against config/city.config.schema.json,
+ * resolved (serviceGuide defaults, dark colors, logo URL, font stack) and
+ * injected as __CITY_CONFIG__.
  */
+import type { ResolvedCityConfig } from "@/theme/cityConfig";
 
-export interface BrandColorRole {
-  main: string;
-  light: string;
-  dark: string;
-  contrastText: string;
-}
+export type {
+  CityConfig,
+  ResolvedCityConfig,
+  ResolvedServiceGuide,
+  ThemeColors,
+} from "@/theme/cityConfig";
 
-export interface BrandPalette {
-  primary: BrandColorRole;
-  secondary: BrandColorRole;
-  background: { default: string; paper: string };
-  text: { primary: string; secondary: string };
-  error: string;
-  warning: string;
-  success: string;
-  info: string;
-}
+/** The active config with every serviceGuide default filled in. */
+export const brandConfig: ResolvedCityConfig = __CITY_CONFIG__;
 
-export interface BrandConfig {
-  appName: string;
-  shortName: string;
-  agencyName: string;
-  cityName: string;
-  description: string;
-  logo: { src: string; alt: string };
-  palette: BrandPalette;
-  darkPalette: BrandPalette;
-  fontFamily: string;
-  copy: {
-    tagline: string;
-    footerDisclaimer: string;
-    privacyNotice: string;
-  };
-  contact: {
-    phone311: string;
-    agencyWebsite: string;
-    accessibilityUrl: string;
-  };
-  map: { center: [number, number]; zoom: number };
-  pwa: { themeColor: string; backgroundColor: string };
-}
-
-export const brandConfig: BrandConfig = __BRAND_CONFIG__;
-
-export function useBrandConfig(): BrandConfig {
+export function useBrandConfig(): ResolvedCityConfig {
   return brandConfig;
 }

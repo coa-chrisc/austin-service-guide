@@ -1,0 +1,146 @@
+{
+  "$schema": "./city.config.schema.json",
+  "id": "austin-travis-tx",
+  "appName": "Austin Health Pulse",
+  "agency": {
+    "name": "Austin Public Health",
+    "shortName": "APH",
+    "parent": "City of Austin"
+  },
+  "region": {
+    "name": "Greater Austin",
+    "cityName": "Austin",
+    "state": "TX"
+  },
+  "showBuildStory": true,
+  "brand": {
+    "logoUrl": null
+  },
+  "theme": {
+    "colors": {
+      "primary": "#44499C",
+      "primarySoft": "#dcf2fd",
+      "accent": "#009F4D",
+      "accentSoft": "#dff0e3",
+      "ink": "#22254E",
+      "onBrand": "#ffffff",
+      "page": "#f7f6f5",
+      "surface": "#ffffff",
+      "subtle": "#f3f4f6",
+      "body": "#1a1a1a",
+      "muted": "#636262",
+      "line": "#C6C5C4",
+      "noData": "#C6C5C4",
+      "positive": "#005027",
+      "positiveFill": "#009F4D",
+      "negative": "#F83125",
+      "warning": "#FF8F00",
+      "scrim": "#000000"
+    },
+    "dataScale": [
+      "#F83125",
+      "#FF8F00",
+      "#FFC600",
+      "#009F4D",
+      "#005027"
+    ],
+    "series": [
+      "#44499C",
+      "#009F4D",
+      "#FF8F00",
+      "#009CDE",
+      "#9F3CC9",
+      "#8F5201"
+    ],
+    "typography": {
+      "fontPackage": "@fontsource/geist",
+      "family": "Geist",
+      "fallback": "Helvetica, Aptos, sans-serif",
+      "baseSize": 16,
+      "sizes": {}
+    },
+    "radius": {
+      "chip": "0.25rem",
+      "control": "0.5rem",
+      "card": "0.75rem",
+      "panel": "1rem"
+    }
+  },
+  "map": {
+    "center": [
+      30.2672,
+      -97.7431
+    ],
+    "zoom": 11,
+    "minZoom": 9,
+    "maxZoom": 16
+  },
+  "featuredZips": [
+    {
+      "label": "Downtown",
+      "zip": "78701"
+    },
+    {
+      "label": "East Austin",
+      "zip": "78702"
+    },
+    {
+      "label": "South Austin",
+      "zip": "78704"
+    },
+    {
+      "label": "West Lake",
+      "zip": "78746"
+    },
+    {
+      "label": "Pflugerville",
+      "zip": "78660"
+    },
+    {
+      "label": "North Austin",
+      "zip": "78758"
+    }
+  ],
+  "dataQualityNotes": {
+    "78712": "Campus ZIP — small residential population; estimates unreliable."
+  },
+  "serviceGuideUrl": null,
+  "data": {
+    "indicators": "data/austin-travis-tx/zip-indicators.json",
+    "boundaries": "data/austin-travis-tx/boundaries.geojson",
+    "summary": "data/austin-travis-tx/county-summary.json"
+  },
+  "dataSources": [
+    {
+      "label": "Life Expectancy",
+      "source": "CDC USALEEP (2010-2015)"
+    },
+    {
+      "label": "Poverty & Insurance",
+      "source": "ACS 5-Year (2022)"
+    },
+    {
+      "label": "Chronic Disease",
+      "source": "CDC PLACES (2025 release, 2023 BRFSS data)"
+    },
+    {
+      "label": "Asthma",
+      "source": "CDC PLACES (2025 release, 2023 BRFSS data)"
+    },
+    {
+      "label": "Violent Crime",
+      "source": "APD Crime Reports (City of Austin Open Data)"
+    }
+  ],
+  "dataAsOf": "March 2026",
+  "pipeline": {
+    "stateFips": "48",
+    "countyFips": "453",
+    "zctas": [
+      "78610",
+      "78613",
+      "78617"
+    ],
+    "crimeSource": "apd-austin"
+  }
+}

@@ -11,27 +11,18 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import MapIcon from "@mui/icons-material/Map";
 import WhatshotIcon from "@mui/icons-material/Whatshot";
+import { useTheme } from "@mui/material/styles";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 
 import { getAdminDemandMap, type DemandMapPoint } from "../../lib/api";
 import { brandConfig } from "@/hooks/useBrandConfig";
 
-const { center: MAP_CENTER, zoom: DEFAULT_ZOOM } = brandConfig.map;
-
-const INTENSITY_COLOR: Record<DemandMapPoint["intensity"], string> = {
-  high: "#D32F2F",
-  medium: "#FB8C00",
-  low: "#43A047",
-};
-
-const HEAT_COLOR: Record<
-  NonNullable<DemandMapPoint["heat_intensity"]>,
-  string
-> = {
-  high: "#B71C1C",
-  medium: "#F57C00",
-  low: "#FFB74D",
-};
+const {
+  center: MAP_CENTER,
+  zoom: DEFAULT_ZOOM,
+  minZoom: MIN_ZOOM,
+  maxZoom: MAX_ZOOM,
+} = brandConfig.map;
 
 const INTENSITY_ORDER: DemandMapPoint["intensity"][] = [
   "high",
@@ -42,6 +33,21 @@ const INTENSITY_ORDER: DemandMapPoint["intensity"][] = [
 type Layer = "demand" | "heat";
 
 export default function AdminDemandMap() {
+  const { dataScale } = useTheme().palette.brand;
+  // dataScale index 0 is the worst stop.
+  const INTENSITY_COLOR: Record<DemandMapPoint["intensity"], string> = {
+    high: dataScale[0],
+    medium: dataScale[2],
+    low: dataScale[4],
+  };
+  const HEAT_COLOR: Record<
+    NonNullable<DemandMapPoint["heat_intensity"]>,
+    string
+  > = {
+    high: dataScale[0],
+    medium: dataScale[1],
+    low: dataScale[2],
+  };
   const [points, setPoints] = useState<DemandMapPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [layer, setLayer] = useState<Layer>("demand");
@@ -247,6 +253,8 @@ export default function AdminDemandMap() {
               <MapContainer
                 center={MAP_CENTER}
                 zoom={DEFAULT_ZOOM}
+                minZoom={MIN_ZOOM}
+                maxZoom={MAX_ZOOM}
                 style={{ height: "100%", width: "100%" }}
                 scrollWheelZoom
               >

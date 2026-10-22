@@ -1,6 +1,6 @@
-import type { BrandConfig } from "@/hooks/useBrandConfig";
+import type { ResolvedCityConfig } from "./cityConfig";
 
 declare global {
-  /** Injected by vite.config.ts from the selected brand config JSON. */
-  const __BRAND_CONFIG__: BrandConfig;
+  /** Injected by vite.config.ts from the selected city config JSON (resolved). */
+  const __CITY_CONFIG__: ResolvedCityConfig;
 }

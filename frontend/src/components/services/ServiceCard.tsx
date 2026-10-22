@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
 import CardContent from "@mui/material/CardContent";
@@ -92,7 +92,7 @@ export default function ServiceCard({
         transition: "transform 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
           transform: "translateY(-2px)",
-          boxShadow: "0 8px 24px rgba(34, 37, 78, 0.14)",
+          boxShadow: (t) => `0 8px 24px ${alpha(t.palette.brand.ink, 0.14)}`,
         },
       }}
     >
@@ -386,7 +386,7 @@ export default function ServiceCard({
               display: "flex",
               justifyContent: "center",
               p: 2,
-              bgcolor: "#fff",
+              bgcolor: "common.white",
               borderRadius: 1,
               border: "1px solid",
               borderColor: "divider",
