@@ -63,8 +63,8 @@ export default defineConfig({
             },
           },
           {
-            urlPattern:
-              /^https:\/\/(unpkg\.com|\{s\}\.tile\.openstreetmap\.org)\/.*/,
+            // OSM tiles come from the a/b/c subdomains.
+            urlPattern: /^https:\/\/[abc]\.tile\.openstreetmap\.org\/.*/,
             handler: "CacheFirst",
             options: {
               cacheName: "external-assets",
