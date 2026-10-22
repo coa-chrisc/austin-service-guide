@@ -771,6 +771,74 @@
     "kinds": []
   },
   {
+    "input": "my zip is 60614",
+    "expected": "my zip is 60614",
+    "kinds": []
+  },
+  {
+    "input": "60614 area",
+    "expected": "60614 area",
+    "kinds": []
+  },
+  {
+    "input": "I live in 10001 off 8th Ave",
+    "expected": "I live in 10001 off 8th Ave",
+    "kinds": []
+  },
+  {
+    "input": "zip code 98101 Pike Pl",
+    "expected": "zip code 98101 Pike Pl",
+    "kinds": []
+  },
+  {
+    "input": "my zip code is 02134 Cambridge St",
+    "expected": "my zip code is 02134 Cambridge St",
+    "kinds": []
+  },
+  {
+    "input": "zip 60614-1234 near Clark St",
+    "expected": "zip 60614-1234 near Clark St",
+    "kinds": []
+  },
+  {
+    "input": "código postal 60629 por Pulaski Rd",
+    "expected": "código postal 60629 por Pulaski Rd",
+    "kinds": []
+  },
+  {
+    "input": "12345 Research Blvd",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "zip 60614 and I live at 12345 Research Blvd",
+    "expected": "zip 60614 and I live at [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "zip 78744 1234 Elm St",
+    "expected": "zip 78744 [address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "60614 Clark St",
+    "expected": "[address removed]",
+    "kinds": [
+      "address"
+    ]
+  },
+  {
+    "input": "I'm Greater Austin Resident",
+    "expected": "I'm Greater Austin Resident",
+    "kinds": []
+  },
+  {
     "input": "we are 4 people in my household",
     "expected": "we are 4 people in my household",
     "kinds": []

@@ -9,6 +9,8 @@
 /*  through both implementations to prove it.                          */
 /* ------------------------------------------------------------------ */
 
+import { brandConfig } from "@/hooks/useBrandConfig";
+
 export type PiiKind =
   | "email"
   | "card"
@@ -204,10 +206,17 @@ const NOT_STREET_WORDS =
   String.raw`the|on|in|at|a|an|of|to|for|my|our|from|near|by|and|or|with|but|no|not` +
   String.raw`|years?|months?|weeks?|days?|hours?|people|persons?|kids?|children|adults?` +
   String.raw`|dollars?|times?|am|pm|i|we|me|it|is|was` +
-  String.raw`|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?`;
+  String.raw`|minutes?|mins?|miles?|blocks?|nights?|notices?|evictions?` +
+  String.raw`|off|around|behind|past|across|along|between`;
 const STREET_TOKEN = String.raw`(?!(?:${NOT_STREET_WORDS})\b)[A-Za-z0-9][A-Za-z0-9.'-]*`;
+// A ZIP named as one ("zip 60614") is matched by the `zip` alternative and
+// left alone (`notZip`), so it is never read as a house number. Same as pii.py.
+const ZIP_CONTEXT =
+  String.raw`(?P<zip>\b(?:zip(?:\s*code)?|postal\s+code|c[oó]digo\s+postal)\b[\s:#-]*` +
+  String.raw`(?:(?:is|es|was)\s+)?\d{5}(?:-\d{4})?(?!\d))`;
 const ADDRESS_RE = py(
-  String.raw`(?<![\d$,.])(?!7[86]\d{3}\b)\d{1,6}[A-Za-z]?\s+` +
+  String.raw`${ZIP_CONTEXT}|` +
+    String.raw`(?<![\d$,.])\d{1,6}[A-Za-z]?\s+` +
     String.raw`(?:${STREET_TOKEN}\s+){1,4}` +
     String.raw`(?:${STREET_SUFFIXES})\b\.?` +
     String.raw`(?:,?\s*(?:apt|apartment|unit|suite|ste|#)\.?\s*#?\s*[A-Za-z0-9-]+)?`,
@@ -262,7 +271,7 @@ const NAME_STOP_DESCRIPTOR =
   String.raw`|november|december|veterans?|unemployed|disabled|pregnant|retired` +
   String.raw`|homeless|single|married|divorced|widowed|separated|student|citizen` +
   String.raw`|resident|immigrant|refugee|senior|elderly|deaf|blind|sick|diabetic` +
-  String.raw`|spanish|english|mexican|texas|austin|american|african|asian|black|white` +
+  String.raw`|spanish|english|mexican|american|african|asian|black|white` +
   String.raw`|hispanic|latino|latina|latinx|native|indian|chinese|vietnamese|korean` +
   String.raw`|filipino|cuban|salvadoran|guatemalan|honduran|venezuelan|haitian|french` +
   String.raw`|german|arabic|catholic|christian|muslim|jewish|buddhist|hindu|currently` +
@@ -278,16 +287,49 @@ const NAME_CAP =
   String.raw`(?:[${NAME_UP}][${NAME_LOW}]+)?(?:-[${NAME_UP}][${NAME_LOW}]+)?(?![${NAME_LET}])`;
 const NAME_ANY = String.raw`[${NAME_LET}]+(?:['’-][${NAME_LET}]+)*`;
 const NAME_FUNC_GUARD = notStop(NAME_STOP_FUNC);
-const NAME_DESC_GUARD = notStop(NAME_STOP_DESCRIPTOR);
 const NAME_CONT_GUARD = notStop(NAME_STOP_CONTINUATION);
 
 const NAME_EXPLICIT_RE = py(
   String.raw`(?P<pre>(?i:\bmy\s+name(?:\s+is|['’]s)|\bme\s+llamo|\bmi\s+nombre\s+es)(?:\s*[:,–—-]\s*|\s+))` +
     String.raw`(?P<val>${NAME_FUNC_GUARD}${NAME_ANY}(?:[ \t  ]+${NAME_CONT_GUARD}${NAME_ANY}){0,2})`,
 );
+// The deployment's own place names ("I'm Texas Resident") are descriptors
+// too: city name, region name and full state name from the city config, each
+// as a whole phrase. Same as pii.py, which reads the same config.
+const US_STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
+  FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
+  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
+  ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
+  MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
+  NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
+  OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin",
+  WY: "Wyoming", PR: "Puerto Rico", GU: "Guam", VI: "Virgin Islands",
+  AS: "American Samoa", MP: "Northern Mariana Islands",
+};
+
+function placeStopwords(places: string[]): string {
+  let out = "";
+  for (const place of places) {
+    const words = place
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.replace(/[.*+?^$()[\]{}|\\]/g, "\\$&"));
+    if (words.length) out += "|" + words.join(String.raw`\s+`);
+  }
+  return out;
+}
+
+const { region } = brandConfig;
+const PLACES = [region.cityName, region.name, US_STATE_NAMES[region.state.toUpperCase()] ?? ""];
+const NAME_SELF_GUARD = notStop(NAME_STOP_DESCRIPTOR + placeStopwords(PLACES));
 const NAME_SELF_RE = py(
   String.raw`(?P<pre>(?i:\bi(?:\s+am|['’]m)|\bthis\s+is)(?:\s*[:,–—-]\s*|\s+))` +
-    String.raw`(?P<val>${NAME_DESC_GUARD}${NAME_CAP}(?:[ \t  ]+${NAME_DESC_GUARD}${NAME_CAP}){1,2})`,
+    String.raw`(?P<val>${NAME_SELF_GUARD}${NAME_CAP}(?:[ \t  ]+${NAME_SELF_GUARD}${NAME_CAP}){1,2})`,
 );
 
 /* ---- Helpers ---- */
@@ -327,6 +369,7 @@ const ZIP4_OR_PHONE_RE = /^(?:\p{Nd}{5}-\p{Nd}{4}|(?:1-)?\p{Nd}{3}-\p{Nd}{3}-\p{
 type Accept = (match: string, groups: Record<string, string> | undefined) => boolean;
 
 const always: Accept = () => true;
+const notZip: Accept = (_match, groups) => groups?.zip === undefined;
 const isCard: Accept = (match) => luhnValid(match.replace(NON_DIGIT_RE, ""));
 const isIdValue: Accept = (_match, groups) => {
   const value = groups?.val ?? "";
@@ -370,7 +413,7 @@ const RULES: Array<[PiiKind, RegExp, Accept]> = [
   ["phone", PHONE_LOCAL_RE, always],
   ["phone", PHONE_SPOKEN_RE, isSpokenPhone],
   ["address", PO_BOX_RE, always],
-  ["address", ADDRESS_RE, always],
+  ["address", ADDRESS_RE, notZip],
   ["address", SPOKEN_ADDRESS_RE, always],
   ["name", NAME_EXPLICIT_RE, always],
   ["name", NAME_SELF_RE, always],
