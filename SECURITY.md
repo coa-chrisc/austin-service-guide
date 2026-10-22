@@ -1,6 +1,6 @@
 # Security
 
-This page summarizes the security posture of the Austin Service Guide as it exists in this repository. It is written to be checked against the code: each claim names the file (and function where useful) that enforces it, and each protection states its limits.
+This page summarizes the security posture of the Civic Service Guide as it exists in this repository. It is written to be checked against the code: each claim names the file (and function where useful) that enforces it, and each protection states its limits.
 
 This is a **demonstration application**, not a production system. The "Known gaps before production" section lists what is missing. Privacy details (what is collected, what goes to OpenAI) are in [docs/PRIVACY.md](docs/PRIVACY.md). Component and data-flow detail is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -63,9 +63,9 @@ Limit: the model still writes the conversational reply, the plan summary and the
 
 ### 5. White-label configuration
 
-Branding and city-specific copy are data, not code. `config/city.config.json` is the active config, validated against `config/city.config.schema.json`. Presets live in `config/presets/` (`austin-travis-tx.json`, `bchc-demo-city.json` for a fictional "Metro Public Health", and `cedar-ridge-county.json` for a fictional county). The `CITY_CONFIG` build variable (or the `CITY_PRESET` alias) selects one; `frontend/plugins/cityConfigPlugin.ts` validates it and fails the build on an unknown preset or on text below 4.5:1 contrast. The backend reads the same file for its greeting and prompt identity line. The config drives the palette and fonts, PWA manifest, page title, header, footer and logo, the privacy notice text, contact links and map center.
+Branding and city-specific copy are data, not code. `config/city.config.json` is the active config, validated against `config/city.config.schema.json`. Presets live in `config/presets/` (`austin-travis-tx.json`, `bchc-demo-city.json` for a fictional "Metro Public Health", and `cedar-ridge-county.json` for a fictional county). The `CITY_CONFIG` build variable (or the `CITY_PRESET` alias) selects one; `frontend/plugins/cityConfigPlugin.ts` validates it and fails the build on an unknown preset or on text below 4.5:1 contrast. The backend reads the same file for the app name (greeting, prompt identity line, share text, email sender name) and the timezone. The config drives the palette and fonts, PWA manifest, page title, header, footer and logo, the privacy notice text, contact links and map center.
 
-Not yet configurable: the backend model prompts and greeting (`prompts.py`, `realtime.py`, `scripted.py`) are Austin-specific, and so are the catalog, crisis resources, life events, personas, and the admin console's demo data. A second city today also needs those replaced.
+Place-specific content lives in a data pack selected by `CITY_DATA_DIR` (`backend/app/services/data_pack.py`; format in [backend/app/data/README.md](backend/app/data/README.md)): the catalog, crisis lines, life events, ZIP centers, matching rules, personas and the admin console's demo data. The bundled pack is the Austin reference pack. The model prompts name no place. The redactor's name rule skips the deployment's own city, region and state names from the config (`pii.py`). A new deployment still has to supply its own pack and verify its content; nothing here checks that a pack is accurate.
 
 ### 6. Container and infrastructure-as-code templates
 
@@ -107,7 +107,7 @@ These are not implemented. Do not treat the demo as ready for real resident data
 9. **Broader PII review.** Pattern redaction is a safety net, not a complete control. Add a review of free-text identifiers the risk assessment cares about (see roadmap item 3).
 10. **Cloud deployment review.** The IaC templates are not applied to live accounts and need review against the city's own network and security standards.
 
-## Phase 2 grant-funded engineering roadmap
+## Engineering roadmap
 
 The three items below are **future work. None of them is implemented in this repository.**
 
@@ -134,11 +134,11 @@ Goal: make "verified" mean a named person checked it.
 Goal: catch names and addresses the regex layer cannot, without sending the text anywhere new.
 
 - A named-entity-recognition model, packaged as a container-local service, covering 10 or more languages.
-- Runs inside the deployment boundary (the city's or BCHC's VPC or VNet), with no outbound call for the text it checks.
+- Runs inside the deployment boundary (the deployment's own VPC or VNet), with no outbound call for the text it checks.
 - Runs after the existing deterministic rules in `pii.py`, as an additional layer for names without a self-identification phrase and for addresses without a street suffix, before text reaches storage or any model.
 - Needs its own evaluation set per language before any accuracy claim is made. It would still not cover raw audio sent directly to OpenAI in `realtime_audio` mode; see the voice roadmap below.
 
-### Phase 2 roadmap: voice
+### Roadmap: voice
 
 **Not implemented. None of the items below exists in this repository.**
 
@@ -148,4 +148,4 @@ Goal: catch names and addresses the regex layer cannot, without sending the text
 
 ## Reporting a vulnerability
 
-The repository does not reference a City of Austin security disclosure process, so none is cited here. Please do not open a public issue for a security concern. Open a private security advisory on the repository (GitHub: Security tab, "Report a vulnerability"), as [CONTRIBUTING.md](CONTRIBUTING.md) asks that security concerns go to the maintainers privately. Do not include real resident information in a report.
+Please do not open a public issue for a security concern. Use GitHub's private vulnerability reporting: on the repository, open the Security tab and choose "Report a vulnerability". Only the maintainers see it. Do not include real resident information in a report.

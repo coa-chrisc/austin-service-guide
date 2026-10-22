@@ -1,4 +1,4 @@
-"""Realistic seed data for the Austin Service Guide demo.
+"""Realistic seed data for the Civic Service Guide demo (Austin reference deployment).
 
 All addresses, phone numbers, and coordinates reference real publicly-known
 Austin-area social-service organizations.  Data is for **demonstration only**

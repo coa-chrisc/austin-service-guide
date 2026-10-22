@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/*  API client for the Austin Service Guide backend                    */
+/*  API client for the Civic Service Guide backend                     */
 /* ------------------------------------------------------------------ */
 
 import { getAdminToken } from "./adminToken";

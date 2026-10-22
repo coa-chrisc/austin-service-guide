@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve the Austin Service Guide. This is a demonstration project, so keep changes small, focused, and safe to run without credentials.
+Thanks for helping improve the Civic Service Guide. This is a demonstration project, so keep changes small, focused, and safe to run without credentials.
 
 ## Run it locally
 
@@ -34,4 +34,4 @@ If you fix a backend bug, add a regression test under `backend/tests/test_*.py`.
 
 ## Reporting issues
 
-Open a GitHub issue with steps to reproduce, what you expected, and what happened. Don't include real resident information. Report security concerns privately to the maintainers instead of in a public issue.
+Open a GitHub issue with steps to reproduce, what you expected, and what happened. Don't include real resident information. Report security concerns privately through GitHub's "Report a vulnerability" (see [SECURITY.md](SECURITY.md#reporting-a-vulnerability)), not in a public issue. Participation is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).

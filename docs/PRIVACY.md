@@ -1,6 +1,6 @@
 # Privacy and PII Protection
 
-This page describes what the Austin Service Guide demo does with resident information. For the wider security picture see [SECURITY.md](../SECURITY.md) and [ARCHITECTURE.md](../ARCHITECTURE.md). Everything below describes the code as it is in this repository. Where a protection has limits, this page says so.
+This page describes what the Civic Service Guide demo does with resident information. For the wider security picture see [SECURITY.md](../SECURITY.md) and [ARCHITECTURE.md](../ARCHITECTURE.md). Everything below describes the code as it is in this repository. Where a protection has limits, this page says so.
 
 The short version:
 
@@ -60,12 +60,12 @@ The greeting no longer calls the conversation "confidential", because typed text
 | Payment card | `[card number removed]` | 13–19 digits (contiguous or in printed groups) that pass the Luhn checksum |
 | Email | `[email removed]` | `name@domain.tld` |
 | Phone | `[phone removed]` | US 10-digit numbers (optional +1, parentheses, dashes, dots, spaces); 7-digit numbers only right after "call", "text", "phone", "cell", etc. |
-| Street address | `[address removed]` | House number + street name + street suffix (St, Ave, Rd, Blvd, Dr, Ln, …; words like "Way" or "Court" only when capitalized), optional apartment/unit; P.O. boxes |
+| Street address | `[address removed]` | House number + street name + street suffix (St, Ave, Rd, Blvd, Dr, Ln, …; words like "Way" or "Court" only when capitalized), optional apartment/unit; P.O. boxes. A ZIP labelled as one ("zip 60614", "zip code …", "postal code …", "código postal …") is kept wherever it appears. A bare 5-digit number directly followed by a street name and suffix ("12345 Research Blvd") is redacted as an address. |
 | Date of birth | `[date of birth removed]` | A full date right after "DOB", "date of birth", "birthday", "born on", "fecha de nacimiento", … |
 | ID / member numbers | `[ID number removed]` | A 6+ character value with at least 4 digits right after "Medicaid", "Medicare", "member", "policy", "case", "account", "SNAP", "ID", "license", "passport", … |
-| Name | `[name removed]` | Only right after a self-identification phrase. After "my name is", "my name's", "me llamo", "mi nombre es" (any letter case): up to 3 words, stopping at function words such as "on", "is", "the". After "I am", "I'm", "this is": only when 2–3 Capitalized words follow that are not common descriptors (common descriptors such as "Veteran", nationalities, days and months are skipped, so "I am Veteran Affairs" is left alone). The gap may be spaces (including non-breaking spaces or a newline), or a colon, comma, or dash |
+| Name | `[name removed]` | Only right after a self-identification phrase. After "my name is", "my name's", "me llamo", "mi nombre es" (any letter case): up to 3 words, stopping at function words such as "on", "is", "the". After "I am", "I'm", "this is": only when 2–3 Capitalized words follow that are not common descriptors (common descriptors such as "Veteran", nationalities, days and months are skipped, so "I am Veteran Affairs" is left alone; so are the deployment's own city name, region name and full state name from the city config, so a resident saying "I'm a Texas resident" in a Texas deployment is not redacted as a name). The gap may be spaces (including non-breaking spaces or a newline), or a colon, comma, or dash |
 
-The patterns are tuned to leave alone what the intake needs. Zip codes (`78744`, `78744-1234`), household counts ("3 kids"), ages ("I'm 34"), and dollar amounts ("$1,200 rent") are not redacted. The test suite (`backend/tests/test_pii.py`) checks both the matches and these false-positive cases.
+The patterns are tuned to leave alone what the intake needs. Zip codes (`78744`, `78744-1234`; a bare ZIP is only redacted when a street name and suffix follow it), household counts ("3 kids"), ages ("I'm 34"), and dollar amounts ("$1,200 rent") are not redacted. The test suite (`backend/tests/test_pii.py`) checks both the matches and these false-positive cases.
 
 The redactor returns the cleaned text and the *types* it found (for example `["phone", "ssn"]`). It never returns or logs the removed values.
 
