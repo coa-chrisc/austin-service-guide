@@ -370,7 +370,7 @@ export default function ChatInterface({
           sx={{
             height: 6,
             borderRadius: 3,
-            bgcolor: "grey.200",
+            bgcolor: "divider",
             "& .MuiLinearProgress-bar": {
               borderRadius: 3,
               bgcolor: progress === 100 ? "success.main" : "primary.main",
@@ -525,7 +525,7 @@ export default function ChatInterface({
                 px: 2,
                 py: 1.5,
                 borderRadius: "16px 16px 16px 4px",
-                bgcolor: "grey.100",
+                bgcolor: "brand.subtle",
                 border: "1px solid",
                 borderColor: "divider",
               }}
@@ -673,7 +673,7 @@ export default function ChatInterface({
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: "24px",
-                    bgcolor: "grey.50",
+                    bgcolor: "brand.subtle",
                   },
                 }}
               />
@@ -688,7 +688,7 @@ export default function ChatInterface({
                   width: 44,
                   height: 44,
                   "&:hover": { bgcolor: "primary.dark" },
-                  "&:disabled": { bgcolor: "grey.300", color: "grey.500" },
+                  "&:disabled": { bgcolor: "action.disabledBackground", color: "action.disabled" },
                 }}
               >
                 {isLoading ? (

@@ -37,6 +37,12 @@ export const RULES: [name: string, pattern: RegExp][] = [
     ),
   ],
   ["@mui/material/colors import", /["']@mui\/material\/colors(?:\/[^"']*)?["']/],
+  // MUI shade paths: "primary.50" does not exist on theme palettes (renders
+  // nothing), and grey.* / common.* ignore dark mode.
+  [
+    "palette shade path",
+    /["'`](?:primary|secondary|error|warning|info|success|grey|common)\.(?:\d{2,3}|A\d{3}|white|black)["'`]|\bpalette\.(?:grey|common)\b/,
+  ],
 ];
 
 const EXEMPT = /theme-exempt:\s*\S/;
@@ -94,6 +100,10 @@ describe("theme guard", () => {
     expect(lineHits('border: "1px solid white"')).toEqual(["named color"]);
     expect(lineHits('import { red } from "@mui/material/colors";')).toEqual(["@mui/material/colors import"]);
     expect(lineHits('import blue from "@mui/material/colors/blue";')).toEqual(["@mui/material/colors import"]);
+    expect(lineHits('bgcolor: "primary.50",')).toEqual(["palette shade path"]);
+    expect(lineHits('"&:hover": { bgcolor: "grey.100" }')).toEqual(["palette shade path"]);
+    expect(lineHits("border: `3px solid ${theme.palette.common.white}`")).toEqual(["palette shade path"]);
+    expect(lineHits('color: "primary.light", bgcolor: "action.hover"')).toEqual([]);
     // Theme-driven code and ordinary strings pass.
     expect(lineHits('color: "primary.main", bgcolor: "background.paper"')).toEqual([]);
     expect(lineHits("color: theme.palette.brand.onBrand")).toEqual([]);

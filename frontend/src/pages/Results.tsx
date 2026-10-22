@@ -96,22 +96,22 @@ const RISK_VISUAL: Record<
 > = {
   critical: {
     icon: <SupportAgentIcon />,
-    tint: "primary.50",
+    tint: "brand.primarySoft",
     ring: "primary.light",
   },
   high: {
     icon: <VolunteerActivismIcon />,
-    tint: "primary.50",
+    tint: "brand.primarySoft",
     ring: "primary.light",
   },
   medium: {
     icon: <FavoriteBorderIcon />,
-    tint: "secondary.50",
+    tint: "brand.accentSoft",
     ring: "secondary.light",
   },
   low: {
     icon: <EmojiObjectsIcon />,
-    tint: "secondary.50",
+    tint: "brand.accentSoft",
     ring: "secondary.light",
   },
 };
@@ -143,7 +143,7 @@ export default function Results() {
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   // Print is always black on white paper, whatever the screen mode.
-  const printLine = alpha(theme.palette.common.black, 0.2);
+  const printLine = alpha(theme.palette.common.black, 0.2); // theme-exempt: print output is black on white paper
   const [data, setData] = useState<ResultsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -360,14 +360,14 @@ export default function Results() {
       <style>{`
         @media print {
           @page { margin: 0.5in; }
-          body { background: ${theme.palette.common.white} !important; }
+          body { background: ${theme.palette.common.white} !important; /* theme-exempt: print output is black on white paper */ }
           header, nav, .no-print, .MuiDrawer-root, .MuiDialog-root,
           .MuiSnackbar-root, .MuiFab-root { display: none !important; }
           .results-root .MuiAccordion-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root { display: block !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root > .MuiGrid-root { max-width: 100% !important; flex-basis: 100% !important; padding: 4px 0 !important; break-inside: avoid; }
-          .results-root .MuiCard-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; background: ${theme.palette.common.white} !important; color: ${theme.palette.common.black} !important; }
-          .results-root [class*="MuiCardContent-root"] { color: ${theme.palette.common.black} !important; }
+          .results-root .MuiCard-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; background: ${theme.palette.common.white} !important; color: ${theme.palette.common.black} !important; /* theme-exempt: print output is black on white paper */ }
+          .results-root [class*="MuiCardContent-root"] { color: ${theme.palette.common.black} !important; /* theme-exempt: print output is black on white paper */ }
         }
       `}</style>
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
@@ -408,7 +408,7 @@ export default function Results() {
                   mb: 2.5,
                   p: 2,
                   borderRadius: 2,
-                  bgcolor: "success.50",
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
                   border: "1px solid",
                   borderColor: "success.light",
                   display: "flex",
@@ -435,7 +435,7 @@ export default function Results() {
                 sx={{
                   borderRadius: 2,
                   mb: 2.5,
-                  bgcolor: "primary.50",
+                  bgcolor: "brand.primarySoft",
                   borderColor: "primary.light",
                 }}
               >
@@ -475,7 +475,7 @@ export default function Results() {
                       mb: 2,
                       p: 2,
                       borderRadius: 2,
-                      bgcolor: "primary.50",
+                      bgcolor: "brand.primarySoft",
                       border: "1px solid",
                       borderColor: "primary.light",
                     }}
@@ -485,7 +485,7 @@ export default function Results() {
                       sx={{
                         display: "block",
                         fontWeight: 700,
-                        color: "primary.dark",
+                        color: "brand.inkText",
                         mb: 0.5,
                         letterSpacing: 0.5,
                       }}
@@ -761,10 +761,10 @@ export default function Results() {
                           alignItems: "flex-start",
                           p: 1.5,
                           borderRadius: 2,
-                          bgcolor: "primary.50",
+                          bgcolor: "brand.primarySoft",
                           cursor: "pointer",
                           transition: "background 0.15s",
-                          "&:hover": { bgcolor: "primary.100" },
+                          "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16) },
                         }}
                         onClick={() =>
                           navigate(`/services/${item.service_slug}`)

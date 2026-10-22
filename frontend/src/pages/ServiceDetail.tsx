@@ -125,7 +125,7 @@ export default function ServiceDetail() {
             borderRadius: 0,
             borderBottom: "1px solid",
             borderColor: "divider",
-            bgcolor: "primary.50",
+            bgcolor: "brand.primarySoft",
           }}
         >
           <Container maxWidth="lg">

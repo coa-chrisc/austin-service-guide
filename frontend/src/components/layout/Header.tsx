@@ -343,8 +343,8 @@ export default function Header() {
                 setDrawerOpen(false);
               }}
               sx={{
-                bgcolor: "primary.50",
-                "&:hover": { bgcolor: "primary.100" },
+                bgcolor: "brand.primarySoft",
+                "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16) },
               }}
             >
               <ListItemIcon>

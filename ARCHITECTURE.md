@@ -154,7 +154,7 @@ useBrandConfig() / brandTheme.ts
         -> palette, fonts, header/footer/logo, privacy notice, contact links, map center
 ```
 
-The brand is fixed into the image at build time. The backend reads the same file (`backend/app/services/city.py`) at startup for the scripted greeting and the system prompt's identity sentence; a missing or malformed config stops startup. Not configurable: the rest of the model prompt, the catalog, crisis resources, life events, personas, and the admin console's demo data are all Austin-specific. See `docs/CUSTOMIZING.md`.
+The brand is fixed into the image at build time. The backend reads the same file (`backend/app/services/city.py`) at startup for the scripted greeting, the system prompt's identity sentence and the default email sender name; a missing or malformed config stops startup. Not configurable: the rest of the model prompt, the catalog, crisis resources, life events, personas, and the admin console's demo data are all Austin-specific. See `docs/CUSTOMIZING.md`.
 
 Catalog data flow: YAML in `backend/app/data/services/` is validated against `config/services.schema.json` by `backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) and loaded at startup by `catalog_loader.py`. All 87 services are currently unverified; see SECURITY.md.
 
@@ -167,6 +167,6 @@ Both modes run the same image (`Dockerfile`), which needs no database or volume.
 
 ## Implemented and Phase 2 (summary)
 
-Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label brand config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
+Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label city config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
 
 Not implemented (Phase 2 roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, rate limiting and WAF, vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#phase-2-grant-funded-engineering-roadmap).

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     twilio_from_number: str = ""  # e.g. "+15125551234"
     sendgrid_api_key: str = ""
     sendgrid_from_email: str = "noreply@austin-service-guide.local"
-    sendgrid_from_name: str = "Austin Service Guide"
+    sendgrid_from_name: str = ""  # empty: the city config's appName
 
     # ── App behavior ───────────────────────────────────────────────
     # When True (or no OpenAI key set) the intake runs the scripted

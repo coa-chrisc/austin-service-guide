@@ -77,3 +77,34 @@ def test_non_json_error_body_is_not_logged(live_creds, monkeypatch, caplog):
 
     assert "status=502 code=None" in caplog.text
     assert PHONE not in caplog.text and "upstream" not in caplog.text
+
+
+def _capture_sendgrid_from(monkeypatch) -> list[dict]:
+    sent: list[dict] = []
+    real_client = httpx.AsyncClient
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content)["from"])
+        return httpx.Response(202)
+
+    monkeypatch.setattr(
+        notify.httpx, "AsyncClient",
+        lambda **kwargs: real_client(transport=httpx.MockTransport(_handler), **kwargs),
+    )
+    return sent
+
+
+def test_sendgrid_sender_name_defaults_to_city_app_name(live_creds, monkeypatch):
+    from app.services.city import get_city
+
+    monkeypatch.setattr(get_settings(), "sendgrid_from_name", "")
+    sent = _capture_sendgrid_from(monkeypatch)
+    asyncio.run(notify.send_email(to=EMAIL, subject="s", text="t"))
+    assert sent[0]["name"] == get_city().app_name
+
+
+def test_sendgrid_sender_name_env_override_wins(live_creds, monkeypatch):
+    monkeypatch.setattr(get_settings(), "sendgrid_from_name", "Custom Sender")
+    sent = _capture_sendgrid_from(monkeypatch)
+    asyncio.run(notify.send_email(to=EMAIL, subject="s", text="t"))
+    assert sent[0]["name"] == "Custom Sender"

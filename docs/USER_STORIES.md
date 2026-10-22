@@ -755,7 +755,7 @@ Acceptance Criteria:
 
 - All branding (colors, logo, name, tagline, typography) driven by `config/city.config.json` (per civic-ai-starter pattern)
 - Theme switching works for the full application including intake, results, map, and admin console
-- Dark mode derived from brand config or configured explicitly
+- Dark mode derived from the city config or configured explicitly
 
 **US-10.02: Service Catalog API**
 As a community partner organization,

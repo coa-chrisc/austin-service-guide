@@ -303,7 +303,7 @@ CITY_CONFIG=presets/cedar-ridge-county.json docker compose up --build   # same, 
 CITY_CONFIG=presets/cedar-ridge-county.json npm run build   # from frontend/: build the SPA with a preset
 ```
 
-`CITY_CONFIG` picks a file under `config/` (for example `presets/cedar-ridge-county.json`) at build time; `CITY_PRESET=<id>` is shorthand for `presets/<id>.json`. An unknown name fails the build. With both unset, `config/city.config.json` is used. The backend reads the same file for its scripted greeting and the opening identity sentence of the system prompt. The rest of the model prompt, the catalog, crisis resources, personas and the admin demo data are Austin-specific. To rebrand, follow [docs/CUSTOMIZING.md](docs/CUSTOMIZING.md). See also [ARCHITECTURE.md](ARCHITECTURE.md) and [deploy/README.md](deploy/README.md).
+`CITY_CONFIG` picks a file under `config/` (for example `presets/cedar-ridge-county.json`) at build time; `CITY_PRESET=<id>` is shorthand for `presets/<id>.json`. An unknown name fails the build. With both unset, `config/city.config.json` is used. The backend reads the same file for its scripted greeting, the opening identity sentence of the system prompt, and the default email sender name. The rest of the model prompt, the catalog, crisis resources, personas and the admin demo data are Austin-specific. To rebrand, follow [docs/CUSTOMIZING.md](docs/CUSTOMIZING.md). See also [ARCHITECTURE.md](ARCHITECTURE.md) and [deploy/README.md](deploy/README.md).
 
 ## License
 

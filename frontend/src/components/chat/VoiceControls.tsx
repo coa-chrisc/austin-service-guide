@@ -73,12 +73,12 @@ export function VoiceMicButton({ voice }: { voice: IntakeVoice }) {
           disabled={voice.disabled || voice.starting}
           aria-label={label}
           sx={(theme) => ({
-            bgcolor: "grey.100",
+            bgcolor: "brand.subtle",
             color: "primary.main",
             width: 44,
             height: 44,
-            "&:hover": { bgcolor: "grey.200" },
-            "&:disabled": { bgcolor: "grey.200", color: "grey.500" },
+            "&:hover": { bgcolor: "action.hover" },
+            "&:disabled": { bgcolor: "action.disabledBackground", color: "action.disabled" },
             ...focusRing(theme),
           })}
         >

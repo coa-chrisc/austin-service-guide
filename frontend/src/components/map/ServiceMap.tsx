@@ -476,7 +476,7 @@ export default function ServiceMap({
                           fontSize: 11,
                           fontWeight: 600,
                           bgcolor: pin.open_now
-                            ? "success.50"
+                            ? (theme) => alpha(theme.palette.success.main, 0.12)
                             : "transparent",
                           color: pin.open_now
                             ? "success.dark"
@@ -516,7 +516,7 @@ export default function ServiceMap({
                   background: ${theme.palette.info.main};
                   width: 18px; height: 18px;
                   border-radius: 50%;
-                  border: 3px solid ${theme.palette.common.white};
+                  border: 3px solid ${theme.palette.common.white}; /* theme-exempt: marker ring contrasts with the light map tiles in both modes */
                   box-shadow: 0 0 0 3px ${alpha(theme.palette.info.main, 0.3)}, 0 2px 8px ${alpha(theme.palette.brand.ink, 0.3)};
                 "></div>`,
                 className: "",

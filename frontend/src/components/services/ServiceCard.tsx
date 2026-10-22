@@ -208,7 +208,7 @@ export default function ServiceCard({
                       fontSize: 11,
                       fontWeight: 600,
                       height: 22,
-                      bgcolor: open ? "success.50" : "transparent",
+                      bgcolor: open ? (theme) => alpha(theme.palette.success.main, 0.12) : "transparent",
                       color: open ? "success.dark" : "text.secondary",
                       borderColor: open ? "success.light" : "divider",
                     }}
@@ -386,7 +386,7 @@ export default function ServiceCard({
               display: "flex",
               justifyContent: "center",
               p: 2,
-              bgcolor: "common.white",
+              bgcolor: "common.white", // theme-exempt: QR code needs a white quiet zone to scan in dark mode
               borderRadius: 1,
               border: "1px solid",
               borderColor: "divider",

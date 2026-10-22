@@ -79,7 +79,7 @@ export default function ChatBubble({
             px: 2,
             py: 1.5,
             borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-            bgcolor: isUser ? "primary.main" : "grey.100",
+            bgcolor: isUser ? "primary.main" : "brand.subtle",
             color: isUser ? "primary.contrastText" : "text.primary",
             ...(isUser
               ? {}
