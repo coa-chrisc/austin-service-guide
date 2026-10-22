@@ -13,7 +13,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import MicIcon from "@mui/icons-material/Mic";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatInterface from "@/components/chat/ChatInterface";
-import { buildIntakePlan, startIntake } from "@/lib/api";
+import { buildIntakePlan, getVoiceConfig, startIntake, type VoicePipelineMode } from "@/lib/api";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import {
   clearIntakeState,
@@ -154,6 +154,23 @@ export default function Intake() {
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [confirmStartOver, setConfirmStartOver] = useState(false);
   const [selectedMode, setSelectedMode] = useState<IntakeMode>("text");
+  // Deployment voice mode, for the voice card's privacy note. Null until known;
+  // a failed fetch falls back to the private default, as useIntakeVoice does.
+  const [voiceMode, setVoiceMode] = useState<VoicePipelineMode | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getVoiceConfig()
+      .then((config) => {
+        if (!cancelled) setVoiceMode(config.mode === "realtime_audio" ? "realtime_audio" : "intercepted_text");
+      })
+      .catch(() => {
+        if (!cancelled) setVoiceMode("intercepted_text");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const isStartingRef = useRef(false);
   const intakeRequestIdRef = useRef(0);
 
@@ -440,13 +457,17 @@ export default function Intake() {
               >
                 Talk naturally with the guide.
               </Typography>
-              <Typography
-                component="span"
-                variant="caption"
-                sx={{ opacity: 0.85 }}
-              >
-                Your voice is sent to OpenAI to understand you.
-              </Typography>
+              {voiceMode && (
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{ opacity: 0.85 }}
+                >
+                  {voiceMode === "realtime_audio"
+                    ? "Your voice is sent to OpenAI to understand you."
+                    : "Your speech becomes text on this device. Only the text is sent."}
+                </Typography>
+              )}
             </Button>
             <Button
               variant="outlined"
