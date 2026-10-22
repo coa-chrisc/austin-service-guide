@@ -45,7 +45,7 @@ class CityIdentity:
     phone311: str
 
 
-def _config_dir(env: Mapping[str, str]) -> Path:
+def config_dir(env: Mapping[str, str]) -> Path:
     explicit = (env.get("CITY_CONFIG_DIR") or "").strip()
     candidates = [Path(explicit)] if explicit else [_HERE.parents[2] / "config", _HERE.parents[3] / "config"]
     for c in candidates:
@@ -81,7 +81,7 @@ def _text(data: object, *keys: str) -> str:
 def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
     """Read and check the identity fields. Raises CityConfigError on any problem."""
     env = os.environ if env is None else env
-    path = _config_path(env, _config_dir(env))
+    path = _config_path(env, config_dir(env))
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
