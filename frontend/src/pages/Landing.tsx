@@ -390,8 +390,8 @@ export default function Landing() {
 
       <NeedNavigator />
 
-      {/* Demo persona launcher (?demo=1) */}
-      {demoMode && (
+      {/* Demo persona launcher (?demo=1); hidden when the data pack has no personas */}
+      {demoMode && personas.length > 0 && (
         <Box
           id="demo-launcher"
           sx={(theme) => ({
