@@ -9,6 +9,9 @@ services:
         # City config: CITY_CONFIG=presets/<id>.json, or the CITY_PRESET=<id> alias.
         CITY_CONFIG: ${CITY_CONFIG:-}
         CITY_PRESET: ${CITY_PRESET:-}
+        # Map tiles (unset = OpenStreetMap). A custom URL needs its attribution.
+        VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
+        VITE_MAP_TILE_ATTRIBUTION: ${VITE_MAP_TILE_ATTRIBUTION:-}
     image: austin-service-guide:local
     env_file:
       - path: backend/.env

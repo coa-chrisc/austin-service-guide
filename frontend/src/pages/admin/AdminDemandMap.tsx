@@ -16,6 +16,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 
 import { getAdminDemandMap, type DemandMapPoint } from "../../lib/api";
 import { brandConfig } from "@/hooks/useBrandConfig";
+import { TILE_ATTRIBUTION, TILE_URL } from "@/lib/mapTiles";
 
 const {
   center: MAP_CENTER,
@@ -259,8 +260,8 @@ export default function AdminDemandMap() {
                 scrollWheelZoom
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution={TILE_ATTRIBUTION}
+                  url={TILE_URL}
                 />
                 {points.map((p) => {
                   const c = colorFor(p);

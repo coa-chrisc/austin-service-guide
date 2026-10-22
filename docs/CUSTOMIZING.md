@@ -153,7 +153,17 @@ The browser-tab icon is generated at build time from your colors.
 
 ## 8. Map
 
-`map.center` (`[lat, lng]`), `zoom`, `minZoom`, and `maxZoom` set the starting view of the resident map and the admin demand map. Map tiles come from OpenStreetMap's public tile server; for heavy traffic read its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
+`map.center` (`[lat, lng]`), `zoom`, `minZoom`, and `maxZoom` set the starting view of the resident map and the admin demand map. Map tiles come from OpenStreetMap's public tile server unless you set a tile server at build time. OSM's server is fine for a demo, but it is not meant for production traffic (see its [tile usage policy](https://operations.osmfoundation.org/policies/tiles/)). To use another provider, set both variables when you build (in the shell, in `frontend/.env`, or as Docker build args):
+
+```bash
+VITE_MAP_TILE_URL='https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+VITE_MAP_TILE_ATTRIBUTION='&copy; OpenStreetMap contributors &copy; CARTO'
+```
+
+- The URL is a Leaflet template: `{z}/{x}/{y}` are required, and `{s}` picks a subdomain. It must be `https://`.
+- The attribution is HTML shown in the map corner. It is required with a custom URL; the build fails without it.
+- Both values are built into the browser bundle, so any API key in the URL is public. Use a key your provider lets you restrict to your domain.
+- The offline service worker caches tiles from the URL's host for 60 days. Check that your provider's terms allow that.
 
 ## 9. The `serviceGuide` block
 

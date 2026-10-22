@@ -2,14 +2,19 @@
 # Single production image: React SPA (built in stage 1) served by FastAPI (stage 2).
 # Build context must be the repo root and include config/ (city config, presets, logos).
 # Pick a city with --build-arg CITY_CONFIG=presets/<id>.json (or the CITY_PRESET=<id> alias).
+# Map tiles: --build-arg VITE_MAP_TILE_URL=... --build-arg VITE_MAP_TILE_ATTRIBUTION=...
 
 # ── Stage 1: build the frontend ──────────────────────────────────────
 FROM node:22-slim AS frontend
 WORKDIR /build
 ARG CITY_CONFIG=
 ARG CITY_PRESET=
+ARG VITE_MAP_TILE_URL=
+ARG VITE_MAP_TILE_ATTRIBUTION=
 ENV CITY_CONFIG=${CITY_CONFIG} \
-    CITY_PRESET=${CITY_PRESET}
+    CITY_PRESET=${CITY_PRESET} \
+    VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL} \
+    VITE_MAP_TILE_ATTRIBUTION=${VITE_MAP_TILE_ATTRIBUTION}
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
 COPY config/ config/
