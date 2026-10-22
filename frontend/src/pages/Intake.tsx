@@ -86,7 +86,7 @@ const LIFE_EVENT_COPY: Record<string, { heading: string; body: string }> = {
     heading: "You told us you're looking for veteran support.",
     body: "Our guide can help look for VA benefits, housing, healthcare, jobs, and related services. We'll ask a few questions to narrow it down.",
   },
-  "new-to-austin": {
+  "new-to-area": {
     heading: "You told us you're new to {city}.",
     body: "Our guide can help look for support with healthcare, food, transportation, schools, utilities, and other basics. We'll ask a few questions to see what would help first.",
   },

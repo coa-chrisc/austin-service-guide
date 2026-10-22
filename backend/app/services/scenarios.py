@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from app.models import IntakeMessage, IntakeSession, MessageRole
+from app.services.catalog_loader import local_crisis_lines
 from app.services.life_events import canonical_life_event_slug, session_life_event_slug
 from app.services.tools import estimate_progress
 
@@ -98,7 +99,7 @@ def scenario_first_followup(session: IntakeSession, user_text: str) -> IntakeMes
                 else "What zip code or area are you staying in right now?"
             )
         ),
-        "new-to-austin": (
+        "new-to-area": (
             "What do you need help setting up first: healthcare, food, "
             "transportation, school, utilities, housing, or documents?"
         ),
@@ -199,17 +200,20 @@ def check_crisis(text: str) -> str:
 
 
 def crisis_response(session: IntakeSession) -> IntakeMessage:
+    local = local_crisis_lines("mental_health") + local_crisis_lines("domestic_violence")
+    lines = [
+        "- **988 Suicide & Crisis Lifeline** — Call or text **988**",
+        *(f"- **{r.name}** — **{r.phone}**" for r in local),
+        "- **National DV Hotline** — **1-800-799-7233**",
+    ]
     msg = IntakeMessage(
         role=MessageRole.assistant,
         content=(
             "I hear you, and I want you to know that help is available right now.\n\n"
             "**If you are in immediate danger, call 9-1-1.**\n\n"
             "Here are crisis resources available 24/7:\n\n"
-            "- **988 Suicide & Crisis Lifeline** — Call or text **988**\n"
-            "- **Integral Care Crisis Line** — **512-472-4357**\n"
-            "- **SAFE Alliance (DV/SA)** — **512-267-7233**\n"
-            "- **National DV Hotline** — **1-800-799-7233**\n\n"
-            "You don't have to go through this alone. Would you like to continue "
+            + "\n".join(lines)
+            + "\n\nYou don't have to go through this alone. Would you like to continue "
             "finding services, or would you prefer to connect with a crisis counselor?"
         ),
         crisis_detected=True,

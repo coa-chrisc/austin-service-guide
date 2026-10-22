@@ -1,4 +1,4 @@
-"""Pydantic models for the Austin Service Guide API."""
+"""Pydantic models for the service guide API."""
 
 from __future__ import annotations
 
@@ -62,8 +62,8 @@ class ServiceLocation(BaseModel):
     service_id: str = ""
     name: str
     address: str
-    city: str = "Austin"
-    state: str = "TX"
+    city: str
+    state: str
     zip_code: str = ""
     latitude: float = 0.0
     longitude: float = 0.0
@@ -146,7 +146,7 @@ class IntakeMessage(BaseModel):
 
 class SchoolAgeChild(BaseModel):
     grade: str = ""              # e.g. "7", "10", "K"
-    district: str = ""           # e.g. "AISD", "Del Valle ISD"
+    district: str = ""           # school district name
     concerns: list[str] = Field(default_factory=list)  # e.g. ["anxiety", "attendance"]
 
 
@@ -493,6 +493,9 @@ class CrisisResource(BaseModel):
     phone: str
     available_24_7: bool = True
     languages: list[str] = Field(default_factory=lambda: ["en", "es"])
+    # Set on the pack's local crisis lines: the crisis message and the matching
+    # risk flags list them next to the national 988 / DV hotline defaults.
+    crisis_topic: Literal["mental_health", "domestic_violence"] | None = None
 
 
 class BenefitsEstimate(BaseModel):

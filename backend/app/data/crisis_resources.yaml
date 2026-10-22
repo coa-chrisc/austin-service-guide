@@ -1,3 +1,8 @@
+# Crisis lines surfaced by the agent's get_crisis_resources tool and the
+# resources API. Lines with crisis_topic (mental_health | domestic_violence)
+# are this place's local crisis lines: the crisis interrupt message and the
+# matching risk flags list them alongside the national 988 Suicide & Crisis
+# Lifeline, 9-1-1 and National DV Hotline, which are built into the code.
 - name: 9-1-1 Emergency
   description: Life-threatening emergencies
   phone: '911'
@@ -19,6 +24,7 @@
   languages:
   - en
   - es
+  crisis_topic: mental_health
 - name: SAFE Alliance DV Hotline
   description: Domestic violence, sexual assault support
   phone: 512-267-7233
@@ -26,6 +32,7 @@
   languages:
   - en
   - es
+  crisis_topic: domestic_violence
 - name: National DV Hotline
   description: National domestic violence support
   phone: 1-800-799-7233

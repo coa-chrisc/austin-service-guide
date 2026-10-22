@@ -1,6 +1,21 @@
-# Service Catalog (YAML)
+# Data pack (YAML)
 
-This directory is the source of truth for the resident-facing service catalog.
+This directory is a **data pack**: everything place-specific the backend
+knows about one deployment — the service catalog, categories, life events,
+crisis lines, ZIP centers, local matching rules, translations, demo personas
+and admin demo data. The city config (`config/city.config.json`) says *who*
+the deployment is; the data pack says *what is there*. This directory is the
+Austin reference pack.
+
+`CITY_DATA_DIR` selects the pack (`backend/app/services/data_pack.py`):
+unset means this directory; an absolute path is used as-is; a relative path
+resolves under `config/` (e.g. `data/my-city` → `config/data/my-city`, which
+the Docker image ships). A directory without `categories.yaml` fails startup.
+
+To start a pack for another place, copy this directory, then replace the
+records. Required files must exist (they may hold an empty list where noted);
+optional files can be left out and the feature they drive is skipped.
+
 Edit a YAML file, restart the backend (or hit a future hot-reload endpoint),
 and the change is live. Pydantic validates every record on load — bad YAML
 raises a loud startup error rather than silently dropping a service.
@@ -8,15 +23,30 @@ raises a loud startup error rather than silently dropping a service.
 ## Layout
 
 ```
-backend/app/data/
-├── README.md                 ← this file
-├── categories.yaml           ← list of ServiceCategory
-├── life_events.yaml          ← list of LifeEvent
-├── crisis_resources.yaml     ← list of CrisisResource
-└── services/
-    ├── <slug>.yaml           ← one Service per file
-    └── ...                   (87 files at last count)
+<pack>/
+├── README.md                  ← this file (Austin pack only)
+├── categories.yaml            ← list of ServiceCategory            required
+├── services/<slug>.yaml       ← one Service per file               required (87 in Austin)
+├── life_events.yaml           ← list of LifeEvent                  required (may be [])
+├── crisis_resources.yaml      ← list of CrisisResource             required (may be [])
+├── zip_centroids.yaml         ← list of ZipCentroid                optional
+├── matching_rules.yaml        ← MatchingRules mapping              optional
+├── service_translations.yaml  ← slug → language → {description}    optional
+├── personas.yaml              ← demo personas (?demo=1 launcher)   optional
+└── admin_demo.yaml            ← synthetic admin-console data       optional
 ```
+
+| File                        | Read by                                  | Without it                                   |
+| --------------------------- | ---------------------------------------- | -------------------------------------------- |
+| `categories.yaml`           | `catalog_loader.load_categories`         | startup fails                                |
+| `services/`                 | `catalog_loader.load_services`           | startup fails                                |
+| `life_events.yaml`          | `catalog_loader.load_life_events`        | startup fails                                |
+| `crisis_resources.yaml`     | `catalog_loader.load_crisis_resources`   | startup fails                                |
+| `zip_centroids.yaml`        | `catalog_loader.load_zip_centroids`      | ZIP searches are not radius-filtered; the scripted ZIP question offers only "Other" |
+| `matching_rules.yaml`       | `catalog_loader.load_matching_rules`     | no crisis-direct services, heat-ZIP rule, local prevention services or program value estimates |
+| `service_translations.yaml` | `catalog_loader.load_service_translations` | results show English descriptions          |
+| `personas.yaml`             | `app/services/personas.py`               | no demo personas                             |
+| `admin_demo.yaml`           | `app/services/seed_data.py`              | admin console shows empty demo data          |
 
 The filename stem of a service file should match its `slug` field (e.g.
 `central-texas-food-bank.yaml` for slug `central-texas-food-bank`). The
@@ -24,10 +54,14 @@ loader does not enforce the match, but tooling assumes it.
 
 ## Loader
 
-`backend/app/services/catalog_loader.py` walks the directory at first access,
-validates each record against `app/models.py`, and caches the result with
-`functools.lru_cache`. Call `catalog_loader.reload_all()` to drop the cache
-without restarting the process.
+`backend/app/services/catalog_loader.py` reads the pack at first access,
+validates each record against `app/models.py` (catalog records) or the rule
+schemas defined in the loader itself (`ZipCentroid`, `MatchingRules`,
+`ServiceTranslation`), and caches the result with `functools.lru_cache`.
+`catalog.load_seed_data()` fills the in-memory catalog from the loader at
+startup. Call `catalog_loader.reload_all()` to drop the caches (including the
+resolved pack directory) without restarting the process, then
+`catalog.load_seed_data()` to refill the catalog.
 
 `backend/app/services/seed_data.py` re-exports `CATEGORIES`, `SERVICES`,
 `LIFE_EVENTS`, and `CRISIS_RESOURCES` from the loader for legacy import
@@ -46,8 +80,8 @@ sites — there is no parallel literal copy in Python anymore.
 To add a new service from scratch, easiest is:
 
 ```bash
-cp backend/app/data/services/central-texas-food-bank.yaml \
-   backend/app/data/services/<your-new-slug>.yaml
+cp <pack>/services/central-texas-food-bank.yaml \
+   <pack>/services/<your-new-slug>.yaml
 # then edit
 ```
 
@@ -116,8 +150,8 @@ Age gates use the most permissive band in the catalog (50+; 16–28) so a
 partly-overlapping bracket is never excluded. Fleeing domestic violence
 satisfies the housing gate because HUD (and ECHO) count it as homelessness.
 
-Crisis-direct services are not gated here: `_CRISIS_SERVICES` in
-`app/services/matching.py` maps each crisis indicator (`domestic_violence`,
+Crisis-direct services are not gated here: `crisis_services` in
+`matching_rules.yaml` maps each crisis indicator (`domestic_violence`,
 `immediate_danger`, `suicidal_ideation`, `homelessness`) to service slugs that
 always match and lead the plan when that indicator is present. Renaming one
 of those slugs means updating the map (a test checks they all exist).
@@ -142,8 +176,8 @@ locations:
     service_id: svc-ctfb # should match parent service id
     name: Main Warehouse # required
     address: 6500 Metropolis Dr # required (street only)
-    city: Austin # default Austin
-    state: TX # default TX
+    city: Austin # required
+    state: TX # required, two-letter code
     zip_code: "78744" # always quote zip codes
     latitude: 30.1975 # decimal degrees, WGS84
     longitude: -97.7566 # decimal degrees, WGS84
@@ -186,14 +220,9 @@ name on the "What to bring" card.
 
 ### Category slug guard
 
-`seed_data.py` runs an integrity assertion at import time:
-
-```python
-assert not _BAD, f"Unknown category slugs in seed data: {_BAD[:5]}"
-```
-
-If a service references a category slug that does not exist in
-`categories.yaml`, the backend will refuse to start. Add the category first.
+`catalog.load_seed_data()` checks every service's categories at startup. If a
+service references a category slug that does not exist in `categories.yaml`,
+the backend will refuse to start. Add the category first.
 
 ---
 
@@ -235,16 +264,102 @@ value in the file is informational only.
 ## Crisis resource schema (`crisis_resources.yaml`)
 
 ```yaml
-- name: 988 Suicide & Crisis Lifeline
-  description: 24/7 free, confidential support
-  phone: "988"
+- name: Integral Care Crisis Helpline
+  description: Travis County mental health crisis line
+  phone: 512-472-4357
   available_24_7: true
   languages: [en, es]
+  crisis_topic: mental_health # optional: mental_health | domestic_violence
 ```
 
 Crisis resources are surfaced by the AI agent's `get_crisis_resources` tool
 and by a keyword interrupt in the intake flow. Keep `phone` short and
 recognizable (`988`, `2-1-1`, `1-800-…`).
+
+`crisis_topic` marks a **local** crisis line. The crisis interrupt message
+lists 988, then every `mental_health` line, then every `domestic_violence`
+line (file order), then the National DV Hotline; 9-1-1 is always named. The
+`mental_health_crisis` and `domestic_violence` risk flags list the same local
+lines as `Name (phone)`. 988, 9-1-1 and the National DV Hotline are built in,
+so a tagged line with one of those numbers is not repeated. A pack with no
+tagged lines still shows the national lines.
+
+---
+
+## ZIP centroids (`zip_centroids.yaml`, optional)
+
+```yaml
+- zip: "78741"        # always quote ZIP codes
+  latitude: 30.2270
+  longitude: -97.7290
+  featured: true      # optional, default false
+```
+
+Used by `GET /api/v1/services?zip_code=…&radius=…` and the agent's
+`search_services` tool: a listed ZIP filters services to locations within
+`radius` miles of its center. A ZIP that is not listed is not filtered (all
+services pass). `featured: true` ZIPs, in file order, are the quick-reply
+buttons on the scripted intake's ZIP question; with none featured the first
+five entries are used. "Other" is always appended.
+
+---
+
+## Matching rules (`matching_rules.yaml`, optional)
+
+A single mapping; every key is optional and a missing key skips its rule.
+Service references are catalog **slugs**, so names come from the catalog.
+Unknown slugs are ignored at runtime; `tests/test_data_pack_content.py`
+checks the Austin pack's slugs all exist.
+
+```yaml
+high_heat_zips: ["78741", "78744"]        # heat-vulnerability ZIPs
+
+crisis_services:                          # indicator -> slugs, most local first
+  domestic_violence: [safe-alliance]
+  suicidal_ideation: [integral-care]
+
+prevention_services:                      # risk type -> lines on that risk flag
+  homelessness:
+  - service: foundation-communities       # rendered as the service's name
+  - text: Integral Care youth services    # org not in the catalog: display text
+
+benefit_estimates:                        # first listing a matched slug wins
+- services: [snap-enrollment-assistance]
+  label: SNAP Benefits
+  monthly_value: 234
+  per_household_member: true              # optional, default false
+- services: [community-care-health-centers]
+  label: Sliding-Scale Healthcare Savings
+  monthly_value: 80
+  only_if_uninsured: true                 # optional, default false
+```
+
+- `high_heat_zips`: a resident with a chronic condition in one of these ZIPs
+  gets cooling and utility services, and the ZIP counts as one factor toward
+  the `heat_vulnerable` risk flag (two factors raise it).
+- `crisis_services`: indicators are `domestic_violence`, `immediate_danger`,
+  `suicidal_ideation`, `homelessness`. These services skip the relevance
+  filter, eligibility gates and match cap, and lead the plan.
+- `prevention_services`: risk types are `homelessness`, `housing_instability`,
+  `food_insecurity`, `uninsured`, `domestic_violence`, `mental_health_crisis`,
+  `social_isolation`, `child_mental_health_risk`, `heat_vulnerable`. Each entry
+  sets exactly one of `service` or `text`. For `domestic_violence` and
+  `mental_health_crisis` these come after the built-in and local crisis lines.
+- `benefit_estimates`: the monthly value shown in the results' benefit
+  estimate. A matched free service with no estimate counts $25.
+
+---
+
+## Service translations (`service_translations.yaml`, optional)
+
+```yaml
+integral-care:            # catalog service slug
+  es:                     # language code
+    description: La Autoridad Local de Salud Mental del Condado de Travis …
+```
+
+Shown on the results page in place of the English description when the
+resident's language matches. Anything not listed falls back to English.
 
 ---
 
@@ -344,10 +459,6 @@ records may still reference the id.
 - **Standalone validator.** `python -m scripts.validate_catalog` could
   load every YAML, run Pydantic + the slug guard + duplicate detection,
   and exit non-zero on any issue. Useful as a pre-commit hook.
-- **Translation files.** Per-service translations currently live in
-  `app/services/i18n.py` for ~17 services. Long-term they should move to
-  `data/services/<slug>.<lang>.yaml` siblings or a `translations:` block on
-  the canonical English record.
 - **Production source.** This in-repo YAML is the demo target. For
   production, the same Pydantic models would be served from PostgreSQL +
   pgvector with semantic search; the YAML would become the seed for that

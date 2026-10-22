@@ -10,10 +10,10 @@ from pydantic import ValidationError
 
 from app.models import EligibilityGate, ResidentProfile, Service
 from app.services import catalog
-from app.services.catalog_loader import SERVICES_DIR
+from app.services.catalog_loader import services_dir
 from app.services.eligibility import _GATES
 from app.services.matching import (
-    _CRISIS_SERVICES,
+    crisis_services,
     _SEQUENCE_REASONS,
     _matching_categories,
     match_services,
@@ -178,7 +178,8 @@ def test_crisis_services_bypass_the_match_cap():
 
 
 def test_crisis_mapping_points_at_real_services():
-    for slugs in _CRISIS_SERVICES.values():
+    assert crisis_services(), "the reference pack maps crisis indicators"
+    for slugs in crisis_services().values():
         for slug in slugs:
             assert catalog.get_service_by_slug(slug) is not None, slug
 
@@ -187,7 +188,7 @@ def test_every_service_yaml_loads_with_known_gates():
     vocab = set(get_args(EligibilityGate))
     assert vocab == set(_GATES)
 
-    files = sorted(SERVICES_DIR.glob("*.yaml"))
+    files = sorted(services_dir().glob("*.yaml"))
     assert len(files) == 87
     for path in files:
         svc = Service.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
