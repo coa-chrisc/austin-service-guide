@@ -28,7 +28,7 @@ import type { AnalyticsOverview } from "../../types";
 const RECENT_ACTIVITY = [
   {
     id: 1,
-    text: "New resident signed up from 78741",
+    text: "New resident signed up",
     time: "5 min ago",
     color: "success.main",
   },

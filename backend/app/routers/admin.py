@@ -32,8 +32,6 @@ from app.services.catalog import (
     update_service,
 )
 from app.services.seed_data import (
-    DEMO_RESIDENTS,
-    DEMO_STAFF,
     generate_analytics_overview,
     generate_audit_log,
     generate_demand_map,
@@ -44,6 +42,8 @@ from app.services.seed_data import (
     generate_partner_gaps,
     generate_reports,
     generate_service_demand,
+    get_demo_residents,
+    get_demo_staff,
 )
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
@@ -85,7 +85,7 @@ async def list_residents(
 ):
     """Return paginated list of demo residents."""
     _check_staff_role(x_staff_role)
-    residents = list(DEMO_RESIDENTS)
+    residents = list(get_demo_residents())
 
     if search:
         q = search.lower()
@@ -119,7 +119,7 @@ async def get_resident(
 ):
     """Return detail for a single demo resident including their matches."""
     _check_staff_role(x_staff_role)
-    resident = next((r for r in DEMO_RESIDENTS if r.id == resident_id), None)
+    resident = next((r for r in get_demo_residents() if r.id == resident_id), None)
     if not resident:
         raise HTTPException(status_code=404, detail="Resident not found")
 
@@ -301,4 +301,4 @@ async def audit_log(
 @router.get("/staff")
 async def staff_list(x_staff_role: Optional[str] = Header(None)):
     _check_staff_role(x_staff_role)
-    return [s.model_dump() for s in DEMO_STAFF]
+    return [s.model_dump() for s in get_demo_staff()]
