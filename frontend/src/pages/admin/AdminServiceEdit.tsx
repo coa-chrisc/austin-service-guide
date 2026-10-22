@@ -109,7 +109,7 @@ function emptyLocation(): ServiceLocation {
     name: "",
     address: "",
     city: brandConfig.region.cityName,
-    state: "TX",
+    state: brandConfig.region.state,
     zip_code: "",
     latitude: 0,
     longitude: 0,

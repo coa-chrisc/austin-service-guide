@@ -1181,7 +1181,7 @@ export default function Results() {
               shareChannel === "sms" ? t("phone_number") : t("email_address")
             }
             placeholder={
-              shareChannel === "sms" ? "+1 512 555 1234" : "you@example.com"
+              shareChannel === "sms" ? "555-0100" : "you@example.com"
             }
             value={shareRecipient}
             onChange={(e) => setShareRecipient(e.target.value)}

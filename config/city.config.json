@@ -13,7 +13,7 @@
     "state": "TX"
   },
   "brand": {
-    "logoUrl": "brand/austin-travis-tx/aph-logo.png"
+    "logoUrl": null
   },
   "theme": {
     "colors": {
@@ -75,6 +75,7 @@
     "maxZoom": 16
   },
   "serviceGuide": {
+    "timezone": "America/Chicago",
     "shortName": "ASG",
     "description": "Find services you're eligible for in Austin — built by Austin Public Health.",
     "copy": {

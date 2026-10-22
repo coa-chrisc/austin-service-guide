@@ -18,8 +18,7 @@ from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from app.models import ServiceLocation
-
-DEFAULT_TZ = "America/Chicago"
+from app.services.city import get_city
 
 _DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 _DAY_LABEL = {d: d.capitalize() for d in _DAYS}
@@ -63,14 +62,14 @@ def _parse_range(label: str) -> tuple[time, time] | None | str:
 
 
 def _now(tz: str | None) -> datetime:
-    return datetime.now(ZoneInfo(tz or DEFAULT_TZ))
+    return datetime.now(ZoneInfo(tz or get_city().timezone))
 
 
 def is_open_now(
     location: ServiceLocation,
     *,
     now: datetime | None = None,
-    tz: str = DEFAULT_TZ,
+    tz: str | None = None,
 ) -> bool:
     """Return ``True`` if the location is currently open."""
     if not location.hours:
@@ -94,7 +93,7 @@ def next_open_label(
     location: ServiceLocation,
     *,
     now: datetime | None = None,
-    tz: str = DEFAULT_TZ,
+    tz: str | None = None,
 ) -> str | None:
     """Return a short human label for the next opening, or ``None`` when
     the location is open now or has no schedulable hours."""

@@ -67,3 +67,20 @@ def test_missing_or_escaping_config_raises():
         load_city(_env(CITY_CONFIG="../backend/requirements.txt"))
     with pytest.raises(CityConfigError):
         load_city({"CITY_CONFIG_DIR": "/nonexistent-dir"})
+
+
+def test_timezone_and_languages_from_config():
+    assert load_city(_env()).timezone == "America/Chicago"
+    assert load_city(_env(CITY_PRESET="cedar-ridge-county")).timezone == "America/Los_Angeles"
+    assert "en" in load_city(_env()).languages
+
+
+def test_timezone_absent_is_utc_and_unknown_zone_fails(tmp_path):
+    cfg = json.loads((CONFIG_DIR / "city.config.json").read_text())
+    del cfg["serviceGuide"]["timezone"]
+    (tmp_path / "city.config.json").write_text(json.dumps(cfg))
+    assert load_city({"CITY_CONFIG_DIR": str(tmp_path)}).timezone == "UTC"
+    cfg["serviceGuide"]["timezone"] = "Mars/Olympus"
+    (tmp_path / "city.config.json").write_text(json.dumps(cfg))
+    with pytest.raises(CityConfigError):
+        load_city({"CITY_CONFIG_DIR": str(tmp_path)})

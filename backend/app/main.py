@@ -1,4 +1,4 @@
-"""FastAPI application entry point for the Austin Service Guide API."""
+"""FastAPI application entry point for the Service Guide API."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from app.config import get_settings
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import admin, intake, services
 from app.services.catalog import load_seed_data
+from app.services.city import get_city
 from app.spa import mount_spa
 
 
@@ -24,11 +25,13 @@ async def lifespan(app: FastAPI):
 
 
 settings = get_settings()
+city = get_city()
+api_title = settings.app_name or f"{city.app_name} API"
 
 app = FastAPI(
-    title=settings.app_name,
+    title=api_title,
     version=settings.app_version,
-    description="API for the Austin Service Guide — a demonstration city-resident service portal.",
+    description=f"API for the {city.app_name} — a demonstration city-resident service portal.",
     lifespan=lifespan,
 )
 
@@ -78,6 +81,6 @@ else:
     async def root():
         return {
             "status": "ok",
-            "app": settings.app_name,
+            "app": api_title,
             "demo_mode": settings.demo_mode,
         }

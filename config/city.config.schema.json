@@ -425,6 +425,23 @@
           "minLength": 1,
           "description": "One-sentence description for the HTML meta description and PWA manifest. Default: built from appName, region.cityName and agency.name."
         },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA time zone name (for example America/Chicago) used for open-now hours. Backend: an unknown zone fails startup; absent means UTC, so set it."
+        },
+        "languages": {
+          "type": "array",
+          "description": "Language codes offered in the language selector, in display order. English must be included. Default: all supported (en, es, zh, hi, ar, vi, fr, ko).",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["en", "es", "zh", "hi", "ar", "vi", "fr", "ko"]
+          },
+          "contains": {
+            "const": "en"
+          }
+        },
         "copy": {
           "type": "object",
           "additionalProperties": false,

@@ -10,6 +10,7 @@ import {
   CityConfigError,
   listPresets,
   loadCityConfig,
+  categoriesPath,
   readCategorySlugs,
   schemaErrors,
   selectConfig,
@@ -167,6 +168,24 @@ describe("serviceGuide defaults and categories", () => {
     expect(slugs[0]).toBe("healthcare");
     expect(slugs).toContain("smoking_cessation");
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("resolves the categories file like the backend data pack", () => {
+    expect(categoriesPath({})).toMatch(/backend[\\/]app[\\/]data[\\/]categories\.yaml$/);
+    expect(categoriesPath({ CITY_DATA_DIR: "data/x" })).toBe(path.join(CONFIG_DIR, "data/x", "categories.yaml"));
+    const abs = path.resolve("/tmp/pack");
+    expect(categoriesPath({ CITY_DATA_DIR: abs })).toBe(path.join(abs, "categories.yaml"));
+  });
+
+  it("defaults serviceGuide timezone and languages, and rejects a language set without en", () => {
+    const sg = resolveServiceGuide(readJson(path.join(CONFIG_DIR, "presets/bchc-demo-city.json")));
+    expect(sg.timezone).toBe("America/Chicago");
+    expect(sg.languages).toHaveLength(8);
+    const cfg = readJson(path.join(CONFIG_DIR, "city.config.json"));
+    cfg.serviceGuide.languages = ["es", "fr"];
+    expect(schemaErrors(cfg).length).toBeGreaterThan(0);
+    cfg.serviceGuide.languages = ["en", "es"];
+    expect(schemaErrors(cfg)).toEqual([]);
   });
 
   it("colors categories by override, else series cycled in category order", () => {

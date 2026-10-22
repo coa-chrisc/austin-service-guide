@@ -42,9 +42,9 @@ class Settings(BaseSettings):
     # ── Notifications (Twilio SMS + SendGrid email) ────────────────
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""
-    twilio_from_number: str = ""  # e.g. "+15125551234"
+    twilio_from_number: str = ""  # e.g. "+15555550100"
     sendgrid_api_key: str = ""
-    sendgrid_from_email: str = "noreply@austin-service-guide.local"
+    sendgrid_from_email: str = "noreply@example.invalid"
     sendgrid_from_name: str = ""  # empty: the city config's appName
 
     # ── App behavior ───────────────────────────────────────────────
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     )
 
     # App metadata
-    app_name: str = "Austin Service Guide API"
+    app_name: str = ""  # default: "<city config appName> API"
     app_version: str = "1.0.0"
 
     @property

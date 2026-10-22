@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Mapping
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 _HERE = Path(__file__).resolve()
 _PREFIX = "[city-config]"
@@ -43,6 +44,8 @@ class CityIdentity:
     city_name: str
     state: str
     phone311: str
+    timezone: str = "UTC"
+    languages: tuple[str, ...] = ("en", "es", "zh", "hi", "ar", "vi", "fr", "ko")
 
 
 def config_dir(env: Mapping[str, str]) -> Path:
@@ -88,7 +91,14 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         raise CityConfigError(f"{_PREFIX} cannot read {path.name}: {exc}") from exc
     if not isinstance(data, dict):
         raise CityConfigError(f"{_PREFIX} {path.name} must be a JSON object.")
-    contact = (data.get("serviceGuide") or {}).get("contact") or {}
+    sg = data.get("serviceGuide") or {}
+    contact = sg.get("contact") or {}
+    tz = sg.get("timezone", "UTC")
+    try:
+        ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError, TypeError) as exc:
+        raise CityConfigError(f"{_PREFIX} serviceGuide.timezone {tz!r} is not a known IANA time zone.") from exc
+    languages = sg.get("languages")
     phone = contact.get("phone311") if isinstance(contact, dict) else None
     return CityIdentity(
         app_name=_text(data, "appName"),
@@ -99,6 +109,8 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         city_name=_text(data, "region", "cityName"),
         state=_text(data, "region", "state"),
         phone311=phone if isinstance(phone, str) and phone.strip() else "311",
+        timezone=tz,
+        **({"languages": tuple(languages)} if isinstance(languages, list) and languages else {}),
     )
 
 

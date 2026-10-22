@@ -75,6 +75,7 @@
     "maxZoom": 16
   },
   "serviceGuide": {
+    "timezone": "America/Los_Angeles",
     "shortName": "CRHG",
     "description": "FICTIONAL DEMO COUNTY. Find health and human services you may qualify for in Cedar Ridge County \u2014 a white-label demonstration, not a real agency. The map opens on a placeholder view.",
     "copy": {

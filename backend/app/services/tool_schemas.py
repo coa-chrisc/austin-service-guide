@@ -9,7 +9,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "name": "search_services",
         "description": (
-            "Keyword search the Austin service catalog. Use when the user "
+            "Keyword search the local service catalog. Use when the user "
             "describes a need so you can show concrete, relevant services. "
             "Always search in English (translate the user's words yourself "
             "if needed) — the catalog is English-canonical."
@@ -24,7 +24,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 },
                 "zip_code": {
                     "type": ["string", "null"],
-                    "description": "Optional Austin zip code (e.g. '78741') to limit by proximity.",
+                    "description": "Optional ZIP code to limit by proximity.",
                 },
             },
             "required": ["query", "category", "zip_code"],

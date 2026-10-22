@@ -66,7 +66,14 @@ export interface Theme {
   radius: { chip: string; control: string; card: string; panel: string };
 }
 
+/** Language codes the app can translate to (LanguageSelector order). */
+export const SUPPORTED_LANGUAGES = ["en", "es", "zh", "hi", "ar", "vi", "fr", "ko"] as const;
+
 export interface ServiceGuideSettings {
+  /** IANA time zone for open-now hours (backend); validated there. */
+  timezone?: string;
+  /** Selector languages in display order; must include "en". Default: all supported. */
+  languages?: string[];
   shortName?: string;
   description?: string;
   copy?: { tagline?: string; footerDisclaimer?: string; privacyNotice?: string };
@@ -91,6 +98,8 @@ export interface CityConfig {
 
 /** serviceGuide with every default filled in. */
 export interface ResolvedServiceGuide {
+  timezone: string;
+  languages: string[];
   shortName: string;
   description: string;
   copy: { tagline: string; footerDisclaimer: string; privacyNotice: string };
@@ -133,6 +142,8 @@ export function resolveServiceGuide(config: CityConfig): ResolvedServiceGuide {
   const sg = config.serviceGuide ?? {};
   const { agency, region, appName, theme } = config;
   return {
+    timezone: sg.timezone ?? "UTC",
+    languages: sg.languages ?? [...SUPPORTED_LANGUAGES],
     shortName: sg.shortName ?? agency.shortName,
     description:
       sg.description ??

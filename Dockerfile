@@ -2,6 +2,7 @@
 # Single production image: React SPA (built in stage 1) served by FastAPI (stage 2).
 # Build context must be the repo root and include config/ (city config, presets, logos).
 # Pick a city with --build-arg CITY_CONFIG=presets/<id>.json (or the CITY_PRESET=<id> alias).
+# Data pack: --build-arg CITY_DATA_DIR=data/<id> (under config/) or an absolute path.
 # Map tiles: --build-arg VITE_MAP_TILE_URL=... --build-arg VITE_MAP_TILE_ATTRIBUTION=...
 
 # ── Stage 1: build the frontend ──────────────────────────────────────
@@ -9,16 +10,19 @@ FROM node:22-slim AS frontend
 WORKDIR /build
 ARG CITY_CONFIG=
 ARG CITY_PRESET=
+ARG CITY_DATA_DIR=
 ARG VITE_MAP_TILE_URL=
 ARG VITE_MAP_TILE_ATTRIBUTION=
 ENV CITY_CONFIG=${CITY_CONFIG} \
     CITY_PRESET=${CITY_PRESET} \
+    CITY_DATA_DIR=${CITY_DATA_DIR} \
     VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL} \
     VITE_MAP_TILE_ATTRIBUTION=${VITE_MAP_TILE_ATTRIBUTION}
 COPY frontend/package.json frontend/package-lock.json frontend/
 RUN cd frontend && npm ci
 COPY config/ config/
-# Category order for palette.brand.category (read by the frontend build).
+# Category order for palette.brand.category (read by the frontend build). A pack under
+# config/data/<id>/ (CITY_DATA_DIR=data/<id>) is already covered by the config/ copy.
 COPY backend/app/data/categories.yaml backend/app/data/categories.yaml
 COPY frontend/ frontend/
 RUN cd frontend && npm run build
@@ -28,8 +32,10 @@ FROM python:3.12-slim AS runtime
 # The backend reads the same city config for its identity lines (greeting, prompt).
 ARG CITY_CONFIG=
 ARG CITY_PRESET=
+ARG CITY_DATA_DIR=
 ENV CITY_CONFIG=${CITY_CONFIG} \
     CITY_PRESET=${CITY_PRESET} \
+    CITY_DATA_DIR=${CITY_DATA_DIR} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
