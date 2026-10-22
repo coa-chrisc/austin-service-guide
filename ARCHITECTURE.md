@@ -167,6 +167,6 @@ Both modes run the same image (`Dockerfile`), which needs no database or volume.
 
 ## Implemented and Phase 2 (summary)
 
-Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label brand config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
+Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label city config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
 
 Not implemented (Phase 2 roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, rate limiting and WAF, vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#phase-2-grant-funded-engineering-roadmap).
