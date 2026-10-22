@@ -9,7 +9,8 @@ Usage::
     python backend/scripts/validate_catalog.py [--strict] [--json] [--data-dir DIR]
 
 ``DIR`` must contain ``categories.yaml`` and a ``services/`` folder
-(default: backend/app/data). Runs from any working directory.
+(default: the data pack CITY_DATA_DIR selects, as the backend resolves it;
+unset means backend/app/data). Runs from any working directory.
 """
 
 from __future__ import annotations
@@ -24,7 +25,9 @@ import yaml
 from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_DATA_DIR = ROOT / "app" / "data"
+sys.path.insert(0, str(ROOT))
+from app.services.data_pack import resolve_data_dir  # noqa: E402
+
 SCHEMA_PATH = ROOT.parent / "config" / "services.schema.json"
 
 
@@ -35,7 +38,7 @@ def _load_yaml(path: Path):
 
 def validate_catalog(data_dir: Path | str | None = None, strict: bool = False) -> dict:
     """Return {"services", "errors", "warnings", "unverified"} for a catalog dir."""
-    data_dir = Path(data_dir) if data_dir else DEFAULT_DATA_DIR
+    data_dir = Path(data_dir) if data_dir else resolve_data_dir()
     errors: list[str] = []
     warnings: list[str] = []
     unverified = 0
@@ -128,7 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--strict", action="store_true", help="treat unverified services as errors")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
-    ap.add_argument("--data-dir", help="catalog data dir (default: backend/app/data)")
+    ap.add_argument("--data-dir", help="catalog data dir (default: the CITY_DATA_DIR data pack, else backend/app/data)")
     args = ap.parse_args(argv)
 
     result = validate_catalog(args.data_dir, strict=args.strict)

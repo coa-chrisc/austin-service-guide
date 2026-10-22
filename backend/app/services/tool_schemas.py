@@ -48,7 +48,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "type": "function",
         "name": "get_crisis_resources",
         "description": (
-            "Return 24/7 crisis hotlines (988, DV, Integral Care, etc.). "
+            "Return 24/7 crisis hotlines (988, domestic violence, local crisis lines). "
             "Call this immediately when the user mentions suicidal thoughts, "
             "domestic violence, or being in danger."
         ),

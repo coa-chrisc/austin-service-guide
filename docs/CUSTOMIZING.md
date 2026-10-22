@@ -207,7 +207,7 @@ cd frontend
 export CITY_CONFIG=presets/my-city.json CITY_DATA_DIR=data/my-city
 npm run build                                       # schema, logo, fonts, contrast gate, categories
 npm test                                            # includes the theme guard
-npm run validate:catalog -- --data-dir ../config/data/my-city   # your catalog against the schema
+CITY_DATA_DIR=data/my-city npm run validate:catalog   # your catalog against the schema
 cd ../backend
 python -m compileall -q app
 ```
@@ -242,13 +242,13 @@ Replace the files in your copy (and delete the Austin `README.md`):
 
 Field-by-field schemas, validation rules and the loader are in [backend/app/data/README.md](../backend/app/data/README.md). Do not repeat them here.
 
-Your records are unverified until your staff check them. Run `npm run validate:catalog -- --data-dir ../config/data/my-city` from `frontend/` to check the YAML against `config/services.schema.json` (it does not read `CITY_DATA_DIR`; without `--data-dir` it checks the bundled pack). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
+Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
 
 ## What is still Austin-specific
 
 - **The bundled data pack's content.** It is the reference pack. Nothing in your deployment uses it once `CITY_DATA_DIR` points at your own.
 - **Speech defaults.** On-device speech recognition and synthesis default to `en-US`.
-- **The model prompt assumes a US setting.** It names no place, but it talks about 988, 911, SNAP and Medicaid. One tool description in `tool_schemas.py` names Integral Care as an example.
+- **The model prompt assumes a US setting.** It names no place, but it talks about 988, 911, SNAP and Medicaid.
 - **The Austin presets and the City's names and logos.** Replace them.
 
 ## Checklist for a new deployment
