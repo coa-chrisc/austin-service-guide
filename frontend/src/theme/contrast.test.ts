@@ -7,6 +7,7 @@ import {
   checkPreset,
   contrastRatio,
   deriveDarkColors,
+  fadedText,
   mixHex,
   primaryShades,
   resolveInkText,
@@ -192,6 +193,42 @@ describe("primaryShades", () => {
     const { dark, hero } = primaryShades(colors, "#ffffff");
     expect(dark).toBe(colors.ink);
     expect(hero).toEqual([colors.primary, colors.ink, mixHex(colors.accent, "#000000", 0.3)]);
+  });
+});
+
+describe("fadedText", () => {
+  it("keeps the requested fade when it passes", () => {
+    // White at 0.8 on near-black still reads, so the fade stands.
+    const faded = fadedText("#ffffff", "#1a1a1a", 0.8);
+    expect(faded).toBe(mixHex("#1a1a1a", "#ffffff", 0.8));
+  });
+
+  it("backs off a fade that would drop below AA, never to below AA", () => {
+    // Black on the dark-mode footer fill (#6b70bb) is about 4.7:1; at half
+    // opacity it would be far under 4.5.
+    const fill = "#6b70bb";
+    for (const opacity of [0.5, 0.7, 0.8]) {
+      const faded = fadedText("#000000", fill, opacity);
+      expect(contrastRatio(faded, fill)).toBeGreaterThanOrEqual(AA);
+    }
+    expect(contrastRatio(mixHex(fill, "#000000", 0.5), fill)).toBeLessThan(AA);
+  });
+
+  it.each(presetIds)("%s: footer text faded on primary.dark reads in both modes", (id) => {
+    const preset = readPreset(id);
+    const light = preset.theme.colors;
+    const modes: [ThemeColors, ThemeColors | undefined][] = [
+      [light, undefined],
+      [deriveDarkColors(light, preset.serviceGuide?.darkColors), light],
+    ];
+    for (const [colors, fallback] of modes) {
+      const text = resolveTextOn(colors.primary, textCandidates(colors, fallback)).color;
+      const { dark } = primaryShades(colors, text);
+      const onDark = resolveTextOn(dark, textCandidates(colors, fallback)).color;
+      for (const opacity of [0.5, 0.7, 0.8]) {
+        expect(contrastRatio(fadedText(onDark, dark, opacity), dark)).toBeGreaterThanOrEqual(AA);
+      }
+    }
   });
 });
 

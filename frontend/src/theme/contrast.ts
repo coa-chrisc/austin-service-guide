@@ -102,6 +102,19 @@ export function resolveTextOn(fill: string, candidates: readonly Candidate[], mi
 const WHITE = "#ffffff";
 const BLACK = "#000000";
 
+/**
+ * `text` faded toward `fill` as CSS `opacity` would fade it, for quieter
+ * secondary text. The fade backs off in 0.05 steps until the result reaches
+ * AA on `fill`; `text` itself when no fade does.
+ */
+export function fadedText(text: string, fill: string, opacity: number): string {
+  for (let o = opacity; o < 1; o += 0.05) {
+    const faded = mixHex(fill, text, o);
+    if (contrastRatio(faded, fill) >= AA) return faded;
+  }
+  return text;
+}
+
 /** `from` if `text` reaches AA on it, else the smallest mix toward `to` that does (`to` if none). */
 function readableShade(from: string, to: string, text: string): string {
   for (let step = 0; step <= 20; step++) {
