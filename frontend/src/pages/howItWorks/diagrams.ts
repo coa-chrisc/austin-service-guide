@@ -13,7 +13,7 @@ export interface DiagramSpec {
 
 /** Diagram A: one typed chat message, start to finish. */
 export const CHAT_TURN: DiagramSpec = {
-  caption: "Diagram A. What happens to one chat message, in order.",
+  caption: "Diagram A. What happens to one typed chat message, in order.",
   arrows: true,
   lanes: [
     {
@@ -29,7 +29,7 @@ export const CHAT_TURN: DiagramSpec = {
       nodes: [
         { title: "Size and shape check", detail: "Oversized or malformed requests are refused.", tone: "primary" },
         { title: "The server removes identifiers again", detail: "pii.py, on the message and the whole stored intake.", tone: "primary" },
-        { title: "Crisis check", detail: "A crisis phrase gets crisis lines at once, with no model call.", tone: "primary" },
+        { title: "Crisis check", detail: "A crisis phrase in a typed message gets crisis lines at once, with no model call for that message.", tone: "primary" },
         { title: "Agent loop with catalog tools", detail: "The server runs the tools the model asks for.", tone: "primary" },
       ],
     },
@@ -49,7 +49,7 @@ export const CHAT_TURN: DiagramSpec = {
       boundaryBefore: "The reply comes back to the server",
       nodes: [
         { title: "Catalog check", detail: "Service ids not in the catalog are dropped.", tone: "primary" },
-        { title: "Reply and updated intake", detail: "Sent back; the server keeps nothing.", tone: "primary" },
+        { title: "Reply and updated intake", detail: "Sent back; the server does not store it.", tone: "primary" },
         { title: "Saved in your tab", detail: "sessionStorage, until Start over or the tab closes.", tone: "success" },
       ],
     },

@@ -210,7 +210,7 @@ export interface AboutInfo {
   tools: string[];
   voice: { mode: VoicePipelineMode; raw_audio_allowed: boolean; realtime_model: string | null };
   pii_kinds: string[];
-  limits: { intake_body_bytes: number; state_messages: number; message_chars: number };
+  limits: { intake_body_bytes: number; state_messages: number; message_chars: number; new_message_chars: number | null };
   catalog: {
     services_total: number;
     services_verified: number | null;

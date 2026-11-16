@@ -15,9 +15,9 @@ const PII_KIND_LABELS: Record<string, string> = {
   ssn: "Social Security and ITIN numbers",
   id_number: "ID, member or account numbers after a word like \"member\" or \"account\"",
   dob: "Dates of birth after a word like \"born\" or \"DOB\"",
-  phone: "Phone numbers",
+  phone: "US phone numbers",
   address: "Street addresses and P.O. boxes",
-  name: "Names after a phrase like \"my name is\"",
+  name: "Names after \"my name is\", or two or three capitalized words after \"I am\" or \"this is\"",
 };
 
 const n = (value: number) => value.toLocaleString("en-US");
@@ -60,6 +60,7 @@ export function factsFor(sectionId: string, a: AboutInfo): string[] {
       return [
         `Largest intake request: ${n(Math.round(a.limits.intake_body_bytes / 1024))} KiB.`,
         `Stored conversation: up to ${n(a.limits.state_messages)} messages of up to ${n(a.limits.message_chars)} characters each.`,
+        ...(a.limits.new_message_chars == null ? [] : [`New message: up to ${n(a.limits.new_message_chars)} characters.`]),
       ];
     case "grounding":
       return [catalogStatus(a)];

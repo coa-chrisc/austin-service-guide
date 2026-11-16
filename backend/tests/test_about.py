@@ -23,8 +23,10 @@ DOCUMENTED_KEYS = {
 }
 TEXT_TOOLS = [
     "search_services", "get_service_details", "get_crisis_resources", "extract_profile",
-    "find_matching_services", "set_language", "complete_intake",
+    "find_matching_services", "set_language", "complete_intake", "wait_for_user",
 ]
+# IntakeMessageRequest.message max_length: the cap on one new resident message.
+NEW_MESSAGE_CHARS = 4000
 
 
 def test_values_match_settings(client):
@@ -41,7 +43,8 @@ def test_values_match_settings(client):
     assert body["voice"] == {"mode": "intercepted_text", "raw_audio_allowed": settings.allow_raw_audio_stream,
                              "realtime_model": None}
     assert body["limits"] == {"intake_body_bytes": MAX_INTAKE_BODY_BYTES,
-                              "state_messages": MAX_STATE_MESSAGES, "message_chars": MAX_MESSAGE_CHARS}
+                              "state_messages": MAX_STATE_MESSAGES, "message_chars": MAX_MESSAGE_CHARS,
+                              "new_message_chars": NEW_MESSAGE_CHARS}
     assert set(body["catalog"]) == {"services_total", "services_verified", "categories", "local_crisis_lines"}
     assert body["admin"] == {"auth": "shared_token", "catalog_writes_persist": False}
     assert body["access_gate"] is False

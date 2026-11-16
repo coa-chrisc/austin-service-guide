@@ -12,7 +12,7 @@ const ABOUT: AboutInfo = {
   tools: ["search_services", "complete_intake"],
   voice: { mode: "intercepted_text", raw_audio_allowed: false, realtime_model: null },
   pii_kinds: ["email", "phone", "new_kind"],
-  limits: { intake_body_bytes: 262144, state_messages: 200, message_chars: 10000 },
+  limits: { intake_body_bytes: 262144, state_messages: 200, message_chars: 10000, new_message_chars: 4000 },
   catalog: { services_total: 12, services_verified: null, categories: 3, local_crisis_lines: 1 },
   admin: { auth: "shared_token", catalog_writes_persist: false },
   access_gate: true,
@@ -45,14 +45,14 @@ describe("How it works live facts", () => {
   });
 
   it("lists every redaction kind, falling back to the key for an unknown kind", () => {
-    expect(factsFor("pii", ABOUT)).toEqual(["Email addresses", "Phone numbers", "new_kind"]);
+    expect(factsFor("pii", ABOUT)).toEqual(["Email addresses", "US phone numbers", "new_kind"]);
   });
 
   it("reports counts, and an unrecorded verification count plainly", () => {
     expect(factsFor("grounding", ABOUT).join(" ")).toContain("Services listed: 12 in 3 categories");
     expect(factsFor("grounding", ABOUT).join(" ")).toContain("recorded staff check: not recorded");
     expect(factsFor("stateless", ABOUT).join(" ")).toContain("256 KiB");
-    expect(factsFor("crisis", ABOUT).join(" ")).toContain("Local crisis lines in this data pack: 1");
+    expect(factsFor("stateless", ABOUT).join(" ")).toContain("New message: up to 4,000 characters");    expect(factsFor("crisis", ABOUT).join(" ")).toContain("Local crisis lines in this data pack: 1");
   });
 
   it("has no facts for a section without live values", () => {
