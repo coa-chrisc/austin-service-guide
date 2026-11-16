@@ -488,6 +488,17 @@
             }
           }
         },
+        "links": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sourceRepoUrl": {
+              "type": "string",
+              "pattern": "^https://[^\\s]+$",
+              "description": "Public source repository (for example https://github.com/<owner>/<repo>). The How it works page links to SECURITY.md, docs/PRIVACY.md and ARCHITECTURE.md on its main branch and to its issues. Unset: those links are hidden."
+            }
+          }
+        },
         "darkColors": {
           "type": "object",
           "description": "Dark-mode values for the theme.colors roles. Every key is optional; missing ones are derived from theme.colors at build time.",
