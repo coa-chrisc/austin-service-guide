@@ -189,7 +189,7 @@ A mapping; every key is optional. Service references are catalog slugs.
 | `prevention_services` | risk type: list of entries | lines listed on that risk flag; each entry sets exactly one of `service` (a slug) or `text` (at most 120 characters, for an organisation not in the catalog) |
 | `benefit_estimates` | list | `services` (slugs), `label` (at most 80 characters), `monthly_value` (US dollars per month, 0 to 5000), `per_household_member`, `only_if_uninsured`; the first estimate listing a matched slug wins |
 
-Crisis indicators: `domestic_violence`, `immediate_danger`, `suicidal_ideation`, `homelessness`.
+Crisis indicators: `domestic_violence`, `immediate_danger`, `suicidal_ideation`, `homelessness`. A crisis the model reports without naming a kind (`crisis_reported` on the profile) brings in the services listed for all of `domestic_violence`, `immediate_danger` and `suicidal_ideation`.
 
 Risk types: `homelessness`, `housing_instability`, `food_insecurity`, `uninsured`, `domestic_violence`, `mental_health_crisis`, `social_isolation`, `child_mental_health_risk`, `heat_vulnerable`.
 

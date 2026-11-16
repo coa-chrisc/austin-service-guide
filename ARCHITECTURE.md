@@ -109,7 +109,8 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `tool_schemas.py` | Function-tool schemas shared by text and voice |
 | `tools.py` | Tool dispatch and implementations (search, details, crisis, profile, matching, language, completion) |
 | `scripted.py` | Scripted intake used when live AI is off |
-| `scenarios.py` | Life-event follow-ups and the backend crisis safety net |
+| `scenarios.py` | Life-event follow-ups |
+| `crisis.py` + `crisis_phrases.py` | Multilingual crisis detection, the crisis reply, marking a crisis the model reports, and putting crisis services first in the plan |
 | `intake_state.py` | Converts client `IntakeState` to a per-request session and back |
 | `grounding.py` | Drops service ids and slugs that are not in the catalog |
 | `pii.py` | Deterministic redaction of identifiers |

@@ -171,7 +171,8 @@ Customize in `backend/app/services/`:
 - `tool_schemas.py`: tool names and parameters exposed to the model.
 - `tools.py`: local tool execution.
 - `life_events.py`: landing-page pathway seeding.
-- `scenarios.py`: the crisis keyword check and follow-ups. Local crisis lines go in the pack's `crisis_resources.yaml`.
+- `scenarios.py`: life-event follow-ups.
+- `crisis.py` + `crisis_phrases.py`: crisis detection (phrase lists per language), the crisis reply, and crisis services first in the plan. Local crisis lines go in the pack's `crisis_resources.yaml`.
 - `scripted.py`: offline scripted intake.
 
 When adapting tools, keep outputs structured and compact. The model should receive enough information to help, not entire databases.

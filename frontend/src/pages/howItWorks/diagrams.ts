@@ -29,7 +29,7 @@ export const CHAT_TURN: DiagramSpec = {
       nodes: [
         { title: "Size and shape check", detail: "Oversized or malformed requests are refused.", tone: "primary" },
         { title: "The server removes identifiers again", detail: "pii.py, on the message and the whole stored intake.", tone: "primary" },
-        { title: "Crisis check", detail: "A crisis phrase in a typed message gets crisis lines at once, with no model call for that message.", tone: "primary" },
+        { title: "Crisis check", detail: "A crisis statement in any offered language gets crisis lines at once, with no model call for that message.", tone: "primary" },
         { title: "Agent loop with catalog tools", detail: "The server runs the tools the model asks for.", tone: "primary" },
       ],
     },
