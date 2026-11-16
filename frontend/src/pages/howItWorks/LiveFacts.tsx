@@ -12,12 +12,12 @@ import type { AboutInfo } from "@/lib/api";
 const PII_KIND_LABELS: Record<string, string> = {
   email: "Email addresses",
   card: "Payment card numbers",
-  ssn: "Social Security and ITIN numbers",
-  id_number: "ID, member or account numbers after a word like \"member\" or \"account\"",
-  dob: "Dates of birth after a word like \"born\" or \"DOB\"",
+  ssn: "Social Security Numbers (SSN) and ITINs",
+  id_number: "Member, case, or account IDs following labels like \"member\" or \"account\"",
+  dob: "Dates of birth following cues like \"born\" or \"DOB\"",
   phone: "US phone numbers",
   address: "Street addresses and P.O. boxes",
-  name: "Names after \"my name is\", or two or three capitalized words after \"I am\" or \"this is\"",
+  name: "Names following \"my name is\", or two to three capitalized words after \"I am\" or \"this is\"",
 };
 
 const n = (value: number) => value.toLocaleString("en-US");
@@ -25,19 +25,19 @@ const yesNo = (value: boolean) => (value ? "yes" : "no");
 
 function aiStatus(a: AboutInfo): string {
   return a.live_ai
-    ? `Live AI is on. Text model: ${a.text_model}, reasoning effort ${a.reasoning_effort}. Plan ordering: reasoning effort ${a.plan_reasoning_effort}. Up to ${n(a.max_tool_iterations)} tool rounds per message.`
-    : "Live AI is off. The scripted question flow is active and no AI model is called.";
+    ? `Live AI active. Text model: ${a.text_model} (reasoning effort: ${a.reasoning_effort}). Action plan ranking: reasoning effort ${a.plan_reasoning_effort}. Max ${n(a.max_tool_iterations)} tool rounds per turn.`
+    : "Live AI paused. Deterministic scripted intake is active; zero external model calls occur.";
 }
 
 function voiceStatus(a: AboutInfo): string {
   return a.voice.mode === "realtime_audio"
-    ? `Voice mode: raw audio streamed to the OpenAI Realtime API (model ${a.voice.realtime_model ?? "not reported"}).`
-    : "Voice mode: speech is turned into text on the device; only text is sent.";
+    ? `Voice mode: streaming audio via OpenAI Realtime API (model: ${a.voice.realtime_model ?? "not reported"}).`
+    : "Voice mode: on-device browser speech-to-text; only scrubbed text leaves the device.";
 }
 
 function catalogStatus(a: AboutInfo): string {
   const verified = a.catalog.services_verified == null ? "not recorded" : n(a.catalog.services_verified);
-  return `Services listed: ${n(a.catalog.services_total)} in ${n(a.catalog.categories)} categories. Services with a recorded staff check: ${verified}.`;
+  return `Vetted directory: ${n(a.catalog.services_total)} programs across ${n(a.catalog.categories)} categories. Records with logged staff verification: ${verified}.`;
 }
 
 /** The fact lines for one section; empty when the section has none. */
@@ -102,7 +102,7 @@ export default function LiveFacts({
       }}
     >
       <Typography component={headingLevel} variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
-        {sectionId === "pii" ? "Removed on this deployment" : "On this deployment"}
+        {sectionId === "pii" ? "Scrubbed on this deployment" : "Live runtime config"}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
         {facts.map((fact) => (
