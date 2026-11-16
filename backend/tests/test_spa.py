@@ -17,6 +17,8 @@ def client(tmp_path):
     (static / "sw.js").write_text("// sw")
     (static / "manifest.webmanifest").write_text("{}")
     (static / "assets" / "app-abc123.js").write_text("console.log(1)")
+    (static / "reports" / "demo").mkdir(parents=True)
+    (static / "reports" / "demo" / "monthly.pdf").write_bytes(b"%PDF-1.4 demo")
     (tmp_path / "secret.txt").write_text("SECRET")  # outside static dir
 
     app = FastAPI()
@@ -45,6 +47,18 @@ def test_hashed_assets_are_immutable(client):
 
 def test_missing_asset_is_404_not_html(client):
     assert client.get("/assets/missing.js").status_code == 404
+
+
+def test_report_pdf_is_served_and_missing_report_404s(client):
+    r = client.get("/reports/demo/monthly.pdf")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "application/pdf"
+    assert r.content.startswith(b"%PDF")
+    missing = client.get("/reports/demo/missing.pdf")
+    assert missing.status_code == 404
+    assert "INDEX" not in missing.text
+    # The in-app report view lives under /admin, so it still gets the SPA.
+    assert "INDEX" in client.get("/admin/reports/monthly-summary").text
 
 
 def test_sw_and_manifest_no_cache(client):
