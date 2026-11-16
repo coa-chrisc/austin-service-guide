@@ -483,6 +483,9 @@ class MapPin(BaseModel):
     category: str
     latitude: float
     longitude: float
+    # Tells a service's locations apart in the map list.
+    location_name: str = ""
+    address: str = ""
     open_now: bool | None = None
     next_open: str | None = None
 
