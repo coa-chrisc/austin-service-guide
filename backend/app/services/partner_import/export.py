@@ -119,6 +119,39 @@ def _header(item: dict[str, Any]) -> str:
             "# Unverified: an uploaded list is a claim by its owner. Check every field with the provider.\n")
 
 
+def _shape_errors(item: dict[str, Any]) -> list[dict[str, str]]:
+    """Wrong JSON types in the fields this module hashes, slices or iterates."""
+    errors: list[dict[str, str]] = []
+
+    def bad(path: str, expected: str) -> None:
+        errors.append({"path": path, "code": "bad_item", "message": f"{path} must be {expected}."})
+
+    service = item.get("service")
+    if not isinstance(service, dict):
+        bad("service", "an object")
+        return errors
+    if item.get("merge_into") is not None and not isinstance(item["merge_into"], str):
+        bad("merge_into", "a slug (text)")
+    for key in ("slug", "id"):
+        if service.get(key) is not None and not isinstance(service[key], str):
+            bad(key, "text")
+    if service.get("locations") is not None and not isinstance(service["locations"], list):
+        bad("locations", "a list")
+    for key in _UNION_KEYS:
+        value = service.get(key)
+        if value is not None and not (isinstance(value, list) and all(isinstance(v, str) for v in value)):
+            bad(key, "a list of text values")
+    for key in ("flags", "suggestions"):
+        if item.get(key) is not None and not isinstance(item[key], list):
+            bad(key, "a list")
+    prov = item.get("provenance")
+    if prov is not None and not isinstance(prov, dict):
+        bad("provenance", "an object")
+    elif isinstance(prov, dict) and prov.get("rows") is not None and not isinstance(prov["rows"], list):
+        bad("provenance.rows", "a list of row numbers")
+    return errors
+
+
 def check(items: list[dict[str, Any]], ctx: PackContext) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Clean or merge each accepted item and validate: ``(prepared, problems)``."""
     problems: list[dict[str, Any]] = []
@@ -126,11 +159,12 @@ def check(items: list[dict[str, Any]], ctx: PackContext) -> tuple[list[dict[str,
     prepared: list[dict[str, Any]] = []
     seen: set[str] = set()
     for i, item in enumerate(items[:MAX_ITEMS]):
-        service = item.get("service")
-        target = item.get("merge_into")
-        if not isinstance(service, dict):
-            problems.append({"index": i, "slug": None, "errors": [{"path": "", "code": "bad_item", "message": "Missing service."}]})
+        shape = _shape_errors(item)
+        if shape:
+            problems.append({"index": i, "slug": None, "errors": shape})
             continue
+        service = item["service"]
+        target = item.get("merge_into")
         if target:
             if target not in ctx.services:
                 problems.append({"index": i, "slug": target, "errors": [{"path": "slug", "code": "merge_target_missing",

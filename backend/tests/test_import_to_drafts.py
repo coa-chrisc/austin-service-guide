@@ -172,3 +172,36 @@ def test_write_routes_need_the_admin_token(client, import_on) -> None:
     assert res.status_code in (401, 403)
     res = client.post(f"{PREFIX}/export", headers={"X-Admin-Token": "wrong"}, json={"items": [{}]})
     assert res.status_code in (401, 403)
+
+
+@pytest.mark.parametrize("change", [
+    {"merge_into": ["age-of-central-texas"]},
+    {"merge_into": {"slug": "age-of-central-texas"}},
+    {"service.slug": ["a-b"]},
+    {"service.slug": {"x": 1}},
+    {"service.id": {"x": 1}},
+    {"provenance.rows": {"a": 1}},
+    {"provenance": ["not", "a", "dict"]},
+    {"flags": 7},
+    {"suggestions": 7},
+    {"service.locations": 7},
+    {"merge_into": "age-of-central-texas", "service.categories": [{"a": 1}]},
+])
+def test_badly_shaped_items_get_a_problem_not_a_500(client, import_on, change: dict) -> None:
+    body = import_fixture(client, "partners.csv")
+    item = accepted(body)[0]
+    item["service"] = dict(item["service"])
+    item["provenance"] = dict(item["provenance"])
+    for key, value in change.items():
+        if "." in key:
+            outer, inner = key.split(".")
+            item[outer][inner] = value
+        else:
+            item[key] = value
+    res = client.post(f"{PREFIX}/export", headers=HEADERS, json={"items": [item]})
+    assert res.status_code == 422, res.text
+    assert res.json()["code"] == "invalid_drafts"
+    assert res.json()["problems"][0]["index"] == 0
+    res = client.post(f"{PREFIX}/validate", headers=HEADERS, json={"items": [item]})
+    assert res.status_code == 200
+    assert res.json()["ok"] is False
