@@ -11,15 +11,24 @@
 use_default_settings:
   engines:
     # A short list keeps the instance fast and its upstream footprint small.
-    # Not wikipedia: it refuses to load without general.contact_url, and
-    # encyclopedia pages are rarely where local service details live.
+    # All three pass the query verbatim, so the worker's site: operator
+    # reaches them; the worker still drops any hit that is off the site.
+    # Not duckduckgo: from Railway's datacenter IPs it answered every request
+    # with a CAPTCHA. Not mojeek or startpage: this SearXNG release marks
+    # both inactive (proof-of-work CAPTCHAs). Not wikipedia: it refuses to
+    # load without general.contact_url, and encyclopedia pages are rarely
+    # where local service details live. Engines that fail are listed in the
+    # JSON response's unresponsive_engines, which the worker reports as a
+    # "Search degraded" job event.
     keep_only:
-      - duckduckgo
       - brave
+      - google
       - bing
 
-# bing ships disabled in SearXNG's defaults; turn it on.
+# google and bing ship disabled in SearXNG's defaults; turn them on.
 engines:
+  - name: google
+    disabled: false
   - name: bing
     disabled: false
 
@@ -32,6 +41,12 @@ search:
   formats:
     - html
     - json
+
+outgoing:
+  # The default 3 s per engine is short for a datacenter-to-engine round trip.
+  # Both stay under the worker's 20 s request timeout (providers/searxng.py).
+  request_timeout: 10.0
+  max_request_timeout: 15.0
 
 server:
   # Private, single-client instance: the limiter (which needs Valkey) and

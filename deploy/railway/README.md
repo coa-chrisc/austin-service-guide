@@ -200,14 +200,14 @@ Exactly two public addresses: the Vercel app and the worker. The worker's page f
 
 | | `searxng` (default here) | `openai_web_search` (alias `openai`) |
 | --- | --- | --- |
-| Where queries go | Your SearXNG, which forwards them to DuckDuckGo, Brave and Bing | OpenAI's hosted `web_search` tool |
+| Where queries go | Your SearXNG, which forwards them to Brave, Google and Bing | OpenAI's hosted `web_search` tool |
 | Extra services | `searxng` (about 110 MB of RAM idle) | None; `searxng` can be left out |
 | Extra cost | Railway usage only | A per-call tool fee (about $0.01 per search; check OpenAI's pricing page) plus the tokens the search results add |
-| Failure mode | Upstream engines rate-limit or block a busy instance | Depends on OpenAI only |
+| Failure mode | Upstream engines rate-limit or block a busy instance; the job's events say "Search degraded" and name them | Depends on OpenAI only |
 
 Either way the worker fetches the pages itself through the fetcher above, and the model reads only that fetched text. Change the provider with `railway variable set RESEARCH_SEARCH_PROVIDER=openai_web_search --service worker` (it redeploys) and edit the value in `.railway/railway.ts` to match.
 
-**SearXNG.** `deploy/railway/searxng/settings.yml` keeps the defaults, enables the `json` format the worker reads, turns the limiter and public-instance features off, and keeps three engines (DuckDuckGo, Brave and Bing; Wikipedia refuses to load without `general.contact_url`). It holds no secret: the official image reads `server.secret_key` from `SEARXNG_SECRET` ([SearXNG server settings](https://docs.searxng.org/admin/settings/settings_server.html)). Railway IaC has no config-file mount, so the `Dockerfile` next to it bakes the file into the pinned official image. The image listens on `[::]:8080`, which serves IPv4 and IPv6, so it works in both new and legacy private networks.
+**SearXNG.** `deploy/railway/searxng/settings.yml` keeps the defaults, enables the `json` format the worker reads, turns the limiter and public-instance features off, and keeps three engines (Brave, Google and Bing). DuckDuckGo was dropped because it answered every request from Railway's datacenter IPs with a CAPTCHA; Mojeek and Startpage are marked inactive in this SearXNG release; Wikipedia refuses to load without `general.contact_url`. Engine requests may take up to 10 s (15 s at most), under the worker's 20 s timeout. Not every engine honours `site:`, so for a site-restricted query the worker keeps only results on that domain or its subdomains, notes how many it dropped in the job events, and records a warning when none were on the site. When SearXNG reports `unresponsive_engines`, the search phase adds one "Search degraded" event naming them. It holds no secret: the official image reads `server.secret_key` from `SEARXNG_SECRET` ([SearXNG server settings](https://docs.searxng.org/admin/settings/settings_server.html)). Railway IaC has no config-file mount, so the `Dockerfile` next to it bakes the file into the pinned official image. The image listens on `[::]:8080`, which serves IPv4 and IPv6, so it works in both new and legacy private networks.
 
 **Setting it up** (what was run for the reference project; prefix the commands with nothing, they read the linked project):
 
