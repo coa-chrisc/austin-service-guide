@@ -25,6 +25,12 @@ services:
       # Voice: on-device speech recognition, text-only to the server. Raw-audio streaming to OpenAI stays off.
       VOICE_PIPELINE_MODE: ${VOICE_PIPELINE_MODE:-intercepted_text}
       ALLOW_RAW_AUDIO_STREAM: ${ALLOW_RAW_AUDIO_STREAM:-false}
+      # Research jobs (#18): off by default. With the jobs profile below set
+      # JOB_BACKEND=remote JOB_WORKER_URL=http://worker:8000 and the same
+      # JOB_WORKER_SECRET (32+ characters) for app and worker.
+      JOB_BACKEND: ${JOB_BACKEND:-off}
+      JOB_WORKER_URL: ${JOB_WORKER_URL:-}
+      JOB_WORKER_SECRET: ${JOB_WORKER_SECRET:-}
     ports:
       - "8000:8000"
     read_only: true
@@ -41,3 +47,63 @@ services:
       start_period: 20s
       retries: 3
     restart: unless-stopped
+
+  # ── Research jobs (optional): docker compose --profile jobs up --build ──
+  # The catalog research worker, its Postgres and a private SearXNG. Needs
+  # OPENAI_API_KEY (backend/.env) and JOB_WORKER_SECRET in the shell.
+  worker:
+    profiles: ["jobs"]
+    build:
+      context: .
+      args:
+        INSTALL_WORKER_DEPS: "true"
+        CITY_DATA_DIR: ${CITY_DATA_DIR:-}
+    image: civic-service-guide-worker:local
+    command: ["sh", "-c", "exec uvicorn app.worker.main:app --host 0.0.0.0 --port 8000"]
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      CITY_DATA_DIR: ${CITY_DATA_DIR:-}
+      DATABASE_URL: postgresql://jobs:jobs@postgres:5432/jobs
+      SEARXNG_URL: http://searxng:8080
+      RESEARCH_SEARCH_PROVIDER: ${RESEARCH_SEARCH_PROVIDER:-searxng}
+      JOB_WORKER_SECRET: ${JOB_WORKER_SECRET:-}  # the worker refuses to start without 32+ characters
+    depends_on:
+      - postgres
+      - searxng
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
+
+  postgres:
+    profiles: ["jobs"]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: jobs
+      POSTGRES_PASSWORD: jobs
+      POSTGRES_DB: jobs
+    volumes:
+      - jobs-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  searxng:
+    profiles: ["jobs"]
+    build: deploy/railway/searxng
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-local-only-change-me-0123456789abcdef}
+    restart: unless-stopped
+
+volumes:
+  jobs-db:

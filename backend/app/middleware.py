@@ -21,6 +21,10 @@ ADMIN_JSON_PREFIXES = (
     "/api/v1/admin/eligibility",
     "/api/v1/admin/matching-rules",
     "/api/v1/admin/pack/export",
+    # Research jobs (#18); admin_jobs.py also refuses bodies over 128 KiB.
+    "/api/v1/admin/research",
+    "/api/v1/admin/jobs",
+    "/api/v1/admin/drafts",
 )
 
 

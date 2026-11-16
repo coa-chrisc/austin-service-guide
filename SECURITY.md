@@ -153,7 +153,7 @@ Limits:
 
 ### 11. Partner-list import uploads
 
-The admin partner-list import (`backend/app/routers/partner_import.py`, `backend/app/services/partner_import/`) is off by default: all its routes return 404 unless `IMPORT_ENABLED=true`, `JOB_BACKEND=inline` and `ADMIN_API_TOKEN` are set, and the upload, validate and export routes require `X-Admin-Token`. Controls on the upload:
+The admin partner-list import (`backend/app/routers/partner_import.py`, `backend/app/services/partner_import/`) is off by default: all its routes return 404 unless `IMPORT_ENABLED=true`, `JOB_BACKEND` is not `off` (`inline` or `remote`; the import always runs in the request) and `ADMIN_API_TOKEN` are set, and the upload, validate and export routes require `X-Admin-Token`. Controls on the upload:
 
 - **Type by content, not just name.** Only `.xlsx`, `.csv` and `.docx` are accepted. The bytes must match the name: an Office file must be a zip with the expected main part, a CSV must decode as text with no NUL bytes, and legacy binary formats (`.xls`, `.doc`) are refused even when renamed. Macro formats (`.xlsm`, `.docm`, ...) and any archive containing a `vbaProject.bin` or a macro-enabled content type are refused.
 - **Sizes.** 4 MB per file, checked from `Content-Length` and again while streaming the body (the 256 KiB body limit in `middleware.py` covers only intake routes, so these routes enforce their own); 4 MB for the JSON validate and export bodies; at most 2,000 zip entries, 50 MB uncompressed and a 100:1 compression ratio per part; 20 sheets, 50 Word tables, 60 columns (the rest are ignored with a note), 2,000 characters per cell, and 5,000 rows (lower with `IMPORT_MAX_ROWS`, default 2,000). Parsing stops after 20 seconds.
@@ -164,6 +164,17 @@ The admin partner-list import (`backend/app/routers/partner_import.py`, `backend
 - **Output.** Export builds the zip in memory. Drafts sent back with the wrong JSON types (a list as `merge_into` or a slug, a non-list `provenance.rows`) get a 422 problem entry, not a server error. Every cell of `review-issues.csv` that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is prefixed with `'`, so a spreadsheet does not run it as a formula. Drafts carry no verification fields, and each YAML file opens with an "Unverified" comment.
 
 Limit: the value filters work on patterns. Content inside mapped free-text cells, such as a person's name written into a description, is not caught, so every draft needs human review before it reaches the catalog (see [docs/PRIVACY.md](docs/PRIVACY.md#partner-list-import-admin)). The import never writes to the catalog itself.
+
+### 12. Research job worker (#18)
+
+Off unless `JOB_BACKEND` is set. In the reference deployment the worker runs on Railway and the Vercel app proxies staff calls to it (`deploy/railway/README.md`, shape B).
+
+- **Staff routes.** `/api/v1/admin/research/*`, `/admin/jobs*` and `/admin/drafts*` need `X-Admin-Token` and refuse bodies over 128 KiB; only `GET /api/v1/admin/jobs/config` is open (it reports whether research is enabled). Bodies are validated before they are forwarded.
+- **App to worker.** Every worker route except `GET /healthz` needs a token signed with `JOB_WORKER_SECRET` (HMAC-SHA256, 32+ characters, bound to the method, path, query and body hash, valid at most 60 seconds, single use). A bad token gets a bare 401. `JOB_WORKER_SECRET_PREVIOUS` allows rotation. The worker serves no docs or OpenAPI routes, and its Postgres and SearXNG have no public address.
+- **Fetching the web.** `app/research/fetch.py` allows only `http`/`https` on ports 80 and 443, no credentials in URLs, and refuses `localhost`, single-label names and `.internal`, `.local`, `.localhost`, `.localdomain`, `.home.arpa` and `.onion` names. It resolves every name itself, refuses the request if any answer is not a global address (private, loopback, link-local, CGNAT, multicast, NAT64 `64:ff9b::/96` and `64:ff9b:1::/48`, `2001::/23`, and IPv4-mapped or 6to4 forms of those), and connects to the checked address with the original `Host` and SNI, so a DNS answer cannot change between check and connect. Redirects (at most 3) are checked the same way at every hop. It sends no cookies or auth headers, asks for `identity` encoding, and caps both the bytes received and the decoded body at 2 MB, inflating gzip/deflate with a bounded decompressor and refusing any other encoding.
+- **Untrusted page text.** Extraction calls have no tools and use strict structured output, with page text marked as data. `app/research/evidence.py` then checks every quote, phone, email and URL against the stored page text; unsupported fields are blanked and flagged, and sentences that look like instructions to a model are removed from the text used for checking and reported to the reviewer.
+- **Spend.** Per-job caps on steps, searches, pages, pages per host, runtime, drafts and estimated cost (`RESEARCH_MAX_*`; staff can only lower them), one active research job at a time, and a plan-approval step (on by default, `RESEARCH_REQUIRE_PLAN_APPROVAL`) before any search or page fetch.
+- **Review.** Drafts are revalidated against the data-pack rules on every edit, checked for duplicates, and accepted or rejected by staff. Nothing is written to the live catalog.
 
 ## Known gaps before production
 
@@ -181,7 +192,8 @@ These are not implemented. Do not treat the demo as ready for real resident data
 10. **Cloud deployment review.** The IaC templates are not applied to live accounts and need review against the city's own network and security standards.
 11. **CORS origins.** With `CORS_ORIGINS` unset the API allows credentialed requests from the default localhost dev origins. Set `CORS_ORIGINS` to the deployment's own origin in production.
 12. **Dependency advisories.** `npm audit --omit=dev` reports two moderate advisories in `react-router` 6.x (an open redirect through backslash paths in `Link`/`useNavigate`, and an SSR error-deserialization issue). Neither applies here: the SPA never navigates to a user-supplied target and does no server rendering. The fix is a major upgrade to React Router 7.
-13. **Public metadata endpoints.** `GET /api/v1/health` is outside the access gate and reports whether live AI is on. `/docs` and `/openapi.json` (behind the gate) describe every route. Consider trimming the health payload and disabling the docs in production.
+13. **Research worker review.** The worker's signed-token scheme and fetcher rules are covered by tests, not by an outside review. Staff identity on research jobs is the shared admin token plus the self-declared `X-Staff-Role`.
+14. **Public metadata endpoints.** `GET /api/v1/health` is outside the access gate and reports whether live AI is on. `/docs` and `/openapi.json` (behind the gate) describe every route. Consider trimming the health payload and disabling the docs in production.
 
 ## Engineering roadmap
 
@@ -195,6 +207,7 @@ Goal: let a new city turn the messy source material it already has (spreadsheets
 - Output: draft entries in the existing catalog format, one YAML file per service under `backend/app/data/services/`.
 - Hard requirement: every draft must pass `backend/scripts/validate_catalog.py` against `config/services.schema.json` (including the cross-reference rules the schema cannot express) before it is accepted into the review queue. Drafts that fail are returned with the validator's errors, not edited silently.
 - Drafts are marked unverified. They never publish on the strength of the agent alone (see item 2).
+- Partly started: the research agent (section 12 above) drafts entries from public web pages, and the partner-list import (section 11 above) drafts them from spreadsheets and Word tables. PDFs are not covered yet.
 
 ### 2. Human-in-the-Loop SME Verification Portal
 

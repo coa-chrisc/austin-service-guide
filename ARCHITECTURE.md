@@ -14,6 +14,7 @@ This is a demonstration application. Where something is a stub or not built, thi
 | OpenAI Responses API | `gpt-5.5-2026-04-23`, `store=False` | Text intake agent loop, greeting, and plan ordering. Called only from the server. |
 | OpenAI Realtime API | `gpt-realtime-2.1` over WebRTC | Opt-in `realtime_audio` voice mode only (needs `VOICE_PIPELINE_MODE=realtime_audio` and `ALLOW_RAW_AUDIO_STREAM=true`). Audio goes directly from the browser. Not used in the default `intercepted_text` mode. |
 | Twilio / SendGrid | Optional | Send a list of catalog services by SMS or email. Stubbed when credentials are unset. |
+| Research job worker | FastAPI + SQLAlchemy (Postgres, or SQLite inline) | Optional staff tool (#18, `JOB_BACKEND`): searches the web (SearXNG or OpenAI `web_search`), fetches public pages and drafts data-pack YAML with a source quote per field for staff review. Uses `OPENAI_RESEARCH_MODEL` (default `gpt-6.1-sol`) through the Responses API with `store=False`. Runs as its own service (`app.worker.main`); the API proxies staff calls to it with signed requests. |
 
 ## Data flow
 
@@ -100,6 +101,10 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `routers/admin.py` | Demo analytics and audit data; catalog writes behind `X-Admin-Token` |
 | `routers/partner_import.py` | Admin partner-list import (`/api/v1/admin/import/*`): config, inspect, drafts, validate, export; off unless `IMPORT_ENABLED`, `JOB_BACKEND` and `ADMIN_API_TOKEN` are set |
 | `routers/about.py` | `GET /api/v1/about`: deployment facts for the How it works page (configuration only) |
+| `routers/admin_jobs.py` | Staff research-job routes (mounted only when `JOB_BACKEND` is not `off`), proxied to the worker |
+| `jobs/` | Job settings, signed app-to-worker tokens (`auth.py`), request schemas, the SQLAlchemy store, the worker client (`proxy.py`) and the in-process `inline` worker |
+| `worker/` | The job worker app (`main.py`) and its runner loop |
+| `research/` | The research pipeline: plan, search providers, safe fetcher, extraction, evidence check, post-processing, export |
 
 `backend/app/services/`
 
@@ -130,6 +135,7 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `i18n.py` | Hand-translated notices and plan strings for es, vi, zh, ar |
 | `hours.py` | Open-now and next-open calculation |
 | `notify.py` | Twilio and SendGrid senders with demo stubs and masked logging |
+| `dedupe.py` | Duplicate detection for research drafts against the pack and each other |
 | `partner_import/` | Partner-list import: content sniffing and limits, CSV/XLSX/DOCX parsers, column mapping, value filters, client-record guard, draft building and grouping, optional model step, zip export. Stateless; nothing is written |
 
 ## Frontend structure
@@ -169,7 +175,7 @@ Catalog data flow: YAML in the data pack's `services/` folder (`backend/app/data
 
 ## Deployment modes
 
-Both modes run the same image (`Dockerfile`), which needs no database or volume. Templates are starters and have not been applied to live cloud accounts (see [deploy/README.md](deploy/README.md)).
+Both modes run the same image (`Dockerfile`), which needs no database or volume. The optional research worker is the same image built with `INSTALL_WORKER_DEPS=true` and started as `app.worker.main`, with its own Postgres (`docker compose --profile jobs`, or shape B in `deploy/railway/README.md`, where the app stays on Vercel). Templates are starters and have not been applied to live cloud accounts (see [deploy/README.md](deploy/README.md)).
 
 - **Mode A: hosting partner, single tenant.** A hosting partner runs one container per city in an isolated cloud project, each with its own secrets, brand preset and data pack. The city points a DNS `CNAME` (for example `services.<city>.gov`) at the partner-issued hostname. No container, project or secret is shared across cities.
 - **Mode B: sovereign municipal cloud.** The city builds, pushes and runs the image in its own account, using the AWS, Azure or GCP template in `deploy/`, or deploys the source to Vercel as a single Python function (`deploy/vercel/README.md`) or to Railway as one container built from the same `Dockerfile` (`deploy/railway/README.md`).

@@ -96,7 +96,7 @@ export default function AdminPartnerImport() {
       {loading && <Skeleton variant="rounded" height={160} />}
       {!loading && !config && (
         <Alert severity="warning">
-          Partner-list import is turned off on this server. It needs IMPORT_ENABLED=true, JOB_BACKEND=inline and
+          Partner-list import is turned off on this server. It needs IMPORT_ENABLED=true, JOB_BACKEND=inline or remote, and
           ADMIN_API_TOKEN.
         </Alert>
       )}

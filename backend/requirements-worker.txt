@@ -1,0 +1,7 @@
+# Job worker (app/worker, JOB_BACKEND=inline) only: database drivers.
+# Kept out of requirements.txt and the root pyproject.toml so the Vercel
+# function does not install them. The container installs these when built
+# with --build-arg INSTALL_WORKER_DEPS=true.
+-r requirements.txt
+SQLAlchemy>=2.0
+psycopg[binary]>=3.2

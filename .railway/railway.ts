@@ -17,15 +17,31 @@
 
 import { defineRailway, postgres, preserve, project, service, type ResourceNode } from "railway/iac";
 
-// Region for every service. A deliberate choice: it decides where resident
+// Region for the app service. A deliberate choice: it decides where resident
 // traffic is processed in the whole-app deployment. Identifiers:
 // https://docs.railway.com/deployments/regions
 const REGION = "us-east4-eqdc4a"; // US East (Virginia)
 
-// PLANNED, NOT BUILT: the job worker (#18, #19), Postgres (#14 P1) and a
-// private SearXNG. Leave this false until `app.worker.main` exists. Turning it
-// on creates billable services, and the worker cannot start without that code.
-const WITH_JOB_SERVICES = false;
+// Region for the job services: the worker, Postgres and SearXNG sit together
+// so database and search calls stay in one region. us-west2 is where Railway
+// placed the reference project's Postgres; moving a database later is a
+// destructive plan (a volume migration), so pick this before the first apply.
+const JOB_REGION = "us-west2"; // US West (California)
+
+// Which shape this file describes (deploy/railway/README.md):
+//   shape A, the whole app on Railway:      WITH_APP_SERVICE = true,  WITH_JOB_SERVICES = false
+//   shape B, Vercel app + Railway back end: WITH_APP_SERVICE = false, WITH_JOB_SERVICES = true
+//   both on Railway:                        true, true
+// The reference deployment is shape B: the resident app stays on Vercel.
+// Flipping a flag off plans the matching services as deletes; read the plan.
+const WITH_APP_SERVICE = false;
+
+// The research job worker (#18), its Postgres and a private SearXNG. Each
+// is an always-on, billable service.
+const WITH_JOB_SERVICES = true;
+
+// Smallest sensible ceilings (Railway bills what is used, up to these).
+const GB = 1024 * 1024 * 1024;
 
 export default defineRailway(() => {
   // The whole app from the repo-root Dockerfile, which Railway detects on its
@@ -62,33 +78,45 @@ export default defineRailway(() => {
     },
   });
 
-  const resources: ResourceNode[] = [app];
+  const resources: ResourceNode[] = WITH_APP_SERVICE ? [app] : [];
 
   if (WITH_JOB_SERVICES) {
     // Private by default. Never add Public Access (a TCP proxy) to it.
-    const db = postgres("postgres");
+    const db = postgres("postgres", { region: JOB_REGION });
 
-    // Private metasearch for the research worker. Built from
-    // deploy/railway/searxng/Dockerfile: set the service's root directory to
-    // deploy/railway/searxng. Never generate a public domain for it.
+    // Private metasearch for the research worker, built from
+    // deploy/railway/searxng/Dockerfile. Deploy it with
+    //   railway up deploy/railway/searxng --path-as-root --service searxng
+    // (that upload is the build context, so no root directory is set here).
+    // Never generate a public domain for it.
     const searxng = service("searxng", {
-      replicas: { [REGION]: 1 },
+      replicas: { [JOB_REGION]: 1 },
+      deploy: { limitOverride: { containers: { cpu: 1, memoryBytes: 1 * GB } } },
       env: {
         SEARXNG_SECRET: preserve(),
       },
     });
 
-    // Same Dockerfile as the app, different start command. Variable names
-    // follow the #18 spec; confirm them when the worker lands.
+    // Same Dockerfile as the app (INSTALL_WORKER_DEPS reaches the build as a
+    // build argument), different start command. Deploy with
+    // `railway up --service worker` from the repo root, then generate its
+    // domain: `railway domain --service worker --port 8000`.
     const worker = service("worker", {
       start: '/bin/sh -c "exec uvicorn app.worker.main:app --host 0.0.0.0 --port $PORT"',
       healthcheck: "/healthz",
-      replicas: { [REGION]: 1 },
+      replicas: { [JOB_REGION]: 1 },
+      deploy: { limitOverride: { containers: { cpu: 1, memoryBytes: 1 * GB } } },
       env: {
         PORT: "8000",
         INSTALL_WORKER_DEPS: "true",
         DATABASE_URL: db.env.DATABASE_URL,
+        // searxng | openai_web_search (OpenAI's hosted web search; queries
+        // then go to OpenAI). See the guide for the trade-off.
+        RESEARCH_SEARCH_PROVIDER: "searxng",
         SEARXNG_URL: "http://searxng.railway.internal:8080",
+        OPENAI_RESEARCH_MODEL: "gpt-6.1-sol",
+        RESEARCH_REQUIRE_PLAN_APPROVAL: "true",
+        // Delete a line if you do not set it.
         OPENAI_API_KEY: preserve(),
         JOB_WORKER_SECRET: preserve(),
         JOB_WORKER_SECRET_PREVIOUS: preserve(),

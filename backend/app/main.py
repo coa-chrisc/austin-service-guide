@@ -13,6 +13,7 @@ from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
 from app.defense.keys import check_defense_config
 from app.defense.limits import DefenseRefusal, refusal_handler
+from app.jobs.settings import jobs_enabled
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import about, admin, defense, intake, partner_import, services
 from app.security_headers import SecurityHeadersMiddleware
@@ -81,6 +82,10 @@ app.include_router(services.router)
 app.include_router(admin.router)
 app.include_router(partner_import.router)
 app.include_router(about.router)
+if jobs_enabled():  # JOB_BACKEND inline|remote; a bad job config fails startup
+    from app.routers import admin_jobs
+
+    app.include_router(admin_jobs.router)
 
 
 # ── Root & health ─────────────────────────────────────────────────────

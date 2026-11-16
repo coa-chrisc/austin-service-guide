@@ -51,8 +51,12 @@ ENV CITY_CONFIG=${CITY_CONFIG} \
     FORWARDED_ALLOW_IPS=127.0.0.1
 
 WORKDIR /app
-COPY backend/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# true: also install the job worker's database drivers (the research worker
+# service and JOB_BACKEND=inline). The resident app does not need them.
+ARG INSTALL_WORKER_DEPS=false
+COPY backend/requirements.txt backend/requirements-worker.txt ./
+RUN pip install --no-cache-dir -r requirements.txt \
+ && if [ "$INSTALL_WORKER_DEPS" = "true" ]; then pip install --no-cache-dir -r requirements-worker.txt; fi
 
 RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app

@@ -308,6 +308,7 @@ export const PROTECTIONS: Protection[] = [
   { status: "in_progress", issue: 30, label: "A staff page for abuse and cost, with alerts and incident review" },
   { status: "in_progress", issue: 14, label: "Staff sign-in with roles, saved catalog edits, real analytics, audit log and reports" },
   { status: "in_place", issue: 20, label: "Eligibility rule editing and service authoring in the console, checked against the data-pack contract (edits stay on one server instance until exported)" },
+  { status: "in_place", issue: 18, label: "A catalog research agent for staff that drafts service records from public web pages, with a source link and quote for each field. Its worker runs on Railway and stays off until an OpenAI key is set there. Staff approve each search plan before it runs, review every draft, and merge exported drafts into the data pack by hand; nothing it drafts goes live on its own" },
   { status: "not_planned", label: "Data processing and data retention agreements with OpenAI and the text and email vendors (contracts the operator signs; no code provides them)" },
   { status: "not_planned", label: "Staff checking each catalog record against the provider" },
   { status: "not_planned", label: "Privacy-office review of the AI, privacy and voice notices" },
