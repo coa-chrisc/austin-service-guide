@@ -21,7 +21,7 @@
     "how_to_apply": {"type": "string", "description": "Steps a resident takes to get the service."},
     "cost": {"type": "string", "description": "Plain-language description of cost to the resident."},
     "cost_type": {"enum": ["free", "sliding_scale", "flat_fee", "insurance", "varies"], "description": "Machine-readable cost category."},
-    "website_url": {"type": "string", "description": "Public web page for the service. May be empty if none exists (validator warns)."},
+    "website_url": {"type": "string", "pattern": "^(https?://.+)?$", "description": "Public web page for the service, an http(s):// URL. May be empty if none exists (validator warns)."},
     "phone": {"type": "string", "description": "Main contact phone. A service must have this or at least one location phone."},
     "email": {"type": "string", "description": "Public contact email, if any."},
     "languages_offered": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Language codes the service can be delivered in (for example en, es)."},
