@@ -1,8 +1,8 @@
 """City identity for the backend, read from the same config the frontend builds from.
 
 The backend uses it for the app and agency names (scripted greeting, system
-prompt identity sentence, email sender default, share text, realtime
-transcription prompt, OpenAPI title), the optional timezone for open-now hours,
+prompt identity sentence, email sender default, share text, OpenAPI title),
+the optional timezone for open-now hours,
 and the place names the PII name rule skips. Place-specific data (catalog,
 crisis lines, personas, ...) comes from the data pack (data_pack.py), not from
 here. The system prompt names no place.
