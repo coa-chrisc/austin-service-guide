@@ -42,6 +42,8 @@ class SearchUsage:
 class SearchResult:
     hits: list[SearchHit] = field(default_factory=list)
     usage: SearchUsage = field(default_factory=SearchUsage)
+    # (engine, error) pairs for upstream engines that failed (SearXNG only).
+    unresponsive: list[tuple[str, str]] = field(default_factory=list)
 
 
 class SearchProvider(Protocol):
@@ -120,6 +122,17 @@ def domain_matches(host: str, domains: set[str] | list[str]) -> bool:
     return any(host == d or host.endswith("." + d) for d in domains)
 
 
+def keep_on_site(hits: list[SearchHit], site: str | None) -> tuple[list[SearchHit], int]:
+    """``(hits on the site or a subdomain of it, number dropped)``.
+
+    Upstream engines do not all honour ``site:`` (SearXNG's bing returned
+    unrelated pages for it), so a site-restricted search is checked here."""
+    if not site:
+        return hits, 0
+    kept = [h for h in hits if domain_matches(host_of(h.url), [site])]
+    return kept, len(hits) - len(kept)
+
+
 def rank(host: str, place_domains: list[str]) -> int:
     """Lower is better: .gov/.us, the place's own domains, .org, the rest."""
     if host.endswith(".gov") or host.endswith(".us") or host.endswith(".mil"):
@@ -173,4 +186,5 @@ def select_urls(
         per[host] = per.get(host, 0) + 1
         chosen.append(url)
     return chosen, skipped
+
 

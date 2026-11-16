@@ -45,7 +45,17 @@ class SearxngProvider:
             ))
             if len(hits) >= limit:
                 break
-        unresponsive = data.get("unresponsive_engines") or []
+        unresponsive = _unresponsive(data.get("unresponsive_engines"))
         if unresponsive:
             logger.info("searxng: %d results, unresponsive engines: %s", len(hits), unresponsive)
-        return SearchResult(hits=hits)
+        return SearchResult(hits=hits, unresponsive=unresponsive)
+
+
+def _unresponsive(value: object) -> list[tuple[str, str]]:
+    """SearXNG lists failed engines as ``[[engine, error], ...]`` (the error
+    reads "Suspended: ..." while the engine is suspended)."""
+    pairs = []
+    for item in value if isinstance(value, list) else []:
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            pairs.append((str(item[0])[:60], str(item[1])[:120]))
+    return pairs

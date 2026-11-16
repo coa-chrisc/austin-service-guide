@@ -30,11 +30,13 @@ from app.research.postprocess import (
     unique_slug,
     validate_service,
 )
-from app.research.search import SearchHit, host_of, select_urls, split_site
+from app.research.search import SearchHit, host_of, keep_on_site, select_urls, split_site
 from app.services.dedupe import find_duplicates
 
 logger = logging.getLogger(__name__)
 LEASE_SECONDS = 600  # longer than one model call; the heartbeat runs between steps
+HITS_PER_QUERY = 10
+SITE_CANDIDATES = 30  # asked for when a site filter will drop off-site hits
 
 
 class CapReached(Exception):
@@ -168,21 +170,37 @@ class Run:
 
     async def search_phase(self) -> list[SearchHit]:
         hits: list[SearchHit] = []
+        results: list[dict] = []
         for i, q in enumerate(self.job["plan"]["queries"]):
             key = f"search:{i}"
             done, result = self.store.get_step(self.id, key)
             if not done:
-                if self.counters["searches"] >= self.caps["max_searches"]:
-                    raise CapReached("max_searches")
-                self.step()
+                try:
+                    if self.counters["searches"] >= self.caps["max_searches"]:
+                        raise CapReached("max_searches")
+                    self.step()
+                except CapReached:
+                    self._report_unresponsive(results)  # the run ends here; still say what failed
+                    raise
                 try:
                     # site:<domain> goes to the provider as a filter (older plans may say site.<domain>).
                     text, site = split_site(q["query"])
-                    res = await self.d.provider.search(text, site=site, limit=10)
+                    # Ask for more when off-site hits will be dropped, so on-site ones further down survive.
+                    res = await self.d.provider.search(text, site=site,
+                                                       limit=SITE_CANDIDATES if site else HITS_PER_QUERY)
                     self.charge(Usage(res.usage.input_tokens, res.usage.cached_tokens, res.usage.output_tokens,
                                       res.usage.search_calls))
-                    result = {"hits": [h.__dict__ for h in res.hits]}
-                    self.event("search", f"{self.d.provider.name}: \"{q['query'][:120]}\" -> {len(res.hits)} results")
+                    kept, dropped = keep_on_site(res.hits, site)
+                    kept = kept[:HITS_PER_QUERY]
+                    result = {"hits": [h.__dict__ for h in kept], "dropped_off_site": dropped,
+                              "unresponsive": [list(p) for p in res.unresponsive]}
+                    shown = f"\"{q['query'][:120]}\""
+                    if site and not kept:
+                        note = f"; {dropped} off-site results dropped" if dropped else ""
+                        self.event("warning", f"No results on {site} for {shown}{note}")
+                    else:
+                        note = f" ({dropped} off-site results dropped)" if dropped else ""
+                        self.event("search", f"{self.d.provider.name}: {shown} -> {len(kept)} results{note}")
                 except CapReached:
                     raise
                 except Exception as exc:  # noqa: BLE001 — a failed search is reported, not fatal
@@ -191,8 +209,30 @@ class Run:
                 self.counters["searches"] += 1
                 self.save_counters()
                 self.store.put_step(self.id, key, result)
+            results.append(result)
             hits.extend(SearchHit(**h) for h in result.get("hits", []))
+        self._report_unresponsive(results)
         return hits
+
+    def _report_unresponsive(self, results: list[dict]) -> None:
+        """One event per search phase naming the upstream engines that failed."""
+        failed: dict[str, set[str]] = {}
+        counts: dict[str, int] = {}
+        degraded = 0
+        for result in results:
+            pairs = result.get("unresponsive") or []
+            degraded += bool(pairs)
+            for engine in {p[0] for p in pairs}:
+                counts[engine] = counts.get(engine, 0) + 1
+            for engine, error in pairs:
+                failed.setdefault(engine, set()).add(error)
+        done, _ = self.store.get_step(self.id, "search:degraded")
+        if not degraded or done:
+            return
+        parts = [f"{e} in {counts[e]} ({'; '.join(sorted(failed[e])[:3])})" for e in sorted(failed)]
+        self.event("warning", f"Search degraded: engines failed in {degraded} of {len(results)} searches: "
+                              f"{', '.join(parts)}")
+        self.store.put_step(self.id, "search:degraded", {"engines": sorted(failed)})
 
     def select_phase(self, hits: list[SearchHit]) -> list[str]:
         done, result = self.store.get_step(self.id, "select")
