@@ -49,13 +49,15 @@ describe("How it works live facts", () => {
   });
 
   it("reports counts, and an unrecorded verification count plainly", () => {
-    expect(factsFor("grounding", ABOUT).join(" ")).toContain("Services listed: 12 in 3 categories");
-    expect(factsFor("grounding", ABOUT).join(" ")).toContain("recorded staff check: not recorded");
+    expect(factsFor("safety", ABOUT).join(" ")).toContain("Services listed: 12 in 3 categories");
+    expect(factsFor("safety", ABOUT).join(" ")).toContain("recorded staff check: not recorded");
     expect(factsFor("stateless", ABOUT).join(" ")).toContain("256 KiB");
-    expect(factsFor("stateless", ABOUT).join(" ")).toContain("New message: up to 4,000 characters");    expect(factsFor("crisis", ABOUT).join(" ")).toContain("Local crisis lines in this data pack: 1");
+    expect(factsFor("stateless", ABOUT).join(" ")).toContain("New message: up to 4,000 characters");
+    expect(factsFor("crisis", ABOUT).join(" ")).toContain("Local crisis lines in this data pack: 1");
+    expect(factsFor("status", ABOUT).join(" ")).toContain("Access-code gate: on");
   });
 
   it("has no facts for a section without live values", () => {
-    expect(factsFor("consistency", ABOUT)).toEqual([]);
+    expect(factsFor("journey", ABOUT)).toEqual([]);
   });
 });

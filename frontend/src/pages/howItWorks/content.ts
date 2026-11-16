@@ -6,6 +6,9 @@
 /*  or SECURITY.md changes, change this file in the same PR: the code  */
 /*  and the docs win over this page. Live values (model, effort, voice */
 /*  mode, counts) come from GET /api/v1/about and are not written here.*/
+/*                                                                     */
+/*  Style: plain language, short sentences, one idea per point. Say a  */
+/*  thing once, in the section that owns it, and link to it elsewhere. */
 /* ------------------------------------------------------------------ */
 
 export interface HowItWorksSection {
@@ -18,116 +21,301 @@ export interface HowItWorksSection {
   limits: string[];
   /** Repo-relative paths, shown as "Where this is in the code". */
   sources: string[];
+  /** Ids of other sections that say more, shown as links. */
+  related?: string[];
 }
+
+/** Icon names used by the page; HowItWorks maps each to an @mui/icons-material icon. */
+export type IconKey =
+  | "explore"
+  | "architecture"
+  | "shield"
+  | "scale"
+  | "status"
+  | "crisis"
+  | "redact"
+  | "catalog"
+  | "rules"
+  | "noStore"
+  | "policy"
+  | "limits"
+  | "review";
+
+/** The one-minute summary cards at the top of the page. Each links to the section that owns the detail. */
+export interface OverviewItem {
+  icon: IconKey;
+  label: string;
+  /** One or two short sentences. */
+  text: string;
+  /** Section id to read more. */
+  section: string;
+}
+
+export const OVERVIEW: OverviewItem[] = [
+  {
+    icon: "explore",
+    label: "What it does",
+    section: "what-this-is",
+    text: "Residents chat, talk or pick a topic, and the guide suggests local services that may fit. It does not decide eligibility or take applications.",
+  },
+  {
+    icon: "architecture",
+    label: "Architecture",
+    section: "architecture",
+    text: "One web page and one server. The server holds the service catalog, runs fixed matching rules and makes every AI call.",
+  },
+  {
+    icon: "shield",
+    label: "Safety",
+    section: "safety",
+    text: "Crisis lines come first. Personal details are removed before text reaches the AI, and service details come only from the catalog.",
+  },
+  {
+    icon: "scale",
+    label: "Scale",
+    section: "scaling",
+    text: "The server stores no resident sessions, so copies can be added as traffic grows. Another agency can run its own copy for its place.",
+  },
+  {
+    icon: "status",
+    label: "Status",
+    section: "status",
+    text: "A demonstration. Staff sign-in, shared rate-limit counters, catalog checks and vendor agreements are still pending.",
+  },
+];
+
+/** Headline numbers. Each is backed by the code or by a dated measurement named in KEY_NUMBERS_NOTE. */
+export interface KeyNumber {
+  value: string;
+  label: string;
+  /** Section id that explains the number. */
+  section: string;
+}
+
+export const KEY_NUMBERS: KeyNumber[] = [
+  { value: "0", label: "resident conversations stored on the server", section: "stateless" },
+  { value: "8", label: "languages the crisis check reads", section: "crisis" },
+  { value: "~161 KB", label: "compressed JavaScript to open the site", section: "scaling" },
+  { value: "98–100", label: "Lighthouse mobile performance score", section: "scaling" },
+  { value: "92–98", label: "Lighthouse mobile accessibility score", section: "scaling" },
+];
+
+export const KEY_NUMBERS_NOTE =
+  "Lighthouse scores: home, directory and intake pages of the production demo, measured 16 November 2026 with simulated slow 4G. The first-load size is checked on every build.";
+
+/** The safeguards, one card each, shown in the "How it is kept safe" section. */
+export interface SafetyLayer {
+  icon: IconKey;
+  title: string;
+  /** One or two short sentences. */
+  text: string;
+  /** Section id with the detail, when another section owns it. */
+  section?: string;
+}
+
+export const SAFETY_LAYERS: SafetyLayer[] = [
+  {
+    icon: "crisis",
+    title: "Crisis lines first",
+    section: "crisis",
+    text: "A message that states a crisis gets crisis lines at once, before any AI step. No limit or pause holds them back.",
+  },
+  {
+    icon: "redact",
+    title: "Personal details removed",
+    section: "pii",
+    text: "Fixed rules strip phone numbers, ID numbers and addresses in the browser, then again on the server.",
+  },
+  {
+    icon: "catalog",
+    title: "Service details from the catalog only",
+    text: "Names, phone numbers, addresses and links come from catalog records, never from AI text.",
+  },
+  {
+    icon: "rules",
+    title: "Fixed matching rules",
+    section: "ai-model",
+    text: "Rules, not the AI, decide which services match. The same profile gives the same matches.",
+  },
+  {
+    icon: "noStore",
+    title: "Nothing kept on the server",
+    section: "stateless",
+    text: "The intake lives in the resident's browser tab. The server checks each request, replies and forgets it.",
+  },
+  {
+    icon: "policy",
+    title: "OpenAI asked not to store",
+    section: "ai-model",
+    text: "Every AI call is sent with store=False. That setting is not zero data retention.",
+  },
+  {
+    icon: "limits",
+    title: "Cost and abuse limits",
+    section: "cost",
+    text: "Rate limits, budgets and automatic pauses guard paid features. Chat falls back to scripted questions.",
+  },
+  {
+    icon: "review",
+    title: "Staff approve every draft",
+    section: "research",
+    text: "The research agent reads public pages only. Nothing it or the partner import drafts goes live without staff.",
+  },
+];
 
 export const SECTIONS: HowItWorksSection[] = [
   {
     id: "what-this-is",
-    title: "What this is",
+    title: "What the guide is",
     summary:
-      "A demonstration guide that helps residents find local services. It hides services whose listed rules your answers rule out, but it does not make eligibility decisions, take applications or keep case records.",
+      "A demonstration guide that helps residents find local services. It suggests services. It does not make eligibility decisions, take applications or keep case records.",
     points: [
-      "It suggests services from a catalog of city, county, state, federal and nonprofit programs. Residents can browse by topic, use the map, or answer questions by chat or voice.",
-      "It is a demonstration. It is not a benefits application, a case-management system or an eligibility decision.",
-      "It has two parts: the resident site and a staff console. The console shows made-up residents, analytics, staff and audit entries. Its service directory is the live catalog.",
-      "The whole intake works without an account or sign-in.",
+      "It draws on a catalog of city, county, state, federal and nonprofit programs for one place.",
+      "It hides a service only when the resident's answers rule out one of its listed requirements. Everything it shows is a suggestion to check with the provider.",
+      "It has two parts: the resident site, and a staff console for the agency that runs it.",
+      "Residents need no account. The whole intake works without signing in.",
+      "The code is open source (MIT license). Any agency can run its own copy for its own place.",
     ],
     limits: [
-      "The staff console is a demo. Its sign-in is simulated in the browser and its numbers are sample data.",
       "Results are suggestions to check with each provider. They are not a promise of eligibility or of a place in a program.",
-      "The resident \"Sign In\" page is a demo too. It creates no account on the server, but it saves the email typed into it in this browser's localStorage until the resident signs out.",
+      "The resident \"Sign In\" page is a demo. It creates no account on the server, but it saves the email typed into it in this browser until the resident signs out.",
+    ],
+    sources: ["CLAUDE.md", "LICENSE", "backend/app/main.py", "frontend/src/hooks/useAuth.tsx", "docs/CUSTOMIZING.md"],
+  },
+  {
+    id: "journey",
+    title: "A resident's path",
+    summary:
+      "Residents can browse on their own or answer a few questions. Either way they end with a list of services to contact.",
+    points: [
+      "Browse: the home page offers topic buttons (such as Food & Nutrition or Housing & Utilities), an optional ZIP code and a language. A topic opens the service directory, filtered to that topic.",
+      "The directory, each service's own page and the map use no AI.",
+      "Ask: in chat or by voice, the guide asks one question at a time about the resident's situation and needs.",
+      "Results: matching services appear as cards, with an ordered plan of first steps and a reason for each. A \"Check eligibility\" note marks services the answers did not settle.",
+      "The resident can send the list to their own phone or email, if the operator has set up text and email sending.",
+      "\"Start over\" clears everything the tab holds.",
+    ],
+    limits: [
+      "When live AI is off or paused, chat runs a fixed set of scripted questions instead.",
+      "Voice in its default mode needs a recent browser with an on-device speech pack. Other browsers get text chat only.",
     ],
     sources: [
-      "CLAUDE.md",
-      "backend/app/main.py",
-      "backend/app/services/seed_data.py",
-      "backend/app/data/admin_demo.yaml",
-      "frontend/src/hooks/useAuth.tsx",
+      "frontend/src/components/landing/NeedNavigator.tsx",
+      "frontend/src/components/common/catalogFilters.ts",
+      "frontend/src/pages/Results.tsx",
+      "backend/app/services/eligibility.py",
+      "backend/app/routers/intake.py",
     ],
   },
   {
     id: "architecture",
-    title: "How the parts fit together",
+    title: "Architecture",
     summary:
-      "A web page in your browser talks to one server. The server holds the service catalog in memory and calls OpenAI for the chat.",
+      "A web page in the resident's browser talks to one server. The server holds the service catalog in memory, applies the matching rules, and makes every AI call for text.",
     points: [
-      "The browser app is built with React. The server is one FastAPI process.",
-      "The catalog is a set of YAML files (the data pack) read into memory when the server starts. There is no database. The data pack format is described in docs/DATA_PACK.md, with schemas in config/schemas/.",
-      "Only the server calls OpenAI for text. The OpenAI key never reaches the browser.",
-      "If the operator sets them up, Twilio (text messages) and SendGrid (email) send a resident the list of services they asked for.",
-      "In the optional raw-audio voice mode, the browser connects to OpenAI directly, using a short-lived key the server creates for that one voice session.",
-      "If the operator sets one up, a separate job worker runs the staff catalog research agent, described further down. Resident intakes never go to it.",
+      "The browser app is built with React. The server is one Python process (FastAPI).",
+      "The catalog is a data pack: text files (YAML) that describe one place's services, categories and crisis lines.",
+      "The server reads the data pack into memory when it starts. There is no database. The format is in docs/DATA_PACK.md.",
+      "A settings file (the city config) sets each place's name, colors, logo and languages. Changing place means changing this file and the data pack.",
+      "Only the server calls OpenAI for text, so the OpenAI key never reaches the browser.",
+      "Optional, if the operator sets them up: Twilio sends text messages and SendGrid sends email, carrying the list of services a resident asks for.",
+      "Optional raw-audio voice: the browser connects to OpenAI directly, using a short-lived key the server creates for that one voice session.",
+      "Optional research worker: a separate service runs the staff catalog research agent. Resident intakes never go to it.",
     ],
-    limits: [
-      "Catalog edits made in the staff console live in one server's memory. They are lost on restart and are not shared between server copies.",
-      "The diagrams on this page are drawn by hand from the code. They are not generated from it.",
-    ],
+    limits: ["The diagrams on this page are drawn by hand from the code. They are not generated from it."],
     sources: [
       "ARCHITECTURE.md",
       "backend/app/main.py",
       "backend/app/routers/intake.py",
       "backend/app/services/catalog_loader.py",
+      "backend/app/services/data_pack.py",
+      "backend/app/services/city.py",
       "backend/app/services/notify.py",
       "docs/DATA_PACK.md",
     ],
+    related: ["stateless", "scaling"],
   },
   {
-    id: "ai-model",
-    title: "The AI model and how it is used",
+    id: "scaling",
+    title: "How it scales",
     summary:
-      "One OpenAI model runs the text chat; raw-audio voice uses a separate realtime model. The model can look things up in the catalog through a fixed set of tools. Fixed rules, not the model, decide which services match.",
+      "The server keeps no resident sessions, so any copy of it can answer any request. Copies can be added or replaced as traffic changes, and a restart loses nothing a resident needs.",
     points: [
-      "Text chat uses the OpenAI Responses API. The model and its reasoning setting are shown in the box below, read from the running server.",
-      "Each resident message starts a short loop. The model may ask the server to run a tool, the server runs it and sends back the result, and this repeats up to a set number of rounds. If the model has not replied by then, the resident gets a fixed message pointing to the results.",
-      "The model can search and read catalog records, note facts about the resident's situation, run the matching rules, switch language, show crisis lines and finish the intake. The box below lists every tool the text model is offered, including wait_for_user, which is meant for voice.",
-      "After matching, a separate model call picks three to five of the first twelve matched services, puts them in order and writes a short reason for each. Its reasoning setting is low by default. Demo personas skip it and get the rules-based order with no model call. When results are shown in a language other than English, a step's reason is replaced by a fixed translated reason where one exists.",
-      "Every text call is sent with store=False, which tells OpenAI not to store the response for later retrieval. The model's reasoning is reused only within one message and is not carried to the next.",
-      "If no OpenAI key is set or DEMO_MODE is on, a fixed set of scripted questions runs and no model is called. If one call to OpenAI fails, only that message is answered by the scripted questions, with a short notice; the next message tries the model again. A failed plan call falls back to the rules-based order.",
-      "If OpenAI says the account is out of credits or over its spend limit, the AI pauses for five minutes at a time on that server instance, then one message tries it again; meanwhile the scripted questions carry on. The chat says why once, and the intake page shows it as a banner, using the operator's own words from the city config, shown in English in every language.",
-      "Voice has two modes. In the default mode the browser turns speech into text on the device, removes identifiers, and sends only text. Replies are read aloud by the device's own voices.",
-      "In the optional raw-audio mode, microphone audio streams from the browser to the OpenAI Realtime API. This mode needs two server settings turned on and live AI, and the resident sees a badge and is asked for consent first.",
-      "In raw-audio mode the voice model greets the resident first. Its instructions tell it to switch language when the resident speaks a different one; that is an instruction to the model, and the model may not follow it. Speech-to-text is not fixed to one language.",
+      "Each request carries the resident's intake from the browser. Copies of the server need no shared session store, and a resident does not have to reach the same copy twice.",
+      "The same code runs as one container (Docker) or as one Vercel function. Starter templates for AWS, Azure and Google Cloud are included, set to one to three copies, and operators can change that.",
+      "The catalog sits in memory, so looking up a service needs no database call.",
+      "Each agency runs its own copy. In the hosting-partner setup, each place gets its own container, cloud project and secrets, shared with no other place. A new place brings its own city config and data pack (docs/CUSTOMIZING.md).",
+      "The staff research worker is a separate service with its own Postgres database, so long research jobs run outside the resident site.",
+      "The first page load is small: about 161 KB of compressed JavaScript. The build fails if it grows past a set budget, and other pages load their code only when opened.",
+      "Lighthouse mobile tests of the production demo on 16 November 2026, with simulated slow 4G, scored 98 to 100 for performance and 92 to 98 for accessibility on the home, directory and intake pages.",
     ],
     limits: [
-      "store=False is not zero data retention. OpenAI may keep inputs and outputs for a limited time for abuse monitoring.",
-      "In raw-audio mode the audio reaches OpenAI before this server sees anything, so the audio cannot be redacted. The server redacts the transcript only after OpenAI returns it.",
-      "In raw-audio mode OpenAI also sees the resident's network address, because the browser connects to it directly.",
-      "Raw-audio mode should be turned on only after the operator has a data retention agreement with OpenAI that covers it. The app cannot check for one.",
-      "The default voice mode needs a recent browser with an on-device speech pack. Other browsers get text chat only.",
+      "Rate limits and spending budgets are counted inside each server copy. With several copies, or on Vercel where each warm function counts on its own, the real limits are several times higher.",
+      "A shared store for those counters is planned (item ASG-SEC-02 in the security remediation plan). Until then, the OpenAI project's own spending limit is the backstop.",
+      "Catalog edits made in the staff console stay in one server copy's memory. They are lost on restart and are not shared with other copies.",
+      "A database with search by meaning (PostgreSQL with pgvector) is the planned home for the catalog. It is not built. Search today matches words.",
+      "The AWS, Azure and Google Cloud templates are starters. They have not been applied to live cloud accounts.",
+      "On Vercel with the access code on, every file is served through the app rather than Vercel's content network. The deploy guide judges this fine at demo scale.",
     ],
     sources: [
-      "backend/app/config.py",
-      "backend/app/services/ai.py",
-      "backend/app/services/tool_schemas.py",
-      "backend/app/services/tools.py",
-      "backend/app/services/plan.py",
-      "backend/app/services/scripted.py",
-      "backend/app/services/realtime.py",
-      "frontend/src/hooks/useOnDeviceVoiceIntake.ts",
-      "frontend/src/hooks/useRealtimeVoiceSession.ts",
-      "frontend/src/components/chat/useIntakeVoice.ts",
-      "frontend/src/components/chat/voiceStart.ts",
+      "deploy/README.md",
+      "deploy/vercel/README.md",
+      "deploy/railway/README.md",
+      "backend/app/services/intake_state.py",
+      "backend/app/defense/store_memory.py",
+      "frontend/scripts/check-bundle-size.mjs",
+      "docs/SECURITY_REMEDIATION_PLAN.md",
     ],
+    related: ["cost"],
+  },
+  {
+    id: "stateless",
+    title: "Where resident data lives",
+    summary:
+      "The resident's conversation and answers stay in their browser tab. Each request carries them to the server, which checks them, replies and keeps nothing.",
+    points: [
+      "The intake is kept in the tab's own short-term storage (sessionStorage). It is not kept in a database, in the browser's long-term storage or on the server.",
+      "On every request the server checks the intake's shape and size, removes personal details again, re-checks service ids against the catalog, replies, and forgets it.",
+      "There is no account, no session id and no shareable results link.",
+      "Request size, the number of messages and message length are capped. The caps are shown in the \"On this deployment\" box.",
+      "\"Start over\" clears the stored intake. Closing the tab clears it too. Reloading the page does not.",
+    ],
+    limits: [
+      "Anyone with access to the open tab can read it.",
+      "The stored intake is not signed or encrypted. A resident can edit their own copy, so the server treats it as untrusted.",
+      "What OpenAI and the text and email vendors keep is set by their terms, not by this app.",
+      "The hosting platform's request logs (network address, time and page address) are kept however the operator has set them up. This app does not control them.",
+      "If the operator turns on the voice troubleshooting log (off by default), redacted voice events are written to a file on the server, and anyone who can open the site can read them back through its debug pages.",
+    ],
+    sources: [
+      "frontend/src/lib/session.ts",
+      "backend/app/services/intake_state.py",
+      "backend/app/models.py",
+      "backend/app/middleware.py",
+      "backend/tests/test_stateless_intake.py",
+      "backend/app/services/realtime_debug.py",
+      "frontend/src/components/layout/StartOverButton.tsx",
+    ],
+    related: ["pii"],
   },
   {
     id: "pii",
-    title: "Keeping personal identifiers out of the model",
+    title: "Removing personal details",
     summary:
-      "Before a message reaches the model, fixed pattern rules remove things like phone numbers, Social Security numbers and street addresses. The rules run twice: in the browser, then again on the server.",
+      "Before a message reaches the AI, fixed pattern rules remove details such as phone numbers, Social Security numbers and street addresses. The rules run twice: in the browser, then again on the server. No AI is involved in this step.",
     points: [
-      "The browser removes identifiers from a message before sending it. It shows a general notice that personal details were removed, and the sent message has a placeholder where each one was.",
-      "The server removes them again before the message is kept in the conversation, written to a log or sent to a model. On every request it also re-runs the rules over the whole conversation and profile the browser sends back.",
-      "The kinds of identifier removed are listed below, read from the server's rules. Each is replaced with a placeholder such as [phone removed].",
-      "The rules are fixed patterns. No AI is involved. The browser and server versions agree on all shared test cases.",
-      "When the server removes something, its reply starts with a short notice saying so (a crisis reply skips the notice).",
+      "The browser removes these details before sending a message. Each one is replaced with a placeholder such as [phone removed], and the resident sees a short notice.",
+      "The server removes them again before the message is kept in the conversation, written to a log or sent to a model. On every request it re-runs the rules over the whole conversation and profile the browser sends back.",
+      "When the server removes something, its reply starts with a short notice saying so. A crisis reply skips the notice.",
+      "The kinds of detail removed are listed in the \"Removed on this deployment\" box, read from the server's rules. The browser and server rules agree on every shared test case.",
     ],
     limits: [
       "A name is removed only after \"my name is\", \"me llamo\" or \"mi nombre es\", or when it is two or three capitalized words after \"I am\", \"I'm\" or \"this is\". \"I'm Maria\" and \"Maria Lopez here\" are not caught.",
-      "Phone numbers are matched in US formats only. Phone numbers from other countries are not caught unless they happen to look like a US number.",
+      "Phone numbers are matched in US formats only. Numbers from other countries are not caught unless they happen to look like a US number.",
       "An address without a house number or a street word (such as Street or Ave) is not caught.",
       "Unusual ways of saying numbers out loud can be missed.",
       "Things described in plain words, such as a diagnosis or a family situation, are sent on purpose. They are usually why the resident is here.",
-      "Directory search text is scrubbed in the browser, but it travels in the page address, so it can appear in hosting request logs.",
+      "Directory search text is cleaned in the browser, but it travels in the page address, so it can appear in hosting request logs.",
     ],
     sources: [
       "frontend/src/lib/piiGuard.ts",
@@ -139,49 +327,65 @@ export const SECTIONS: HowItWorksSection[] = [
     ],
   },
   {
-    id: "stateless",
-    title: "The server does not store your intake",
+    id: "ai-model",
+    title: "How the guide uses AI",
     summary:
-      "Your conversation and answers stay in your browser tab. Each request carries them to the server, which checks them, replies, and does not store them.",
+      "The AI asks the questions, fills in a profile and explains the results. Fixed rules, not the AI, decide which services match, so the same profile always gives the same matches.",
     points: [
-      "The intake is kept in the tab's sessionStorage. It is not kept in a database, in localStorage or on the server.",
-      "Every request carries the stored intake. The server checks its shape and size, removes identifiers again, re-checks service ids against the catalog, replies, and forgets it.",
-      "There is no account, no session id and no shareable results link.",
-      "Request size, number of messages and message length are capped. The caps are shown below.",
-      "\"Start over\" clears the stored intake. Closing the tab clears it too. Reloading the page does not.",
+      "Text chat uses OpenAI's Responses API. The model and its settings are shown in the \"On this deployment\" box, read from the running server.",
+      "For each message, the AI can ask the server to run a tool: search the catalog, read a service record, note facts about the resident, run the matching rules, switch language, show crisis lines or finish the intake. Every tool is listed in that box; wait_for_user is meant for voice.",
+      "The server runs each tool and returns the result. This repeats up to a set number of rounds. If the AI has not replied by then, the resident gets a fixed message pointing to the results.",
+      "Matching uses fixed rules. A service can list eligibility requirements.",
+      "If the resident's answers contradict a requirement, the service is not shown. If the answers do not say, it is shown with a \"Check eligibility\" note.",
+      "After matching, a second AI call, at a lower reasoning setting, picks three to five of the first twelve matches, puts them in order and writes a reason for each. Demo personas skip this call and get the rules-based order. In languages other than English, a step's reason is replaced by a fixed translated reason where one exists.",
+      "The AI's instructions tell it to ask one question at a time, never invent services, never ask for names or ID numbers, and call the crisis tool right away when needed.",
+      "Every call is sent with store=False, a setting that asks OpenAI not to store the response for later retrieval. The AI's reasoning is reused only within one message.",
+      "With no OpenAI key, or with demo mode on, a fixed set of scripted questions runs and no AI is called.",
+      "If one AI call fails, only that message gets the scripted questions, with a short notice. The next message tries the AI again, and a failed plan call falls back to the rules-based order.",
+      "Voice, default mode: the browser turns speech into text on the device, removes personal details and sends only text. Replies are read aloud by the device's own voices, skipping any sentence with a phone number, address, web link, email or eligibility statement. Contact details are read from catalog records only.",
+      "Voice, optional raw-audio mode: microphone audio streams from the browser to OpenAI's Realtime API. It needs two server settings and live AI turned on, and the resident sees a badge and is asked for consent first. The voice model greets the resident and is told to switch language when the resident does, which it may not always follow.",
     ],
     limits: [
-      "Anyone with access to the open tab can read it.",
-      "The stored intake is not signed or encrypted. A resident can edit their own copy, so the server treats it as untrusted.",
-      "What OpenAI and the text and email vendors keep is set by their terms, not by this app.",
-      "The hosting platform's request logs (network address, time and page path) are kept however the operator has set them up. This app does not control them.",
-      "If the operator turns on the voice troubleshooting log (off by default), redacted voice events are written to a file on the server, and anyone who can open the site can read them back through its debug endpoints.",
+      "store=False is not zero data retention. OpenAI may keep inputs and outputs for a limited time for abuse monitoring.",
+      "The AI turns the resident's words into profile fields, so the same words can give a different profile, and so different matches, on another run. Wording also changes from run to run.",
+      "Replies in other languages are written by the AI as it goes. No translator has reviewed them.",
+      "The repository has no automated test of answer quality.",
+      "In raw-audio mode the audio reaches OpenAI before this server sees anything, so personal details cannot be removed from it. The server cleans the transcript only after OpenAI returns it. OpenAI also sees the resident's network address, and the read-aloud filter does not apply.",
+      "Raw-audio mode should be turned on only after the operator has a data retention agreement with OpenAI that covers it. The app cannot check for one.",
     ],
     sources: [
-      "frontend/src/lib/session.ts",
-      "backend/app/services/intake_state.py",
-      "backend/app/models.py",
-      "backend/app/middleware.py",
-      "backend/tests/test_stateless_intake.py",
-      "backend/app/services/realtime_debug.py",
-      "frontend/src/components/layout/StartOverButton.tsx",
+      "backend/app/config.py",
+      "backend/app/services/ai.py",
+      "backend/app/services/prompts.py",
+      "backend/app/services/tool_schemas.py",
+      "backend/app/services/tools.py",
+      "backend/app/services/matching.py",
+      "backend/app/services/eligibility.py",
+      "backend/app/services/plan.py",
+      "backend/app/services/scripted.py",
+      "backend/app/services/realtime.py",
+      "frontend/src/lib/speech.ts",
+      "frontend/src/hooks/useOnDeviceVoiceIntake.ts",
+      "frontend/src/hooks/useRealtimeVoiceSession.ts",
+      "frontend/src/components/chat/useIntakeVoice.ts",
+      "frontend/src/components/chat/voiceStart.ts",
     ],
   },
   {
-    id: "grounding",
-    title: "Only real catalog services are shown",
+    id: "safety",
+    title: "How it is kept safe",
     summary:
-      "Service cards, phone numbers and addresses come from the catalog, not from the model. A service the model or the browser names that is not in the catalog is dropped.",
+      "Several separate safeguards work together. Each card links to the section with its detail, and the status list near the end shows which are running.",
     points: [
-      "Every service id from the model, or from the browser's stored intake, is checked against the loaded catalog. Unknown ids are dropped. Only the number dropped is logged.",
-      "Cards, phone numbers, addresses and links are built from catalog records.",
-      "The text or email a resident can send themselves is built from catalog records only.",
+      "Every service id from the AI, or from the browser's stored intake, is checked against the catalog. An unknown id is dropped, and only the number dropped is logged.",
+      "Service cards, phone numbers, addresses and links are built from catalog records.",
+      "The list a resident can send themselves by text or email is built from catalog records only.",
       "Plan steps can only name services in the resident's match list.",
     ],
     limits: [
-      "The model still writes the chat replies, the plan summary and the reason for each step. They are length-capped and reach the browser as the model wrote them. When the browser sends them back, only email addresses, card numbers, Social Security numbers, dates of birth and ID numbers are removed from them, not phone numbers, addresses or names.",
-      "That model text is not fact-checked. A reply could say something the catalog does not.",
-      "Staff have not yet checked the bundled reference catalog against the providers. The count above shows how many services in this deployment record who checked them and when.",
+      "The AI still writes the chat replies, the plan summary and the reason for each step. They are length-capped and reach the browser as the AI wrote them. When the browser sends them back, only email addresses, card numbers, Social Security numbers, dates of birth and ID numbers are removed from them, not phone numbers, addresses or names.",
+      "That AI text is not fact-checked. A reply could say something the catalog does not.",
+      "Staff have not yet checked the bundled reference catalog against the providers. The \"On this deployment\" box shows how many services in this deployment record who checked them and when.",
     ],
     sources: [
       "backend/app/services/grounding.py",
@@ -192,26 +396,28 @@ export const SECTIONS: HowItWorksSection[] = [
       "docs/DATA_PACK.md",
       "config/services.schema.json",
     ],
+    related: ["status"],
   },
   {
     id: "crisis",
-    title: "Crisis interruption",
+    title: "Crisis lines come first",
     summary:
-      "If a message states a crisis, in any language this app offers, the server replies at once with crisis lines, and the lines stay on screen for the rest of the intake.",
+      "If a message states a crisis, in any language the guide offers, the server replies at once with crisis lines, before any AI step. The lines then stay on screen for the rest of the intake.",
     points: [
-      "Before any model call, the server checks each typed message and voice transcript against phrase lists about suicide, self-harm, domestic violence and immediate danger, in English, Spanish, French, Vietnamese, Chinese, Korean, Arabic and Hindi. Case, accents and punctuation do not change the result.",
-      "On a match it replies at once with 988, 9-1-1, the National Domestic Violence Hotline and this place's local crisis lines. The model is not called for that message. A statement of immediate danger leads with 9-1-1. The same check runs in the scripted flow.",
-      "The model also has a crisis tool, and its instructions tell it to call that tool right away. When it calls the tool, or records a crisis while noting facts about the resident, the intake is marked as a crisis, and if the model's reply leaves out 988 the full list of crisis lines is added to it.",
-      "Once a crisis is marked, the chat and the results page keep a crisis-lines block at the top with tap-to-call buttons. 9-1-1, 988 and the National Domestic Violence Hotline are built into the page, so the block shows even when the server's list of crisis lines cannot be loaded.",
-      "The plan always starts with the services the data pack marks as crisis-direct, whether the rules or the model ordered it. A crisis-direct service the model left out is added at the top.",
-      "In raw-audio voice, a crisis transcript or crisis tool call gets a reply limited to reading the crisis lines, with no tool calls.",
+      "Every typed message and voice transcript is checked against phrase lists about suicide, self-harm, domestic violence and immediate danger, in English, Spanish, French, Vietnamese, Chinese, Korean, Arabic and Hindi. Case, accents and punctuation do not change the result.",
+      "On a match, the reply lists 988, 9-1-1, the National Domestic Violence Hotline and this place's local crisis lines. The AI is not called for that message. A statement of immediate danger leads with 9-1-1. The scripted questions run the same check.",
+      "The AI also has a crisis tool, and its instructions tell it to call that tool right away. If it does, or records a crisis while noting facts, the intake is marked as a crisis. If its reply leaves out 988, the full list of crisis lines is added.",
+      "Once a crisis is marked, the chat and the results page keep a crisis-lines block at the top with tap-to-call buttons. 9-1-1, 988 and the National Domestic Violence Hotline are built into the page, so the block shows even when the server's list cannot be loaded.",
+      "The plan always starts with the services the data pack marks as crisis services, whether the rules or the AI ordered it. One the AI left out is added at the top.",
+      "Rate limits, spending budgets and automatic pauses never hold back a crisis reply, and the crisis-lines list has no limit.",
+      "In raw-audio voice, a crisis transcript or crisis tool call gets a reply limited to reading the crisis lines.",
       "The resident can carry on with the intake after the crisis lines are shown.",
-      "Rate limits, AI budgets and circuit breakers never hold back a crisis turn: it gets the crisis reply even when the resident is over a limit or the AI is paused, and the crisis-lines list has no limit.",
     ],
     limits: [
-      "The non-English phrase lists are the project's own translations and still need review by native speakers. No list catches every way a crisis can be said: a crisis described indirectly depends on the model noticing it, and in the scripted flow it is not caught.",
+      "The non-English phrase lists are the project's own translations and still need review by native speakers.",
+      "No list catches every way a crisis can be said. A crisis described indirectly depends on the AI noticing it, and the scripted questions do not catch it.",
       "The lists leave out common ordinary sentences such as \"we are in danger of losing our apartment\", but a message with no crisis can still match. Showing crisis lines when they were not needed is the accepted trade-off.",
-      "The crisis reply text is written in English and Spanish; other languages get the English text. The crisis-lines block is in English in the chat and translated on the results page for Spanish, Vietnamese, Chinese and Arabic. In raw-audio voice the voice model reads, and for other languages translates, the crisis message, and could misread it.",
+      "The crisis reply text is written in English and Spanish; other languages get the English text. The crisis-lines block is in English in the chat, and translated on the results page for Spanish, Vietnamese, Chinese and Arabic. In raw-audio voice the voice model reads, and for other languages translates, the crisis message, and could misread it.",
       "In raw-audio mode the audio has already reached OpenAI before the check runs on the transcript.",
       "This is not a crisis service. Nobody monitors conversations.",
     ],
@@ -228,49 +434,87 @@ export const SECTIONS: HowItWorksSection[] = [
     ],
   },
   {
-    id: "consistency",
-    title: "How matching stays consistent",
+    id: "cost",
+    title: "Cost and abuse controls",
     summary:
-      "Fixed rules decide which services match, so the same profile gives the same matches. The model asks the questions, fills in the profile and explains the results.",
+      "Features that cost money (AI calls, voice, and text or email sending) have rate limits, spending budgets and automatic pauses. When a limit is reached, chat carries on with the scripted questions instead of failing. The directory, the map and the crisis lines have no limits.",
     points: [
-      "Matching uses rules, not the model. The same profile gives the same matches with the same confidence. The model gathers facts, runs the rules through a tool, and explains what they found.",
-      "A service can list eligibility requirements. If the resident's answers contradict one, the service is not shown. If the answers do not say, the service is shown at low confidence with a \"Check eligibility\" note.",
-      "The model's instructions tell it to ask one question at a time, never invent services, never ask for names or ID numbers, and call the crisis tool right away when needed.",
-      "Each message has a cap on tool rounds and on reply length. If a call to OpenAI fails, that message is answered by the scripted questions.",
-      "In the default voice mode, any sentence in the model's text that contains a phone number, address, web link, email address or eligibility statement is skipped when the reply is read aloud. Contact details are read from catalog records only.",
+      "Rate limits are set per feature. For example, one person can send 20 chat messages a minute and 300 a day. A person is counted by their access code, by a device token, or else by their network.",
+      "On sites without access codes, the browser solves a small computing puzzle (proof of work) before its first AI request and gets a device token for 24 hours. People on a shared mobile network then do not share one limit.",
+      "Every AI call is metered in tokens (the units OpenAI bills by) and estimated dollars. Each person has hourly and daily caps, and the whole site has token caps. Site-wide dollar caps exist but are off unless the operator sets them.",
+      "Automatic pauses (circuit breakers) stop AI chat, voice or sending when a budget is spent, when OpenAI reports the account is out of credits, when more than half of at least 20 calls in five minutes fail, or when the operator turns on a kill switch. Raw-audio voice and text or email sending stay off until the pause ends.",
+      "When OpenAI reports the account is out of credits, the AI pauses for five minutes at a time on that server copy, then one message tries it again. The chat says why once, and the intake page shows a banner, in the operator's own words from the city config.",
+      "The counters hold no resident data. A network address is shortened and scrambled with a key that changes every day, and raw addresses and message text are never stored. A text or email recipient is counted by a scrambled form of the address, up to three messages a day.",
     ],
     limits: [
-      "The model turns the resident's words into profile fields, so the same words can give a different profile, and so different matches, on another run.",
-      "Wording changes from one run to the next.",
-      "The repository has no automated test of answer quality.",
-      "Replies in other languages are written by the model as it goes. No translator has reviewed them.",
-      "In raw-audio mode the voice model speaks for itself, so the read-aloud filter above does not apply.",
+      "The counters are kept in memory in each server copy. A restart resets them, and with several copies the real limits are higher (see How it scales).",
+      "Dollar figures are estimates from a copied price list, not OpenAI's bill.",
+      "Voice budgets are advisory until raw-audio sessions run through the server (issue #29). A session can run longer than it was charged for.",
+      "Proof of work slows scripts. It does not stop a well-funded attacker.",
+      "Refusals do not send alerts yet. A staff page with alerts is planned (issue #30).",
     ],
     sources: [
-      "backend/app/services/prompts.py",
-      "backend/app/services/matching.py",
-      "backend/app/services/eligibility.py",
-      "backend/app/models.py",
-      "frontend/src/lib/speech.ts",
+      "backend/app/defense/limits.py",
+      "backend/app/defense/budget.py",
+      "backend/app/defense/breakers.py",
+      "backend/app/defense/principal.py",
+      "backend/app/defense/challenge.py",
+      "backend/app/services/city.py",
+      "SECURITY.md",
+      "docs/PRIVACY.md",
     ],
+    related: ["scaling"],
+  },
+  {
+    id: "staff-tools",
+    title: "Staff console and partner import",
+    summary:
+      "The staff console shows the screens an agency would use to run the guide. Most of its data is made up for the demo. Its service directory is the live catalog.",
+    points: [
+      "The console shows made-up residents, analytics, staff and audit entries, so reviewers can see the intended screens without real records.",
+      "Staff can edit eligibility rules and write new service entries. Each edit is checked against the data pack's rules, and staff can export the result as a data pack.",
+      "Partner-list import turns an organization's spreadsheet or Word table of programs (.xlsx, .csv or .docx) into draft catalog entries. It is off unless the operator turns it on and sets the staff edit secret.",
+      "Columns about people, such as contact names, direct or mobile lines, personal emails and notes, are dropped by default. Filters also remove contact names, personal phone numbers and resident identifiers from the cells that are kept.",
+      "A file that looks like records about residents, with headers such as Client Name, DOB or SSN, is refused whole.",
+      "The file is read in memory for one request and never saved. Formulas and macros are never run. The drafts stay in the staff member's browser until they download them as a zip.",
+      "An optional AI step can suggest hours, address parts, categories and eligibility from the filtered rows. It never sends phone numbers, emails or websites, and it is off unless the operator turns it on.",
+    ],
+    limits: [
+      "The console's records and analytics are sample data.",
+      "Catalog edits stay in one server copy's memory until exported. They are lost on restart.",
+      "The import filters work on patterns. A person's name written into a description with no phrase around it (\"Run by Jordan Smith\") gets through, so every draft needs a person to review it.",
+      "Import drafts are downloads. Nothing is written to the live catalog; staff merge the files into the data pack by hand.",
+    ],
+    sources: [
+      "backend/app/routers/admin.py",
+      "backend/app/routers/admin_pack.py",
+      "backend/app/data/admin_demo.yaml",
+      "frontend/src/hooks/useAuth.tsx",
+      "backend/app/routers/partner_import.py",
+      "backend/app/services/partner_import/guard.py",
+      "backend/app/services/partner_import/filters.py",
+      "docs/PRIVACY.md",
+    ],
+    related: ["research"],
   },
   {
     id: "research",
-    title: "The catalog research agent for staff",
+    title: "The catalog research agent",
     summary:
       "Staff enter a county and a topic, such as food pantries, and get back draft catalog entries built from public web pages, with a source link and a quote for each value. Staff review every draft, and nothing reaches the live catalog on its own.",
     points: [
-      "A job runs in steps, shown in the diagram below. The model proposes a search plan, staff approve it, and the worker searches the web, reads the pages, and has the model pull out the service listings on each page. The worker checks the evidence and looks for duplicates, then staff review the drafts and export the ones they accept.",
+      "A job runs in steps, shown in Diagram D: the AI proposes a search plan, staff approve it, the worker searches and reads pages, the AI pulls out the service listings, the worker checks the evidence and looks for duplicates, and staff review and export.",
       "By default nothing is searched until staff approve the plan, and they can drop any planned search first.",
-      "Every value the model fills in must cite a short quote from the page. The worker checks that each quote is on the page it stored. A text field without a quote that checks out is left blank. A phone number or email must appear on the page, a website must be the page or a link on it, and an address the page does not state drops that location.",
-      "A field the page does not state is left blank, not guessed. The reviewer sees which fields are missing and why.",
-      "Listings outside the job's topic, such as public computers on a community center page in a food pantry job, are skipped and counted in the job log. They never become drafts.",
-      "Each draft is checked against the catalog and the job's other drafts. A possible duplicate needs a similar service name plus the same organisation, address, phone number or website. It is shown to the reviewer; nothing is merged automatically.",
-      "The operator picks the search engine. A private SearXNG instance keeps the searches on the operator's own servers and has no per-search fee. OpenAI web search needs nothing hosted, but the searches go to OpenAI and each one has a fee. Either way the worker reads each page itself to check the evidence.",
+      "Every value the AI fills in must cite a short quote from the page, and the worker checks that the quote is on the page. A field the page does not state is left blank, not guessed, and the reviewer sees which fields are missing and why.",
+      "A phone number or email must appear on the page. A website must be the page or a link on it. A location whose address the page does not state is dropped.",
+      "Listings outside the job's topic, such as public computers on a community center page in a food pantry job, are skipped and counted in the job log.",
+      "Each draft is checked against the catalog and the job's other drafts. A possible duplicate needs a similar name plus the same organization, address, phone number or website. It is shown to the reviewer; nothing is merged automatically.",
+      "Before fetching a page, the worker checks that the site is on the public internet, not a private or internal network address. It checks again on every redirect, and caps a page at 2 MB.",
+      "robots.txt (a site's instructions to automated readers) is respected, requests to one site are spaced out, and social media and people-search sites are skipped.",
+      "The operator picks the search engine. A private SearXNG search service keeps searches on the operator's own servers with no per-search fee. OpenAI web search needs nothing hosted, but the searches go to OpenAI and each has a fee.",
       "Measured on two test jobs for Travis County, Texas, topic food pantries, each stopping at 10 drafts after reading about 20 pages: about $0.17 with SearXNG and about $0.76 with OpenAI web search.",
-      "Every page fetch is checked first: the site must be at a public internet address, not a private or internal one, and the check runs again on every redirect. A page is capped at 2 MB, after decompression too. robots.txt is respected, requests to one site are spaced out, and social media and people-search sites are skipped.",
       "Each job has hard caps on estimated cost, searches, pages, drafts and running time. Reaching one stops the job and keeps its drafts for review.",
-      "The worker is a separate service. In the reference setup it runs on Railway with its own Postgres database and a private SearXNG instance, neither given a public address. The main app reaches the worker only through requests signed with a shared secret, each valid for a short time and only once.",
+      "The worker is a separate service. In the reference setup it runs on Railway with its own Postgres database and a private SearXNG, neither with a public address. The main app reaches it only through requests signed with a shared secret, each valid for a short time and only once.",
       "The agent works only from public web pages and the place and topic staff enter. Resident intakes never reach it. Its OpenAI calls are sent with store=False.",
     ],
     limits: [
@@ -278,8 +522,8 @@ export const SECTIONS: HowItWorksSection[] = [
       "Nothing is written to the live catalog. Staff copy the exported files into the data pack by hand.",
       "Jobs run one at a time. A second job waits in the queue.",
       "When a site's robots.txt cannot be reached, the fetch goes ahead.",
-      "The cost cap is an estimate from list prices the operator sets, checked before each step, so a job can end a little over it. The figures above are the worker's own estimates from one job each and leave out hosting costs.",
-      "The model writes descriptions and eligibility summaries in its own words. Quotes back them, but a reviewer still needs to read them against the source.",
+      "The cost cap is an estimate from list prices the operator sets, checked before each step, so a job can end a little over it. The cost figures in this section are the worker's own estimates from one job each and leave out hosting costs.",
+      "The AI writes descriptions and eligibility summaries in its own words. Quotes back them, but a reviewer still needs to read them against the source.",
       "Pages that are PDFs, or that need JavaScript to show their text, are not read.",
       "The agent is off unless the operator runs the worker and gives it an OpenAI key.",
     ],
@@ -299,16 +543,18 @@ export const SECTIONS: HowItWorksSection[] = [
     ],
   },
   {
-    id: "security",
-    title: "Security measures and their status",
+    id: "status",
+    title: "In place and pending",
     summary:
-      "Basic web protections are in place. Several protections a public service needs are still being worked on and are not active in this deployment yet.",
+      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come.",
     points: [
-      "\"In place\" means it is in the code and running. \"In progress\" means work on it has started and an open issue tracks it. It is not active in this deployment yet. \"Not built\" means nothing in the code provides it.",
+      "\"In place\" means it is in the code and running. \"In progress\" means work has started and an open issue tracks it; it is not active in this deployment yet. \"Not built\" means nothing in the code provides it.",
       "The overall plan for abuse and cost protection is issue #25. The plan for the staff console is issue #14.",
+      "A security assessment dated 16 November 2026 lists what must change before real residents use the guide. A remediation plan sets the order of work. Both files are listed under Where this is in the code.",
     ],
     limits: [
-      "This is a demonstration. It should not hold real resident records until the items listed above as In progress and Not built are in place.",
+      "This is a demonstration. It should not hold real resident records until the items in the status list marked In progress and Not built are in place.",
+      "Staff sign-in is a stub. It is simulated in the browser, the server does not check who reads the console's data, and edits are checked with one shared secret, not individual accounts.",
       "The access-code gate is for private demos. Codes are one per person or group. It is not a sign-in and keeps no record of visits.",
     ],
     sources: [
@@ -318,6 +564,8 @@ export const SECTIONS: HowItWorksSection[] = [
       "backend/app/middleware.py",
       "Dockerfile",
       "SECURITY.md",
+      "docs/SECURITY_ASSESSMENT_2026-11-16.md",
+      "docs/SECURITY_REMEDIATION_PLAN.md",
     ],
   },
 ];
@@ -347,13 +595,13 @@ export const PROTECTIONS: Protection[] = [
   { status: "in_place", label: "Text messages only to allowed country codes" },
   { status: "in_place", label: "Masked logging: phone numbers and emails are masked, and errors log their type, not their text" },
   { status: "in_place", label: "Container image runs as a non-root user; the sample compose file makes it read-only" },
-  { status: "in_place", issue: 26, label: "Per-route rate limits keyed to a per-device token as well as the network address, so people on a shared mobile network do not share one limit. Counters are kept in memory on each server instance. Crisis lines are never rate limited. The optional bot challenge is off on access-code deployments" },
-  { status: "in_place", issue: 27, label: "Token and voice-minute budgets with circuit breakers that pause the AI (never the directory or crisis lines), kept in memory on each server instance. Voice budgets are advisory until voice runs through the server (#29)" },
+  { status: "in_place", issue: 26, label: "Per-feature rate limits counted per device token as well as per network, so people on a shared mobile network do not share one limit. Counted in memory on each server copy. Crisis lines are never rate limited. The optional bot check is off on access-code deployments" },
+  { status: "in_place", issue: 27, label: "Token and voice-minute budgets with automatic pauses (circuit breakers) that stop the AI, never the directory or crisis lines. Counted in memory on each server copy. Voice budgets are advisory until voice runs through the server (#29)" },
   { status: "in_progress", issue: 28, label: "Off-topic and abuse detection, strikes, blocks and an incident log" },
   { status: "in_progress", issue: 29, label: "Raw-audio voice sessions brokered by the server, with a guard on each session" },
   { status: "in_progress", issue: 30, label: "A staff page for abuse and cost, with alerts and incident review" },
   { status: "in_progress", issue: 14, label: "Staff sign-in with roles, saved catalog edits, real analytics, audit log and reports" },
-  { status: "in_place", issue: 20, label: "Eligibility rule editing and service authoring in the console, checked against the data-pack contract (edits stay on one server instance until exported)" },
+  { status: "in_place", issue: 20, label: "Eligibility rule editing and service authoring in the console, checked against the data-pack contract (edits stay on one server copy until exported)" },
   { status: "in_place", issue: 18, label: "A catalog research agent for staff that drafts service records from public web pages, with a source link and quote for each field. Its worker runs on Railway and stays off until an OpenAI key is set there. Staff approve each search plan before it runs, review every draft, and merge exported drafts into the data pack by hand; nothing it drafts goes live on its own" },
   { status: "not_planned", label: "Data processing and data retention agreements with OpenAI and the text and email vendors (contracts the operator signs; no code provides them)" },
   { status: "not_planned", label: "Staff checking each catalog record against the provider" },

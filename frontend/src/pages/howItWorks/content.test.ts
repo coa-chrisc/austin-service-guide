@@ -2,19 +2,32 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { PROTECTIONS, SECTIONS, STATUS_LABELS } from "./content";
-import { CHAT_TURN, DIAGRAMS_BY_SECTION, RESEARCH_JOB, WHO_HOLDS_WHAT } from "./diagrams";
+import {
+  KEY_NUMBERS,
+  KEY_NUMBERS_NOTE,
+  OVERVIEW,
+  PROTECTIONS,
+  SAFETY_LAYERS,
+  SECTIONS,
+  STATUS_LABELS,
+} from "./content";
+import { CHAT_TURN, DIAGRAMS_BY_SECTION, RESEARCH_JOB, SYSTEM_MAP, WHO_HOLDS_WHAT } from "./diagrams";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../../..");
+const FRONTEND_SRC = path.resolve(HERE, "../..");
 
 /** Every string the page shows from the content and diagram modules. */
 function allCopy(): string[] {
-  const diagramText = [CHAT_TURN, WHO_HOLDS_WHAT, RESEARCH_JOB].flatMap((d) => [
+  const diagramText = [SYSTEM_MAP, CHAT_TURN, WHO_HOLDS_WHAT, RESEARCH_JOB].flatMap((d) => [
     d.caption,
     ...d.lanes.flatMap((l) => [l.label, l.boundaryBefore ?? "", ...l.nodes.flatMap((n) => [n.title, n.detail])]),
   ]);
   return [
+    ...OVERVIEW.flatMap((o) => [o.label, o.text]),
+    ...KEY_NUMBERS.flatMap((n) => [n.value, n.label]),
+    KEY_NUMBERS_NOTE,
+    ...SAFETY_LAYERS.flatMap((l) => [l.title, l.text]),
     ...SECTIONS.flatMap((s) => [s.title, s.summary, ...s.points, ...s.limits]),
     ...PROTECTIONS.map((p) => p.label),
     ...Object.values(STATUS_LABELS),
@@ -36,19 +49,79 @@ const hasBannedClaim = (text: string) =>
   BANNED.some((re) => re.test(ALLOWED.reduce((t, allowed) => t.replace(allowed, ""), text)));
 
 describe("How it works content", () => {
-  it("has the ten sections in the specified order, with the specified anchors", () => {
+  it("has the sections in the specified order, with the specified anchors", () => {
     expect(SECTIONS.map((s) => s.id)).toEqual([
       "what-this-is",
+      "journey",
       "architecture",
-      "ai-model",
-      "pii",
+      "scaling",
       "stateless",
-      "grounding",
+      "pii",
+      "ai-model",
+      "safety",
       "crisis",
-      "consistency",
+      "cost",
+      "staff-tools",
       "research",
-      "security",
+      "status",
     ]);
+  });
+
+  it("opens with one-minute overview cards, each linking to a section", () => {
+    const ids = new Set(SECTIONS.map((s) => s.id));
+    expect(OVERVIEW.map((o) => o.label)).toEqual(["What it does", "Architecture", "Safety", "Scale", "Status"]);
+    for (const o of OVERVIEW) {
+      expect(o.text, o.label).not.toBe("");
+      expect(o.text.split(/(?<=\.) /).length, o.label).toBeLessThanOrEqual(2);
+      expect(ids.has(o.section), o.label).toBe(true);
+    }
+  });
+
+  it("links every key number and safety card to an existing section", () => {
+    const ids = new Set(SECTIONS.map((s) => s.id));
+    for (const n of KEY_NUMBERS) expect(ids.has(n.section), n.label).toBe(true);
+    for (const l of SAFETY_LAYERS) if (l.section) expect(ids.has(l.section), l.title).toBe(true);
+  });
+
+  it("counts the crisis-check languages from the backend phrase lists", () => {
+    const phrases = fs.readFileSync(path.join(REPO_ROOT, "backend/app/services/crisis_phrases.py"), "utf8");
+    const block = phrases.slice(phrases.indexOf("PHRASES"));
+    const languages = new Set([...block.matchAll(/^ {4}"([a-z]{2})": \{$/gm)].map((m) => m[1]));
+    const tile = KEY_NUMBERS.find((n) => n.section === "crisis");
+    expect(tile?.value).toBe(String(languages.size));
+  });
+
+  it("links related sections only to other existing sections", () => {
+    const ids = new Set(SECTIONS.map((s) => s.id));
+    for (const s of SECTIONS) {
+      for (const id of s.related ?? []) {
+        expect(ids.has(id), `${s.id} -> ${id}`).toBe(true);
+        expect(id, s.id).not.toBe(s.id);
+      }
+    }
+  });
+
+  it("keeps every anchor that other pages link to", () => {
+    const ids = new Set(SECTIONS.map((s) => s.id));
+    const linked: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.tsx?$/.test(entry.name)) {
+          for (const m of fs.readFileSync(full, "utf8").matchAll(/\/how-it-works#([\w-]+)/g)) linked.push(m[1]);
+        }
+      }
+    };
+    walk(FRONTEND_SRC);
+    expect(linked).toContain("pii");
+    expect(linked.filter((id) => !ids.has(id))).toEqual([]);
+  });
+
+  it("gives every diagram a caption that says what it shows", () => {
+    for (const [id, diagram] of Object.entries(DIAGRAMS_BY_SECTION)) {
+      expect(diagram.caption, id).toMatch(/^Diagram [A-Z]\. \S.{20,}\.$/);
+    }
   });
 
   it("states the research agent's caveats next to its claims", () => {
@@ -61,6 +134,9 @@ describe("How it works content", () => {
     expect(limits).toMatch(/estimate/);
     expect(research?.points.join(" ")).toMatch(/left blank, not guessed/);
     expect(DIAGRAMS_BY_SECTION.research).toBe(RESEARCH_JOB);
+    expect(DIAGRAMS_BY_SECTION.architecture).toBe(SYSTEM_MAP);
+    expect(DIAGRAMS_BY_SECTION["ai-model"]).toBe(CHAT_TURN);
+    expect(DIAGRAMS_BY_SECTION.stateless).toBe(WHO_HOLDS_WHAT);
     expect(new Set(RESEARCH_JOB.lanes.map((l) => l.label)).size).toBe(RESEARCH_JOB.lanes.length);
   });
 
