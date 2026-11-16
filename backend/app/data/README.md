@@ -363,6 +363,36 @@ resident's language matches. Anything not listed falls back to English.
 
 ---
 
+## Demo personas (`personas.yaml`, optional)
+
+Pre-written resident scenarios for the `?demo=1` launcher on the landing
+page. Playing one makes no model call: the seed profile goes through the
+rules engine, and the browser replays the script before showing the plan.
+
+```yaml
+heat-outdoor-worker:              # key = id
+  id: heat-outdoor-worker
+  label: Outdoor worker with a broken AC
+  language: en                    # conversation language
+  summary: A roadway construction worker with ...   # one sentence on the card
+  shows: [Extreme heat, Uninsured care, Utility help]  # 2-3 short tags
+  seed_profile: { ... }           # ResidentProfile fields
+  opening_message: Hi — I do roadway construction ...
+  persona_note: Seed hypothesis ...  # appended to the shared note for the model
+  script:                         # replayed after the opening message
+    - role: assistant             # assistant | user
+      content: ...
+      delay_ms: 900               # optional; the replay paces by length anyway
+```
+
+A translated variant uses the base id plus `-<language>` (for example
+`heat-outdoor-worker-vi`); the launcher shows it as a language chip on the
+base scenario's card. Keep each closing assistant line true to the plan the
+seed produces: the bundled pack's `tests/test_personas.py` checks that the
+services it promises are in the plan's top five.
+
+---
+
 ## Validation
 
 On startup, the loader will reject any file that:

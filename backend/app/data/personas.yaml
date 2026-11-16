@@ -2,11 +2,23 @@
 # Optional: a pack without this file offers no personas. Each entry seeds a
 # ResidentProfile, an opening message and an optional scripted dialogue.
 # persona_note is appended after the shared hybrid-note prefix in
-# app/services/personas.py.
+# app/services/personas.py. summary (one sentence about the person) and shows
+# (2-3 short tags) are what the launcher card shows. A translated variant uses
+# the base id plus "-<language>" so the launcher can group it with its base.
+#
+# The replay makes no model call: the plan comes from seed_profile through
+# the rules engine. Keep each closing assistant line true to that plan's top
+# three (tests/test_personas.py checks the slugs).
 heat-outdoor-worker:
   id: heat-outdoor-worker
-  label: Heat — outdoor worker, broken AC
+  label: Outdoor worker with a broken AC
   language: en
+  summary: A roadway construction worker with high blood pressure, no health insurance and a broken AC,
+    behind on the electric bill.
+  shows:
+  - Extreme heat
+  - Uninsured care
+  - Utility help
   seed_profile:
     age_range: 40s
     household_size: 4
@@ -19,6 +31,7 @@ heat-outdoor-worker:
     immediate_needs:
     - utilities
     - healthcare
+    - primary care
     languages_spoken:
     - en
     - es
@@ -53,14 +66,19 @@ heat-outdoor-worker:
       to put money toward the AC repair quote.
     delay_ms: 1300
   - role: assistant
-    content: 'Got it. I''m going to put together a plan that covers all three: somewhere cool right now,
-      help paying down that electric bill plus the AC fix, and a clinic that will see you uninsured. One
-      moment…'
+    content: Got it. I'll put together a plan that starts with help for the AC, then help catching up on
+      that electric bill, and a free clinic for uninsured adults. I'll add the cooling centers that open
+      during heat advisories too. One moment…
     delay_ms: 1100
 schools-anxious-student:
   id: schools-anxious-student
-  label: Schools — anxious 7th grader
+  label: Parent of an anxious 7th grader
   language: en
+  summary: A working parent whose daughter is missing school because of anxiety, with insurance but a
+    large deductible.
+  shows:
+  - Youth mental health
+  - School-based care
   seed_profile:
     age_range: 40s
     household_size: 3
@@ -69,7 +87,6 @@ schools-anxious-student:
     employment_status: full-time
     income_bracket: $30,000-$40,000
     insurance_status: employer
-    has_children: true
     immediate_needs:
     - mental health
     languages_spoken:
@@ -108,14 +125,20 @@ schools-anxious-student:
       is huge.
     delay_ms: 1200
   - role: assistant
-    content: Good — there are programs that meet kids at school so you don't burn through that deductible.
-      Let me put together a plan with a school-based counseling option first, plus a backup community
-      provider in case you want a second opinion. One moment…
+    content: Thank you. Some school-based programs have sliding-scale slots, so ask about cost when you
+      call. I'll put together a plan with school-based counseling first, plus a community mental health
+      provider as a backup. One moment…
     delay_ms: 1100
 equity-east-austin:
   id: equity-east-austin
-  label: East Austin — displacement squeeze
+  label: Older renters facing rising costs
   language: en
+  summary: A couple in their late 60s on fixed income, renting in East Austin for thirty years, with
+    rising rent and a husband managing diabetes.
+  shows:
+  - Displacement pressure
+  - Older adults
+  - Heat and health
   seed_profile:
     age_range: 60s
     household_size: 2
@@ -129,6 +152,8 @@ equity-east-austin:
     - housing
     - utilities
     - healthcare
+    - primary care
+    - pharmacy
     languages_spoken:
     - en
     - es
@@ -153,22 +178,29 @@ equity-east-austin:
       us to pay part of it. We're both 67.
     delay_ms: 1300
   - role: assistant
-    content: That's actually important — the landlord can't legally pass property tax onto you that way.
-      I'll flag a tenant-rights resource alongside the housing-stability options. Are you on Medicare,
-      and is your husband managing any chronic conditions I should keep in mind?
+    content: That's worth checking. A tenant-rights group can tell you whether your lease allows that.
+      Are you on Medicare, and is your husband managing any chronic conditions I should keep in mind?
     delay_ms: 1100
   - role: user
     content: Yes, both on Medicare. He has diabetes and his medications are getting expensive on top of
       everything else.
     delay_ms: 1300
   - role: assistant
-    content: Understood. I'll put together a plan that covers housing stability, utility help, senior
-      services, and a low-cost prescription program. One moment…
+    content: Understood. Heat is hard on someone with diabetes, so I'll put together a plan that starts
+      with help keeping your home cool this summer, then housing help for older adults, and a health center
+      with a pharmacy and sliding-scale fees. I'll include a tenant-rights group for the property tax question
+      too. One moment…
     delay_ms: 1100
 refugee-food:
   id: refugee-food
-  label: Refugee family — food + coordination
+  label: Refugee family short on food
   language: en
+  summary: A family of five who arrived eight months ago, lost touch with their case worker, are short
+    on food and need a doctor who speaks Arabic for a coughing toddler.
+  shows:
+  - Refugee families
+  - Food help
+  - Uninsured care
   seed_profile:
     age_range: 30s
     household_size: 5
@@ -181,9 +213,12 @@ refugee-food:
     immediate_needs:
     - food
     - healthcare
+    - primary care
     - education
+    # Services in Arabic: the resident's English covers groceries, not the
+    # doctor, so the plan should pick providers that offer Arabic.
     languages_spoken:
-    - en
+    - ar
     is_refugee_or_immigrant: true
     primary_language: ar
   opening_message: We arrived in Austin eight months ago. My kids are in school but we’re still figuring
@@ -212,14 +247,19 @@ refugee-food:
       the doctor.
     delay_ms: 1300
   - role: assistant
-    content: Got it. I'll line up a clinic that takes uninsured patients and has Arabic-speaking staff,
-      a food pantry that knows refugee families, and I'll flag this to a coordinator so you don't have
-      to keep starting over. One moment…
+    content: Got it. I'll put together a plan with WIC, which may help with food for your two-year-old,
+      a food pantry that works with refugee families, and a health center that sees uninsured patients
+      and offers services in Arabic. One moment…
     delay_ms: 1100
 heat-outdoor-worker-vi:
   id: heat-outdoor-worker-vi
-  label: Heat — outdoor worker (Tiếng Việt)
+  label: Outdoor worker with a broken AC (Tiếng Việt)
   language: vi
+  summary: The same outdoor worker scenario, with the conversation in Vietnamese.
+  shows:
+  - Extreme heat
+  - Uninsured care
+  - Utility help
   seed_profile:
     age_range: 40s
     household_size: 4
@@ -232,6 +272,7 @@ heat-outdoor-worker-vi:
     immediate_needs:
     - utilities
     - healthcare
+    - primary care
     languages_spoken:
     - vi
     - en
@@ -265,14 +306,18 @@ heat-outdoor-worker-vi:
       tiền sửa máy lạnh.
     delay_ms: 1300
   - role: assistant
-    content: 'Hiểu rồi. Tôi sẽ lập một kế hoạch bao gồm cả ba phần: nơi tránh nóng ngay bây giờ, hỗ trợ
-      thanh toán hóa đơn điện cùng với sửa máy lạnh, và một phòng khám nhận bệnh nhân không bảo hiểm.
-      Một chút thôi…'
+    content: Hiểu rồi. Tôi sẽ lập một kế hoạch, bắt đầu với hỗ trợ sửa máy lạnh, sau đó là giúp trả hóa
+      đơn điện bị trễ, và một phòng khám miễn phí cho người lớn không có bảo hiểm. Tôi cũng sẽ thêm các
+      trung tâm làm mát mở cửa khi có cảnh báo nắng nóng. Một chút thôi…
     delay_ms: 1100
 schools-anxious-student-es:
   id: schools-anxious-student-es
-  label: Schools — anxious 7th grader (Español)
+  label: Parent of an anxious 7th grader (Español)
   language: es
+  summary: The same school mental-health scenario, with the conversation in Spanish.
+  shows:
+  - Youth mental health
+  - School-based care
   seed_profile:
     age_range: 40s
     household_size: 3
@@ -281,7 +326,6 @@ schools-anxious-student-es:
     employment_status: full-time
     income_bracket: $30,000-$40,000
     insurance_status: employer
-    has_children: true
     immediate_needs:
     - mental health
     languages_spoken:
@@ -318,14 +362,19 @@ schools-anxious-student-es:
     content: Está en Lamar Middle School en AISD. Tenemos seguro por mi trabajo pero el deducible es enorme.
     delay_ms: 1200
   - role: assistant
-    content: Bien — hay programas que atienden a los niños en la escuela para que no tengan que pagar
-      el deducible. Voy a armar un plan con una opción de consejería escolar primero, y un proveedor comunitario
-      de respaldo por si quieres una segunda opinión. Un momento…
+    content: Gracias. Algunos programas escolares tienen cupos con tarifa según ingresos, así que pregunta
+      por el costo cuando llames. Voy a armar un plan con consejería en la escuela primero, y un proveedor
+      comunitario de salud mental como respaldo. Un momento…
     delay_ms: 1100
 equity-east-austin-zh:
   id: equity-east-austin-zh
-  label: East Austin — displacement (中文)
+  label: Older renters facing rising costs (中文)
   language: zh
+  summary: The same rising-costs scenario, with the conversation in Mandarin Chinese.
+  shows:
+  - Displacement pressure
+  - Older adults
+  - Heat and health
   seed_profile:
     age_range: 60s
     household_size: 2
@@ -339,6 +388,8 @@ equity-east-austin-zh:
     - housing
     - utilities
     - healthcare
+    - primary care
+    - pharmacy
     languages_spoken:
     - zh
     - en
@@ -355,18 +406,23 @@ equity-east-austin-zh:
     content: 我们租的。房子是房东的，但他刚把房产税单寄给我们，要求我们支付一部分。我们俩都是67岁。
     delay_ms: 1300
   - role: assistant
-    content: 这个其实很重要 — 房东不能合法地这样把房产税转嫁给你们。我会在住房稳定方案旁边标注一个租户权益资源。你们用Medicare吗？先生有没有什么需要长期管理的健康问题？
+    content: 这一点值得核实。租户权益组织可以告诉你们，你们的租约是否允许房东这样做。你们用Medicare吗？先生有没有什么需要长期管理的健康问题？
     delay_ms: 1100
   - role: user
     content: 对，我们都用Medicare。他有糖尿病，加上其他费用，他的药费越来越贵。
     delay_ms: 1300
   - role: assistant
-    content: 明白了。我会准备一个计划，包含住房稳定、水电费帮助、长者服务和一个低费用处方药项目。请稍等…
+    content: 明白了。炎热天气对糖尿病患者负担很大，所以我准备的计划会先帮你们在夏天让家里保持凉爽，然后是面向长者的住房帮助，以及一家有药房、按收入收费的医疗中心。我也会加上一个租户权益组织，帮你们处理房产税的问题。请稍等…
     delay_ms: 1100
 refugee-food-ar:
   id: refugee-food-ar
-  label: Refugee family — food + coordination (العربية)
+  label: Refugee family short on food (العربية)
   language: ar
+  summary: The same refugee family scenario, with the conversation in Arabic.
+  shows:
+  - Refugee families
+  - Food help
+  - Uninsured care
   seed_profile:
     age_range: 30s
     household_size: 5
@@ -379,6 +435,7 @@ refugee-food-ar:
     immediate_needs:
     - food
     - healthcare
+    - primary care
     - education
     languages_spoken:
     - ar
@@ -406,6 +463,7 @@ refugee-food-ar:
     content: لا تأمين لأي منا. العربية هي الأنسب — إنجليزيتي تكفي للتسوق لكن ليس عند الطبيب.
     delay_ms: 1300
   - role: assistant
-    content: حسناً. سأرتب لكم عيادة تستقبل المرضى بدون تأمين ولديها موظفون يتكلمون العربية، ومخزن طعام
-      يعرف العائلات اللاجئة، وسأبلغ منسقاً حتى لا تضطروا للبدء من جديد. لحظة من فضلك…
+    content: حسناً. سأعدّ لكم خطة تشمل برنامج WIC الذي قد يساعد في توفير الطعام لطفلك ذي السنتين، وبنك
+      طعام يعمل مع العائلات اللاجئة، ومركزاً صحياً يستقبل المرضى بدون تأمين ويقدم خدماته باللغة العربية.
+      لحظة من فضلك…
     delay_ms: 1100

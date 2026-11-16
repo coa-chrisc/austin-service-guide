@@ -160,6 +160,12 @@ async def start_persona_session(persona_id: str) -> IntakeSession | None:
     Demo personas are deterministic: seed the profile, run matching, mark
     completed. The frontend replays the persona's scripted conversation
     client-side, then shows the results. No model call.
+
+    The scripted turns are stored in the conversation too, so a live-AI
+    plan (``plan.build_application_order`` reads the recent transcript)
+    sees what the resident "said". The session is completed, and
+    ``/message`` and the realtime endpoints refuse completed intakes, so
+    the scripted step counter (``_scripted_step_num``) never runs on it.
     """
     from app.services.personas import get_persona
 
@@ -175,9 +181,18 @@ async def start_persona_session(persona_id: str) -> IntakeSession | None:
         role=MessageRole.user,
         content=persona.opening_message,
     ))
+    for turn in persona.script:
+        session.conversation.append(IntakeMessage(
+            role=MessageRole(turn.role),
+            content=turn.content,
+        ))
 
     profile = session.extracted_profile
-    profile.languages_spoken = [session.language] if session.language != "en" else ["en"]
+    # The seed lists the languages the resident wants services in (e.g.
+    # Arabic for doctor visits even when chatting in English); a seed
+    # without any falls back to the conversation language.
+    if not profile.languages_spoken:
+        profile.languages_spoken = [session.language]
     session.matches = match_services(profile)
     session.risk_flags = assess_risks(profile)
     session.status = IntakeStatus.completed
