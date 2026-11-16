@@ -88,6 +88,9 @@
       "agencyWebsite": "https://example.org/metro-public-health",
       "accessibilityUrl": "https://example.org/metro-public-health/accessibility"
     },
+    "links": {
+      "sourceRepoUrl": "https://github.com/coa-chrisc/austin-service-guide"
+    },
     "darkColors": {
       "primary": "#7CC4D4",
       "accent": "#F0A878",

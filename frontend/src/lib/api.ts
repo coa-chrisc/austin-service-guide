@@ -199,6 +199,32 @@ export function getVoiceConfig() {
   );
 }
 
+/** GET /api/v1/about: the running deployment's settings (configuration only). */
+export interface AboutInfo {
+  app_name: string;
+  live_ai: boolean;
+  text_model: string;
+  reasoning_effort: string;
+  plan_reasoning_effort: string;
+  max_tool_iterations: number;
+  tools: string[];
+  voice: { mode: VoicePipelineMode; raw_audio_allowed: boolean; realtime_model: string | null };
+  pii_kinds: string[];
+  limits: { intake_body_bytes: number; state_messages: number; message_chars: number };
+  catalog: {
+    services_total: number;
+    services_verified: number | null;
+    categories: number;
+    local_crisis_lines: number;
+  };
+  admin: { auth: string; catalog_writes_persist: boolean };
+  access_gate: boolean;
+}
+
+export function getAbout() {
+  return apiRequest<AboutInfo>("GET", "/api/v1/about", undefined, { timeoutMs: 8000 });
+}
+
 export interface RealtimeClientSecretResponse {
   state: IntakeState;
   model: string;
