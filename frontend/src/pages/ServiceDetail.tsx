@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -15,12 +15,21 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import ServiceDetailCard from "@/components/services/ServiceDetailCard";
-import ServiceMap from "@/components/map/ServiceMap";
 import { getServiceBySlug } from "@/lib/api";
 import { loadIntakeState } from "@/lib/session";
 import { planNavigation } from "@/lib/planSteps";
 import { makeResultsT } from "@/lib/resultsI18n";
 import type { Service, MapPin } from "@/types";
+import { ChunkErrorBoundary } from "@/components/common/RouteChunk";
+import { ChunkLoadError } from "@/lib/chunkReload";
+
+// Leaflet is heavy: load the map after the details, and drop the section if it cannot load
+// (no page reload: the details already showed, so a failed map is not worth losing them).
+const ServiceMap = lazy(() =>
+  import("@/components/map/ServiceMap").catch((error: unknown) => {
+    throw new ChunkLoadError(error);
+  }),
+);
 
 export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -230,22 +239,26 @@ export default function ServiceDetail() {
 
         {/* Map showing all locations */}
         {mapPins.length > 0 && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              Locations
-            </Typography>
-            <Box
-              sx={{
-                height: 400,
-                borderRadius: (theme) => theme.shape.radius.card,
-                overflow: "hidden",
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <ServiceMap pins={mapPins} showControls={false} fitBounds />
+          <ChunkErrorBoundary fallback={null}>
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h5" fontWeight={600} gutterBottom>
+                Locations
+              </Typography>
+              <Box
+                sx={{
+                  height: 400,
+                  borderRadius: (theme) => theme.shape.radius.card,
+                  overflow: "hidden",
+                  border: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Suspense fallback={null}>
+                  <ServiceMap pins={mapPins} showControls={false} fitBounds />
+                </Suspense>
+              </Box>
             </Box>
-          </Box>
+          </ChunkErrorBoundary>
         )}
       </Container>
     </>

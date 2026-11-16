@@ -42,7 +42,7 @@ Frontend (run from `frontend/`):
 ```bash
 npm install
 npm run dev                                    # Vite dev server at http://localhost:5173
-npm run build                                  # tsc -b && vite build (the required CI check)
+npm run build                                  # tsc -b && vite build && check:size (first-load JS gzip budget; the required CI check)
 npm test                                       # vitest (client PII guard vs shared fixtures)
 npm run validate:catalog                       # catalog YAML vs config/services.schema.json (-- --strict fails on unverified entries)
 npm run validate:pack                          # whole data pack vs config/schemas/ + cross-file rules (-- --data-dir <dir> --json); contract in docs/DATA_PACK.md

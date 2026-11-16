@@ -282,7 +282,7 @@ CLAUDE.md          Architecture and conventions for AI coding tools
 
 ```bash
 cd frontend
-npm run build              # tsc -b && vite build
+npm run build              # tsc -b && vite build, then the first-load size budget
 npm test                   # vitest: client PII guard against the shared fixtures
 npm run validate:catalog   # catalog YAML vs config/services.schema.json (add -- --strict to fail on unverified entries)
 ```

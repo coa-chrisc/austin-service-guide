@@ -35,7 +35,7 @@ What the server does hold is the service catalog, loaded from YAML at startup, a
 
 **Clearing it.** The "Start over" button in the header (`frontend/src/components/layout/StartOverButton.tsx`, calling `clearIntakeState`) asks for confirmation, then removes every `asg.intake.*` key from `sessionStorage`, drops any response still in flight, removes the legacy `asg.activeSession` key from `localStorage`, and deletes the legacy `intake-results` cache, then returns to the home page. Older builds cached `/results` responses (profile and matches) in that service-worker cache and kept a results-link id in `localStorage`. The current build also deletes that cache every time the page loads. Closing the tab clears `sessionStorage` without any action.
 
-**Other browser storage.** The service worker caches the public service catalog (`/api/v1/services`, up to 7 days) and map/font assets. It does not cache intake requests (`frontend/vite.config.ts`).
+**Other browser storage.** The service worker caches the public service catalog (`/api/v1/services`, up to 7 days) and map/font assets. It does not cache intake requests (`frontend/vite.config.ts`). It precaches the code for the resident pages only; the staff console, map, login, demo and How it works code is downloaded when opened (`frontend/plugins/precacheShellPlugin.ts`). If a page's code fails to download (usually a tab left open across a new deploy), the app reloads once and keeps only a timestamp in `sessionStorage` (`asg.chunkReloadAt`) so it does not reload in a loop (`frontend/src/lib/chunkReload.ts`).
 
 ## What residents are told
 
