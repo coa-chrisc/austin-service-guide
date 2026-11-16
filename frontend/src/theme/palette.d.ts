@@ -29,7 +29,22 @@ export interface BrandPalette {
   textOn: (fill: string) => string;
 }
 
+/** Radius roles from the city config as CSS lengths (theme.shape.radius). */
+export interface BrandRadius {
+  chip: string;
+  control: string;
+  card: string;
+  panel: string;
+  pill: string;
+}
+
 declare module "@mui/material/styles" {
+  interface Shape {
+    radius: BrandRadius;
+  }
+  interface ShapeOptions {
+    radius?: BrandRadius;
+  }
   interface Palette {
     brand: BrandPalette;
   }
