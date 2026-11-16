@@ -149,7 +149,7 @@ export default function ServiceDirectory() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={700} gutterBottom>
+      <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
         Service Directory
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
@@ -180,8 +180,9 @@ export default function ServiceDirectory() {
           }}
         />
         <FormControl size="small" sx={{ flex: { xs: 1, sm: "none" }, minWidth: 140 }}>
-          <InputLabel>Sort</InputLabel>
+          <InputLabel id="dir-sort-label">Sort</InputLabel>
           <Select
+            labelId="dir-sort-label"
             value={sort}
             label="Sort"
             onChange={(e) => {
@@ -296,7 +297,7 @@ export default function ServiceDirectory() {
       {showEmptyWithFilters && (
         <Box sx={{ py: 6 }}>
           <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
+            <Typography variant="h6" component="p" color="text.secondary" gutterBottom>
               No exact matches
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -335,7 +336,7 @@ export default function ServiceDirectory() {
         selectedCategories.length === 0 &&
         !zip && (
           <Box sx={{ textAlign: "center", py: 8 }}>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" component="p" color="text.secondary">
               No services available.
             </Typography>
           </Box>

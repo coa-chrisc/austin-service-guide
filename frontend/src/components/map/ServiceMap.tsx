@@ -424,12 +424,15 @@ export default function ServiceMap({
                 key={pin.id}
                 position={[pin.latitude, pin.longitude]}
                 icon={createCategoryIcon(pin.category, theme)}
+                // Leaflet makes markers focusable buttons; the title is their accessible name.
+                title={pin.name}
                 opacity={isHighlighted ? 1 : nearestActive ? 0.55 : 1}
               >
                 <Popup>
                   <Box sx={{ minWidth: 220, p: 0.5 }}>
                     <Typography
                       variant="subtitle2"
+                      component="p"
                       sx={{
                         fontWeight: 700,
                         fontSize: 14,
@@ -517,6 +520,7 @@ export default function ServiceMap({
           {userPosition && (
             <Marker
               position={userPosition}
+              title="Your Location"
               icon={L.divIcon({
                 html: `<div style="
                   background: ${theme.palette.info.main};

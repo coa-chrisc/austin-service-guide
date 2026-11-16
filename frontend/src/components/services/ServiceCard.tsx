@@ -44,6 +44,14 @@ const CONFIDENCE_COLORS: Record<
   low: "default",
 };
 
+// Outlined chips draw their text in <color>.main, which is under 4.5:1 for
+// the green and amber fills; keep the colored border, use a text-safe color.
+const CONFIDENCE_TEXT: Record<MatchConfidence, { color?: string }> = {
+  high: { color: "success.dark" },
+  medium: { color: "text.primary" },
+  low: {},
+};
+
 const CONFIDENCE_LABELS: Record<MatchConfidence, string> = {
   high: "Strong Match",
   medium: "Likely Match",
@@ -125,7 +133,13 @@ export default function ServiceCard({
                 size="small"
                 color={CONFIDENCE_COLORS[matchConfidence]}
                 variant="outlined"
-                sx={{ fontSize: 11, fontWeight: 600, height: 22, ml: "auto" }}
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  height: 22,
+                  ml: "auto",
+                  ...CONFIDENCE_TEXT[matchConfidence],
+                }}
               />
             )}
           </Box>
@@ -133,6 +147,7 @@ export default function ServiceCard({
           {/* Service name */}
           <Typography
             variant="subtitle1"
+            component="p"
             fontWeight={700}
             gutterBottom
             sx={{
@@ -188,9 +203,11 @@ export default function ServiceCard({
                 fontSize: 11,
                 fontWeight: 500,
                 height: 22,
+                // success.dark is the text-safe green (positive); success.main
+                // (positiveFill) is under 4.5:1 as small text.
                 color:
                   service.cost_type === "free"
-                    ? "success.main"
+                    ? "success.dark"
                     : "text.secondary",
                 borderColor:
                   service.cost_type === "free" ? "success.main" : "divider",

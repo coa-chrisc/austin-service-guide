@@ -305,6 +305,7 @@ export default function Landing() {
         <Container maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
           <Typography
             variant="h2"
+            component="h1"
             fontWeight={800}
             sx={{
               fontSize: { xs: "2rem", sm: "2.75rem", md: "3.25rem" },
@@ -316,6 +317,7 @@ export default function Landing() {
           </Typography>
           <Typography
             variant="h6"
+            component="p"
             sx={{
               opacity: 0.9,
               fontWeight: 400,
@@ -368,6 +370,7 @@ export default function Landing() {
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Typography
           variant="h4"
+          component="h2"
           fontWeight={700}
           textAlign="center"
           gutterBottom
@@ -446,7 +449,7 @@ export default function Landing() {
                     {idx + 1}
                   </Box>
                 </Box>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
+                <Typography variant="h6" component="h3" fontWeight={600} gutterBottom>
                   {step.title}
                 </Typography>
                 <Typography
@@ -467,6 +470,7 @@ export default function Landing() {
         <Container maxWidth="lg">
           <Typography
             variant="h4"
+            component="h2"
             fontWeight={700}
             textAlign="center"
             gutterBottom
@@ -579,6 +583,7 @@ export default function Landing() {
               <Grid key={stat.label} size={{ xs: 6, md: 3 }}>
                 <Typography
                   variant="h3"
+                  component="p"
                   fontWeight={800}
                   sx={{ fontSize: { xs: "2rem", md: "2.5rem" } }}
                 >
@@ -645,6 +650,7 @@ export default function Landing() {
               <Grid size={{ xs: 12, md: 4 }}>
                 <Typography
                   variant="subtitle2"
+                  component="h2"
                   sx={{
                     fontWeight: 700,
                     mb: 1,
@@ -675,6 +681,7 @@ export default function Landing() {
               <Grid size={{ xs: 12, md: 3 }}>
                 <Typography
                   variant="subtitle2"
+                  component="h2"
                   sx={{
                     fontWeight: 700,
                     mb: 1,
