@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme, type Theme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -9,95 +8,52 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Skeleton from "@mui/material/Skeleton";
 import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import Tooltip from "@mui/material/Tooltip";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import Grid from "@mui/material/Grid";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import DownloadIcon from "@mui/icons-material/Download";
 import ScheduleIcon from "@mui/icons-material/Schedule";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import DescriptionIcon from "@mui/icons-material/Description";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
-import { getAdminReports, type AdminReport } from "../../lib/api";
+import { getAdminReports } from "../../lib/api";
+import { localRunTime } from "./reports/format";
+import { hasCsv, hasPdf, loadReportData, type ReportDef } from "./reports/reportData";
+import { downloadPdf, downloadReportCsv } from "./reports/reportActions";
 
 const CATEGORY_COLORS: Record<
   string,
-  "primary" | "secondary" | "success" | "warning" | "default"
+  "primary" | "secondary" | "success" | "warning" | "info" | "default"
 > = {
-  Operations: "primary",
+  Leadership: "primary",
+  Programs: "secondary",
   Equity: "success",
-  Analytics: "secondary",
+  Analytics: "info",
   Catalog: "warning",
-  System: "default",
 };
-
-/** Index into theme.palette.brand.series per report format. */
-const FORMAT_SERIES_INDEX: Record<string, number> = {
-  PDF: 0,
-  CSV: 1,
-  "PDF + CSV": 2,
-};
-
-function formatColor(theme: Theme, format: string): string {
-  const { series } = theme.palette.brand;
-  return series[(FORMAT_SERIES_INDEX[format] ?? 0) % series.length];
-}
-
-function formatTimestamp(iso: string) {
-  if (!iso) return "Never";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function downloadCsv(report: AdminReport) {
-  const header = ["report_id", "title", "category", "row_count", "last_run"];
-  const row = [
-    report.id,
-    `"${report.title.replace(/"/g, '""')}"`,
-    report.category,
-    String(report.row_count),
-    report.last_run,
-  ];
-  const csv = `${header.join(",")}\n${row.join(",")}\n`;
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${report.id}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
 
 export default function AdminReports() {
   const navigate = useNavigate();
-  const theme = useTheme();
-  const [reports, setReports] = useState<AdminReport[]>([]);
+  const [reports, setReports] = useState<ReportDef[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [snackbar, setSnackbar] = useState<string | null>(null);
-  const [runningId, setRunningId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await getAdminReports();
-        if (cancelled) return;
-        setReports(res);
+        const res = (await getAdminReports()) as ReportDef[];
+        if (!cancelled) setReports(res);
       } catch (err) {
         console.error("Failed to load reports", err);
+        if (!cancelled) setLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -112,28 +68,33 @@ export default function AdminReports() {
     [reports],
   );
 
-  const filtered = useMemo(() => {
-    if (categoryFilter === "all") return reports;
-    return reports.filter((r) => r.category === categoryFilter);
-  }, [reports, categoryFilter]);
+  const filtered = useMemo(
+    () =>
+      categoryFilter === "all"
+        ? reports
+        : reports.filter((r) => r.category === categoryFilter),
+    [reports, categoryFilter],
+  );
 
-  const handleRun = (report: AdminReport) => {
-    setRunningId(report.id);
-    setSnackbar(`Running "${report.title}"…`);
-    setTimeout(() => {
-      setReports((prev) =>
-        prev.map((r) =>
-          r.id === report.id ? { ...r, last_run: new Date().toISOString() } : r,
-        ),
-      );
-      setRunningId(null);
-      setSnackbar(`"${report.title}" finished — ${report.row_count} rows`);
-    }, 900);
+  const handlePdf = async (report: ReportDef) => {
+    setBusyId(report.id);
+    const ok = await downloadPdf(report.id);
+    setBusyId(null);
+    // No pre-rendered file for this deployment: print the live view instead.
+    if (!ok) navigate(`/admin/reports/${report.id}?print=1`);
   };
 
-  const handleDownload = (report: AdminReport) => {
-    downloadCsv(report);
-    setSnackbar(`Downloaded ${report.id}.csv`);
+  const handleCsv = async (report: ReportDef) => {
+    setBusyId(report.id);
+    try {
+      const data = await loadReportData(report.id === "catalog-export");
+      downloadReportCsv(report.id, data);
+    } catch (err) {
+      console.error("Failed to build CSV", err);
+      setToast({ text: "The CSV could not be built. Try again.", error: true });
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -144,49 +105,12 @@ export default function AdminReports() {
           Reports
         </Typography>
       </Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Prebuilt scheduled reports. Run on demand or download the latest output.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 760 }}>
+        Aggregate reports for leadership, programs and equity staff. Open a
+        report to read or print it, or download it as a PDF or CSV. Figures are
+        synthetic demonstration data; counts under 11 are shown as "&lt;11".
       </Typography>
 
-      {/* -- summary --------------------------------------------------- */}
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }} flexWrap="wrap">
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Total Reports
-            </Typography>
-            <Typography variant="h4" fontWeight={700}>
-              {loading ? <Skeleton width={60} /> : reports.length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Scheduled Daily
-            </Typography>
-            <Typography variant="h4" fontWeight={700}>
-              {loading ? (
-                <Skeleton width={60} />
-              ) : (
-                reports.filter((r) => r.schedule.startsWith("Daily")).length
-              )}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 180 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Categories
-            </Typography>
-            <Typography variant="h4" fontWeight={700}>
-              {loading ? <Skeleton width={60} /> : categories.length}
-            </Typography>
-          </CardContent>
-        </Card>
-      </Stack>
-
-      {/* -- filters --------------------------------------------------- */}
       <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
         <TextField
           select
@@ -205,183 +129,145 @@ export default function AdminReports() {
         </TextField>
       </Stack>
 
-      {/* -- report cards --------------------------------------------- */}
+      {loadError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          The report list could not be loaded. Refresh the page to try again.
+        </Alert>
+      )}
+
       {loading ? (
         <Grid container spacing={2}>
           {[...Array(6)].map((_, i) => (
             <Grid key={i} size={{ xs: 12, md: 6 }}>
-              <Skeleton variant="rectangular" height={180} />
+              <Skeleton variant="rectangular" height={200} />
             </Grid>
           ))}
         </Grid>
       ) : (
         <Grid container spacing={2}>
-          {filtered.map((report) => (
-            <Grid key={report.id} size={{ xs: 12, md: 6 }}>
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <CardContent
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1.25,
-                  }}
-                >
-                  <Box
+          {filtered.map((report) => {
+            const lastRun =
+              report.cadence === "on_demand" ? "" : localRunTime(report.last_run);
+            const busy = busyId === report.id;
+            return (
+              <Grid key={report.id} size={{ xs: 12, md: 6 }}>
+                <Card sx={{ height: "100%" }}>
+                  <CardContent
                     sx={{
                       display: "flex",
-                      alignItems: "flex-start",
-                      gap: 1.5,
+                      flexDirection: "column",
+                      gap: 1.25,
+                      height: "100%",
                     }}
                   >
-                    <DescriptionIcon
-                      sx={{
-                        color: formatColor(theme, report.format),
-                        mt: 0.5,
-                      }}
-                    />
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        {report.title}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.25 }}
-                      >
-                        {report.description}
-                      </Typography>
+                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                      <DescriptionIcon color="primary" sx={{ mt: 0.25 }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle1" fontWeight={700}>
+                          {report.title}
+                        </Typography>
+                        {report.audience && (
+                          <Typography variant="caption" color="text.secondary">
+                            For: {report.audience}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                          {report.description}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
 
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    flexWrap="wrap"
-                    sx={{ gap: 0.75 }}
-                  >
-                    <Chip
-                      label={report.category}
-                      size="small"
-                      color={CATEGORY_COLORS[report.category] ?? "default"}
-                    />
-                    <Chip
-                      label={report.format}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        borderColor: formatColor(theme, report.format),
-                        color: "text.primary",
-                        fontWeight: 600,
-                      }}
-                    />
-                    <Chip
-                      label={`${report.row_count.toLocaleString()} rows`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </Stack>
+                    <Stack direction="row" flexWrap="wrap" useFlexGap sx={{ gap: 0.75 }}>
+                      <Chip
+                        label={report.category}
+                        size="small"
+                        color={CATEGORY_COLORS[report.category] ?? "default"}
+                      />
+                      <Chip label={report.format} size="small" variant="outlined" />
+                    </Stack>
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 2,
-                      mt: 0.5,
-                    }}
-                  >
                     <Box
                       sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 0.5,
+                        flexWrap: "wrap",
+                        columnGap: 2,
+                        rowGap: 0.5,
                       }}
                     >
-                      <ScheduleIcon
-                        fontSize="small"
-                        sx={{ color: "text.secondary" }}
-                      />
-                      <Typography variant="caption" color="text.secondary">
-                        {report.schedule}
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <ScheduleIcon fontSize="small" sx={{ color: "text.secondary" }} />
+                        <Typography variant="caption" color="text.secondary">
+                          {report.schedule}
+                        </Typography>
+                      </Box>
+                      {lastRun && (
+                        <Typography variant="caption" color="text.secondary">
+                          Last run: {lastRun}
+                        </Typography>
+                      )}
                     </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Last run: {formatTimestamp(report.last_run)}
-                    </Typography>
-                  </Box>
 
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 1,
-                      mt: "auto",
-                      pt: 1.5,
-                    }}
-                  >
-                    {report.id === "rpt-partner-gaps" ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: 1,
+                        mt: "auto",
+                        pt: 1,
+                      }}
+                    >
                       <Button
                         size="small"
                         variant="contained"
-                        color="error"
-                        startIcon={<OpenInNewIcon />}
-                        onClick={() => navigate("/admin/partner-gaps")}
+                        startIcon={<VisibilityIcon />}
+                        onClick={() => navigate(`/admin/reports/${report.id}`)}
                       >
-                        View Gaps
+                        View report
                       </Button>
-                    ) : (
-                      <>
+                      {hasPdf(report) && (
                         <Button
                           size="small"
-                          variant="contained"
-                          startIcon={<PlayArrowIcon />}
-                          onClick={() => handleRun(report)}
-                          disabled={runningId === report.id}
+                          variant="outlined"
+                          startIcon={<PictureAsPdfIcon />}
+                          disabled={busy}
+                          onClick={() => handlePdf(report)}
                         >
-                          {runningId === report.id ? "Running…" : "Run Now"}
+                          Download PDF
                         </Button>
-                        <Tooltip title="Download latest output">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDownload(report)}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
-                    <Box sx={{ flex: 1 }} />
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ alignSelf: "center" }}
-                    >
-                      {report.owner}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                      )}
+                      {hasCsv(report) && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<DownloadIcon />}
+                          disabled={busy}
+                          onClick={() => handleCsv(report)}
+                        >
+                          Download CSV
+                        </Button>
+                      )}
+                      <Box sx={{ flex: 1 }} />
+                      <Typography variant="caption" color="text.secondary">
+                        {report.owner}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
         </Grid>
       )}
 
-      <Snackbar
-        open={!!snackbar}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(null)}
-      >
+      <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)}>
         <Alert
-          onClose={() => setSnackbar(null)}
-          severity="success"
+          onClose={() => setToast(null)}
+          severity={toast?.error ? "error" : "success"}
           variant="filled"
         >
-          {snackbar}
+          {toast?.text}
         </Alert>
       </Snackbar>
     </Box>

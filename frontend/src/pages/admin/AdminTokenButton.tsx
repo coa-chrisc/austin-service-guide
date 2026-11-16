@@ -27,7 +27,7 @@ export default function AdminTokenButton() {
   return (
     <>
       <Button variant="outlined" startIcon={<KeyIcon />} onClick={handleOpen}>
-        Admin token
+        Unlock editing
       </Button>
       <Dialog
         open={open}
@@ -35,11 +35,13 @@ export default function AdminTokenButton() {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Admin token</DialogTitle>
+        <DialogTitle>Unlock catalog editing</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Required to create, edit, or delete services. Kept only for this
-            browser tab and cleared when it closes.
+            Enter the admin token set for this deployment to create, edit or
+            delete services. It is kept only for this browser tab and cleared
+            when the tab closes. In this demo, edits live in server memory and
+            reset when the server restarts.
           </Typography>
           <TextField
             autoFocus

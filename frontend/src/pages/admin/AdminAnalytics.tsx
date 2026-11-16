@@ -9,28 +9,34 @@ import Grid from "@mui/material/Grid";
 import Chip from "@mui/material/Chip";
 import Skeleton from "@mui/material/Skeleton";
 import Alert from "@mui/material/Alert";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { useSearchParams } from "react-router-dom";
 import { BarChart } from "@mui/x-charts/BarChart";
-import { PieChart } from "@mui/x-charts/PieChart";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import {
   getAdminAnalytics,
+  getAdminDemandMap,
   getAdminDemographics,
   getAdminServiceDemand,
 } from "../../lib/api";
-import type { AnalyticsOverview, DemographicsData } from "../../types";
+import type {
+  DemographicBucket,
+  DemographicsData,
+  ServiceDemandItem,
+} from "../../types";
+import { countCell, longDay, pct } from "./reports/format";
+import { reportingPeriod, type DemandPoint, type Overview } from "./reports/reportData";
 
 /* -- metric card --------------------------------------------------- */
 interface MetricProps {
   title: string;
-  value: string | number;
+  value: string;
+  detail?: string;
   loading?: boolean;
 }
 
-function Metric({ title, value, loading }: MetricProps) {
+function Metric({ title, value, detail, loading }: MetricProps) {
   return (
     <Card sx={{ height: "100%" }}>
       <CardContent sx={{ p: 3 }}>
@@ -41,18 +47,59 @@ function Metric({ title, value, loading }: MetricProps) {
           </>
         ) : (
           <>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              fontWeight={500}
-              sx={{ mb: 0.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" fontWeight={500} sx={{ mb: 0.5 }}>
               {title}
             </Typography>
             <Typography variant="h4" fontWeight={700}>
-              {typeof value === "number" ? value.toLocaleString() : value}
+              {value}
             </Typography>
+            {detail && (
+              <Typography variant="caption" color="text.secondary">
+                {detail}
+              </Typography>
+            )}
           </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* -- demographic bars ------------------------------------------------ */
+function BucketBars({
+  title,
+  buckets,
+  loading,
+}: {
+  title: string;
+  buckets: DemographicBucket[];
+  loading: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <Card sx={{ height: "100%" }}>
+      <CardContent sx={{ p: 3 }}>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+          {title}
+        </Typography>
+        {loading ? (
+          <Skeleton variant="rectangular" height={240} />
+        ) : (
+          <BarChart
+            layout="horizontal"
+            height={Math.max(160, 40 + 34 * buckets.length)}
+            series={[
+              {
+                data: buckets.map((b) => b.count),
+                label: "Sessions",
+                color: theme.palette.primary.main,
+                valueFormatter: (v) => (v === null ? "" : countCell(v)),
+              },
+            ]}
+            yAxis={[{ data: buckets.map((b) => b.label), scaleType: "band" }]}
+            margin={{ left: 170, right: 16, top: 10 }}
+            slotProps={{ legend: { hidden: true } }}
+          />
         )}
       </CardContent>
     </Card>
@@ -64,36 +111,33 @@ const DEMAND_COLS: GridColDef[] = [
   { field: "rank", headerName: "#", width: 60 },
   { field: "service_name", headerName: "Service", flex: 1, minWidth: 200 },
   { field: "category", headerName: "Category", flex: 0.7, minWidth: 140 },
-  { field: "match_count", headerName: "Matches", width: 110, type: "number" },
+  {
+    field: "match_count",
+    headerName: "Matches",
+    width: 110,
+    type: "number",
+    valueFormatter: (v: number) => countCell(v),
+  },
   {
     field: "trend",
     headerName: "Trend",
     width: 100,
     renderCell: (params) => {
       const color =
-        params.value === "up"
-          ? "success"
-          : params.value === "down"
-            ? "error"
-            : "default";
-      return (
-        <Chip
-          label={params.value}
-          size="small"
-          color={color as "success" | "error" | "default"}
-        />
-      );
+        params.value === "up" ? "success" : params.value === "down" ? "error" : "default";
+      return <Chip label={params.value} size="small" color={color} />;
     },
   },
 ];
 
 export default function AdminAnalytics() {
-  const theme = useTheme();
   const { region } = useBrandConfig();
-  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
-  const [demographics, setDemographics] = useState<DemographicsData | null>(
-    null,
-  );
+  const [analytics, setAnalytics] = useState<Overview | null>(null);
+  const [demographics, setDemographics] = useState<DemographicsData | null>(null);
+  const [demandMap, setDemandMap] = useState<DemandPoint[]>([]);
+  const [demand, setDemand] = useState<ServiceDemandItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const district = searchParams.get("district") ?? "";
   const zip = searchParams.get("zip") ?? "";
@@ -106,86 +150,24 @@ export default function AdminAnalytics() {
     setSearchParams(next, { replace: true });
   };
 
-  // Geographic filter chips come from the data pack's admin demo data.
-  const districts = analytics?.council_districts ?? [];
-  const activeDistrict = districts.find((d) => d.id === district);
-  const filterShare = useMemo(() => {
-    if (zip) return 0.06;
-    if (activeDistrict) {
-      const sharePerZip = 0.06;
-      return activeDistrict.zips.length * sharePerZip;
-    }
-    return 1;
-  }, [zip, activeDistrict]);
-  const [demandItems, setDemandItems] = useState<
-    Array<{
-      id: number;
-      rank: number;
-      service_name: string;
-      category: string;
-      match_count: number;
-      trend: string;
-    }>
-  >([]);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [aRes, dRes, sdRes] = await Promise.all([
+        const [aRes, dRes, mapRes, sdRes] = await Promise.all([
           getAdminAnalytics(),
           getAdminDemographics(),
+          getAdminDemandMap(),
           getAdminServiceDemand(),
         ]);
         if (cancelled) return;
-        setAnalytics(aRes);
+        setAnalytics(aRes as Overview);
         setDemographics(dRes);
-
-        // ServiceDemandItem[] from the existing API
-        if (Array.isArray(sdRes)) {
-          setDemandItems(
-            (
-              sdRes as Array<{
-                service_name: string;
-                category: string;
-                match_count: number;
-                trend: string;
-              }>
-            ).map((d, i) => ({
-              id: i,
-              rank: i + 1,
-              service_name: d.service_name,
-              category: d.category,
-              match_count: d.match_count,
-              trend: d.trend,
-            })),
-          );
-        } else {
-          const rankings =
-            (
-              sdRes as {
-                rankings: Array<{
-                  name: string;
-                  matches: number;
-                  clicks: number;
-                  saves: number;
-                }>;
-              }
-            ).rankings ?? [];
-          setDemandItems(
-            rankings.map((r, i) => ({
-              id: i,
-              rank: i + 1,
-              service_name: r.name,
-              category: "",
-              match_count: r.matches,
-              trend: "stable",
-            })),
-          );
-        }
+        setDemandMap(mapRes as DemandPoint[]);
+        setDemand(sdRes);
       } catch (err) {
         console.error("Failed to load analytics", err);
+        if (!cancelled) setLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -195,55 +177,46 @@ export default function AdminAnalytics() {
     };
   }, []);
 
-  /* -- demographics chart data ------------------------------------ */
-  const ageData = (demographics?.age_ranges ?? []).map((b) => ({
-    label: b.label,
-    value: b.count,
-  }));
-  const housingData = (demographics?.housing_situations ?? []).map((b, i) => ({
-    id: i,
-    label: b.label,
-    value: b.count,
-  }));
-  const employmentData = (demographics?.employment_statuses ?? []).map(
-    (b, i) => ({ id: i, label: b.label, value: b.count }),
-  );
-  const insuranceData = (demographics?.insurance_statuses ?? []).map(
-    (b, i) => ({ id: i, label: b.label, value: b.count }),
-  );
+  // Geographic filter chips come from the data pack's admin demo data.
+  const districts = analytics?.council_districts ?? [];
+  const activeDistrict = districts.find((d) => d.id === district);
+  const total = analytics?.total_sessions ?? 0;
+
+  /** Sessions in the selected area, summed from the demand map's ZIPs. */
+  const sliceSessions = useMemo(() => {
+    const zips = zip ? [zip] : activeDistrict ? activeDistrict.zips : null;
+    if (!zips) return total;
+    return demandMap
+      .filter((p) => zips.includes(p.zip))
+      .reduce((s, p) => s + p.sessions, 0);
+  }, [zip, activeDistrict, demandMap, total]);
+  const filtered = Boolean(zip || activeDistrict);
+  const period = analytics ? reportingPeriod(analytics) : null;
+
+  const demandRows = demand.map((d, i) => ({ id: i, rank: i + 1, ...d }));
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h5" fontWeight={700}>
-          Analytics
-        </Typography>
-        <Chip
-          icon={<CalendarTodayIcon />}
-          label="Last 30 days"
-          variant="outlined"
-        />
-      </Box>
+      <Typography variant="h5" fontWeight={700}>
+        Analytics
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
+        {period
+          ? `${longDay(period.start)} to ${longDay(period.end)}. `
+          : ""}
+        Synthetic sample data, shown as aggregate counts only.
+      </Typography>
+
+      {loadError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Analytics could not be loaded. Refresh the page to try again.
+        </Alert>
+      )}
 
       {/* -- geographic filter ---------------------------------------- */}
       {districts.length > 0 && (
         <Card sx={{ mb: 3 }}>
-          <CardContent
-            sx={{
-              p: 2,
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
+          <CardContent sx={{ p: 2, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
             <LocationOnIcon fontSize="small" sx={{ color: "text.secondary" }} />
             <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
               View by:
@@ -251,8 +224,8 @@ export default function AdminAnalytics() {
             <Chip
               label={`All ${region.cityName}`}
               size="small"
-              variant={!district && !zip ? "filled" : "outlined"}
-              color={!district && !zip ? "primary" : "default"}
+              variant={!filtered ? "filled" : "outlined"}
+              color={!filtered ? "primary" : "default"}
               onClick={() => setFilter("district", "")}
             />
             {districts.map((d) => (
@@ -267,11 +240,7 @@ export default function AdminAnalytics() {
             ))}
             {activeDistrict && (
               <>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 1, mr: 0.5 }}
-                >
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1, mr: 0.5 }}>
                   ZIPs:
                 </Typography>
                 {activeDistrict.zips.map((z) => (
@@ -289,168 +258,91 @@ export default function AdminAnalytics() {
           </CardContent>
         </Card>
       )}
-      {districts.length > 0 && (district || zip) && (
+      {filtered && !loading && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Showing {zip ? `ZIP ${zip}` : activeDistrict?.label} —{" "}
-          {(filterShare * 100).toFixed(0)}% of citywide sessions in this slice.
+          {zip ? `ZIP ${zip}` : activeDistrict?.label}: {countCell(sliceSessions)} sessions,{" "}
+          {total > 0 ? pct((100 * sliceSessions) / total) : "—"} of citywide sessions. The
+          area filter applies to session counts; the other figures on this page are citywide.
         </Alert>
       )}
 
       {/* -- metric cards --------------------------------------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Metric
-            title="Total Sessions"
-            value={Math.round((analytics?.total_sessions ?? 0) * filterShare)}
+            title={filtered ? "Sessions in this area" : "Sessions"}
+            value={countCell(sliceSessions)}
+            detail={filtered ? `of ${countCell(total)} citywide` : "Last 30 days"}
             loading={loading}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Metric
-            title="Completions"
-            value={
-              analytics
-                ? Math.round(
-                    analytics.total_sessions *
-                      analytics.completion_rate *
-                      filterShare,
-                  )
-                : 0
-            }
+            title="Completed sessions"
+            value={analytics ? countCell(Math.round(total * analytics.completion_rate)) : "—"}
+            detail="Citywide; reached the results page"
             loading={loading}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Metric
-            title="Avg Matches/User"
-            value={analytics?.avg_matches_per_session?.toFixed(1) ?? "0"}
+            title="Completion rate"
+            value={analytics ? pct(100 * analytics.completion_rate) : "—"}
+            detail="Citywide"
             loading={loading}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Metric title="Avg Time" value="4.2 min" loading={loading} />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-          <Metric title="Return Rate" value="34%" loading={loading} />
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <Metric
+            title="Matches per session"
+            value={analytics?.avg_matches_per_session?.toFixed(1) ?? "—"}
+            detail="Citywide average, rules-engine matches"
+            loading={loading}
+          />
         </Grid>
       </Grid>
 
-      {/* -- demographics 2x2 grid ------------------------------------ */}
-      <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-        Demographics
+      {/* -- demographics --------------------------------------------- */}
+      <Typography variant="h6" fontWeight={600}>
+        What residents shared
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Citywide counts of sessions by what the resident described during
+        intake. Residents can skip any question.
       </Typography>
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Age distribution */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                Age Distribution
-              </Typography>
-              {loading ? (
-                <Skeleton variant="rectangular" height={250} />
-              ) : (
-                <BarChart
-                  layout="horizontal"
-                  height={250}
-                  series={[
-                    {
-                      data: ageData.map((d) => d.value),
-                      label: "Count",
-                      color: theme.palette.primary.main,
-                    },
-                  ]}
-                  yAxis={[
-                    { data: ageData.map((d) => d.label), scaleType: "band" },
-                  ]}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <BucketBars title="Age range" buckets={demographics?.age_ranges ?? []} loading={loading} />
         </Grid>
-
-        {/* Housing situation */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                Housing Situation
-              </Typography>
-              {loading ? (
-                <Skeleton variant="rectangular" height={250} />
-              ) : (
-                <PieChart
-                  series={[
-                    {
-                      data: housingData,
-                      innerRadius: 40,
-                      paddingAngle: 2,
-                      cornerRadius: 4,
-                    },
-                  ]}
-                  height={250}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <BucketBars
+            title="Housing situation"
+            buckets={demographics?.housing_situations ?? []}
+            loading={loading}
+          />
         </Grid>
-
-        {/* Employment status */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                Employment Status
-              </Typography>
-              {loading ? (
-                <Skeleton variant="rectangular" height={250} />
-              ) : (
-                <PieChart
-                  series={[
-                    {
-                      data: employmentData,
-                      innerRadius: 40,
-                      paddingAngle: 2,
-                      cornerRadius: 4,
-                    },
-                  ]}
-                  height={250}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <BucketBars
+            title="Employment status"
+            buckets={demographics?.employment_statuses ?? []}
+            loading={loading}
+          />
         </Grid>
-
-        {/* Insurance status */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent sx={{ p: 3 }}>
-              <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-                Insurance Status
-              </Typography>
-              {loading ? (
-                <Skeleton variant="rectangular" height={250} />
-              ) : (
-                <PieChart
-                  series={[
-                    {
-                      data: insuranceData,
-                      innerRadius: 40,
-                      paddingAngle: 2,
-                      cornerRadius: 4,
-                    },
-                  ]}
-                  height={250}
-                />
-              )}
-            </CardContent>
-          </Card>
+          <BucketBars
+            title="Health insurance"
+            buckets={demographics?.insurance_statuses ?? []}
+            loading={loading}
+          />
         </Grid>
       </Grid>
 
       {/* -- service demand table ------------------------------------- */}
-      <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-        Service Demand
+      <Typography variant="h6" fontWeight={600}>
+        Most-matched services
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Rules-engine matches, citywide. A match is not a referral or an enrolment.
       </Typography>
       <Card>
         <CardContent sx={{ p: 0 }}>
@@ -462,8 +354,9 @@ export default function AdminAnalytics() {
             </Box>
           ) : (
             <DataGrid
-              rows={demandItems}
+              rows={demandRows}
               columns={DEMAND_COLS}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
               pageSizeOptions={[10, 25]}
               disableRowSelectionOnClick
               sx={{ border: "none" }}

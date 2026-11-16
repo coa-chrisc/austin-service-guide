@@ -69,6 +69,8 @@ tmp/
 # ── Local source assets kept out of the repo ──────────────────
 # Heavyweight brand PDF (the deployed logo lives under config/brand/<id>/)
 *.pdf
+# Pre-rendered admin report PDFs (frontend/scripts/render-reports.mjs) ship with the build.
+!frontend/public/reports/**/*.pdf
 # Source-only image folder; deployed assets go into config/brand/<id>/
 images/
 

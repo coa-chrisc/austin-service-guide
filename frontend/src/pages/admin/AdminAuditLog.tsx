@@ -44,17 +44,23 @@ function actionColor(
 const COLUMNS: GridColDef[] = [
   {
     field: "timestamp",
-    headerName: "Timestamp",
-    width: 180,
+    headerName: "When",
+    width: 190,
     valueFormatter: (value: string) => {
       if (!value) return "";
-      return new Date(value).toLocaleString();
+      return new Date(value).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
     },
   },
   {
     field: "actor",
     headerName: "Staff",
-    width: 160,
+    width: 210,
   },
   {
     field: "action",
@@ -134,8 +140,12 @@ export default function AdminAuditLog() {
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 3 }}>
+      <Typography variant="h5" fontWeight={700}>
         Audit Log
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 3 }}>
+        Staff actions on the catalog and reports (sample entries). Resident
+        sessions are not logged.
       </Typography>
 
       {/* -- filter bar ---------------------------------------------- */}
