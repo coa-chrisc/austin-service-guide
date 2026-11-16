@@ -88,6 +88,9 @@
       "agencyWebsite": "https://www.austintexas.gov/health",
       "accessibilityUrl": "https://www.austintexas.gov/city-manager/americans-disabilities-act-ada"
     },
+    "links": {
+      "sourceRepoUrl": "https://github.com/coa-chrisc/austin-service-guide"
+    },
     "darkColors": {
       "primary": "#8b8fd4",
       "accent": "#4dd68f",

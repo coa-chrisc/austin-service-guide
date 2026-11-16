@@ -1,0 +1,7911 @@
+{
+ "persona:equity-east-austin": {
+  "matches": [
+   [
+    "family-eldercare-housing",
+    "high",
+    70.0,
+    "Matches needs: housing, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "high",
+    65.0,
+    "Matches needs: cooling, utilities, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    60.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    55.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "foundation-communities",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-legal-services-center",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "heat-relief-ac-assistance",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "family-eldercare-housing",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "foundation-communities",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "texas-legal-services-center",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ]
+  ],
+  "risks": [
+   [
+    "heat_vulnerable",
+    "high",
+    [
+     "Austin–Travis County Cooling Center Network",
+     "Heat Relief & AC Repair Assistance",
+     "Customer Assistance Program (CAP)"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 825.0,
+   "total_annual_value": 9900.0,
+   "breakdown": [
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Affordable Housing Savings",
+     "monthly_value": 400.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "Texas Legal Services Center",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "persona:equity-east-austin-zh": {
+  "matches": [
+   [
+    "family-eldercare-housing",
+    "high",
+    70.0,
+    "Matches needs: housing, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "high",
+    65.0,
+    "Matches needs: cooling, utilities, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    60.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    55.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "foundation-communities",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-legal-services-center",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "heat-relief-ac-assistance",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "family-eldercare-housing",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "foundation-communities",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "texas-legal-services-center",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ]
+  ],
+  "risks": [
+   [
+    "heat_vulnerable",
+    "high",
+    [
+     "Austin–Travis County Cooling Center Network",
+     "Heat Relief & AC Repair Assistance",
+     "Customer Assistance Program (CAP)"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 825.0,
+   "total_annual_value": 9900.0,
+   "breakdown": [
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Affordable Housing Savings",
+     "monthly_value": 400.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "Texas Legal Services Center",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "persona:heat-outdoor-worker": {
+  "matches": [
+   [
+    "heat-relief-ac-assistance",
+    "high",
+    65.0,
+    "Matches needs: cooling, utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "cooling-center-network",
+    "high",
+    50.0,
+    "Matches needs: cooling; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "medium",
+    45.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "customer-assistance-program",
+    "medium",
+    45.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "heat-relief-ac-assistance",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "cooling-center-network",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "customer-assistance-program",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "communities-in-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ],
+   [
+    "heat_vulnerable",
+    "critical",
+    [
+     "Austin–Travis County Cooling Center Network",
+     "Heat Relief & AC Repair Assistance",
+     "Customer Assistance Program (CAP)"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1300.0,
+   "total_annual_value": 15600.0,
+   "breakdown": [
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Sliding-Scale Healthcare Savings",
+     "monthly_value": 80.0
+    },
+    {
+     "service": "Austin–Travis County Cooling Center Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Utility Assistance (one-time avg.)",
+     "monthly_value": 150.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "CAP Utility Discount",
+     "monthly_value": 45.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    }
+   ]
+  }
+ },
+ "persona:heat-outdoor-worker-vi": {
+  "matches": [
+   [
+    "heat-relief-ac-assistance",
+    "high",
+    65.0,
+    "Matches needs: cooling, utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "cooling-center-network",
+    "high",
+    50.0,
+    "Matches needs: cooling; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "medium",
+    45.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "customer-assistance-program",
+    "medium",
+    45.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "heat-relief-ac-assistance",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "cooling-center-network",
+    "cooling",
+    "Listed early because heat illness can come on quickly during a heat advisory."
+   ],
+   [
+    "customer-assistance-program",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "communities-in-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ],
+   [
+    "heat_vulnerable",
+    "critical",
+    [
+     "Austin–Travis County Cooling Center Network",
+     "Heat Relief & AC Repair Assistance",
+     "Customer Assistance Program (CAP)"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1300.0,
+   "total_annual_value": 15600.0,
+   "breakdown": [
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Sliding-Scale Healthcare Savings",
+     "monthly_value": 80.0
+    },
+    {
+     "service": "Austin–Travis County Cooling Center Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Utility Assistance (one-time avg.)",
+     "monthly_value": 150.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "CAP Utility Discount",
+     "monthly_value": 45.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    }
+   ]
+  }
+ },
+ "persona:refugee-food": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    80.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    75.0,
+    "Matches needs: food, refugee; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    70.0,
+    "Matches needs: food, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "high",
+    70.0,
+    "Matches needs: refugee, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "high",
+    65.0,
+    "Matches needs: immigration, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "high",
+    65.0,
+    "Matches needs: refugee, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gateways",
+    "medium",
+    45.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "medium",
+    45.0,
+    "Matches needs: food; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "raices-texas",
+    "medium",
+    45.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "refugee",
+    "Resettlement partners may be able to help with several needs at once."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "refugee",
+    "Resettlement partners may be able to help with several needs at once."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "american-gateways",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "raices-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1180.0,
+   "total_annual_value": 14160.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Multicultural Refugee Coalition",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Library Adult Learning",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Refugee Services of Texas — Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Sliding-Scale Healthcare Savings",
+     "monthly_value": 80.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "persona:refugee-food-ar": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    80.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    75.0,
+    "Matches needs: food, refugee; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    70.0,
+    "Matches needs: food, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "high",
+    70.0,
+    "Matches needs: refugee, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "high",
+    65.0,
+    "Matches needs: immigration, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "high",
+    65.0,
+    "Matches needs: refugee, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gateways",
+    "medium",
+    45.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "medium",
+    45.0,
+    "Matches needs: food; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "raices-texas",
+    "medium",
+    45.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "refugee",
+    "Resettlement partners may be able to help with several needs at once."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "refugee",
+    "Resettlement partners may be able to help with several needs at once."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "american-gateways",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "raices-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1180.0,
+   "total_annual_value": 14160.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Multicultural Refugee Coalition",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Library Adult Learning",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Refugee Services of Texas — Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Sliding-Scale Healthcare Savings",
+     "monthly_value": 80.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "persona:schools-anxious-student": {
+  "matches": [
+   [
+    "vida-clinic-schools",
+    "high",
+    60.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "high",
+    55.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aph-shots-for-tots",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "nami-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-tobacco-quitline",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "vida-clinic-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "communities-in-schools",
+    "schools",
+    "School-based support can reach a student where they already are."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aph-shots-for-tots",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "nami-central-texas",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "texas-tobacco-quitline",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ]
+  ],
+  "risks": [
+   [
+    "child_mental_health_risk",
+    "high",
+    [
+     "Communities In Schools of Central Texas",
+     "Vida Clinic — School-Based Mental Health",
+     "Integral Care youth services"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 750.0,
+   "total_annual_value": 9000.0,
+   "breakdown": [
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Medicaid Coverage (estimated value)",
+     "monthly_value": 550.0
+    },
+    {
+     "service": "NAMI Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Texas Tobacco Quitline (Yes Quit)",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "persona:schools-anxious-student-es": {
+  "matches": [
+   [
+    "vida-clinic-schools",
+    "high",
+    60.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "high",
+    55.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aph-shots-for-tots",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "nami-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-tobacco-quitline",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "vida-clinic-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "communities-in-schools",
+    "schools",
+    "School-based support can reach a student where they already are."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aph-shots-for-tots",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "nami-central-texas",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "texas-tobacco-quitline",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ]
+  ],
+  "risks": [
+   [
+    "child_mental_health_risk",
+    "high",
+    [
+     "Communities In Schools of Central Texas",
+     "Vida Clinic — School-Based Mental Health",
+     "Integral Care youth services"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 750.0,
+   "total_annual_value": 9000.0,
+   "breakdown": [
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Medicaid Coverage (estimated value)",
+     "monthly_value": 550.0
+    },
+    {
+     "service": "NAMI Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Texas Tobacco Quitline (Yes Quit)",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-01": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "high",
+    50.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1401.0,
+   "total_annual_value": 16812.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 936.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-02": {
+  "matches": [
+   [
+    "echo-coordinated-entry",
+    "high",
+    70.0,
+    "Directly serves the safety concern you shared; Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    80.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gi-forum",
+    "high",
+    75.0,
+    "Matches needs: housing, employment, veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "high",
+    70.0,
+    "Matches needs: healthcare, veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    70.0,
+    "Matches needs: food, housing, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    70.0,
+    "Matches needs: emergency, food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "high",
+    70.0,
+    "Matches needs: food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "high",
+    70.0,
+    "Matches needs: employment, veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "high",
+    65.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    65.0,
+    "Matches needs: emergency, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    55.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "travis-county-veterans-services",
+    "high",
+    55.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "echo-coordinated-entry",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "american-gi-forum",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "salvation-army-austin",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "integral-care",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "travis-county-veterans-services",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ]
+  ],
+  "risks": [
+   [
+    "homelessness",
+    "critical",
+    [
+     "Foundation Communities",
+     "Caritas of Austin",
+     "The Salvation Army Austin"
+    ]
+   ],
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 375.0,
+   "total_annual_value": 4500.0,
+   "breakdown": [
+    {
+     "service": "ECHO Coordinated Entry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "American GI Forum",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sunrise Homeless Navigation Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Texas Veterans Commission Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Resource Center for the Homeless (ARCH)",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Travis County Veterans Services",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-03": {
+  "matches": [
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-free-net",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "skillpoint-alliance",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "goodwill-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-free-net",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "capital-idea",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "skillpoint-alliance",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Worth a look when you have time."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Worth a look when you have time."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 1150.0,
+   "total_annual_value": 13800.0,
+   "breakdown": [
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Free-Net",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Library Adult Learning",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Skillpoint Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sustainable Food Center — Cooking Classes",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-04": {
+  "matches": [
+   [
+    "drive-a-senior-network",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "faith-in-action-caregivers",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "high",
+    55.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "age-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gi-forum",
+    "high",
+    50.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "high",
+    50.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "high",
+    50.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "travis-county-veterans-services",
+    "high",
+    50.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-area-area-agency-on-aging",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "family-eldercare-housing",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-legal-services-center",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-metro-transit",
+    "medium",
+    40.0,
+    "Matches needs: transportation; Available in your language"
+   ],
+   [
+    "austin-pard-movement",
+    "medium",
+    30.0,
+    "Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "american-gi-forum",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "drive-a-senior-network",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "faith-in-action-caregivers",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "travis-county-veterans-services",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "age-of-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "capital-area-area-agency-on-aging",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "family-eldercare-housing",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "texas-legal-services-center",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "capital-metro-transit",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "austin-pard-movement",
+    "physical_activity",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 466.25,
+   "total_annual_value": 5595.0,
+   "breakdown": [
+    {
+     "service": "Drive a Senior Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Faith in Action Caregivers",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "American GI Forum",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "Texas Veterans Commission Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Travis County Veterans Services",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital Area Area Agency on Aging",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Texas Legal Services Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Reduced Transit Pass",
+     "monthly_value": 41.25
+    },
+    {
+     "service": "Austin PARD — Free Movement Programs",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-05": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    75.0,
+    "Matches needs: food, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    70.0,
+    "Matches needs: food, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "high",
+    70.0,
+    "Matches needs: employment, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    55.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "high",
+    50.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1944.0,
+   "total_annual_value": 23328.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Refugee Services of Texas — Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Multicultural Refugee Coalition",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 1404.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Texas RioGrande Legal Aid",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-06": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    70.0,
+    "Matches needs: food, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "age-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "drive-a-senior-network",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "easter-seals-central-texas",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "faith-in-action-caregivers",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "age-of-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "drive-a-senior-network",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "easter-seals-central-texas",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "faith-in-action-caregivers",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 570.0,
+   "total_annual_value": 6840.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Drive a Senior Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Faith in Action Caregivers",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-07": {
+  "matches": [
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "jeremiah-program-austin",
+    "low",
+    29.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost; Check eligibility: Single mothers with one or more children under 5, enrolled in or pursuing a college degree, with low income"
+   ],
+   [
+    "goodwill-excel-center",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost; Check eligibility: Adults 18-50 who have not completed high school"
+   ]
+  ],
+  "plan": [
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "employment",
+    "Worth a look when you have time."
+   ],
+   [
+    "jeremiah-program-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "goodwill-excel-center",
+    "education",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 875.0,
+   "total_annual_value": 10500.0,
+   "breakdown": [
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Workforce Solutions Capital Area",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Excel Center",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-08": {
+  "matches": [
+   [
+    "caritas-of-austin",
+    "high",
+    75.0,
+    "Matches needs: food, housing, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    70.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "echo-coordinated-entry",
+    "high",
+    70.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    70.0,
+    "Matches needs: emergency, food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "high",
+    70.0,
+    "Matches needs: food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "high",
+    65.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    65.0,
+    "Matches needs: emergency, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "lifeworks",
+    "high",
+    65.0,
+    "Matches needs: housing, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "foundation-communities",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "echo-coordinated-entry",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "caritas-of-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "lifeworks",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "integral-care",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "foundation-communities",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ]
+  ],
+  "risks": [
+   [
+    "housing_instability",
+    "high",
+    [
+     "Foundation Communities",
+     "Austin Tenants' Council"
+    ]
+   ],
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "medium",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 820.0,
+   "total_annual_value": 9840.0,
+   "breakdown": [
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "ECHO Coordinated Entry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sunrise Homeless Navigation Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Resource Center for the Homeless (ARCH)",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "LifeWorks",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Affordable Housing Savings",
+     "monthly_value": 400.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-09": {
+  "matches": [
+   [
+    "drive-a-senior-network",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "faith-in-action-caregivers",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    70.0,
+    "Matches needs: food, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "capmetro-access-paratransit",
+    "high",
+    60.0,
+    "Matches needs: disability, transportation; Available in your language"
+   ],
+   [
+    "age-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "easter-seals-central-texas",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "meals-on-wheels-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "capmetro-access-paratransit",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "drive-a-senior-network",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "faith-in-action-caregivers",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "age-of-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "easter-seals-central-texas",
+    "disability",
+    "Disability services may help you connect with other support."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "social_isolation",
+    "medium",
+    [
+     "AGE of Central Texas",
+     "Meals on Wheels Central Texas"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 570.0,
+   "total_annual_value": 6840.0,
+   "breakdown": [
+    {
+     "service": "Drive a Senior Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Faith in Action Caregivers",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-10": {
+  "matches": [
+   [
+    "head-start-austin",
+    "high",
+    65.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "skillpoint-alliance",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-free-net",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "skillpoint-alliance",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-free-net",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "capital-idea",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "goodwill-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Worth a look when you have time."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Worth a look when you have time."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 1150.0,
+   "total_annual_value": 13800.0,
+   "breakdown": [
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Skillpoint Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Free-Net",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Library Adult Learning",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sustainable Food Center — Cooking Classes",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-11": {
+  "matches": [
+   [
+    "safe-alliance",
+    "high",
+    45.0,
+    "Directly serves the safety concern you shared; Matches needs: emergency; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    70.0,
+    "Matches needs: emergency, food; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    65.0,
+    "Matches needs: emergency, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "high",
+    50.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "safe-alliance",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "salvation-army-austin",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "sunrise-homeless-navigation-center",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ],
+   [
+    "domestic_violence",
+    "critical",
+    [
+     "SAFE Alliance DV Hotline (512-267-7233)",
+     "National DV Hotline (1-800-799-7233)"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 983.0,
+   "total_annual_value": 11796.0,
+   "breakdown": [
+    {
+     "service": "SAFE Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 468.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Sunrise Homeless Navigation Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-12": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "nami-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "nami-central-texas",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "goodwill-central-texas",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 800.0,
+   "total_annual_value": 9600.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Workforce Solutions Capital Area",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Medicaid Coverage (estimated value)",
+     "monthly_value": 550.0
+    },
+    {
+     "service": "NAMI Central Texas",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-13": {
+  "matches": [
+   [
+    "el-buen-samaritano-food-pantry",
+    "medium",
+    45.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "medium",
+    35.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "medium",
+    35.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "customer-assistance-program",
+    "medium",
+    35.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "caritas-of-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "customer-assistance-program",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 2630.0,
+   "total_annual_value": 31560.0,
+   "breakdown": [
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 1170.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Utility Assistance (one-time avg.)",
+     "monthly_value": 150.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "CAP Utility Discount",
+     "monthly_value": 45.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    }
+   ]
+  }
+ },
+ "resident:res-14": {
+  "matches": [
+   [
+    "austin-va-outpatient-clinic",
+    "high",
+    75.0,
+    "Matches needs: healthcare, veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "travis-county-veterans-services",
+    "high",
+    65.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gi-forum",
+    "high",
+    55.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    55.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    55.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "high",
+    55.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "capmetro-access-paratransit",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language"
+   ],
+   [
+    "community-care-health-centers",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "easter-seals-central-texas",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-va-outpatient-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "travis-county-veterans-services",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "american-gi-forum",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "texas-veterans-commission-austin",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "capmetro-access-paratransit",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "easter-seals-central-texas",
+    "disability",
+    "Disability services may help you connect with other support."
+   ]
+  ],
+  "risks": [
+   [
+    "uninsured",
+    "medium",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 305.0,
+   "total_annual_value": 3660.0,
+   "breakdown": [
+    {
+     "service": "Travis County Veterans Services",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "American GI Forum",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Texas Veterans Commission Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sliding-Scale Healthcare Savings",
+     "monthly_value": 80.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-15": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    75.0,
+    "Matches needs: food, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "high",
+    50.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "high",
+    50.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-gateways",
+    "medium",
+    45.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "american-gateways",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ]
+  ],
+  "risks": [
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 2128.0,
+   "total_annual_value": 25536.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 1638.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Texas RioGrande Legal Aid",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-16": {
+  "matches": [
+   [
+    "american-gi-forum",
+    "high",
+    75.0,
+    "Matches needs: housing, veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    70.0,
+    "Matches needs: food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "drive-a-senior-network",
+    "high",
+    70.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "faith-in-action-caregivers",
+    "high",
+    70.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "family-eldercare-housing",
+    "high",
+    70.0,
+    "Matches needs: housing, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    70.0,
+    "Matches needs: food, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "capmetro-access-paratransit",
+    "high",
+    65.0,
+    "Matches needs: disability, transportation; Available in your language"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    65.0,
+    "Matches needs: food, senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    55.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    55.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "travis-county-veterans-services",
+    "high",
+    55.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "high",
+    50.0,
+    "Matches needs: veterans; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "caritas-of-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "american-gi-forum",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "travis-county-veterans-services",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "capmetro-access-paratransit",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "family-eldercare-housing",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "drive-a-senior-network",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-va-outpatient-clinic",
+    "veterans",
+    "Veteran services may be available alongside other programs."
+   ],
+   [
+    "faith-in-action-caregivers",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 500.0,
+   "total_annual_value": 6000.0,
+   "breakdown": [
+    {
+     "service": "American GI Forum",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Drive a Senior Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Faith in Action Caregivers",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Travis County Veterans Services",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-17": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    75.0,
+    "Matches needs: food, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    70.0,
+    "Matches needs: food, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "high",
+    70.0,
+    "Matches needs: employment, immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "high",
+    50.0,
+    "Matches needs: immigration; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "texas-riogrande-legal-aid",
+    "immigration",
+    "Immigration help can go alongside your other steps."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "high",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1242.0,
+   "total_annual_value": 14904.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Refugee Services of Texas — Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 702.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Texas RioGrande Legal Aid",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-18": {
+  "matches": [
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "jeremiah-program-austin",
+    "low",
+    29.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost; Check eligibility: Single mothers with one or more children under 5, enrolled in or pursuing a college degree, with low income"
+   ],
+   [
+    "goodwill-excel-center",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost; Check eligibility: Adults 18-50 who have not completed high school"
+   ]
+  ],
+  "plan": [
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "employment",
+    "Worth a look when you have time."
+   ],
+   [
+    "jeremiah-program-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "goodwill-excel-center",
+    "education",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 875.0,
+   "total_annual_value": 10500.0,
+   "breakdown": [
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Workforce Solutions Capital Area",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Excel Center",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-19": {
+  "matches": [
+   [
+    "caritas-of-austin",
+    "high",
+    75.0,
+    "Matches needs: housing, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "echo-coordinated-entry",
+    "high",
+    70.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    70.0,
+    "Matches needs: emergency, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "high",
+    65.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "lifeworks",
+    "high",
+    65.0,
+    "Matches needs: housing, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "high",
+    65.0,
+    "Matches needs: emergency, housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "foundation-communities",
+    "high",
+    55.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "high",
+    55.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-tenants-council",
+    "high",
+    50.0,
+    "Matches needs: housing; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-youthworks",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "echo-coordinated-entry",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "lifeworks",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "austin-resource-center-for-the-homeless",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "salvation-army-austin",
+    "emergency",
+    "Listed first because it deals with safety."
+   ],
+   [
+    "foundation-communities",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "housing-authority-city-of-austin",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-tenants-council",
+    "housing",
+    "Listed early because a stable place to live supports everything else."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "volunteer-healthcare-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "american-youthworks",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ]
+  ],
+  "risks": [
+   [
+    "housing_instability",
+    "high",
+    [
+     "Foundation Communities",
+     "Austin Tenants' Council"
+    ]
+   ],
+   [
+    "uninsured",
+    "medium",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 725.0,
+   "total_annual_value": 8700.0,
+   "breakdown": [
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ECHO Coordinated Entry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Resource Center for the Homeless (ARCH)",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "LifeWorks",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Affordable Housing Savings",
+     "monthly_value": 400.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Austin Tenants' Council",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Volunteer Healthcare Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Workforce Solutions Capital Area",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "American YouthWorks",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-20": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "medium",
+    35.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "medium",
+    35.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "customer-assistance-program",
+    "medium",
+    35.0,
+    "Matches needs: utilities; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "austin-energy-bill-assistance",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "caritas-of-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "customer-assistance-program",
+    "utilities",
+    "Utility bill help is worth asking about early."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 2162.0,
+   "total_annual_value": 25944.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 702.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Utility Assistance (one-time avg.)",
+     "monthly_value": 150.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "CAP Utility Discount",
+     "monthly_value": 45.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    }
+   ]
+  }
+ },
+ "resident:res-21": {
+  "matches": [
+   [
+    "workforce-solutions-capital-area",
+    "high",
+    55.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    50.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "high",
+    50.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "skillpoint-alliance",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-east-career-center",
+    "medium",
+    45.0,
+    "Matches needs: employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-for-recovery",
+    "low",
+    29.0,
+    "Available in your language; Free or low-cost; Check eligibility: Adults 18+ in recovery from substance use or co-occurring mental health conditions"
+   ],
+   [
+    "goodwill-excel-center",
+    "low",
+    29.0,
+    "Matches needs: employment; Available in your language; Free or low-cost; Check eligibility: Adults 18-50 who have not completed high school"
+   ],
+   [
+    "jeremiah-program-austin",
+    "low",
+    29.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost; Check eligibility: Single mothers with one or more children under 5, enrolled in or pursuing a college degree, with low income"
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "low",
+    29.0,
+    "Matches needs: employment; Available in your language; Free or low-cost; Check eligibility: Refugee, asylee, immigrant, or other newcomer status"
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "low",
+    29.0,
+    "Matches needs: employment; Available in your language; Free or low-cost; Check eligibility: Refugee, asylee, SIV, parolee, or Cuban/Haitian entrant status, residing in Travis or Williamson County"
+   ]
+  ],
+  "plan": [
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "workforce-solutions-capital-area",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "goodwill-central-texas",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "skillpoint-alliance",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "workforce-solutions-east-career-center",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "jeremiah-program-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "goodwill-excel-center",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "multicultural-refugee-coalition",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "refugee-services-of-texas-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "communities-for-recovery",
+    "healthcare",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 1075.0,
+   "total_annual_value": 12900.0,
+   "breakdown": [
+    {
+     "service": "Workforce Solutions Capital Area",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Skillpoint Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Workforce Solutions East Career Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Communities for Recovery",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Excel Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Multicultural Refugee Coalition",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Refugee Services of Texas — Austin",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-22": {
+  "matches": [
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    45.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "medium",
+    45.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "salvation-army-austin",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "snap-enrollment-assistance",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "medium",
+    40.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "caritas-of-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "salvation-army-austin",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "snap-enrollment-assistance",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "st-mary-cathedral-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "goodwill-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 2276.0,
+   "total_annual_value": 27312.0,
+   "breakdown": [
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "The Salvation Army Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "SNAP Benefits",
+     "monthly_value": 936.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "Sustainable Food Center — Cooking Classes",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-23": {
+  "matches": [
+   [
+    "drive-a-senior-network",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "faith-in-action-caregivers",
+    "high",
+    75.0,
+    "Matches needs: senior, transportation; Available in your language; Free or low-cost"
+   ],
+   [
+    "capmetro-access-paratransit",
+    "high",
+    65.0,
+    "Matches needs: disability, transportation; Available in your language"
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "high",
+    55.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "age-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "easter-seals-central-texas",
+    "high",
+    50.0,
+    "Matches needs: disability; Available in your language; Free or low-cost"
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "high",
+    50.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-area-area-agency-on-aging",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "family-eldercare-housing",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "texas-legal-services-center",
+    "medium",
+    45.0,
+    "Matches needs: senior; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-metro-transit",
+    "medium",
+    40.0,
+    "Matches needs: transportation; Available in your language"
+   ],
+   [
+    "austin-pard-movement",
+    "medium",
+    30.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "cooling-center-network",
+    "medium",
+    30.0,
+    "Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "capmetro-access-paratransit",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "drive-a-senior-network",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "faith-in-action-caregivers",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "arcil-austin-resource-center-for-independent-living",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "age-of-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "easter-seals-central-texas",
+    "disability",
+    "Disability services may help you connect with other support."
+   ],
+   [
+    "meals-on-wheels-central-texas",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "capital-area-area-agency-on-aging",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "family-eldercare-housing",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "heat-relief-ac-assistance",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "texas-legal-services-center",
+    "senior",
+    "Programs for older adults that may be worth checking."
+   ],
+   [
+    "capital-metro-transit",
+    "transportation",
+    "Transportation help can make it easier to get to appointments and work."
+   ],
+   [
+    "austin-pard-movement",
+    "physical_activity",
+    "Worth a look when you have time."
+   ],
+   [
+    "cooling-center-network",
+    "cooling",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [
+   [
+    "social_isolation",
+    "medium",
+    [
+     "AGE of Central Texas",
+     "Meals on Wheels Central Texas"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 441.25,
+   "total_annual_value": 5295.0,
+   "breakdown": [
+    {
+     "service": "Drive a Senior Network",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Faith in Action Caregivers",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ARCIL — Austin Resource Center for Independent Living",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Meals on Wheels (20 meals)",
+     "monthly_value": 200.0
+    },
+    {
+     "service": "Capital Area Area Agency on Aging",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Heat Relief & AC Repair Assistance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Texas Legal Services Center",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Reduced Transit Pass",
+     "monthly_value": 41.25
+    },
+    {
+     "service": "Austin PARD — Free Movement Programs",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin–Travis County Cooling Center Network",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-24": {
+  "matches": [
+   [
+    "austin-public-health-wic",
+    "high",
+    75.0,
+    "Matches needs: food, healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "high",
+    75.0,
+    "Matches needs: food, employment; Available in your language; Free or low-cost"
+   ],
+   [
+    "american-youthworks",
+    "high",
+    70.0,
+    "Matches needs: employment, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "high",
+    65.0,
+    "Matches needs: employment, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "high",
+    65.0,
+    "Matches needs: employment, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "skillpoint-alliance",
+    "high",
+    65.0,
+    "Matches needs: employment, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "high",
+    60.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "high",
+    50.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "central-texas-food-bank",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "keep-austin-fed",
+    "high",
+    50.0,
+    "Matches needs: food; Available in your language; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "high",
+    50.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "nami-central-texas",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "austin-public-health-wic",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "caritas-of-austin",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "american-youthworks",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "catholic-charities-of-central-texas",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "central-texas-food-bank",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "iact-multifaith-food-pantry",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "keep-austin-fed",
+    "food",
+    "Food help is often a quick first step."
+   ],
+   [
+    "nami-central-texas",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "capital-idea",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "goodwill-central-texas",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "skillpoint-alliance",
+    "employment",
+    "Job services may be easier to take on once urgent needs are covered."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ]
+  ],
+  "risks": [
+   [
+    "food_insecurity",
+    "high",
+    [
+     "Central Texas Food Bank",
+     "SNAP Enrollment Assistance",
+     "Austin Public Health WIC Program"
+    ]
+   ],
+   [
+    "uninsured",
+    "medium",
+    [
+     "CommUnity Care Health Centers",
+     "People's Community Clinic",
+     "Medicaid Enrollment Assistance"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 470.0,
+   "total_annual_value": 5640.0,
+   "breakdown": [
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "American YouthWorks",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Skillpoint Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Food Bank (estimated grocery value)",
+     "monthly_value": 120.0
+    },
+    {
+     "service": "iACT Multifaith Food Pantry",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Keep Austin Fed",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "NAMI Central Texas",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-25": {
+  "matches": [
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "high",
+    60.0,
+    "Matches needs: childcare, education; Available in your language; Free or low-cost"
+   ],
+   [
+    "acc-adult-education-hse",
+    "medium",
+    40.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-free-net",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "capital-idea",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "goodwill-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "skillpoint-alliance",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "medium",
+    35.0,
+    "Matches needs: education; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "caritas-of-austin",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "low",
+    20.0,
+    "Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "acc-adult-education-hse",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-free-net",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-library-adult-learning",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "capital-idea",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "goodwill-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "literacy-coalition-central-texas",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "skillpoint-alliance",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "sustainable-food-center-cooking",
+    "education",
+    "Something to plan for once urgent needs are handled."
+   ],
+   [
+    "austin-public-health-wic",
+    "food",
+    "Worth a look when you have time."
+   ],
+   [
+    "caritas-of-austin",
+    "housing",
+    "Worth a look when you have time."
+   ],
+   [
+    "el-buen-samaritano-food-pantry",
+    "food",
+    "Worth a look when you have time."
+   ]
+  ],
+  "risks": [],
+  "benefits": {
+   "total_monthly_value": 1150.0,
+   "total_annual_value": 13800.0,
+   "breakdown": [
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "ACC Adult Education & High School Equivalency",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Free-Net",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Library Adult Learning",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Capital IDEA",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Goodwill Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Literacy Coalition of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Skillpoint Alliance",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Sustainable Food Center — Cooking Classes",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Caritas of Austin",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "El Buen Samaritano Food Pantry",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ },
+ "resident:res-26": {
+  "matches": [
+   [
+    "vida-clinic-schools",
+    "high",
+    65.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "high",
+    60.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "medium",
+    40.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "medium",
+    40.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "aph-shots-for-tots",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    35.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "medium",
+    35.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "vida-clinic-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "communities-in-schools",
+    "schools",
+    "School-based support can reach a student where they already are."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aph-shots-for-tots",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "workforce-solutions-childcare-scholarships",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "child_mental_health_risk",
+    "high",
+    [
+     "Communities In Schools of Central Texas",
+     "Vida Clinic — School-Based Mental Health",
+     "Integral Care youth services"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1500.0,
+   "total_annual_value": 18000.0,
+   "breakdown": [
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Medicaid Coverage (estimated value)",
+     "monthly_value": 550.0
+    }
+   ]
+  }
+ },
+ "resident:res-27": {
+  "matches": [
+   [
+    "vida-clinic-schools",
+    "high",
+    75.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "communities-in-schools",
+    "high",
+    70.0,
+    "Matches needs: healthcare, schools; Available in your language; Free or low-cost"
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "high",
+    50.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care-adult-walkin",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "integral-care",
+    "high",
+    50.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "austin-public-health-wic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "community-care-health-centers",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "head-start-austin",
+    "medium",
+    45.0,
+    "Matches needs: childcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "nami-central-texas",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ],
+   [
+    "peoples-community-clinic",
+    "medium",
+    45.0,
+    "Matches needs: healthcare; Available in your language; Free or low-cost"
+   ]
+  ],
+  "plan": [
+   [
+    "vida-clinic-schools",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "aisd-prek-early-childhood",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "communities-in-schools",
+    "schools",
+    "School-based support can reach a student where they already are."
+   ],
+   [
+    "integral-care-adult-walkin",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "integral-care",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-dental-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-tb-std-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-public-health-wic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "community-care-health-centers",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "manos-de-cristo-dental-center",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "medicaid-enrollment-assistance",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "nami-central-texas",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "peoples-community-clinic",
+    "healthcare",
+    "A place to get care. Ask about cost and eligibility when you call."
+   ],
+   [
+    "austin-parks-recreation-programs",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ],
+   [
+    "head-start-austin",
+    "childcare",
+    "Childcare help can make work, school and appointments easier to manage."
+   ]
+  ],
+  "risks": [
+   [
+    "child_mental_health_risk",
+    "high",
+    [
+     "Communities In Schools of Central Texas",
+     "Vida Clinic — School-Based Mental Health",
+     "Integral Care youth services"
+    ]
+   ]
+  ],
+  "benefits": {
+   "total_monthly_value": 1525.0,
+   "total_annual_value": 18300.0,
+   "breakdown": [
+    {
+     "service": "Communities In Schools of Central Texas",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "AISD Pre-K & Early Childhood",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "Austin Public Health TB & STD Clinic",
+     "monthly_value": 25.0
+    },
+    {
+     "service": "WIC Benefits",
+     "monthly_value": 75.0
+    },
+    {
+     "service": "Head Start (childcare value)",
+     "monthly_value": 800.0
+    },
+    {
+     "service": "Medicaid Coverage (estimated value)",
+     "monthly_value": 550.0
+    },
+    {
+     "service": "NAMI Central Texas",
+     "monthly_value": 25.0
+    }
+   ]
+  }
+ }
+}

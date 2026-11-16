@@ -50,6 +50,8 @@ The notice is translated for Spanish, Vietnamese, Chinese, and Arabic.
 
 The greeting no longer calls the conversation "confidential", because typed text is sent to OpenAI and, in the opt-in `realtime_audio` voice mode, voice audio goes to OpenAI directly. Demo persona sessions (`POST /api/v1/intake/load-persona`) open with the persona's scripted first message instead of a greeting, so they don't show this notice. They are synthetic residents for staff demos. The landing page and the chat welcome say the same thing in short form ("Uses AI (OpenAI)", don't share names or ID numbers) and make no confidentiality promise.
 
+The privacy notice above the chat and search boxes (`PrivacyNotice.tsx`) ends with a "How this works" link to `/how-it-works#pii`, and the landing page footer links to `/how-it-works`. That page explains in plain language what is removed, what is sent to OpenAI, what the server keeps, and the limits of each protection, with the running deployment's model, voice mode and catalog counts read from `GET /api/v1/about`. It is English-only.
+
 ## PII redaction before the model
 
 `backend/app/services/pii.py` removes high-risk identifiers from resident-written text using fixed patterns (no AI involved). It is the authority; the browser runs a mirror of it first (see "Client pre-flight"). Each match is replaced with a placeholder:
@@ -190,7 +192,9 @@ The voice debug trace (`REALTIME_DEBUG_LOG_ENABLED`) is **off by default**. When
 
 Admin read endpoints (`GET /api/v1/admin/...`) are open. They return synthetic demo residents, generated analytics, and the public service catalog. They expose no real resident data.
 
-Admin write endpoints (`POST`, `PATCH`, `DELETE` under `/api/v1/admin/services`) change the catalog that residents are matched against. They require an `X-Admin-Token` header that matches the server's `ADMIN_API_TOKEN` setting, compared in constant time. If `ADMIN_API_TOKEN` is empty (the default), every write returns 403 with a message explaining how to enable it. This is a shared-secret stopgap, not staff authentication. Catalog edits live only in the memory of the server instance that received them: they are lost on restart, and on serverless or multi-instance hosting (Vercel, for example) other instances never see them, so they are not durable.
+Admin write endpoints (`POST`, `PATCH`, `DELETE` under `/api/v1/admin/services`, and `PUT /api/v1/admin/matching-rules`) change the catalog that residents are matched against. They require an `X-Admin-Token` header that matches the server's `ADMIN_API_TOKEN` setting, compared in constant time. If `ADMIN_API_TOKEN` is empty (the default), every write returns 403 with a message explaining how to enable it. This is a shared-secret stopgap, not staff authentication. Catalog edits live only in the memory of the server instance that received them: they are lost on restart, and on serverless or multi-instance hosting (Vercel, for example) other instances never see them, so they are not durable.
+
+The Eligibility page (`/admin/eligibility`) has a profile tester. It sends a synthetic profile to `POST /api/v1/admin/eligibility/evaluate`, which runs the matching engine and returns the verdicts. Nothing is stored or logged, and the page tells staff not to enter a real resident's details. Rule edits there (`PUT /api/v1/admin/matching-rules`) follow the same token and in-memory rules as catalog edits. `GET /api/v1/admin/pack/export` (token required) downloads the in-memory pack as YAML so edits can be kept. With `ADMIN_EDIT_MODE=export_only` set in the host environment, writes return 409 and the console only previews and exports.
 
 ## What a real deployment still needs
 

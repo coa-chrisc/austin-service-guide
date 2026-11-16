@@ -80,6 +80,8 @@ export interface ServiceGuideSettings {
   description?: string;
   copy?: { tagline?: string; footerDisclaimer?: string; privacyNotice?: string };
   contact?: { phone311?: string; agencyWebsite?: string; accessibilityUrl?: string };
+  /** Public source repository; the How it works page links its docs and issues. */
+  links?: { sourceRepoUrl?: string };
   darkColors?: Partial<ThemeColors>;
   categoryColors?: Record<string, string>;
   extraFontPackages?: string[];
@@ -107,6 +109,8 @@ export interface ResolvedServiceGuide {
   description: string;
   copy: { tagline: string; footerDisclaimer: string; privacyNotice: string };
   contact: { phone311: string; agencyWebsite: string; accessibilityUrl: string };
+  /** Empty string when unset (the How it works document links are hidden). */
+  links: { sourceRepoUrl: string };
   /** Complete dark-mode roles (explicit values plus derived ones). */
   darkColors: ThemeColors;
   categoryColors: Record<string, string>;
@@ -162,6 +166,7 @@ export function resolveServiceGuide(config: CityConfig): ResolvedServiceGuide {
       agencyWebsite: sg.contact?.agencyWebsite ?? "",
       accessibilityUrl: sg.contact?.accessibilityUrl ?? "",
     },
+    links: { sourceRepoUrl: (sg.links?.sourceRepoUrl ?? "").replace(/\/+$/, "") },
     darkColors: deriveDarkColors(theme.colors, sg.darkColors),
     categoryColors: sg.categoryColors ?? {},
     extraFontPackages: sg.extraFontPackages ?? [],

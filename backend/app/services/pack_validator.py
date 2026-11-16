@@ -39,7 +39,6 @@ from jsonschema import Draft202012Validator
 
 _HERE = Path(__file__).resolve()
 SERVICES = "services/"
-MAX_MATCHED_SERVICES = 200  # matching.match_services reads get_all_services(page_size=200)
 MAX_CATEGORIES_PER_SERVICE = 5
 _MSG_LIMIT = 300
 
@@ -255,7 +254,6 @@ def _check_services(files: dict[str, Any], categories: set[str], bbox: list | No
     ids: dict[str, str] = {}
     slugs: dict[str, str] = {}
     loc_ids: dict[str, str] = {}
-    listed = 0
     today = date.today()
     for name, svc in files.items():
         if not name.startswith(SERVICES) or not isinstance(svc, dict):
@@ -271,9 +269,6 @@ def _check_services(files: dict[str, Any], categories: set[str], bbox: list | No
             slugs.setdefault(slug, name)
             if slug != Path(name).stem:
                 report.error(name, "slug", "slug_file_mismatch", f"slug {slug!r} does not match file name")
-        if svc.get("status") != "inactive":
-            listed += 1
-
         cats = svc.get("categories") if isinstance(svc.get("categories"), list) else []
         for i, c in enumerate(cats):
             if c not in categories:
@@ -328,11 +323,6 @@ def _check_services(files: dict[str, Any], categories: set[str], bbox: list | No
         elif locations and primaries == 0:
             report.warn(name, "locations", "primary_location", "no location has is_primary: true")
         _check_markup(name, svc, report)
-
-    if listed > MAX_MATCHED_SERVICES:
-        report.error(SERVICES, "", "match_cap",
-                     f"{listed} services are not inactive; matching reads only the first {MAX_MATCHED_SERVICES} "
-                     "(get_all_services page_size in matching.py), so the rest can never match")
 
 
 def _check_categories(files: dict[str, Any], report: _Report) -> set[str]:

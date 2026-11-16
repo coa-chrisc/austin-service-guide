@@ -346,7 +346,11 @@ def test_realtime_instructions_cover_unclear_audio_and_accents(client):
 
 # ── Admin write gate ────────────────────────────────────────────────────
 
-_NEW_SERVICE = {"id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test"}
+_NEW_SERVICE = {
+    "id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test",
+    "provider_name": "Test", "categories": ["food"], "eligibility_summary": "Open to all.",
+    "phone": "512-555-0100",
+}
 
 
 def test_admin_writes_refused_when_token_unset(client):

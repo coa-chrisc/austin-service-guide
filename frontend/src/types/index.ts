@@ -58,6 +58,25 @@ export interface Service {
   categories: string[];
   locations: ServiceLocation[];
   documents: ServiceDocument[];
+  /** Hard gates the matching engine checks (see the admin Eligibility page). */
+  eligibility_requires?: string[];
+  /** Staff verification; absent date or role means unverified. */
+  last_verified_date?: string | null;
+  verified_by?: string;
+  provider_type?: ProviderType | null;
+  /** Provenance; only the admin service endpoint returns it. */
+  sources?: ServiceSource[];
+}
+
+export type ProviderType = "city" | "county" | "state" | "federal" | "nonprofit" | "other";
+
+export interface ServiceSource {
+  url: string;
+  title?: string;
+  retrieved_at?: string | null;
+  fields?: string[];
+  quote?: string;
+  note?: string;
 }
 
 export interface ServiceCategory {

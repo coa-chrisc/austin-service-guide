@@ -90,6 +90,20 @@ EligibilityGate = Literal[
 ]
 
 
+ProviderType = Literal["city", "county", "state", "federal", "nonprofit", "other"]
+
+
+class ServiceSource(BaseModel):
+    """Where facts in a service entry came from (``sources`` in the schema)."""
+
+    url: str = Field(pattern=r"^https?://.+")
+    title: str = ""
+    retrieved_at: date | None = None
+    fields: list[str] = Field(default_factory=list)
+    quote: str = Field(default="", max_length=1000)
+    note: str = ""
+
+
 class Service(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str
@@ -110,6 +124,15 @@ class Service(BaseModel):
     categories: list[str] = Field(default_factory=list)
     locations: list[ServiceLocation] = Field(default_factory=list)
     documents: list[ServiceDocument] = Field(default_factory=list)
+    # Verification: set by staff only, never by a tool or AI agent. Absent
+    # date or role means "unverified".
+    last_verified_date: date | None = None
+    verified_by: str = ""  # role or team, not a personal name
+    provider_type: ProviderType | None = None
+    # Provenance for staff review and pack export. exclude=True keeps it out
+    # of every model_dump (resident API responses, model tool outputs); the
+    # admin routes and the export add it back explicitly.
+    sources: list[ServiceSource] = Field(default_factory=list, exclude=True)
 
     @field_validator("website_url")
     @classmethod

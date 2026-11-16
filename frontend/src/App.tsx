@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Routes, Route } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -26,6 +27,14 @@ import AdminPartnerGaps from "@/pages/admin/AdminPartnerGaps";
 import ReportView from "@/pages/admin/reports/ReportView";
 import Box from "@mui/material/Box";
 
+// Reference page, rarely opened: kept out of the main bundle.
+const HowItWorks = lazy(() => import("@/pages/HowItWorks"));
+const howItWorks = (
+  <Suspense fallback={null}>
+    <HowItWorks />
+  </Suspense>
+);
+
 export default function App() {
   return (
     <Routes>
@@ -49,6 +58,7 @@ export default function App() {
         <Route path="partner-gaps" element={<AdminPartnerGaps />} />
         <Route path="audit" element={<AdminAuditLog />} />
         <Route path="staff" element={<AdminStaff />} />
+        <Route path="how-it-works" element={howItWorks} />
       </Route>
 
       {/* Resident routes */}
@@ -75,6 +85,7 @@ export default function App() {
                 <Route path="/map" element={<MapView />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/demo" element={<DemoIntake />} />
+                <Route path="/how-it-works" element={howItWorks} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Box>

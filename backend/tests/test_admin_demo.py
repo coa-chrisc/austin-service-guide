@@ -56,7 +56,8 @@ def test_default_pack_tables(client):
         "gap": 70,
         "connection_rate": 0.593,
     }
-    assert len(client.get("/api/v1/admin/eligibility-rules").json()) == 11
+    # The illustrative rule table is gone; the page reads the real engine (#20).
+    assert client.get("/api/v1/admin/eligibility-rules").status_code == 404
     assert len(client.get("/api/v1/admin/reports").json()) == 7
     assert client.get("/api/v1/admin/audit-log").json()["total"] == 8
     staff = client.get("/api/v1/admin/staff").json()
@@ -95,7 +96,7 @@ def test_pack_without_demo_files_still_serves(client, empty_pack):
         "analytics/languages",
         "analytics/equity",
         "analytics/demand-map",
-        "eligibility-rules",
+        "eligibility",
         "reports",
         "partner-gaps",
         "audit-log",
