@@ -26,14 +26,13 @@ export default function PlanItemRow({
     <Card
       variant="outlined"
       sx={{
-        borderRadius: 2,
         "&:hover": { boxShadow: (t) => `0 4px 12px ${alpha(t.palette.brand.ink, 0.08)}` },
       }}
     >
       <CardActionArea
         onClick={() => navigate(`/services/${item.service_slug}${planQs}`)}
         aria-label={`View details for ${item.service_name}`}
-        sx={{ p: 1.5, minHeight: 56 }}
+        sx={{ px: 2, py: 1.5, minHeight: 64 }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box

@@ -345,7 +345,10 @@ export default function ServiceMap({
           sx={{
             display: "flex",
             gap: 0.75,
-            flexWrap: "wrap",
+            // Phones: one swipeable row instead of a wall of chips over the map.
+            flexWrap: { xs: "nowrap", md: "wrap" },
+            overflowX: { xs: "auto", md: "visible" },
+            scrollbarWidth: "none",
             p: 1.5,
             bgcolor: "background.paper",
             borderBottom: "1px solid",
@@ -363,14 +366,16 @@ export default function ServiceMap({
                 size="small"
                 onClick={() => onCategoryToggle?.(cat)}
                 sx={{
+                  flexShrink: 0,
                   fontWeight: 600,
                   fontSize: 12,
                   bgcolor: isSelected ? getCategoryColor(cat, theme) : "transparent",
                   color: isSelected
                     ? theme.palette.brand.textOn(getCategoryColor(cat, theme))
                     : "text.secondary",
-                  borderColor: getCategoryColor(cat, theme),
+                  // Shorthand first: `border` after `borderColor` resets the color.
                   border: "1px solid",
+                  borderColor: getCategoryColor(cat, theme),
                   "&:hover": {
                     bgcolor: isSelected
                       ? getCategoryColor(cat, theme)

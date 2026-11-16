@@ -187,9 +187,8 @@ export default function Header() {
               startIcon={<AssignmentTurnedInIcon />}
               onClick={() => navigate("/results")}
               sx={{
-                borderRadius: "20px",
+                borderRadius: (t) => t.shape.radius.pill,
                 fontWeight: 700,
-                textTransform: "none",
                 px: 2,
                 mr: 1,
                 // Solid primary: text over the primary-to-accent gradient cannot reach AA at both ends.
@@ -233,12 +232,7 @@ export default function Header() {
               color="secondary"
               startIcon={<PlayCircleOutlineIcon />}
               onClick={() => navigate("/?demo=1")}
-              sx={{
-                borderRadius: "20px",
-                fontWeight: 600,
-                textTransform: "none",
-                mr: 0.5,
-              }}
+              sx={{ borderRadius: (t) => t.shape.radius.pill, mr: 0.5 }}
             >
               Demo
             </Button>
@@ -306,15 +300,19 @@ export default function Header() {
               </Menu>
             </>
           ) : (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<LoginIcon />}
-              onClick={() => navigate("/login")}
-              sx={{ ml: 1 }}
-            >
-              Sign In
-            </Button>
+            // On phones Sign In lives in the drawer; here it would wrap and
+            // push the toolbar past the screen edge.
+            !isMobile && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<LoginIcon />}
+                onClick={() => navigate("/login")}
+                sx={{ ml: 1, borderRadius: (t) => t.shape.radius.pill }}
+              >
+                Sign In
+              </Button>
+            )
           )}
         </Toolbar>
       </AppBar>

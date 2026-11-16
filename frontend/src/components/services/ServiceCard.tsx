@@ -25,6 +25,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { highlightMatch } from "@/lib/highlight";
 import { openStatusLabel, serviceOpenNow } from "@/lib/hours";
 import type { Service, MatchConfidence } from "@/types";
+import { categoryLabel } from "@/lib/categoryLabel";
 
 interface ServiceCardProps {
   service: Service;
@@ -107,7 +108,7 @@ export default function ServiceCard({
             {service.categories.slice(0, 2).map((cat) => (
               <Chip
                 key={cat}
-                label={cat}
+                label={categoryLabel(cat)}
                 size="small"
                 sx={{
                   fontSize: 11,
@@ -147,7 +148,7 @@ export default function ServiceCard({
           </Typography>
 
           {/* Provider */}
-          {service.provider_name && (
+          {service.provider_name && service.provider_name !== service.name && (
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               {highlightMatch(service.provider_name, highlightQuery ?? "")}
             </Typography>

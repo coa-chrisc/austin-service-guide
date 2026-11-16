@@ -11,6 +11,7 @@ import DirectionsIcon from "@mui/icons-material/Directions";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import CheckIcon from "@mui/icons-material/Check";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import { useNavigate } from "react-router-dom";
 import { openStatusLabel } from "@/lib/hours";
 import type { ApplicationOrderItem } from "@/lib/api";
@@ -48,7 +49,6 @@ export default function StartHereHero({
       {/* Hero card — the rank-1 service */}
       <Card
         sx={{
-          borderRadius: 3,
           overflow: "hidden",
           border: "2px solid",
           borderColor: "primary.main",
@@ -67,31 +67,30 @@ export default function StartHereHero({
             gap: 1,
           }}
         >
-          <RocketLaunchIcon />
-          <Typography
-            variant="overline"
-            fontWeight={700}
-            sx={{ letterSpacing: 1 }}
-          >
+          <RocketLaunchIcon fontSize="small" />
+          <Typography variant="overline">
             {t("start_here")}
           </Typography>
         </Box>
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <Typography
             variant="h5"
+            component="h2"
             fontWeight={700}
-            sx={{ lineHeight: 1.25, mb: 0.5 }}
+            sx={{ mb: 0.5 }}
           >
             {topItem.service_name}
           </Typography>
-          {service?.provider_name && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              {service.provider_name}
-            </Typography>
-          )}
+          {/* Skip the provider line when it only repeats the service name. */}
+          {service?.provider_name &&
+            service.provider_name !== topItem.service_name && (
+              <Typography variant="body2" color="text.secondary">
+                {service.provider_name}
+              </Typography>
+            )}
           <Typography
             variant="body1"
-            sx={{ mb: 2.5, color: "text.primary", lineHeight: 1.5 }}
+            sx={{ mt: 1.5, mb: 3, color: "text.primary" }}
           >
             {topItem.reason}
           </Typography>
@@ -113,8 +112,7 @@ export default function StartHereHero({
                   minHeight: 56,
                   fontSize: "1.05rem",
                   fontWeight: 700,
-                  borderRadius: "28px",
-                  flex: 1,
+                                    flex: 1,
                 }}
               >
                 {t("call_now")}
@@ -133,8 +131,7 @@ export default function StartHereHero({
                   minHeight: 56,
                   fontSize: "1rem",
                   fontWeight: 600,
-                  borderRadius: "28px",
-                  flex: 1,
+                                    flex: 1,
                 }}
               >
                 {t("get_directions")}
@@ -154,8 +151,7 @@ export default function StartHereHero({
                 minHeight: 56,
                 fontSize: "1rem",
                 fontWeight: 600,
-                borderRadius: "28px",
-                flex: 1,
+                                flex: 1,
               }}
             >
               {t("view_details")}
@@ -166,14 +162,20 @@ export default function StartHereHero({
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ mb: 1, fontWeight: 500 }}
+              sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
             >
-              📞 {service.phone}
+              <PhoneIcon sx={{ fontSize: 18 }} />
+              {service.phone}
             </Typography>
           )}
           {primaryLocation && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              📍 {primaryLocation.address}, {primaryLocation.city},{" "}
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 1.5, display: "flex", alignItems: "flex-start", gap: 1 }}
+            >
+              <PlaceOutlinedIcon sx={{ fontSize: 18, mt: "1px" }} />
+              {primaryLocation.address}, {primaryLocation.city},{" "}
               {primaryLocation.state} {primaryLocation.zip_code}
             </Typography>
           )}
@@ -186,7 +188,7 @@ export default function StartHereHero({
                   size="small"
                   variant={status.open ? "filled" : "outlined"}
                   sx={{
-                    mb: 2,
+                    mb: 2.5,
                     height: 24,
                     fontSize: 12,
                     fontWeight: 600,
@@ -202,8 +204,9 @@ export default function StartHereHero({
           {service && service.documents && service.documents.length > 0 && (
             <Box
               sx={{
-                p: 2,
-                borderRadius: 2,
+                px: 2.5,
+                py: 2,
+                borderRadius: (theme) => theme.shape.radius.control,
                 bgcolor: "brand.primarySoft",
                 border: "1px solid",
                 borderColor: "primary.light",
@@ -230,7 +233,8 @@ export default function StartHereHero({
                         width: 6,
                         height: 6,
                         borderRadius: "50%",
-                        bgcolor: d.is_required ? "error.main" : "text.disabled",
+                        // Required items get the brand dot; red read as an error.
+                        bgcolor: d.is_required ? "primary.main" : "text.disabled",
                         flexShrink: 0,
                       }}
                     />

@@ -73,7 +73,7 @@ export default function ChatBubble({
       )}
 
       {/* Bubble */}
-      <Box sx={{ maxWidth: "75%", minWidth: 60 }}>
+      <Box sx={{ maxWidth: { xs: "85%", sm: "75%" }, minWidth: 60 }}>
         <Box
           sx={{
             px: 2,
@@ -191,7 +191,6 @@ export default function ChatBubble({
                   color="primary"
                   sx={{
                     fontWeight: 500,
-                    borderRadius: "20px",
                     "&:hover": {
                       bgcolor: "primary.main",
                       color: "primary.contrastText",

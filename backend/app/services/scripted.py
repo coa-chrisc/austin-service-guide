@@ -390,7 +390,8 @@ async def _complete_intake_demo(session: IntakeSession) -> IntakeMessage:
     if high_matches:
         lines.append("\nHere are your top matches:\n")
         for i, m in enumerate(high_matches[:5], 1):
-            lines.append(f"**{i}. {m.service.name}** — {m.match_reasoning}")
+            # A real Markdown list: "**1. Name**" lines run together into one paragraph.
+            lines.append(f"{i}. **{m.service.name}** — {m.match_reasoning}")
 
     if risks:
         critical = [r for r in risks if r.severity.value in ("critical", "high")]
@@ -400,7 +401,7 @@ async def _complete_intake_demo(session: IntakeSession) -> IntakeMessage:
                 "A case worker may reach out to connect you with additional support."
             )
 
-    lines.append("\nClick **View Full Results** to see all your matches with details on how to apply.")
+    lines.append("\nSelect **See my plan** to see all your matches with details on how to apply.")
 
     msg = IntakeMessage(
         role=MessageRole.assistant,

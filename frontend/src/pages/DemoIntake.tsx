@@ -220,7 +220,7 @@ export default function DemoIntake() {
       <Box
         sx={{
           bgcolor: "background.paper",
-          borderRadius: 2,
+          borderRadius: (theme) => theme.shape.radius.card,
           border: "1px solid",
           borderColor: "divider",
           p: { xs: 2, sm: 3 },
@@ -262,7 +262,6 @@ export default function DemoIntake() {
               minHeight: 52,
               px: 4,
               fontWeight: 700,
-              borderRadius: "26px",
             }}
           >
             View My Plan

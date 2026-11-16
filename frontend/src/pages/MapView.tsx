@@ -24,6 +24,7 @@ import ServiceMap, {
 import { getMapPins } from "@/lib/api";
 import { hasCompletedPlan, loadIntakeState } from "@/lib/session";
 import type { MapPin } from "@/types";
+import { BELOW_HEADER } from "@/components/layout/viewport";
 
 export default function MapView() {
   const theme = useTheme();
@@ -97,7 +98,7 @@ export default function MapView() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          height: "calc(100vh - 64px)",
+          height: BELOW_HEADER,
         }}
       >
         <CircularProgress />
@@ -222,7 +223,7 @@ export default function MapView() {
   );
 
   return (
-    <Box sx={{ display: "flex", height: "calc(100vh - 64px)" }}>
+    <Box sx={{ display: "flex", height: BELOW_HEADER }}>
       {/* Desktop: side list */}
       {!isMobile && (
         <Box
