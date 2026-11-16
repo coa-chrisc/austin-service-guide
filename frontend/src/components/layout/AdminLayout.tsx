@@ -311,7 +311,7 @@ export default function AdminLayout() {
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+            <Typography variant="h6" component="p" fontWeight={600} sx={{ flex: 1 }}>
               Staff Console (demo)
             </Typography>
             <Chip

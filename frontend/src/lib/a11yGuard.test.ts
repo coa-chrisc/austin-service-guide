@@ -9,14 +9,14 @@
 //   h4 -> h4), which is how the pages ended up with no h1 and skipped levels
 //   (axe heading-order). Choose the level (or "p"/"span") on purpose.
 //
-// Staff pages (admin/**) are out of scope, and How it works has its own owner.
+// Staff pages (admin/**) are out of scope.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const SRC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SKIP = [/^pages\/admin\//, /^pages\/howItWorks\//, /^pages\/HowItWorks\.tsx$/, /^components\/layout\/AdminLayout\.tsx$/];
+const SKIP = [/^pages\/admin\//, /^components\/layout\/AdminLayout\.tsx$/];
 
 function residentFiles(dir = SRC_DIR): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

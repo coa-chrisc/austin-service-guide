@@ -32,7 +32,7 @@ function aiStatus(a: AboutInfo): string {
 function voiceStatus(a: AboutInfo): string {
   return a.voice.mode === "realtime_audio"
     ? `Voice mode: raw audio streamed to the OpenAI Realtime API (model ${a.voice.realtime_model ?? "not reported"}).`
-    : "Voice mode: speech to text on your device; only text is sent.";
+    : "Voice mode: speech is turned into text on the device; only text is sent.";
 }
 
 function catalogStatus(a: AboutInfo): string {
@@ -62,13 +62,13 @@ export function factsFor(sectionId: string, a: AboutInfo): string[] {
         `Stored conversation: up to ${n(a.limits.state_messages)} messages of up to ${n(a.limits.message_chars)} characters each.`,
         ...(a.limits.new_message_chars == null ? [] : [`New message: up to ${n(a.limits.new_message_chars)} characters.`]),
       ];
-    case "grounding":
+    case "safety":
       return [catalogStatus(a)];
     case "crisis":
       return [
         `Local crisis lines in this data pack: ${n(a.catalog.local_crisis_lines)}, shown with 988, 9-1-1 and the National Domestic Violence Hotline.`,
       ];
-    case "security":
+    case "status":
       return [
         `Access-code gate: ${a.access_gate ? "on" : "off"}.`,
         `Staff catalog edits kept after a restart: ${yesNo(a.admin.catalog_writes_persist)}.`,
