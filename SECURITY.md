@@ -110,6 +110,19 @@ Input checks at the API edge:
 - `POST /api/v1/intake/share` texts only the country codes in `SMS_ALLOWED_COUNTRY_CODES` (default `1`, US/NANP, normalized to `+1XXXXXXXXXX`), so the public share relay cannot be used to send texts to premium-rate international numbers. To serve other countries, add their calling codes (e.g. `1,44`; numbers outside NANP must be entered in full `+` E.164 form) and enable the same countries in Twilio's SMS Geo Permissions. Each added country widens toll-fraud exposure, so pair it with rate limiting.
 - `Service.website_url` (`backend/app/models.py`) and the catalog schema accept only `http://` or `https://` URLs (or empty), so an admin write or a data-pack file cannot store a `javascript:` link that the service page would render.
 
+### 10. Partner-list import uploads
+
+The admin partner-list import (`backend/app/routers/partner_import.py`, `backend/app/services/partner_import/`) is off by default: all its routes return 404 unless `IMPORT_ENABLED=true`, `JOB_BACKEND=inline` and `ADMIN_API_TOKEN` are set, and the upload, validate and export routes require `X-Admin-Token`. Controls on the upload:
+
+- **Type by content, not just name.** Only `.xlsx`, `.csv` and `.docx` are accepted. The bytes must match the name: an Office file must be a zip with the expected main part, a CSV must decode as text with no NUL bytes, and legacy binary formats (`.xls`, `.doc`) are refused even when renamed. Macro formats (`.xlsm`, `.docm`, ...) and any archive containing a `vbaProject.bin` or a macro-enabled content type are refused.
+- **Sizes.** 4 MB per file, checked from `Content-Length` and again while streaming the body (the 256 KiB body limit in `middleware.py` covers only intake routes, so these routes enforce their own); 4 MB for the JSON validate and export bodies; at most 2,000 zip entries, 50 MB uncompressed and a 100:1 compression ratio per part; 20 sheets, 50 Word tables, 60 columns (the rest are ignored with a note), 2,000 characters per cell, and 5,000 rows (lower with `IMPORT_MAX_ROWS`, default 2,000). Parsing stops after 20 seconds.
+- **Nothing executes.** Formulas are never evaluated: openpyxl reads the value Excel stored at save time (`data_only=True`), and a formula with no stored value reads as empty. Macros, embedded objects, external links and comments are never opened. XML is parsed through `defusedxml`, so entity-expansion payloads are refused.
+- **Hidden content.** Hidden sheets and hidden rows are skipped and counted; deleted tracked-change text and hidden runs in Word are skipped.
+- **Client-record guard.** A file whose headers name resident identifiers (DOB, SSN, Case #, Diagnosis, ...) or whose rows carry SSN or date-of-birth values in more than 5% of rows is refused before mapping. The refusal message names the matching headers, never cell values, and the log records counts only.
+- **Output.** Export builds the zip in memory. Every cell of `review-issues.csv` that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is prefixed with `'`, so a spreadsheet does not run it as a formula. Drafts carry no verification fields, and each YAML file opens with an "Unverified" comment.
+
+Limit: the value filters work on patterns. Content inside mapped free-text cells, such as a person's name written into a description, is not caught, so every draft needs human review before it reaches the catalog (see [docs/PRIVACY.md](docs/PRIVACY.md#partner-list-import-admin)). The import never writes to the catalog itself.
+
 ## Known gaps before production
 
 These are not implemented. Do not treat the demo as ready for real resident data until they are addressed.
