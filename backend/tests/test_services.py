@@ -25,6 +25,35 @@ def test_admin_service_writes_return_422_on_invalid_body(client, monkeypatch):
     assert client.patch("/api/v1/admin/services/nope", json={}, headers=auth).status_code == 404
 
 
+def test_admin_writes_reject_non_http_website_url(client, monkeypatch):
+    """website_url is rendered as a link, so javascript:/data: URLs would be stored XSS."""
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "admin_api_token", "test-token")
+    auth = {"X-Admin-Token": "test-token"}
+    url = "/api/v1/admin/services"
+    base = {"id": "svc-test-url-scheme", "name": "URL Test", "slug": "url-test"}
+    for bad in ("javascript:alert(document.cookie)", " JavaScript:alert(1)",
+                "data:text/html,<script>alert(1)</script>", "//evil.example", "ftp://x.example"):
+        assert client.post(url, json={**base, "website_url": bad}, headers=auth).status_code == 422, bad
+        res = client.patch(f"{url}/svc-wic", json={"website_url": bad}, headers=auth)
+        assert res.status_code == 422, bad
+    assert client.get("/api/v1/services/svc-wic").json()["website_url"].startswith("https://")
+    ok = client.post(url, json={**base, "website_url": "https://example.org/x"}, headers=auth)
+    assert ok.status_code == 201
+    empty = {**base, "id": "svc-test-url-empty", "slug": "url-empty", "website_url": ""}
+    assert client.post(url, json=empty, headers=auth).status_code == 201
+    for sid in ("svc-test-url-scheme", "svc-test-url-empty"):
+        client.delete(f"{url}/{sid}", headers=auth)
+
+
+def test_every_catalog_website_url_is_http():
+    from app.services.catalog_loader import load_services
+
+    for svc in load_services():
+        assert svc.website_url == "" or svc.website_url.startswith(("https://", "http://")), svc.slug
+
+
 def test_search_matches_whole_words_and_ignores_filler(client):
     names = lambda q: {  # noqa: E731
         s["name"]

@@ -111,6 +111,15 @@ class Service(BaseModel):
     locations: list[ServiceLocation] = Field(default_factory=list)
     documents: list[ServiceDocument] = Field(default_factory=list)
 
+    @field_validator("website_url")
+    @classmethod
+    def _http_url_only(cls, value: str) -> str:
+        # Rendered as a link (ServiceDetailCard.tsx): no javascript:/data: URLs.
+        value = value.strip()
+        if value and not value.startswith(("https://", "http://")):
+            raise ValueError("website_url must be empty or an http(s):// URL")
+        return value
+
 
 class ServiceCategory(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))

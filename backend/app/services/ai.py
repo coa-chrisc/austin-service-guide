@@ -39,6 +39,11 @@ log = logging.getLogger(__name__)
 
 _LIFE_EVENT_SLUG_RE = re.compile(r"^[a-z0-9-]{1,64}$")
 
+# Bound on the client-held conversation replayed to the model each turn
+# (see _conversation_input). Each agent-loop iteration resends it.
+MAX_MODEL_INPUT_MESSAGES = 40
+MAX_MODEL_INPUT_CHARS = 32_000
+
 
 # ── Public entrypoints ───────────────────────────────────────────────
 
@@ -261,12 +266,27 @@ def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:
 
     Only resident and assistant text is replayed across turns. Tool calls,
     tool outputs, and reasoning items live only inside one turn's loop.
+
+    The conversation comes from the browser, so it is bounded: the most
+    recent turns that fit ``MAX_MODEL_INPUT_MESSAGES`` and
+    ``MAX_MODEL_INPUT_CHARS``, always including the newest one. A real
+    intake fits well inside; the profile snapshot in the instructions
+    carries the facts from anything older.
     """
-    return [
+    visible = [
         {"role": m.role.value, "content": m.content}
         for m in session.conversation
         if m.role in (MessageRole.user, MessageRole.assistant) and m.content.strip()
     ]
+    kept: list[dict[str, Any]] = []
+    total = 0
+    for item in reversed(visible):
+        total += len(item["content"])
+        if kept and (len(kept) >= MAX_MODEL_INPUT_MESSAGES or total > MAX_MODEL_INPUT_CHARS):
+            break
+        kept.append(item)
+    kept.reverse()
+    return kept
 
 
 async def _responses_flow(session: IntakeSession) -> IntakeMessage:
