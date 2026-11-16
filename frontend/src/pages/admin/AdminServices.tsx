@@ -46,7 +46,7 @@ const STATUS_COLORS: Record<ServiceStatus, "success" | "default" | "warning"> =
 const STATUS_LABELS: Record<string, string> = {
   active: "Active",
   inactive: "Inactive",
-  seasonal: "Needs Review",
+  seasonal: "Seasonal",
 };
 
 export default function AdminServices() {
@@ -124,10 +124,7 @@ export default function AdminServices() {
       setServices((prev) => prev.filter((s) => s.id !== id));
     } catch (err) {
       setSnackbar({
-        msg:
-          err instanceof ApiError && err.status === 403
-            ? err.message
-            : "Failed to delete service",
+        msg: err instanceof ApiError ? err.message : "Failed to delete service",
         severity: "error",
       });
     }
@@ -153,6 +150,29 @@ export default function AdminServices() {
           label={STATUS_LABELS[params.value] ?? params.value}
           size="small"
           color={STATUS_COLORS[params.value as ServiceStatus] ?? "default"}
+        />
+      ),
+    },
+    {
+      field: "eligibility_requires",
+      headerName: "Gates",
+      width: 80,
+      type: "number",
+      valueGetter: (_value: string[] | undefined, row: Service) =>
+        (row.eligibility_requires ?? []).length,
+    },
+    {
+      field: "verified",
+      headerName: "Verified",
+      width: 110,
+      valueGetter: (_value: unknown, row: Service) =>
+        row.last_verified_date && row.verified_by ? "Verified" : "Unverified",
+      renderCell: (params) => (
+        <Chip
+          label={params.value}
+          size="small"
+          variant="outlined"
+          color={params.value === "Verified" ? "success" : "default"}
         />
       ),
     },

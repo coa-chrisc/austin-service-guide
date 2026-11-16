@@ -4,6 +4,13 @@
 
 import { getAdminToken } from "./adminToken";
 import type {
+  EligibilityOverrides,
+  EligibilityPayload,
+  EvaluateResult,
+  ImpactResult,
+  MatchingRules,
+} from "./adminEligibility";
+import type {
   BenefitsEstimate,
   IntakeMessage,
   IntakePlan,
@@ -32,26 +39,54 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 /* ---- generic request helper ---- */
 
+/** One validation problem from a 409/422 response: `loc` is the field path. */
+export interface FieldIssue {
+  type: string;
+  loc: (string | number)[];
+  msg: string;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** Field-level problems when the server sent a list detail (422/409). */
+    public issues: FieldIssue[] = [],
   ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
+function isIssue(value: unknown): value is FieldIssue {
+  const v = value as FieldIssue;
+  return !!v && typeof v.msg === "string" && Array.isArray(v.loc);
+}
+
 // FastAPI errors arrive as {"detail": ...}. Surface a string detail as the
-// message so pages never render raw JSON; anything else gets a generic line.
-function errorDetail(body: string, status: number): string {
+// message so pages never render raw JSON; a list detail (validation) becomes
+// field issues plus its first message; anything else gets a generic line.
+function errorDetail(
+  body: string,
+  status: number,
+): { message: string; issues: FieldIssue[] } {
   try {
     const parsed = JSON.parse(body) as { detail?: unknown };
-    if (typeof parsed?.detail === "string") return parsed.detail;
+    if (typeof parsed?.detail === "string") {
+      return { message: parsed.detail, issues: [] };
+    }
+    if (Array.isArray(parsed?.detail)) {
+      const issues = parsed.detail.filter(isIssue).map((i) => ({
+        type: String(i.type ?? ""),
+        loc: i.loc,
+        msg: i.msg,
+      }));
+      if (issues.length) return { message: issues[0].msg, issues };
+    }
   } catch {
     // non-JSON body
   }
-  return `Request failed (${status}).`;
+  return { message: `Request failed (${status}).`, issues: [] };
 }
 
 async function apiRequest<T>(
@@ -79,14 +114,14 @@ async function apiRequest<T>(
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      const detail = errorDetail(text, res.status);
+      const { message, issues } = errorDetail(text, res.status);
       // Optional access-code gate (private demo deployments): the cookie
       // expired or was revoked, so send the visitor back to the code form.
-      if (res.status === 401 && detail === "Access code required.") {
+      if (res.status === 401 && message === "Access code required.") {
         const here = window.location.pathname + window.location.search;
         window.location.assign(`/access?next=${encodeURIComponent(here)}`);
       }
-      throw new ApiError(res.status, detail);
+      throw new ApiError(res.status, message, issues);
     }
     if (res.status === 204) return undefined as unknown as T;
     return res.json() as Promise<T>;
@@ -550,10 +585,18 @@ function adminWriteOptions() {
   return { headers };
 }
 
+/** One service with every field, including its sources (admin only). */
+export function getAdminService(id: string) {
+  return apiRequest<Service>(
+    "GET",
+    `/api/v1/admin/services/${encodeURIComponent(id)}`,
+  );
+}
+
 export function updateAdminService(id: string, data: Partial<Service>) {
   return apiRequest<Service>(
     "PATCH",
-    `/api/v1/admin/services/${id}`,
+    `/api/v1/admin/services/${encodeURIComponent(id)}`,
     data,
     adminWriteOptions(),
   );
@@ -571,24 +614,70 @@ export function createAdminService(data: Partial<Service>) {
 export function deleteAdminService(id: string) {
   return apiRequest<{ status: string; service_id: string }>(
     "DELETE",
-    `/api/v1/admin/services/${id}`,
+    `/api/v1/admin/services/${encodeURIComponent(id)}`,
     undefined,
     adminWriteOptions(),
   );
 }
 
-// ── New admin endpoints ───────────────────────────────────────────
+// ── Eligibility rules and the data pack (issue #20) ─────────────────
+// Types live in ./adminEligibility so this file stays the transport layer.
 
-export interface EligibilityRule {
-  id: string;
-  name: string;
-  category: string;
-  criteria: string;
-  services: string[];
-  hits_30d: number;
-  is_active: boolean;
-  last_updated: string;
+export function getAdminEligibility() {
+  return apiRequest<EligibilityPayload>("GET", "/api/v1/admin/eligibility");
 }
+
+export function evaluateEligibility(
+  profile: Partial<ResidentProfile>,
+  overrides?: EligibilityOverrides,
+) {
+  return apiRequest<EvaluateResult>(
+    "POST",
+    "/api/v1/admin/eligibility/evaluate",
+    { profile, ...(overrides ? { overrides } : {}) },
+  );
+}
+
+export function eligibilityImpact(overrides: EligibilityOverrides) {
+  return apiRequest<ImpactResult>("POST", "/api/v1/admin/eligibility/impact", {
+    overrides,
+  });
+}
+
+export function putMatchingRules(rules: MatchingRules) {
+  return apiRequest<{ matching_rules: MatchingRules }>(
+    "PUT",
+    "/api/v1/admin/matching-rules",
+    rules,
+    adminWriteOptions(),
+  );
+}
+
+/** The in-memory pack (optionally with staged edits) as a zip of YAML files. */
+export async function exportPack(options: {
+  changedOnly: boolean;
+  overrides?: EligibilityOverrides;
+}): Promise<Blob> {
+  const { headers } = adminWriteOptions();
+  const res = await fetch(`${BASE_URL}/api/v1/admin/pack/export`, {
+    method: "POST",
+    headers: { ...headers, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      changed_only: options.changedOnly,
+      ...(options.overrides ? { overrides: options.overrides } : {}),
+    }),
+  });
+  if (!res.ok) {
+    const { message, issues } = errorDetail(
+      await res.text().catch(() => ""),
+      res.status,
+    );
+    throw new ApiError(res.status, message, issues);
+  }
+  return res.blob();
+}
+
+// ── Other admin endpoints ─────────────────────────────────────────
 
 export interface DemandMapPoint {
   zip: string;
@@ -611,13 +700,6 @@ export interface AdminReport {
   last_run: string;
   schedule: string;
   owner: string;
-}
-
-export function getAdminEligibilityRules() {
-  return apiRequest<EligibilityRule[]>(
-    "GET",
-    "/api/v1/admin/eligibility-rules",
-  );
 }
 
 export function getAdminDemandMap() {
