@@ -32,6 +32,7 @@ from app.services.ai import process_message, start_persona_session, start_sessio
 from app.services.grounding import ground_service_ids
 from app.services.i18n import (
     PLAN_SUMMARY_I18N,
+    risk_flag_label,
     translate_match_reasoning,
     translate_risk_flag,
     translate_sequence_reason,
@@ -63,7 +64,11 @@ _TRACE_ID_PATTERN = r"^[A-Za-z0-9_-]{0,80}$"
 _MAX_SHARED_SERVICES = 8
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_PHONE_RE = re.compile(r"^\+?\d{10,15}$")
+# SMS goes only to the country codes in SMS_ALLOWED_COUNTRY_CODES (default
+# "1": US/NANP). An open SMS relay to every country invites SMS-pumping toll
+# fraud. NANP numbers may omit the +1; other countries need full E.164.
+_US_PHONE_RE = re.compile(r"^(?:\+?1)?([2-9]\d{2}[2-9]\d{6})$")
+_E164_RE = re.compile(r"^\+([1-9]\d{7,14})$")
 
 
 # ── Request bodies ───────────────────────────────────────────────────
@@ -89,9 +94,18 @@ class ShareRequest(BaseModel):
     def _check_recipient(self) -> "ShareRequest":
         value = self.recipient.strip()
         if self.channel == "sms":
-            value = re.sub(r"[\s().-]", "", value)
-            if not _PHONE_RE.match(value):
-                raise ValueError("recipient must be a phone number")
+            digits = re.sub(r"[\s().-]", "", value)
+            codes = get_settings().sms_country_codes
+            us = _US_PHONE_RE.match(digits)
+            intl = _E164_RE.match(digits)
+            if us and "1" in codes:
+                value = f"+1{us.group(1)}"
+            elif intl and not intl.group(1).startswith("1") and any(
+                intl.group(1).startswith(c) for c in codes if c != "1"
+            ):
+                value = digits
+            else:
+                raise ValueError("recipient must be a phone number in a supported country")
         elif not _EMAIL_RE.match(value):
             raise ValueError("recipient must be an email address")
         self.recipient = value
@@ -247,12 +261,15 @@ async def get_results(body: StateRequest):
 
         for rf in risk_flags_payload:
             translated_rf = translate_risk_flag(rf.get("risk_type", ""), lang)
-            if translated_rf:
+            if translated_rf and translated_rf.get("description"):
                 rf["description"] = translated_rf["description"]
-                rf["label"] = translated_rf["label"]
 
         if plan is not None and not plan_synthesis:
             plan_synthesis = PLAN_SUMMARY_I18N.get(lang, "")
+
+    # Every flag gets a display label (English too), never the raw enum.
+    for rf in risk_flags_payload:
+        rf["label"] = risk_flag_label(rf.get("risk_type", ""), lang)
 
     return {
         "state": _state(session),
@@ -456,8 +473,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             "detail": {"error": type(exc).__name__},
         })
         raise HTTPException(
-            status_code=502,
-            detail=f"OpenAI Realtime client secret failed: {type(exc).__name__}",
+            status_code=502, detail="Realtime voice is temporarily unavailable."
         ) from exc
 
     data = res.json()

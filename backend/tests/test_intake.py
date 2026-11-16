@@ -114,6 +114,62 @@ def test_share_validates_recipient(client):
     assert share(channel="email", recipient="a@b.org").status_code == 200
 
 
+def test_share_sms_is_limited_to_us_numbers(client, monkeypatch):
+    """No international SMS: an open relay to premium-rate numbers is toll fraud."""
+    from app.routers import intake
+
+    sent: list[str] = []
+
+    async def fake_send_sms(*, to, body):
+        sent.append(to)
+        return {"ok": True, "demo": True, "channel": "sms", "to": to}
+
+    monkeypatch.setattr(intake, "send_sms", fake_send_sms)
+    ids = _completed_session(client).state["matched_service_ids"]
+
+    def share(recipient):
+        return client.post("/api/v1/intake/share", json={
+            "channel": "sms", "recipient": recipient, "service_ids": ids,
+        })
+
+    for bad in ("+447911123456", "+2348012345678", "+881612345678", "0123456789",
+                "+1 012 555 1234", "512555123", "+15125551234567"):
+        assert share(bad).status_code == 422, bad
+    assert sent == []
+    for good in ("(512) 555-1234", "512.555.1234", "1-512-555-1234", "+1 512 555 1234"):
+        assert share(good).status_code == 200, good
+    # Normalized to E.164 before it reaches Twilio.
+    assert sent == ["+15125551234"] * 4
+
+
+def test_share_sms_extra_countries_are_opt_in(client, monkeypatch):
+    from app.config import Settings
+    from app.routers import intake
+
+    sent: list[str] = []
+
+    async def fake_send_sms(*, to, body):
+        sent.append(to)
+        return {"ok": True, "demo": True, "channel": "sms", "to": to}
+
+    monkeypatch.setattr(intake, "send_sms", fake_send_sms)
+    monkeypatch.setattr(
+        intake, "get_settings", lambda: Settings(_env_file=None, sms_allowed_country_codes="1, +44")
+    )
+    ids = _completed_session(client).state["matched_service_ids"]
+
+    def share(recipient):
+        return client.post("/api/v1/intake/share", json={
+            "channel": "sms", "recipient": recipient, "service_ids": ids,
+        })
+
+    assert share("+44 7911 123456").status_code == 200
+    assert share("(512) 555-1234").status_code == 200
+    for bad in ("+2348012345678", "447911123456", "+1012555123"):
+        assert share(bad).status_code == 422, bad
+    assert sent == ["+447911123456", "+15125551234"]
+
+
 def _enable_raw_audio_voice(monkeypatch, live_ai=True):
     """Opt this test into the Realtime (raw-audio) endpoints.
 
@@ -136,6 +192,33 @@ def test_realtime_secret_unavailable_without_key(client, monkeypatch):
     res = sid.post("realtime/client-secret")
     assert res.status_code == 403
     assert "sk-" not in res.text
+
+
+def test_realtime_secret_network_error_detail_is_generic(client, monkeypatch):
+    """Upstream failures return one fixed message, not exception class names."""
+    import httpx
+
+    from app.routers import intake
+
+    class _Unreachable:
+        def __init__(self, *_, **__):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            return False
+
+        async def post(self, *_, **__):
+            raise httpx.ConnectError("connect failed to api.openai.com:443")
+
+    sid = _start(client)
+    _enable_raw_audio_voice(monkeypatch)
+    monkeypatch.setattr(intake.httpx, "AsyncClient", _Unreachable)
+    res = sid.post("realtime/client-secret")
+    assert res.status_code == 502
+    assert res.json() == {"detail": "Realtime voice is temporarily unavailable."}
 
 
 # ── PII redaction at the intake boundaries ──────────────────────────────
@@ -323,14 +406,16 @@ def test_scripted_flow_still_asks_unknown_fields_in_order(client):
 # ── Honest greeting (no "confidential" promise) ─────────────────────────
 
 
-def test_scripted_greeting_discloses_ai_and_never_says_confidential(client):
+def test_scripted_greeting_says_ai_is_off_and_never_says_confidential(client):
     from app.services.scripted import DEMO_STEPS
 
     sid = _start(client)
     greeting = sid.state["conversation"][0]["content"]
     assert greeting == DEMO_STEPS[0]["message"]
     assert "confidential" not in greeting.lower()
-    assert "OpenAI" in greeting and "Social Security" in greeting
+    # The scripted flow makes no model call, so it must not claim to use OpenAI.
+    assert "OpenAI" not in greeting
+    assert "Live AI is off" in greeting and "Social Security" in greeting
 
 
 def test_ai_notice_translations_are_honest():

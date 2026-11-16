@@ -25,6 +25,8 @@ interface ChatBubbleProps {
    * Switched off once the message commits to the message list.
    */
   streaming?: boolean;
+  /** Small caption above the bubble naming the speaker (demo replay). */
+  speakerLabel?: string;
 }
 
 export default function ChatBubble({
@@ -33,6 +35,7 @@ export default function ChatBubble({
   isLatest,
   suppressEntryAnimation,
   streaming,
+  speakerLabel,
 }: ChatBubbleProps) {
   const isUser = message.role === "user";
   const skipEntryAnim = suppressEntryAnimation || streaming;
@@ -74,6 +77,15 @@ export default function ChatBubble({
 
       {/* Bubble */}
       <Box sx={{ maxWidth: { xs: "85%", sm: "75%" }, minWidth: 60 }}>
+        {speakerLabel && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mb: 0.25, fontWeight: 600, textAlign: isUser ? "right" : "left" }}
+          >
+            {speakerLabel}
+          </Typography>
+        )}
         <Box
           sx={{
             px: 2,

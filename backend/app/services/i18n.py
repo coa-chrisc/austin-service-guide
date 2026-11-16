@@ -19,84 +19,84 @@ from app.services.catalog_loader import load_service_translations
 
 SEQUENCE_REASONS_I18N: dict[str, dict[str, str]] = {
     "vi": {
-        "emergency": "Giải quyết an toàn tức thì trước — các nguồn lực này hỗ trợ 24/7.",
-        "cooling": "Bệnh do nhiệt diễn tiến nhanh — nơi tránh nóng và sửa máy lạnh phải được ưu tiên trong đợt nóng.",
-        "food": "Hỗ trợ thực phẩm thường giúp bạn tự động đủ điều kiện cho các chương trình khác.",
-        "housing": "Ổn định nơi ở trước khi giải quyết các mục tiêu dài hạn.",
-        "refugee": "Phối hợp tái định cư có thể mở khóa thực phẩm, y tế và hỗ trợ trường học chỉ trong một lần đăng ký.",
-        "utilities": "Giữ điện nước hoạt động giúp tránh bị đuổi và bảo vệ tiền đặt cọc.",
-        "healthcare": "Có bảo hiểm trước khi hóa đơn tự chi trả chồng chất.",
-        "childcare": "Chăm sóc trẻ giúp bạn rảnh tay đi tìm việc, học, và khám bệnh.",
-        "schools": "Hỗ trợ sức khỏe tinh thần tại trường là cách nhanh nhất giúp một học sinh đang gặp khó khăn.",
-        "employment": "Tìm việc nhanh hơn khi nhu cầu cơ bản đã ổn định.",
-        "veterans": "Phúc lợi cựu quân nhân có thể kết hợp với hầu hết các chương trình tiểu bang và địa phương.",
-        "senior": "Các chương trình theo độ tuổi thường nhanh đủ điều kiện nhất.",
-        "disability": "Giấy tờ khuyết tật mở khóa nhiều phúc lợi khác.",
-        "transportation": "Giao thông đáng tin cậy giúp việc khám bệnh và đi làm khả thi.",
-        "legal": "Trợ giúp pháp lý có thể chặn các hành động bất lợi đang diễn ra.",
-        "immigration": "Việc giải quyết tình trạng nhập cư đi song song với mọi thứ khác.",
-        "education": "Lên kế hoạch sau khi các nhu cầu cấp bách đã được xử lý.",
-        "_default": "Đăng ký khi bạn có thời gian — dịch vụ này hỗ trợ chứ không khẩn cấp.",
+        "emergency": "Được xếp đầu tiên vì liên quan đến sự an toàn.",
+        "cooling": "Được xếp sớm vì bệnh do nhiệt có thể đến nhanh trong đợt cảnh báo nắng nóng.",
+        "food": "Hỗ trợ thực phẩm thường là một bước đầu tiên nhanh chóng.",
+        "housing": "Được xếp sớm vì một nơi ở ổn định giúp mọi việc khác dễ dàng hơn.",
+        "refugee": "Các tổ chức tái định cư có thể giúp nhiều nhu cầu cùng lúc.",
+        "utilities": "Nên hỏi sớm về hỗ trợ hóa đơn điện nước.",
+        "healthcare": "Một nơi để được chăm sóc sức khỏe. Hãy hỏi về chi phí và điều kiện khi bạn gọi.",
+        "childcare": "Hỗ trợ chăm sóc trẻ có thể giúp việc đi làm, đi học và đi khám dễ sắp xếp hơn.",
+        "schools": "Hỗ trợ tại trường có thể đến với học sinh ngay tại nơi các em đang học.",
+        "employment": "Dịch vụ việc làm có thể dễ bắt đầu hơn khi các nhu cầu cấp bách đã được lo.",
+        "veterans": "Dịch vụ cho cựu quân nhân có thể dùng song song với các chương trình khác.",
+        "senior": "Các chương trình cho người cao tuổi đáng để tìm hiểu.",
+        "disability": "Dịch vụ khuyết tật có thể giúp bạn kết nối với các hỗ trợ khác.",
+        "transportation": "Hỗ trợ đi lại có thể giúp việc đến chỗ hẹn và đi làm dễ hơn.",
+        "legal": "Nên hỏi trợ giúp pháp lý, nhất là khi bạn có thông báo hoặc hạn chót.",
+        "immigration": "Trợ giúp nhập cư có thể đi song song với các bước khác của bạn.",
+        "education": "Có thể lên kế hoạch sau khi các nhu cầu cấp bách đã được xử lý.",
+        "_default": "Đáng xem khi bạn có thời gian.",
     },
     "es": {
-        "emergency": "Atiende primero la seguridad inmediata — estos recursos están disponibles 24/7.",
-        "cooling": "El golpe de calor se agrava rápido — el enfriamiento y la ayuda con el aire acondicionado van antes de todo lo demás durante una alerta de calor.",
-        "food": "La asistencia alimentaria a menudo te califica automáticamente para otros programas.",
-        "housing": "Estabiliza dónde duermes antes de abordar metas a largo plazo.",
-        "refugee": "La coordinación de reasentamiento puede desbloquear comida, salud y apoyo escolar en una sola gestión.",
-        "utilities": "Mantener la luz encendida previene el desalojo y protege tus depósitos.",
-        "healthcare": "Consigue cobertura antes de que se acumulen las facturas de tu bolsillo.",
-        "childcare": "El cuidado infantil libera tiempo para la búsqueda de empleo, la escuela y citas médicas.",
-        "schools": "El apoyo de salud mental en la escuela es la vía más rápida para un estudiante que está luchando.",
-        "employment": "La colocación laboral es más rápida cuando las necesidades básicas están estables.",
-        "veterans": "Los beneficios de VA se combinan con la mayoría de los programas estatales y locales.",
-        "senior": "Los programas para adultos mayores suelen ser los más rápidos para calificar.",
-        "disability": "La documentación de discapacidad desbloquea varios otros beneficios.",
-        "transportation": "Un transporte confiable hace posibles las citas y el trabajo.",
-        "legal": "La asesoría legal puede detener acciones adversas ya en marcha.",
-        "immigration": "El trabajo de estatus migratorio va junto con todo lo demás.",
-        "education": "Planifica después de atender las necesidades inmediatas.",
-        "_default": "Solicítalo cuando tengas tiempo — este es de apoyo, no urgente.",
+        "emergency": "Aparece primero porque tiene que ver con la seguridad.",
+        "cooling": "Aparece pronto porque las enfermedades por calor pueden llegar rápido durante una alerta de calor.",
+        "food": "La ayuda con alimentos suele ser un primer paso rápido.",
+        "housing": "Aparece pronto porque un lugar estable para vivir facilita todo lo demás.",
+        "refugee": "Las organizaciones de reasentamiento pueden ayudar con varias necesidades a la vez.",
+        "utilities": "Vale la pena preguntar pronto por ayuda con las facturas de servicios.",
+        "healthcare": "Un lugar para recibir atención. Pregunta por el costo y los requisitos cuando llames.",
+        "childcare": "La ayuda con el cuidado infantil puede facilitar el trabajo, la escuela y las citas.",
+        "schools": "El apoyo en la escuela puede llegar al estudiante donde ya está.",
+        "employment": "Los servicios de empleo pueden ser más fáciles de aprovechar cuando las necesidades urgentes estén cubiertas.",
+        "veterans": "Los servicios para veteranos pueden usarse junto con otros programas.",
+        "senior": "Programas para adultos mayores que vale la pena revisar.",
+        "disability": "Los servicios de discapacidad pueden ayudarte a conectar con otros apoyos.",
+        "transportation": "La ayuda con el transporte puede facilitar llegar a las citas y al trabajo.",
+        "legal": "Vale la pena pedir ayuda legal, sobre todo si tienes un aviso o una fecha límite.",
+        "immigration": "La ayuda migratoria puede ir junto con tus otros pasos.",
+        "education": "Algo para planear cuando las necesidades urgentes estén atendidas.",
+        "_default": "Vale la pena revisarlo cuando tengas tiempo.",
     },
     "zh": {
-        "emergency": "先处理眼前的安全问题 — 这些资源24小时全天候提供。",
-        "cooling": "中暑会迅速恶化 — 在高温预警期间，避暑和空调帮助优先于其他一切。",
-        "food": "食物援助通常会让你自动符合其他项目的条件。",
-        "housing": "在处理长期目标之前先稳定住所。",
-        "refugee": "安置协调可以通过一次受理打开食物、医疗和学校支持的通道。",
-        "utilities": "保持电力供应可以防止被驱逐并保护你的押金。",
-        "healthcare": "在自付账单累积之前获得医疗保险。",
-        "childcare": "儿童看护可以让你腾出时间求职、上学和就医。",
-        "schools": "校内心理健康支持是帮助一个挣扎中的学生最快的方式。",
-        "employment": "基本需求稳定后，就业安置更快。",
-        "veterans": "退伍军人福利可与大多数州和地方项目叠加。",
-        "senior": "基于年龄的项目通常最快符合条件。",
-        "disability": "残疾文件可以解锁多项其他福利。",
-        "transportation": "可靠的交通让看病和工作变得可行。",
-        "legal": "法律援助可以阻止已经在进行的不利行动。",
-        "immigration": "移民身份的工作与其他一切并行。",
-        "education": "在处理完紧急需求后再规划。",
-        "_default": "有时间再申请 — 这一项是辅助性的，不紧急。",
+        "emergency": "排在最前，因为它与安全有关。",
+        "cooling": "排在前面，因为在高温预警期间，高温引起的疾病可能来得很快。",
+        "food": "食物援助通常是可以很快开始的第一步。",
+        "housing": "排在前面，因为稳定的住所让其他事情更容易处理。",
+        "refugee": "安置机构可能可以同时帮助解决多项需求。",
+        "utilities": "值得尽早询问水电费帮助。",
+        "healthcare": "可以获得医疗服务的地方。打电话时请询问费用和申请条件。",
+        "childcare": "儿童看护帮助可以让工作、上学和就医更容易安排。",
+        "schools": "校内支持可以在学生所在的学校直接提供帮助。",
+        "employment": "在紧急需求得到解决后，就业服务可能更容易开始。",
+        "veterans": "退伍军人服务可以与其他项目一起使用。",
+        "senior": "值得了解的长者项目。",
+        "disability": "残障服务可能帮助你联系其他支持。",
+        "transportation": "交通帮助可以让去看病和上班更方便。",
+        "legal": "值得寻求法律帮助，特别是当你收到通知或有截止日期时。",
+        "immigration": "移民方面的帮助可以与其他步骤同时进行。",
+        "education": "可以在紧急需求处理好之后再规划。",
+        "_default": "有时间时值得看看。",
     },
     "ar": {
-        "emergency": "عالج السلامة الفورية أولاً — هذه الموارد متاحة على مدار الساعة طوال أيام الأسبوع.",
-        "cooling": "أمراض الحرارة تتصاعد بسرعة — التبريد والمساعدة في تكييف الهواء يأتيان قبل كل شيء أثناء موجة الحر.",
-        "food": "المساعدة الغذائية كثيراً ما تؤهلك تلقائياً لبرامج أخرى.",
-        "housing": "ثبّت المكان الذي تنام فيه قبل التعامل مع الأهداف طويلة المدى.",
-        "refugee": "تنسيق إعادة التوطين يمكن أن يفتح الباب للطعام والرعاية الصحية ودعم المدارس في معاملة واحدة.",
-        "utilities": "إبقاء الكهرباء مشتغلة يمنع الإخلاء ويحمي تأميناتك.",
-        "healthcare": "احصل على التغطية قبل أن تتراكم فواتير الجيب.",
-        "childcare": "رعاية الأطفال تفتح الباب للبحث عن عمل والدراسة والمواعيد الطبية.",
-        "schools": "الدعم النفسي داخل المدرسة هو الطريق الأسرع للوصول إلى طالب يعاني.",
-        "employment": "التوظيف يصبح أسرع بمجرد أن تستقر الاحتياجات الأساسية.",
-        "veterans": "تتراكب مزايا قدامى المحاربين مع معظم البرامج الولائية والمحلية.",
-        "senior": "البرامج المرتبطة بالسن عادةً ما تكون الأسرع في التأهيل.",
-        "disability": "وثائق الإعاقة تفتح الباب لعدة مزايا أخرى.",
-        "transportation": "النقل الموثوق يجعل المواعيد والعمل ممكنين.",
-        "legal": "المساعدة القانونية يمكن أن توقف إجراءات سلبية قيد التنفيذ بالفعل.",
-        "immigration": "العمل على الوضع القانوني للهجرة يسير جنباً إلى جنب مع كل شيء آخر.",
-        "education": "خطّط بعد التعامل مع الاحتياجات الفورية.",
-        "_default": "تقدّم بطلب عندما يتاح لك الوقت — هذا داعم وليس عاجلاً.",
+        "emergency": "يأتي أولاً لأنه يتعلق بالسلامة.",
+        "cooling": "يأتي مبكراً لأن أمراض الحرارة قد تظهر بسرعة أثناء تحذيرات الحر.",
+        "food": "المساعدة الغذائية غالباً ما تكون خطوة أولى سريعة.",
+        "housing": "يأتي مبكراً لأن السكن المستقر يسهّل كل شيء آخر.",
+        "refugee": "قد تستطيع جهات إعادة التوطين المساعدة في عدة احتياجات في وقت واحد.",
+        "utilities": "من المفيد السؤال مبكراً عن المساعدة في فواتير الخدمات.",
+        "healthcare": "مكان للحصول على الرعاية. اسأل عن التكلفة وشروط الأهلية عند الاتصال.",
+        "childcare": "المساعدة في رعاية الأطفال قد تسهّل العمل والدراسة والمواعيد.",
+        "schools": "الدعم داخل المدرسة يمكن أن يصل إلى الطالب حيث هو.",
+        "employment": "قد يكون البدء بخدمات التوظيف أسهل بعد تغطية الاحتياجات العاجلة.",
+        "veterans": "يمكن استخدام خدمات قدامى المحاربين إلى جانب برامج أخرى.",
+        "senior": "برامج لكبار السن تستحق الاطلاع عليها.",
+        "disability": "قد تساعدك خدمات الإعاقة على الوصول إلى دعم آخر.",
+        "transportation": "المساعدة في التنقل قد تسهّل الوصول إلى المواعيد والعمل.",
+        "legal": "من المفيد طلب المساعدة القانونية، خاصة إذا كان لديك إشعار أو موعد نهائي.",
+        "immigration": "يمكن أن تسير المساعدة في الهجرة إلى جانب خطواتك الأخرى.",
+        "education": "شيء يمكن التخطيط له بعد التعامل مع الاحتياجات العاجلة.",
+        "_default": "يستحق الاطلاع عليه عندما يتاح لك الوقت.",
     },
 }
 
@@ -179,7 +179,22 @@ CATEGORY_LABELS_I18N: dict[str, dict[str, str]] = {
 
 # ── Risk-flag descriptions ────────────────────────────────────────────
 
+# "en" holds labels only (the English description comes from the matching
+# engine) and covers every risk_type matching.assess_risks emits, so a flag
+# never renders as its raw enum. Other languages fall back to the English
+# label for risk types they do not translate.
 RISK_FLAGS_I18N: dict[str, dict[str, dict[str, str]]] = {
+    "en": {
+        "homelessness": {"label": "Homelessness"},
+        "housing_instability": {"label": "Unstable housing"},
+        "food_insecurity": {"label": "Food insecurity"},
+        "uninsured": {"label": "No health insurance"},
+        "domestic_violence": {"label": "Safety at home"},
+        "mental_health_crisis": {"label": "Mental health crisis"},
+        "social_isolation": {"label": "Social isolation"},
+        "child_mental_health_risk": {"label": "Child mental health"},
+        "heat_vulnerable": {"label": "Heat vulnerability"},
+    },
     "vi": {
         "heat_vulnerable": {
             "label": "Dễ bị tổn thương do nắng nóng",
@@ -353,8 +368,21 @@ def translate_service_description(service_id: str, language: str) -> str | None:
 
 
 def translate_risk_flag(risk_type: str, language: str) -> dict[str, str] | None:
-    """Localized risk flag {label, description}, or None if not translated."""
+    """Localized risk flag {label, description}, or None if not translated.
+
+    The "en" entries carry a label only.
+    """
     table = RISK_FLAGS_I18N.get(language)
     if table is None:
         return None
     return table.get(risk_type)
+
+
+def risk_flag_label(risk_type: str, language: str) -> str:
+    """Display label for a risk flag: the language's, else English, else the
+    enum made readable."""
+    for lang in (language, "en"):
+        label = (translate_risk_flag(risk_type, lang) or {}).get("label")
+        if label:
+            return label
+    return risk_type.replace("_", " ").capitalize()

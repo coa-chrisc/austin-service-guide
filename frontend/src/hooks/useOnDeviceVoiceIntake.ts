@@ -169,6 +169,26 @@ const MESSAGES = {
     "Spoken replies aren't available for this language on this device, so replies are shown as text only.",
 } as const;
 
+/**
+ * Whether this browser can recognize `lang` (BCP-47) on-device, without
+ * touching any hook state. Used by the intake chooser to pick the
+ * primary tile before a voice session exists.
+ */
+export async function probeOnDeviceVoice(lang: string): Promise<OnDeviceAvailability> {
+  const ctor = getOnDeviceRecognition();
+  if (!ctor?.available) return "unsupported";
+  try {
+    return await ctor.available({ langs: [lang], processLocally: true });
+  } catch {
+    return "unavailable";
+  }
+}
+
+/** On-device voice cannot work here (as opposed to needing a download). */
+export function onDeviceVoiceBlocked(a: OnDeviceAvailability): boolean {
+  return a === "unsupported" || a === "unavailable";
+}
+
 function availabilityMessage(a: OnDeviceAvailability): string {
   switch (a) {
     case "unsupported":
@@ -235,19 +255,13 @@ export function useOnDeviceVoiceIntake({ onUtterance }: Options) {
 
   const checkAvailability = useCallback(
     async (lang: string): Promise<OnDeviceAvailability> => {
-      const ctor = getOnDeviceRecognition();
-      if (!ctor?.available) {
+      if (!getOnDeviceRecognition()?.available) {
         setAvailability("unsupported");
         setMessage(MESSAGES.unsupported);
         return "unsupported";
       }
       setAvailability("checking");
-      let result: OnDeviceAvailability;
-      try {
-        result = await ctor.available({ langs: [lang], processLocally: true });
-      } catch {
-        result = "unavailable";
-      }
+      const result = await probeOnDeviceVoice(lang);
       setAvailability(result);
       setMessage(availabilityMessage(result));
       return result;

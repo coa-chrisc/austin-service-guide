@@ -23,6 +23,7 @@ from typing import Any
 
 from app.config import get_settings
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
+from app.services.city import get_city
 from app.services.i18n import AI_NOTICE_I18N, ai_notice, redaction_notice
 from app.services.intake_state import normalize_language, persona_note_for
 from app.services.life_events import needs_from_life_event, normalize_life_event
@@ -30,13 +31,18 @@ from app.services.matching import assess_risks, match_services
 from app.services.pii import redact
 from app.services.prompts import build_instructions
 from app.services.scenarios import check_crisis, crisis_response, scenario_first_followup
-from app.services.scripted import DEMO_STEPS, demo_flow
+from app.services.scripted import DEMO_STEPS, demo_flow, welcome_message
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
 
 log = logging.getLogger(__name__)
 
 _LIFE_EVENT_SLUG_RE = re.compile(r"^[a-z0-9-]{1,64}$")
+
+# Bound on the client-held conversation replayed to the model each turn
+# (see _conversation_input). Each agent-loop iteration resends it.
+MAX_MODEL_INPUT_MESSAGES = 40
+MAX_MODEL_INPUT_CHARS = 32_000
 
 
 # ── Public entrypoints ───────────────────────────────────────────────
@@ -159,6 +165,12 @@ async def start_persona_session(persona_id: str) -> IntakeSession | None:
     Demo personas are deterministic: seed the profile, run matching, mark
     completed. The frontend replays the persona's scripted conversation
     client-side, then shows the results. No model call.
+
+    The scripted turns are stored in the conversation too, so a live-AI
+    plan (``plan.build_application_order`` reads the recent transcript)
+    sees what the resident "said". The session is completed, and
+    ``/message`` and the realtime endpoints refuse completed intakes, so
+    the scripted step counter (``_scripted_step_num``) never runs on it.
     """
     from app.services.personas import get_persona
 
@@ -174,9 +186,18 @@ async def start_persona_session(persona_id: str) -> IntakeSession | None:
         role=MessageRole.user,
         content=persona.opening_message,
     ))
+    for turn in persona.script:
+        session.conversation.append(IntakeMessage(
+            role=MessageRole(turn.role),
+            content=turn.content,
+        ))
 
     profile = session.extracted_profile
-    profile.languages_spoken = [session.language] if session.language != "en" else ["en"]
+    # The seed lists the languages the resident wants services in (e.g.
+    # Arabic for doctor visits even when chatting in English); a seed
+    # without any falls back to the conversation language.
+    if not profile.languages_spoken:
+        profile.languages_spoken = [session.language]
     session.matches = match_services(profile)
     session.risk_flags = assess_risks(profile)
     session.status = IntakeStatus.completed
@@ -236,7 +257,8 @@ async def _live_greeting(session: IntakeSession) -> str:
     if text and "OpenAI" not in text:
         # The model dropped the AI disclosure; never send a greeting without it.
         text = f"{text}\n\n{notice or AI_NOTICE_I18N['en']}"
-    return text or DEMO_STEPS[0]["message"]
+    # Live AI is on here, so the fallback greeting keeps the AI notice.
+    return text or welcome_message(get_city(), AI_NOTICE_I18N["en"])
 
 
 def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:
@@ -244,12 +266,27 @@ def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:
 
     Only resident and assistant text is replayed across turns. Tool calls,
     tool outputs, and reasoning items live only inside one turn's loop.
+
+    The conversation comes from the browser, so it is bounded: the most
+    recent turns that fit ``MAX_MODEL_INPUT_MESSAGES`` and
+    ``MAX_MODEL_INPUT_CHARS``, always including the newest one. A real
+    intake fits well inside; the profile snapshot in the instructions
+    carries the facts from anything older.
     """
-    return [
+    visible = [
         {"role": m.role.value, "content": m.content}
         for m in session.conversation
         if m.role in (MessageRole.user, MessageRole.assistant) and m.content.strip()
     ]
+    kept: list[dict[str, Any]] = []
+    total = 0
+    for item in reversed(visible):
+        total += len(item["content"])
+        if kept and (len(kept) >= MAX_MODEL_INPUT_MESSAGES or total > MAX_MODEL_INPUT_CHARS):
+            break
+        kept.append(item)
+    kept.reverse()
+    return kept
 
 
 async def _responses_flow(session: IntakeSession) -> IntakeMessage:

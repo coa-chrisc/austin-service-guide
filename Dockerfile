@@ -33,9 +33,12 @@ FROM python:3.12-slim AS runtime
 ARG CITY_CONFIG=
 ARG CITY_PRESET=
 ARG CITY_DATA_DIR=
+# The tile server's origin goes into the Content-Security-Policy (app/security_headers.py).
+ARG VITE_MAP_TILE_URL=
 ENV CITY_CONFIG=${CITY_CONFIG} \
     CITY_PRESET=${CITY_PRESET} \
     CITY_DATA_DIR=${CITY_DATA_DIR} \
+    VITE_MAP_TILE_URL=${VITE_MAP_TILE_URL} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \

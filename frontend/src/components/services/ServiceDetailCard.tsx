@@ -434,6 +434,13 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                 Share
               </Button>
             </Box>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1.5 }}
+            >
+              Demonstration data. Confirm details with the provider.
+            </Typography>
           </Grid>
         </Grid>
       </CardContent>
