@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
@@ -41,6 +42,16 @@ app = FastAPI(
     description=f"API for the {city.app_name} — a demonstration city-resident service portal.",
     lifespan=lifespan,
 )
+
+# Compress responses (the SPA's JS/CSS/HTML and larger JSON) for clients that
+# send Accept-Encoding: gzip. Added first so it is the innermost layer: it only
+# touches the response body, so the body limit below still counts the raw
+# request bytes, and the gate's, CORS's and the 413's small responses pass
+# through as they are. The app has no streaming responses; current Starlette
+# also leaves text/event-stream, 206 range replies and already-encoded
+# responses alone. Level 6 (not the default 9) keeps per-request CPU low: the
+# hashed assets are compressed again for every client that misses its cache.
+app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
 
 # Reject oversized intake bodies before they are parsed (413). Added before
 # CORS so CORS stays the outermost layer and the 413 carries CORS headers.
