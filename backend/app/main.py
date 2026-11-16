@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import admin, intake, services
@@ -49,6 +50,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Optional access-code gate (private demo deployments). Added last so it is
+# the outermost layer: nothing, not even CORS preflight or the SPA, runs
+# without a valid code. Off unless ACCESS_CODES is set.
+gate_config = load_gate_config()
+if gate_config is not None:
+    app.add_middleware(AccessGateMiddleware, config=gate_config, app_name=city.app_name)
 
 # ── Routers ───────────────────────────────────────────────────────────
 
