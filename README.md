@@ -11,7 +11,7 @@ The reference deployment is Austin, Texas: the default city config (`config/city
 - [SECURITY.md](SECURITY.md): threat model, what is implemented (stateless intake, PII guard, catalog grounding, containers), known gaps before production, and the roadmap.
 - [ARCHITECTURE.md](ARCHITECTURE.md): components, data-flow diagram, the stateless request lifecycle, module map, white-label config, and deployment modes.
 - [docs/PRIVACY.md](docs/PRIVACY.md): what is collected, what is sent to OpenAI, how identifiers are removed, and the limits of that.
-- [deploy/README.md](deploy/README.md): container image and AWS / Azure / GCP starter templates (validated, not applied to live accounts).
+- [deploy/README.md](deploy/README.md): container image and AWS / Azure / GCP starter templates (validated, not applied to live accounts), plus a Vercel deployment path ([deploy/vercel/README.md](deploy/vercel/README.md), running live with an access-code gate).
 
 In short: the server keeps no intake sessions (the browser holds the state in `sessionStorage`), recognizable identifiers (SSN, phone, address, and similar) are redacted before any model call, and result cards render only catalog data. The catalog is demo data and is **not verified**, and several production controls (staff auth, rate limiting, vendor agreements) are not built. SECURITY.md lists them.
 
@@ -268,7 +268,7 @@ frontend/
     theme/         MUI theme, contrast gate and theme guard, built from the city config
   package.json     Frontend dependencies and dev/build/preview scripts
 config/            City config (city.config.json), its schema, presets/, brand/ logos, catalog schema; your own data pack goes in config/data/<id>/
-deploy/            AWS, Azure and GCP starter templates and deploy notes
+deploy/            AWS, Azure, GCP and Vercel deploy paths and notes
 Dockerfile         Single image: built SPA served by FastAPI
 docker-compose.yml Local run of that image
 SECURITY.md        Threat model, hardening, known gaps, roadmap

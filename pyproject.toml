@@ -1,0 +1,22 @@
+# Vercel deployment only (see vercel_app.py and deploy/README.md). The backend
+# itself installs from backend/requirements.txt; keep these dependencies in sync.
+[project]
+name = "civic-service-guide"
+version = "1.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "openai>=2.1.0",
+    "httpx>=0.26.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.6",
+    "PyYAML>=6.0",
+]
+
+[tool.vercel]
+entrypoint = "vercel_app:app"

@@ -166,7 +166,7 @@ Catalog data flow: YAML in the data pack's `services/` folder (`backend/app/data
 Both modes run the same image (`Dockerfile`), which needs no database or volume. Templates are starters and have not been applied to live cloud accounts (see [deploy/README.md](deploy/README.md)).
 
 - **Mode A: hosting partner, single tenant.** A hosting partner runs one container per city in an isolated cloud project, each with its own secrets, brand preset and data pack. The city points a DNS `CNAME` (for example `services.<city>.gov`) at the partner-issued hostname. No container, project or secret is shared across cities.
-- **Mode B: sovereign municipal cloud.** The city builds, pushes and runs the image in its own account, using the AWS, Azure or GCP template in `deploy/`.
+- **Mode B: sovereign municipal cloud.** The city builds, pushes and runs the image in its own account, using the AWS, Azure or GCP template in `deploy/`, or deploys the source to Vercel as a single Python function (`deploy/vercel/README.md`).
 
 ## Implemented and roadmap (summary)
 
