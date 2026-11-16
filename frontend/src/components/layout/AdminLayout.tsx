@@ -284,6 +284,8 @@ export default function AdminLayout() {
       <Box
         sx={{
           flex: 1,
+          // A flex item will not shrink below its content (a wide table) without this.
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
           ml: isMobile ? 0 : `${DRAWER_WIDTH}px`,
@@ -311,7 +313,14 @@ export default function AdminLayout() {
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography variant="h6" component="p" fontWeight={600} sx={{ flex: 1 }}>
+            {/* minWidth 0 lets the title shrink and truncate so the bar fits a 360 px phone. */}
+            <Typography
+              variant="h6"
+              component="p"
+              fontWeight={600}
+              noWrap
+              sx={{ flex: 1, minWidth: 0 }}
+            >
               Staff Console (demo)
             </Typography>
             <Chip
@@ -319,7 +328,13 @@ export default function AdminLayout() {
               size="small"
               color="primary"
               variant="outlined"
-              sx={{ mr: 2, fontWeight: 600, fontSize: 11 }}
+              sx={{
+                display: { xs: "none", sm: "inline-flex" },
+                ml: 1,
+                mr: 2,
+                fontWeight: 600,
+                fontSize: 11,
+              }}
             />
             <ButtonBase
               onClick={(e) => setMenuAnchor(e.currentTarget)}

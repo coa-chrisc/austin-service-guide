@@ -26,6 +26,18 @@ import { hasCompletedPlan, loadIntakeState } from "@/lib/session";
 import type { MapPin } from "@/types";
 import { BELOW_HEADER } from "@/components/layout/viewport";
 
+const VISUALLY_HIDDEN = {
+  border: 0,
+  clip: "rect(0 0 0 0)",
+  height: "1px",
+  margin: "-1px",
+  overflow: "hidden",
+  padding: 0,
+  position: "absolute",
+  whiteSpace: "nowrap",
+  width: "1px",
+} as const;
+
 export default function MapView() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -165,7 +177,7 @@ export default function MapView() {
             mb: 1,
           }}
         >
-          <Typography variant="h6" component="h1" fontWeight={600}>
+          <Typography variant="h6" component="h2" fontWeight={600}>
             Locations ({filteredPins.length})
           </Typography>
           {isMobile && (
@@ -234,6 +246,11 @@ export default function MapView() {
 
   return (
     <Box sx={{ display: "flex", height: BELOW_HEADER }}>
+      {/* The page heading for screen readers. The visible list title is an h2,
+          and on phones the list sits in a closed drawer. */}
+      <Typography component="h1" sx={VISUALLY_HIDDEN}>
+        Map of services
+      </Typography>
       {/* Desktop: side list */}
       {!isMobile && (
         <Box

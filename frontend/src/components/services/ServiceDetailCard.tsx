@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { alpha } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -37,6 +38,57 @@ const COST_LABELS: Record<string, string> = {
   insurance: "Insurance Accepted",
   varies: "Cost Varies",
 };
+
+/**
+ * A call, email or website link as a whole row. Tap-to-call is the main
+ * action on a phone, so on small screens and touch devices the row is a
+ * bordered, full-width target at least 44 px tall; on desktop it stays a
+ * plain icon-and-text line.
+ */
+function ContactLink({
+  href,
+  icon,
+  external = false,
+  children,
+}: {
+  href: string;
+  icon: ReactNode;
+  external?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Box
+      component="a"
+      href={href}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        minHeight: { xs: 44, md: 32 },
+        px: { xs: 1.5, md: 0 },
+        mb: 1,
+        border: { xs: 1, md: 0 },
+        borderColor: "divider",
+        borderRadius: 2,
+        bgcolor: { xs: "background.paper", md: "transparent" },
+        color: "primary.main",
+        textDecoration: "none",
+        "&:hover": { textDecoration: "underline" },
+        "@media (pointer: coarse)": { minHeight: 44 },
+      }}
+    >
+      {icon}
+      <Typography
+        component="span"
+        variant="body2"
+        sx={{ minWidth: 0, overflowWrap: "anywhere" }}
+      >
+        {children}
+      </Typography>
+    </Box>
+  );
+}
 
 export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
   const primaryLocation =
@@ -173,68 +225,31 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                 </Typography>
 
                 {service.phone && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1.5,
-                    }}
+                  <ContactLink
+                    href={`tel:${service.phone}`}
+                    icon={<PhoneIcon color="action" fontSize="small" />}
                   >
-                    <PhoneIcon color="action" fontSize="small" />
-                    <Typography
-                      component="a"
-                      href={`tel:${service.phone}`}
-                      variant="body2"
-                      sx={{ color: "primary.main", textDecoration: "none" }}
-                    >
-                      {service.phone}
-                    </Typography>
-                  </Box>
+                    {service.phone}
+                  </ContactLink>
                 )}
 
                 {service.email && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1.5,
-                    }}
+                  <ContactLink
+                    href={`mailto:${service.email}`}
+                    icon={<EmailIcon color="action" fontSize="small" />}
                   >
-                    <EmailIcon color="action" fontSize="small" />
-                    <Typography
-                      component="a"
-                      href={`mailto:${service.email}`}
-                      variant="body2"
-                      sx={{ color: "primary.main", textDecoration: "none" }}
-                    >
-                      {service.email}
-                    </Typography>
-                  </Box>
+                    {service.email}
+                  </ContactLink>
                 )}
 
                 {service.website_url && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1,
-                      mb: 1.5,
-                    }}
+                  <ContactLink
+                    href={service.website_url}
+                    icon={<LanguageIcon color="action" fontSize="small" />}
+                    external
                   >
-                    <LanguageIcon color="action" fontSize="small" />
-                    <Typography
-                      component="a"
-                      href={service.website_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      variant="body2"
-                      sx={{ color: "primary.main", textDecoration: "none" }}
-                    >
-                      Visit Website
-                    </Typography>
-                  </Box>
+                    Visit Website
+                  </ContactLink>
                 )}
 
                 {/* Primary location */}
@@ -266,25 +281,12 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                     </Box>
 
                     {primaryLocation.phone && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          ml: 0.25,
-                          mb: 1,
-                        }}
+                      <ContactLink
+                        href={`tel:${primaryLocation.phone}`}
+                        icon={<PhoneIcon color="action" fontSize="small" />}
                       >
-                        <PhoneIcon color="action" sx={{ fontSize: 16 }} />
-                        <Typography
-                          component="a"
-                          href={`tel:${primaryLocation.phone}`}
-                          variant="body2"
-                          sx={{ color: "primary.main", textDecoration: "none" }}
-                        >
-                          {primaryLocation.phone}
-                        </Typography>
-                      </Box>
+                        {primaryLocation.phone}
+                      </ContactLink>
                     )}
 
                     {Object.keys(primaryLocation.hours).length > 0 && (
