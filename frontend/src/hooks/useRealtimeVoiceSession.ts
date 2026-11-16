@@ -66,6 +66,15 @@ const FINAL_AUDIO_FALLBACK_MIN_MS = 8000;
 const FINAL_AUDIO_FALLBACK_MAX_MS = 30000;
 const COMPLETION_CTA_FALLBACK_MS = 7000;
 const THINKING_TIMEOUT_MS = 15000;
+// The mic is muted while the assistant's audio plays so speakers don't feed
+// its own voice back in as resident speech. It reopens this long after the
+// server reports the audio finished, to cover local playback buffering and
+// room echo. The cap reopens it if the stop event never arrives.
+const ASSISTANT_AUDIO_ECHO_TAIL_MS = 300;
+const ASSISTANT_AUDIO_GATE_MAX_MS = 60000;
+// event_id prefix for conversation.item.delete of a dropped resident turn,
+// so an error about that delete is not treated as a lost connection.
+const DROP_ITEM_EVENT_PREFIX = "drop_input_item_";
 const DEBUG_TEXT_LIMIT = 800;
 const RECOVERABLE_REALTIME_ERROR_PATTERNS = [
   "active response",
@@ -262,6 +271,10 @@ export function useRealtimeVoiceSession({
   const startupMicLockedRef = useRef(false);
   const startupMicUnlockTimerRef = useRef<number | null>(null);
   const isMutedRef = useRef(false);
+  const assistantAudioGateRef = useRef(false);
+  const assistantAudioReleaseTimerRef = useRef<number | null>(null);
+  const assistantAudioGateMaxTimerRef = useRef<number | null>(null);
+  const dropItemSeqRef = useRef(0);
   const dataChannelOpenRef = useRef(false);
   const sessionReadyRef = useRef(false);
   const sessionCreatedRef = useRef(false);
@@ -514,9 +527,16 @@ export function useRealtimeVoiceSession({
     [cancelLiveTranscriptFlush],
   );
 
-  const setInputTracksEnabled = useCallback((enabled: boolean) => {
+  // The mic sends audio only when the resident hasn't muted it, the startup
+  // greeting lock is off, and the assistant's audio isn't playing. A disabled
+  // track sends silence, so the server VAD hears nothing.
+  const syncInputTracks = useCallback(() => {
+    const enabled =
+      !isMutedRef.current &&
+      !startupMicLockedRef.current &&
+      !assistantAudioGateRef.current;
     streamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = enabled && !isMutedRef.current;
+      track.enabled = enabled;
     });
   }, []);
 
@@ -526,8 +546,81 @@ export function useRealtimeVoiceSession({
       window.clearTimeout(startupMicUnlockTimerRef.current);
       startupMicUnlockTimerRef.current = null;
     }
-    setInputTracksEnabled(true);
-  }, [setInputTracksEnabled]);
+    syncInputTracks();
+  }, [syncInputTracks]);
+
+  const clearAssistantAudioGateTimers = useCallback(() => {
+    if (assistantAudioReleaseTimerRef.current) {
+      window.clearTimeout(assistantAudioReleaseTimerRef.current);
+      assistantAudioReleaseTimerRef.current = null;
+    }
+    if (assistantAudioGateMaxTimerRef.current) {
+      window.clearTimeout(assistantAudioGateMaxTimerRef.current);
+      assistantAudioGateMaxTimerRef.current = null;
+    }
+  }, []);
+
+  const openMicAfterAssistantAudio = useCallback(
+    (reason: string) => {
+      clearAssistantAudioGateTimers();
+      if (!assistantAudioGateRef.current) return;
+      assistantAudioGateRef.current = false;
+      syncInputTracks();
+      recordDebug("mic_reopened_after_assistant_audio", { reason });
+    },
+    [clearAssistantAudioGateTimers, recordDebug, syncInputTracks],
+  );
+
+  // Half duplex: the resident can't talk over the assistant by voice, but on
+  // speakers the assistant can no longer hear, transcribe or be cut off by
+  // its own voice. Replies are one or two sentences, so the wait is short.
+  const muteMicForAssistantAudio = useCallback(() => {
+    clearAssistantAudioGateTimers();
+    if (!assistantAudioGateRef.current) {
+      assistantAudioGateRef.current = true;
+      syncInputTracks();
+      recordDebug("mic_muted_for_assistant_audio");
+    }
+    assistantAudioGateMaxTimerRef.current = window.setTimeout(() => {
+      assistantAudioGateMaxTimerRef.current = null;
+      openMicAfterAssistantAudio("gate_max_elapsed");
+    }, ASSISTANT_AUDIO_GATE_MAX_MS);
+  }, [
+    clearAssistantAudioGateTimers,
+    openMicAfterAssistantAudio,
+    recordDebug,
+    syncInputTracks,
+  ]);
+
+  const scheduleMicReopen = useCallback(
+    (reason: string) => {
+      if (!assistantAudioGateRef.current) return;
+      if (assistantAudioReleaseTimerRef.current) {
+        window.clearTimeout(assistantAudioReleaseTimerRef.current);
+      }
+      assistantAudioReleaseTimerRef.current = window.setTimeout(() => {
+        assistantAudioReleaseTimerRef.current = null;
+        openMicAfterAssistantAudio(reason);
+      }, ASSISTANT_AUDIO_ECHO_TAIL_MS);
+    },
+    [openMicAfterAssistantAudio],
+  );
+
+  // Remove a resident audio turn that isn't resident speech (silence, echo)
+  // from the Realtime conversation, so the model never hears it as input.
+  const dropInputItem = useCallback(
+    (itemId: string, reason: string) => {
+      if (!itemId) return;
+      dropItemSeqRef.current += 1;
+      sendEvent({
+        type: "conversation.item.delete",
+        event_id: `${DROP_ITEM_EVENT_PREFIX}${dropItemSeqRef.current}`,
+        item_id: itemId,
+      });
+      recordDebug("input_item_dropped", { item_id: itemId, reason });
+    },
+    [recordDebug, sendEvent],
+  );
 
   // Closes and nulls the WebRTC transport handles (mic stream, data channel,
   // peer connection, playback audio). Idempotent — safe to call when refs are
@@ -588,6 +681,15 @@ export function useRealtimeVoiceSession({
     startupResponseActiveRef.current = false;
     startupMicLockedRef.current = false;
     isMutedRef.current = false;
+    assistantAudioGateRef.current = false;
+    if (assistantAudioReleaseTimerRef.current) {
+      window.clearTimeout(assistantAudioReleaseTimerRef.current);
+      assistantAudioReleaseTimerRef.current = null;
+    }
+    if (assistantAudioGateMaxTimerRef.current) {
+      window.clearTimeout(assistantAudioGateMaxTimerRef.current);
+      assistantAudioGateMaxTimerRef.current = null;
+    }
     if (startupMicUnlockTimerRef.current) {
       window.clearTimeout(startupMicUnlockTimerRef.current);
       startupMicUnlockTimerRef.current = null;
@@ -829,10 +931,20 @@ export function useRealtimeVoiceSession({
     [scheduleCompletionFinish],
   );
 
+  // Returns "synced" when the turn was stored, "ignored" when the server
+  // judged a resident transcript not to be resident speech (silence, the
+  // assistant's own echo), and "failed" otherwise.
   const syncTranscript = useCallback(
-    async (role: "user" | "assistant", content: string) => {
+    async (
+      role: "user" | "assistant",
+      content: string,
+    ): Promise<"synced" | "ignored" | "failed"> => {
       const text = content.trim();
-      if (!text || stoppedRef.current) return false;
+      if (!text || stoppedRef.current) return "failed";
+      // A resident transcript is shown only once the server has checked and
+      // redacted it, so a rejected one (echo, a transcription artifact) is
+      // never on screen. Assistant text shows right away.
+      const showsLocalCopy = role === "assistant";
       if (
         role === "assistant" &&
         (stopAfterNextAssistantRef.current || completionFlowRef.current)
@@ -847,7 +959,7 @@ export function useRealtimeVoiceSession({
         role,
         content_length: text.length,
       });
-      onLocalTranscriptRef.current(role, text);
+      if (showsLocalCopy) onLocalTranscriptRef.current(role, text);
       // The server's stored form of this turn. A resident transcript is never
       // kept raw: without a server copy it becomes a placeholder.
       const storedText = (result?: RealtimeTranscriptResult) =>
@@ -866,8 +978,20 @@ export function useRealtimeVoiceSession({
             role,
             reason: stoppedRef.current ? "stopped" : "stale_generation",
           });
-          onLocalTranscriptReplaceRef.current(role, text, storedText(result));
-          return false;
+          if (showsLocalCopy) {
+            onLocalTranscriptReplaceRef.current(role, text, storedText(result));
+          }
+          return "failed";
+        }
+        if (result.ignored) {
+          recordDebug("transcript_sync_ignored", {
+            role,
+            reason: result.ignored,
+          });
+          if (showsLocalCopy) {
+            onLocalTranscriptReplaceRef.current(role, text, storedText(result));
+          }
+          return "ignored";
         }
         recordDebug("transcript_sync_completed", {
           role,
@@ -893,12 +1017,14 @@ export function useRealtimeVoiceSession({
                   },
                 ],
               };
-        onLocalTranscriptReplaceRef.current(
-          role,
-          text,
-          syncedResult.messages.find((m) => m.role === role)?.content.trim() ||
-            storedText(result),
-        );
+        if (showsLocalCopy) {
+          onLocalTranscriptReplaceRef.current(
+            role,
+            text,
+            syncedResult.messages.find((m) => m.role === role)?.content.trim() ||
+              storedText(result),
+          );
+        }
         if (
           role === "assistant" &&
           stopAfterNextAssistantRef.current &&
@@ -914,14 +1040,16 @@ export function useRealtimeVoiceSession({
         } else {
           onTranscriptSyncRef.current(syncedResult);
         }
-        return true;
+        return "synced";
       } catch (err) {
         recordDebug("transcript_sync_failed", {
           role,
           error: debugErrorMessage(err),
         });
         // The server never redacted this turn, so drop the raw local copy.
-        onLocalTranscriptReplaceRef.current(role, text, storedText());
+        if (showsLocalCopy) {
+          onLocalTranscriptReplaceRef.current(role, text, storedText());
+        }
         // Tear down before transitioning to error so a retry doesn't leak
         // the previous session's mic stream / WebRTC handles.
         stopSessionRef.current?.();
@@ -929,7 +1057,7 @@ export function useRealtimeVoiceSession({
           "Voice chat lost its connection. You can keep typing or restart voice.",
         );
         setStatus("error");
-        return false;
+        return "failed";
       } finally {
         clearLiveTranscriptIfCurrent(role, text);
       }
@@ -1240,6 +1368,11 @@ export function useRealtimeVoiceSession({
         type === "output_audio_buffer.stopped" ||
         type === "output_audio_buffer.cleared"
       ) {
+        if (type === "output_audio_buffer.started") {
+          muteMicForAssistantAudio();
+        } else {
+          scheduleMicReopen(type);
+        }
         const isFinalAudio =
           !!responseId &&
           (responseId === finalResponseIdRef.current ||
@@ -1287,8 +1420,12 @@ export function useRealtimeVoiceSession({
         setStatus("speaking");
         return;
       }
+      // Resident speech is not streamed into the chat: it appears once the
+      // server has checked and redacted the completed transcript.
+      if (type === "conversation.item.input_audio_transcription.delta") {
+        return;
+      }
       if (
-        type === "conversation.item.input_audio_transcription.delta" ||
         type === "response.output_audio_transcript.delta" ||
         type === "response.audio_transcript.delta" ||
         type === "response.output_text.delta" ||
@@ -1296,12 +1433,7 @@ export function useRealtimeVoiceSession({
       ) {
         const delta = String(event.delta || "");
         if (isStartupResponse) return;
-        appendLiveTranscript(
-          type === "conversation.item.input_audio_transcription.delta"
-            ? "user"
-            : "assistant",
-          delta,
-        );
+        appendLiveTranscript("assistant", delta);
         return;
       }
       if (type === "conversation.item.input_audio_transcription.completed") {
@@ -1313,17 +1445,27 @@ export function useRealtimeVoiceSession({
         });
         if (itemId && transcript.trim())
           transcriptItemIdsRef.current.add(itemId);
+        // A turn that isn't resident speech gets no reply. Without this the
+        // status stays "thinking" until the watchdog reports a stuck reply.
+        const settleWithoutReply = (reason: string) => {
+          dropInputItem(itemId, reason);
+          if (statusRef.current === "thinking") setStatus("connected");
+        };
+        if (!transcript.trim()) {
+          if (!stoppedRef.current && !completionFlowRef.current) {
+            settleWithoutReply("empty");
+          }
+          return;
+        }
         void (async () => {
-          const synced = await syncTranscript("user", transcript);
-          if (
-            synced &&
-            transcript.trim() &&
-            !stoppedRef.current &&
-            !completionFlowRef.current
-          ) {
+          const outcome = await syncTranscript("user", transcript);
+          if (stoppedRef.current || completionFlowRef.current) return;
+          if (outcome === "synced") {
             requestModelResponse("user_transcript_completed", {
               output_modalities: ["audio"],
             });
+          } else if (outcome === "ignored") {
+            settleWithoutReply("not_resident_speech");
           }
         })();
         return;
@@ -1461,8 +1603,16 @@ export function useRealtimeVoiceSession({
         return;
       }
       if (type === "error") {
-        const err = event.error as { message?: string } | undefined;
+        const err = event.error as
+          | { message?: string; event_id?: string }
+          | undefined;
         const message = err?.message || "Realtime voice failed.";
+        // Deleting a dropped turn can fail harmlessly (already gone); that
+        // must not end the voice session.
+        if (String(err?.event_id || "").startsWith(DROP_ITEM_EVENT_PREFIX)) {
+          recordDebug("input_item_drop_failed", { message });
+          return;
+        }
         recordDebug("realtime_error_received", {
           message,
           recoverable: isRecoverableRealtimeError(message),
@@ -1484,10 +1634,13 @@ export function useRealtimeVoiceSession({
       }
     },
     [
+      dropInputItem,
       handleFunctionCalls,
+      muteMicForAssistantAudio,
       recordDebug,
       requestModelResponse,
       scheduleCompletionFinish,
+      scheduleMicReopen,
       sendEvent,
       sendInitialResponseWhenReady,
       syncTranscript,
@@ -1573,8 +1726,15 @@ export function useRealtimeVoiceSession({
           expires_at: secret.client_secret.expires_at,
           session_config: realtimeSessionSummary(sessionConfigRef.current),
         });
+        // Ask for the browser's echo canceller, noise suppression and gain
+        // control by name. They are preferences, not requirements, so a
+        // device without one still opens.
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
         });
         ownedStream = stream;
         if (startCancelled()) {
@@ -1585,8 +1745,12 @@ export function useRealtimeVoiceSession({
           return;
         }
         streamRef.current = stream;
+        const micSettings = stream.getAudioTracks()[0]?.getSettings();
         recordDebug("microphone_stream_ready", {
           audio_track_count: stream.getAudioTracks().length,
+          echo_cancellation: micSettings?.echoCancellation ?? null,
+          noise_suppression: micSettings?.noiseSuppression ?? null,
+          auto_gain_control: micSettings?.autoGainControl ?? null,
         });
         const startupMicLockMs = Math.max(
           0,
@@ -1594,7 +1758,7 @@ export function useRealtimeVoiceSession({
         );
         if (startupMicLockMs > 0) {
           startupMicLockedRef.current = true;
-          setInputTracksEnabled(false);
+          syncInputTracks();
           startupMicUnlockTimerRef.current = window.setTimeout(() => {
             if (startCancelled()) return;
             unlockStartupMic();
@@ -1830,8 +1994,8 @@ export function useRealtimeVoiceSession({
       recordDebug,
       resetSessionState,
       sendInitialResponseWhenReady,
-      setInputTracksEnabled,
       stop,
+      syncInputTracks,
       teardownTransport,
       unlockStartupMic,
     ],
@@ -1841,11 +2005,9 @@ export function useRealtimeVoiceSession({
     const next = !isMuted;
     recordDebug("microphone_mute_toggled", { muted: next });
     isMutedRef.current = next;
-    streamRef.current?.getAudioTracks().forEach((track) => {
-      track.enabled = !next && !startupMicLockedRef.current;
-    });
+    syncInputTracks();
     setIsMuted(next);
-  }, [isMuted, recordDebug]);
+  }, [isMuted, recordDebug, syncInputTracks]);
 
   return {
     status,

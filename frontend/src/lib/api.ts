@@ -260,6 +260,12 @@ export interface RealtimeTranscriptResult {
   redacted?: string[];
   /** Stored, redacted form of the synced turn; present even when nothing was stored. */
   redacted_content?: string;
+  /**
+   * Set when a resident transcript was judged not to be resident speech and
+   * was not stored: "empty" (no words) or "assistant_echo" (the assistant's
+   * own voice picked up by the mic).
+   */
+  ignored?: "empty" | "assistant_echo";
   status: string;
   progress_percent: number;
   is_complete: boolean;

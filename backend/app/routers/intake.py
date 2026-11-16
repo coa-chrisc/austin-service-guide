@@ -506,6 +506,7 @@ async def sync_realtime_transcript(body: RealtimeTranscriptRequest):
             "is_complete": result["is_complete"],
             "crisis_detected": result["crisis_detected"],
             "error": result.get("error"),
+            "ignored": result.get("ignored"),
             "conversation_length": len(session.conversation),
             # Field names only — never profile values.
             "profile_fields_filled": sorted(

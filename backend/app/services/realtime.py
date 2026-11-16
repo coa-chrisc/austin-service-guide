@@ -13,7 +13,6 @@ from typing import Any
 from app.config import get_settings
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
 from app.services import catalog
-from app.services.city import get_city
 from app.services.pii import ASSISTANT_KINDS, redact
 from app.services.prompts import build_instructions
 from app.services.realtime_debug import record_realtime_debug_event, summarize_tool_output
@@ -138,17 +137,30 @@ def build_realtime_instructions(session: IntakeSession) -> str:
 
 
 def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
-    """Build a Realtime session config that mirrors the text intake agent."""
+    """Build a Realtime session config that mirrors the text intake agent.
+
+    Tuned for a laptop or PC with speakers and a built-in mic, the hardest
+    case for echo; it also works with a headset:
+
+    - No transcription ``prompt``. The transcription model can return its
+      prompt as the transcript of silence or echo, which then reads as
+      resident speech. The intake's words are ordinary English and need no
+      vocabulary hint.
+    - ``far_field`` noise reduction is meant for laptop and room mics.
+    - ``server_vad`` needs louder audio than the 0.5 default to start a turn
+      (less residual echo and room noise), and waits 700 ms of silence
+      before ending one so a resident who pauses mid-answer isn't split into
+      two turns.
+
+    The browser also mutes the mic while the assistant's audio plays (see
+    ``useRealtimeVoiceSession.ts``), and ``record_realtime_transcript`` drops
+    transcripts that are echoes of the assistant.
+    """
     settings = get_settings()
     instructions = build_realtime_instructions(session)
     lang = (session.language or "en").split("-")[0].lower()
     transcription: dict[str, Any] = {
         "model": settings.openai_realtime_transcription_model,
-        "prompt": (
-            f"{get_city().app_name} intake conversation. Residents may discuss "
-            "housing, food, healthcare, employment, childcare, legal help, "
-            "transportation, benefits, zip codes, income, and household size."
-        ),
     }
     if lang and lang != "en":
         transcription["language"] = lang
@@ -162,15 +174,17 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
         },
         "audio": {
             "input": {
-                "noise_reduction": {"type": "near_field"},
+                "noise_reduction": {"type": "far_field"},
                 "transcription": transcription,
                 "turn_detection": {
                     "type": "server_vad",
+                    # The browser requests each response itself, after the
+                    # resident's transcript has been synced and checked.
                     "create_response": False,
                     "interrupt_response": True,
-                    "threshold": 0.5,
+                    "threshold": 0.6,
                     "prefix_padding_ms": 300,
-                    "silence_duration_ms": 500,
+                    "silence_duration_ms": 700,
                 },
             },
             "output": {
@@ -261,6 +275,56 @@ def _apply_realtime_text_profile_hints(session: IntakeSession, text: str) -> Non
             return
 
 
+# A resident transcript is treated as the assistant's own voice picked up by
+# the mic when at least this share of its word pairs appear in what the
+# assistant said since the resident last spoke. Short replies ("yes", "two
+# kids", a zip code) are never treated as echo.
+_ECHO_MIN_WORDS = 4
+_ECHO_MIN_OVERLAP = 0.8
+_WORD_RE = re.compile(r"[^\W_]+")
+
+
+def _words(text: str) -> list[str]:
+    return _WORD_RE.findall(text.casefold())
+
+
+def _word_pairs(words: list[str]) -> list[tuple[str, str]]:
+    return list(zip(words, words[1:]))
+
+
+def _is_assistant_echo(session: IntakeSession, text: str) -> bool:
+    """True when ``text`` mostly repeats the assistant's latest turn(s)."""
+    words = _words(text)
+    if len(words) < _ECHO_MIN_WORDS:
+        return False
+    recent: set[tuple[str, str]] = set()
+    for msg in reversed(session.conversation):
+        if msg.role == MessageRole.user:
+            break
+        if msg.role == MessageRole.assistant:
+            recent.update(_word_pairs(_words(msg.content)))
+    if not recent:
+        return False
+    pairs = _word_pairs(words)
+    hits = sum(pair in recent for pair in pairs)
+    return hits / len(pairs) >= _ECHO_MIN_OVERLAP
+
+
+def _transcript_artifact(session: IntakeSession, text: str) -> str | None:
+    """Why a resident transcript is not resident speech, or None if it is.
+
+    Catches what the mic and transcription model produce when the resident
+    didn't speak: an empty or punctuation-only transcript, and the
+    assistant's own voice coming back through the speakers. A transcript
+    that trips the crisis check is always kept, even if it looks like echo.
+    """
+    if not _WORD_RE.search(text):
+        return "empty"
+    if _is_assistant_echo(session, text) and not check_crisis(text):
+        return "assistant_echo"
+    return None
+
+
 def record_realtime_transcript(
     session: IntakeSession,
     role: str,
@@ -275,6 +339,10 @@ def record_realtime_transcript(
 
     Every result carries ``redacted_content`` and ``redacted`` so the client
     can replace its raw local copy, including when nothing is appended.
+
+    A resident transcript that isn't resident speech (see
+    ``_transcript_artifact``) is not stored and comes back with ``ignored``
+    set to the reason, so the client neither shows it nor answers it.
     """
     normalized_role = MessageRole.user if role == "user" else MessageRole.assistant
     text = content.strip()
@@ -302,6 +370,10 @@ def record_realtime_transcript(
         return _unchanged(error="session already completed")
     if not text:
         return _unchanged()
+    if normalized_role == MessageRole.user:
+        artifact = _transcript_artifact(session, text)
+        if artifact:
+            return _unchanged(ignored=artifact)
 
     last = session.conversation[-1] if session.conversation else None
     if last and last.role == normalized_role and last.content.strip() == text:
