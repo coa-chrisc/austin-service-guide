@@ -301,7 +301,7 @@ export const PROTECTIONS: Protection[] = [
   { status: "in_progress", issue: 29, label: "Raw-audio voice sessions brokered by the server, with a guard on each session" },
   { status: "in_progress", issue: 30, label: "A staff page for abuse and cost, with alerts and incident review" },
   { status: "in_progress", issue: 14, label: "Staff sign-in with roles, saved catalog edits, real analytics, audit log and reports" },
-  { status: "in_progress", issue: 20, label: "Eligibility rule editing and complete service authoring in the console" },
+  { status: "in_place", issue: 20, label: "Eligibility rule editing and service authoring in the console, checked against the data-pack contract (edits stay on one server instance until exported)" },
   { status: "not_planned", label: "Data processing and data retention agreements with OpenAI and the text and email vendors (contracts the operator signs; no code provides them)" },
   { status: "not_planned", label: "Staff checking each catalog record against the provider" },
   { status: "not_planned", label: "Privacy-office review of the AI, privacy and voice notices" },
