@@ -52,7 +52,7 @@ function Panel({ id, title, children }: { id: string; title: string; children: R
 function Roadmap({ text }: { text: string }) {
   return (
     <Box sx={{ mt: 2, maxWidth: READING_WIDTH, borderLeft: 4, borderColor: "primary.main", pl: 2, py: 0.5 }}>
-      <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700 }}>
+      <Typography component="h4" variant="subtitle2" sx={{ fontWeight: 700 }}>
         Where this is going
       </Typography>
       <Typography variant="body2">{text}</Typography>
@@ -111,7 +111,7 @@ export default function Section({
       sx={{ pt: 4, mb: 4, borderTop: 1, borderColor: "divider", breakInside: "avoid-page" }}
     >
       <Typography
-        component="h2"
+        component="h3"
         variant="h5"
         id={section.id}
         tabIndex={-1}

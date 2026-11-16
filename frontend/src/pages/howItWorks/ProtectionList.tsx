@@ -29,7 +29,7 @@ export default function ProtectionList({ repoUrl }: { repoUrl: string }) {
         return (
           <Paper key={status} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 1 }}>
-              <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700 }}>
+              <Typography component="h4" variant="subtitle1" sx={{ fontWeight: 700 }}>
                 <Chip
                   icon={<Icon aria-hidden="true" />}
                   label={`${STATUS_LABELS[status]} (${items.length})`}

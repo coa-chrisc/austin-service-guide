@@ -2,16 +2,49 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import {
-  KEY_NUMBERS,
-  KEY_NUMBERS_NOTE,
-  OVERVIEW,
-  PROTECTIONS,
-  SAFETY_LAYERS,
-  SECTIONS,
-  STATUS_LABELS,
-} from "./content";
+import { PROTECTIONS, SAFETY_LAYERS, SECTIONS, STATUS_LABELS } from "./content";
 import { CHAT_TURN, DIAGRAMS_BY_SECTION, RESEARCH_JOB, SYSTEM_MAP, WHO_HOLDS_WHAT } from "./diagrams";
+import {
+  CITY_CARDS,
+  CITY_TITLE,
+  CRISIS_LANGUAGES,
+  CTA,
+  HERO,
+  JOURNEY,
+  JOURNEY_TITLE,
+  METRICS,
+  METRICS_NOTE,
+  METRICS_TITLE,
+  ROADMAP,
+  SAFETY_CARDS,
+  SAFETY_TITLE,
+  TECHNICAL_TITLE,
+} from "./infographicCopy";
+
+const INFO_CARDS = [...JOURNEY, ...SAFETY_CARDS, ...CITY_CARDS];
+
+/** Every string the infographic shows, image alt text included. */
+function infographicCopy(): string[] {
+  return [
+    HERO.title,
+    HERO.subtitle,
+    JOURNEY_TITLE,
+    SAFETY_TITLE,
+    CITY_TITLE,
+    METRICS_TITLE,
+    METRICS_NOTE,
+    TECHNICAL_TITLE,
+    CTA.primary,
+    CTA.secondary,
+    ...INFO_CARDS.flatMap((c) => [c.title, c.text, c.alt]),
+    ...METRICS.flatMap((m) => [m.value, m.spoken ?? "", m.label]),
+    ROADMAP.title,
+    ROADMAP.statusLabel,
+    ROADMAP.note,
+    ROADMAP.noteLink,
+    ...ROADMAP.items,
+  ];
+}
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../../..");
@@ -24,9 +57,7 @@ function allCopy(): string[] {
     ...d.lanes.flatMap((l) => [l.label, l.boundaryBefore ?? "", ...l.nodes.flatMap((n) => [n.title, n.detail])]),
   ]);
   return [
-    ...OVERVIEW.flatMap((o) => [o.label, o.text]),
-    ...KEY_NUMBERS.flatMap((n) => [n.value, n.label, n.why]),
-    KEY_NUMBERS_NOTE,
+    ...infographicCopy(),
     ...SAFETY_LAYERS.flatMap((l) => [l.title, l.text]),
     ...SECTIONS.flatMap((s) => [s.title, s.detailsLabel, s.limitsLabel, s.roadmap ?? "", s.summary, ...s.points, ...s.limits]),
     ...PROTECTIONS.map((p) => p.label),
@@ -42,6 +73,10 @@ const BANNED: RegExp[] = [
   /\bHIPAA[ -]compliant/i,
   /\bverified catalog/i,
   /\bzero[ -]data[ -]retention/i,
+  /\b100 ?%/,
+  /\bleverag/i,
+  /\bseamless/i,
+  /\bdelv(e|ing)\b/i,
 ];
 const ALLOWED = [/\bnot zero[ -]data[ -]retention/gi, /\bno zero[ -]data[ -]retention/gi];
 
@@ -67,26 +102,39 @@ describe("How it works content", () => {
     ]);
   });
 
-  it("opens with one-minute overview cards, each linking to a section", () => {
-    const ids = new Set(SECTIONS.map((s) => s.id));
-    expect(OVERVIEW.map((o) => o.label)).toEqual([
-      "What it does",
-      "Architecture",
-      "Safety",
-      "Scale",
-      "Status",
-      "Phase 2 roadmap",
+  it("opens with the infographic rows: four journey steps, three safeguards, two any-city cards", () => {
+    expect(JOURNEY.map((c) => c.title)).toEqual([
+      "Ask in your own words",
+      "Private by design",
+      "Matched to real services",
+      "Map and call",
     ]);
-    for (const o of OVERVIEW) {
-      expect(o.text, o.label).not.toBe("");
-      expect(o.text.split(/(?<=\.) /).length, o.label).toBeLessThanOrEqual(2);
-      expect(ids.has(o.section), o.label).toBe(true);
+    expect(SAFETY_CARDS).toHaveLength(3);
+    expect(CITY_CARDS).toHaveLength(2);
+    expect(METRICS).toHaveLength(5);
+  });
+
+  it("keeps every infographic card to one or two short sentences, with alt text for its image", () => {
+    for (const card of INFO_CARDS) {
+      expect(card.text.split(/(?<=\.) /).length, card.title).toBeLessThanOrEqual(2);
+      expect(card.text.length, card.title).toBeLessThanOrEqual(90);
+      expect(card.title.split(/\s+/).length, card.title).toBeLessThanOrEqual(5);
+      expect(card.alt.trim(), card.title).not.toBe("");
+    }
+    expect(new Set(INFO_CARDS.map((c) => c.image)).size).toBe(INFO_CARDS.length);
+  });
+
+  it("ships a WebP file for every infographic image", () => {
+    for (const { image } of INFO_CARDS) {
+      const file = path.join(HERE, "images", `${image}.webp`);
+      expect(fs.existsSync(file), image).toBe(true);
+      const head = fs.readFileSync(file).subarray(0, 12).toString("latin1");
+      expect(head.slice(0, 4) + head.slice(8), image).toBe("RIFFWEBP");
     }
   });
 
-  it("links every key number and safety card to an existing section", () => {
+  it("links every safety card to an existing section", () => {
     const ids = new Set(SECTIONS.map((s) => s.id));
-    for (const n of KEY_NUMBERS) expect(ids.has(n.section), n.label).toBe(true);
     for (const l of SAFETY_LAYERS) if (l.section) expect(ids.has(l.section), l.title).toBe(true);
   });
 
@@ -94,8 +142,14 @@ describe("How it works content", () => {
     const phrases = fs.readFileSync(path.join(REPO_ROOT, "backend/app/services/crisis_phrases.py"), "utf8");
     const block = phrases.slice(phrases.indexOf("PHRASES"));
     const languages = new Set([...block.matchAll(/^ {4}"([a-z]{2})": \{$/gm)].map((m) => m[1]));
-    const tile = KEY_NUMBERS.find((n) => n.section === "crisis");
-    expect(tile?.value).toBe(String(languages.size));
+    expect(CRISIS_LANGUAGES).toBe(languages.size);
+    expect(METRICS.map((m) => m.value)).toContain(String(languages.size));
+    expect(SAFETY_CARDS.find((c) => c.image === "safety-crisis")?.text).toContain(`${languages.size} languages`);
+  });
+
+  it("dates the measured numbers and says what measured them", () => {
+    expect(METRICS_NOTE).toMatch(/^Lighthouse \d+(\.\d+)? mobile, production demo, \d{1,2} [A-Z][a-z]{2} \d{4}\.$/);
+    for (const m of METRICS) expect(m.label.length, m.value).toBeLessThanOrEqual(40);
   });
 
   it("links related sections only to other existing sections", () => {
@@ -171,24 +225,32 @@ describe("How it works content", () => {
     }
   });
 
-  it("explains under every key number why it matters, in one short sentence", () => {
-    for (const n of KEY_NUMBERS) {
-      expect(n.why?.trim(), n.label).toBeTruthy();
-      expect(n.why, n.label).toMatch(/^[A-Z].*\.$/);
-      expect(n.why.split(/(?<=\.) /).length, n.label).toBe(1);
-      expect(n.why.length, n.label).toBeLessThanOrEqual(100);
-    }
-  });
-
   it("labels every planned capability as a plan, never as something that runs today", () => {
     const planned = SECTIONS.filter((s) => s.roadmap != null);
     expect(planned.length).toBeGreaterThan(0);
     for (const s of planned) expect(s.roadmap, s.id).toMatch(/^(Phase 2|Planned|The goal): \S/);
     expect(STATUS_LABELS.not_planned).toMatch(/^Phase 2 roadmap\b/);
-    const roadmapCard = OVERVIEW.find((o) => o.label === "Phase 2 roadmap");
-    expect(roadmapCard?.text).toMatch(/^With the grant: /);
-    expect(roadmapCard?.text).toMatch(/None of it is built yet\.$/);
     expect(SECTIONS.find((s) => s.id === "status")?.summary).toMatch(/None of the roadmap is built yet\./);
+  });
+
+  it("marks the infographic's roadmap items as planned and not built", () => {
+    expect(ROADMAP.status).toBe("planned");
+    expect(ROADMAP.statusLabel).toBe("Planned");
+    expect(ROADMAP.title).toMatch(/^Phase 2 roadmap\b/);
+    expect(ROADMAP.note).toBe("Not built yet.");
+    expect(ROADMAP.items.length).toBeGreaterThan(0);
+    // "Full list below": each item is also in the Phase 2 roadmap group of the status list.
+    const roadmapList = PROTECTIONS.filter((p) => p.status === "not_planned").map((p) => p.label.toLowerCase());
+    const keyPhrase: Record<string, RegExp> = {
+      "A shared multi-city standard": /multi-city standard/,
+      "Staff-checked catalog records": /staff checking each catalog record/,
+      "211 and partner data updates": /211 and partner/,
+      "Demand signals for health leaders": /demand signals for health leaders/,
+    };
+    for (const item of ROADMAP.items) {
+      expect(keyPhrase[item], item).toBeDefined();
+      expect(roadmapList.some((label) => keyPhrase[item].test(label)), item).toBe(true);
+    }
   });
 
   it("cites only files that exist in the repository", () => {
@@ -202,12 +264,22 @@ describe("How it works content", () => {
     expect(allCopy().filter(hasBannedClaim)).toEqual([]);
   });
 
+  it("keeps the banned words out of the infographic copy", () => {
+    const copy = infographicCopy();
+    expect(copy.length).toBeGreaterThan(30);
+    expect(copy.filter(hasBannedClaim)).toEqual([]);
+  });
+
   it("catches a banned claim and allows its negation (guard self-check)", () => {
     expect(hasBannedClaim("Covered by zero data retention.")).toBe(true);
     expect(hasBannedClaim("store=False is not zero data retention.")).toBe(false);
     expect(hasBannedClaim("Identifiers are blocked.")).toBe(true);
     expect(hasBannedClaim("A verified catalog.")).toBe(true);
     expect(hasBannedClaim("The catalog is unverified.")).toBe(false);
+    expect(hasBannedClaim("100% vetted catalog")).toBe(true);
+    expect(hasBannedClaim("Scores 100 on accessibility.")).toBe(false);
+    expect(hasBannedClaim("We leverage AI for a seamless experience.")).toBe(true);
+    expect(hasBannedClaim("Let's delve in.")).toBe(true);
   });
 
   it("links every in-progress protection to its issue, and lists each protection once", () => {

@@ -78,7 +78,16 @@ export function factsFor(sectionId: string, a: AboutInfo): string[] {
   }
 }
 
-export default function LiveFacts({ sectionId, about }: { sectionId: string; about: AboutInfo }) {
+/** `headingLevel`: h4 inside a section (the default); h3 for the page-wide summary above the sections. */
+export default function LiveFacts({
+  sectionId,
+  about,
+  headingLevel = "h4",
+}: {
+  sectionId: string;
+  about: AboutInfo;
+  headingLevel?: "h3" | "h4";
+}) {
   const facts = factsFor(sectionId, about);
   if (!facts.length) return null;
   return (
@@ -92,7 +101,7 @@ export default function LiveFacts({ sectionId, about }: { sectionId: string; abo
         my: 2,
       }}
     >
-      <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+      <Typography component={headingLevel} variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
         {sectionId === "pii" ? "Removed on this deployment" : "On this deployment"}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.5 }}>

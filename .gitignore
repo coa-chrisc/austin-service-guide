@@ -73,6 +73,8 @@ tmp/
 !frontend/public/reports/**/*.pdf
 # Source-only image folder; deployed assets go into config/brand/<id>/
 images/
+# The How it works infographic images ship with the build.
+!frontend/src/pages/howItWorks/images/
 
 # ── Claude Code local state ───────────────────────────────────
 **/.claude/cache/
