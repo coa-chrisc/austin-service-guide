@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -21,10 +21,15 @@ import { planNavigation } from "@/lib/planSteps";
 import { makeResultsT } from "@/lib/resultsI18n";
 import type { Service, MapPin } from "@/types";
 import { ChunkErrorBoundary } from "@/components/common/RouteChunk";
-import { lazyWithReload } from "@/lib/chunkReload";
+import { ChunkLoadError } from "@/lib/chunkReload";
 
-// Leaflet is heavy: load the map after the details, and drop the section if it cannot load.
-const ServiceMap = lazyWithReload(() => import("@/components/map/ServiceMap"));
+// Leaflet is heavy: load the map after the details, and drop the section if it cannot load
+// (no page reload: the details already showed, so a failed map is not worth losing them).
+const ServiceMap = lazy(() =>
+  import("@/components/map/ServiceMap").catch((error: unknown) => {
+    throw new ChunkLoadError(error);
+  }),
+);
 
 export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();

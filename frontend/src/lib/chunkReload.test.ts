@@ -11,9 +11,6 @@ function fakeEnv(overrides: Partial<ReloadEnv> = {}) {
       stored = at;
       return true;
     },
-    clearReload: () => {
-      stored = null;
-    },
     reload: vi.fn(),
     ...overrides,
   };
@@ -34,12 +31,20 @@ async function settles(promise: Promise<unknown>): Promise<boolean> {
 }
 
 describe("importWithReload", () => {
-  it("returns the module and clears an earlier reload mark", async () => {
+  it("returns the module and keeps an earlier reload mark", async () => {
     const { env, setStored, stored } = fakeEnv();
     setStored(123);
     const mod = { default: "page" };
     await expect(importWithReload(() => Promise.resolve(mod), env)).resolves.toBe(mod);
-    expect(stored()).toBeNull();
+    expect(stored()).toBe(123);
+    expect(env.reload).not.toHaveBeenCalled();
+  });
+
+  it("does not loop when an outer chunk loads and an inner one keeps failing", async () => {
+    const { env, setStored } = fakeEnv();
+    setStored(1_000_000 - 5_000); // the reload that just happened
+    await importWithReload(() => Promise.resolve({ default: "layout" }), env);
+    await expect(importWithReload(failing, env)).rejects.toBeInstanceOf(ChunkLoadError);
     expect(env.reload).not.toHaveBeenCalled();
   });
 

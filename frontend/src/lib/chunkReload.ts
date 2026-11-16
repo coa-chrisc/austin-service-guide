@@ -4,8 +4,10 @@
 /*  After a deploy the old hashed chunks are gone, so a tab opened      */
 /*  before it gets a 404 on its next lazy page. The first failure       */
 /*  reloads the page once (the intake state is in sessionStorage, so    */
-/*  nothing is lost); a second failure, or one while offline, throws    */
-/*  ChunkLoadError for ChunkErrorBoundary to show a "try again" panel.  */
+/*  nothing is lost); a second failure within RELOAD_WINDOW_MS, or one  */
+/*  while offline, throws ChunkLoadError for ChunkErrorBoundary to show */
+/*  a "try again" panel. The mark is never cleared on success: nested   */
+/*  lazy chunks (layout, then page) would otherwise reload forever.     */
 
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 
@@ -28,7 +30,6 @@ export interface ReloadEnv {
   lastReloadAt(): number | null;
   /** Store the reload mark; false when storage is blocked. */
   markReload(at: number): boolean;
-  clearReload(): void;
   reload(): void;
 }
 
@@ -51,13 +52,6 @@ const browserEnv: ReloadEnv = {
       return false;
     }
   },
-  clearReload: () => {
-    try {
-      window.sessionStorage.removeItem(RELOAD_KEY);
-    } catch {
-      /* storage blocked: nothing was stored */
-    }
-  },
   reload: () => window.location.reload(),
 };
 
@@ -65,12 +59,7 @@ export function importWithReload<T>(
   factory: () => Promise<T>,
   env: ReloadEnv = browserEnv,
 ): Promise<T> {
-  return factory().then(
-    (mod) => {
-      env.clearReload();
-      return mod;
-    },
-    (error: unknown) => {
+  return factory().catch((error: unknown) => {
       const now = env.now();
       const last = env.lastReloadAt();
       const recent = last !== null && now - last < RELOAD_WINDOW_MS;
@@ -81,8 +70,7 @@ export function importWithReload<T>(
         return new Promise<T>(() => undefined);
       }
       throw new ChunkLoadError(error);
-    },
-  );
+  });
 }
 
 /** React.lazy with a one-time page reload when the chunk fails to load. */
