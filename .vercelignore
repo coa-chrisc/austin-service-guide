@@ -7,3 +7,5 @@
 frontend/dist
 backend/logs
 graft
+**/.env.*
+!**/.env.example

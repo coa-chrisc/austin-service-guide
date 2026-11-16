@@ -67,7 +67,13 @@ printf true | vercel env add ALLOW_RAW_AUDIO_STREAM production
 
 Another place: `CITY_CONFIG` / `CITY_PRESET`, `CITY_DATA_DIR` and the map tile variables (`VITE_MAP_TILE_URL`, `VITE_MAP_TILE_ATTRIBUTION`) work as Vercel env vars too. Vercel exposes them both to the build (the frontend reads them) and at runtime (the backend reads them). Keep the data pack under `config/data/<id>/` so it is part of the bundle. See [docs/CUSTOMIZING.md](../../docs/CUSTOMIZING.md).
 
-`CORS_ORIGINS` is not needed: the SPA and API share one origin.
+The SPA and API share one origin, so the app does not need CORS. Set `CORS_ORIGINS` to the deployment's own origin anyway: left unset, the API allows credentialed cross-origin requests from the localhost dev origins.
+
+```bash
+printf https://your-app.vercel.app | vercel env add CORS_ORIGINS production
+```
+
+The backend sets a Content-Security-Policy and other security headers on every response (`backend/app/security_headers.py`). Vercel adds `Strict-Transport-Security` itself. If you use a custom tile server, set `VITE_MAP_TILE_URL` for production so both the build and the policy pick it up.
 
 ### Deploy
 

@@ -41,8 +41,8 @@ Limits: the catalog has no maternal-health category, so "Maternal & Child Health
 Name rule: names are removed after "my name is", "my name's", "me llamo" and "mi nombre es" in any letter case (up to three tokens, stopping at function words), and after "I am", "I'm" or "this is" only when two or three capitalized, non-stoplisted words follow. The separator may be whitespace (including non-breaking space and newlines) or a colon, comma or dash.
 
 - **Server edge.** Applied to typed chat in `process_message` (`backend/app/services/ai.py`), to every message and profile string when state is rebuilt (`session_from_state`), to voice transcripts when they are synced back (`record_realtime_transcript` in `backend/app/services/realtime.py`), and to every string in the opt-in debug log (`_sanitize_debug_value` in `backend/app/services/realtime_debug.py`).
-- **Client pre-flight.** `frontend/src/lib/piiGuard.ts` (`inspectForPII`, `scrubPII`) mirrors the server rules. The chat input (`ChatInterface.tsx`) and the directory search (`ServiceDirectory.tsx`) scrub before sending and show a notice. The server still redacts independently.
-- **Parity check.** `backend/tests/fixtures/pii_cases.json` (160 cases) is run by both `backend/tests/test_pii.py` and `frontend/src/lib/piiGuard.test.ts`, which checks that both implementations give identical output.
+- **Client pre-flight.** `frontend/src/lib/piiGuard.ts` (`inspectForPII`, `scrubPII`) mirrors the server rules. The chat input (`ChatInterface.tsx`) and the directory search (`ServiceDirectory.tsx`) scrub before sending and show a notice. The server redacts chat independently. The directory search is not redacted on the server: it only filters the catalog in memory and never reaches the model, but the scrubbed query travels in the URL (`GET /api/v1/services?search=`), so it can appear in platform request logs.
+- **Parity check.** `backend/tests/fixtures/pii_cases.json` (175 cases) is run by both `backend/tests/test_pii.py` and `frontend/src/lib/piiGuard.test.ts`, which checks that both implementations give identical output.
 
 Limits, all real: names without a self-identification phrase ("Maria Lopez here"); addresses without a house number or street suffix; spoken-number patterns beyond the supported phrasings (spelled-out digit runs and spoken street numbers are covered, see below; unusual phrasings can still be missed); raw voice audio in `realtime_audio` mode (see below); and sensitive situations described in plain language, which pass through on purpose because they are often the reason the resident is here. Known over-redaction: a lowercase word right after "my name is <name>" may be removed.
 
@@ -90,7 +90,25 @@ Limit: platform logs (load balancer access logs, proxy logs) are outside the app
 - The OpenAI client is built server-side from the API key only. No inbound request headers (for example `X-Forwarded-For`) are forwarded.
 - The Realtime client secret is minted server-side (`create_realtime_client_secret` in `routers/intake.py`) and expires after `OPENAI_REALTIME_SECRET_TTL_SECONDS` (default 600).
 
+- The conversation the browser sends back is bounded before it reaches the model: `_conversation_input` in `ai.py` replays only the most recent turns that fit 40 messages and 32,000 characters (`MAX_MODEL_INPUT_MESSAGES`, `MAX_MODEL_INPUT_CHARS`), so a tampered state cannot inflate every agent-loop call up to the 256 KiB body limit.
+- The Realtime client secret request fails with a generic "temporarily unavailable" message; exception names are not returned to the browser.
+
 Limit: `store=False` is not zero data retention. There is no per-request zero-data-retention setting in the OpenAI API. Zero data retention is an organization- or project-level agreement with OpenAI, and none is in place for this demo. See "Known gaps".
+
+Limit: in `realtime_audio` mode the browser holds an ephemeral secret for a Realtime session and talks to OpenAI directly. A holder of that secret can send `session.update` to change the session's instructions and tools and use the model for anything until the secret expires, and nothing limits how many secrets one client mints. The access gate and the opt-in flags are the only controls today (see "Known gaps", item 4).
+
+### 9. HTTP security headers and input checks
+
+`SecurityHeadersMiddleware` (`backend/app/security_headers.py`, added in `backend/app/main.py`) sets these on every response unless a handler already set them:
+
+- `Content-Security-Policy`: `default-src 'self'`, `script-src 'self'` (no inline or eval script), `style-src 'self' 'unsafe-inline'` (MUI/Emotion and Leaflet inject styles), `img-src` and `connect-src` limited to the app, the map tile server and (for realtime voice) `https://api.openai.com`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`. The tile origin is read from `VITE_MAP_TILE_URL` at runtime (OpenStreetMap by default), so the backend must see the same value the frontend was built with; the `Dockerfile` passes it to both stages and Vercel exposes env vars to both. FastAPI's `/docs` and `/redoc` pages load Swagger UI from a CDN and are exempt.
+- `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` (the OpenStreetMap tile policy needs a referrer), and `Permissions-Policy` allowing only same-origin microphone and geolocation.
+- `Strict-Transport-Security` only on HTTPS requests (directly or via `X-Forwarded-Proto: https`).
+
+Input checks at the API edge:
+
+- `POST /api/v1/intake/share` accepts only US phone numbers for SMS (normalized to `+1XXXXXXXXXX`), so the public share relay cannot be used to send texts to premium-rate international numbers. A deployment outside the US must change `_US_PHONE_RE` in `backend/app/routers/intake.py`.
+- `Service.website_url` (`backend/app/models.py`) and the catalog schema accept only `http://` or `https://` URLs (or empty), so an admin write or a data-pack file cannot store a `javascript:` link that the service page would render.
 
 ## Known gaps before production
 
@@ -99,13 +117,16 @@ These are not implemented. Do not treat the demo as ready for real resident data
 1. **Authentication and authorization.** Staff identity (for example Entra ID) with role-based access. Today `X-Staff-Role` is read but not enforced, admin `GET` routes are open (they serve synthetic data), and the staff "login" in the console is simulated in the browser. Admin catalog writes require `X-Admin-Token` matching `ADMIN_API_TOKEN`, compared in constant time; with the token unset, writes are refused. That is a shared-secret stopgap.
 2. **Vendor agreements.** A data processing agreement with OpenAI, Twilio and SendGrid. If any data could be protected health information, a HIPAA BAA review, including which OpenAI endpoints (Responses, Realtime, transcription) a BAA would cover. Nothing in this repository makes the app HIPAA compliant.
 3. **OpenAI zero data retention.** Apply for Zero Data Retention (or the current equivalent) for the project and confirm it covers Realtime. This is required before enabling `realtime_audio` voice, and the app cannot verify it. By default OpenAI may keep API inputs and outputs for a limited time for abuse monitoring, even with `store=False`.
-4. **Rate limiting and WAF.** None exists in the application or the templates. The intake endpoints call a paid model API, so they need request throttling and abuse protection at the edge.
+4. **Rate limiting and WAF.** None exists in the application or the templates. The intake endpoints (`start`, `message`, `plan`, and `realtime/client-secret`) call a paid model API, and `share` relays SMS and email through the operator's Twilio and SendGrid accounts, so they need request throttling and abuse protection at the edge. The access gate is the only control on the hosted demo.
 5. **Catalog verification.** `python backend/scripts/validate_catalog.py` (`npm run validate:catalog` from `frontend/`) reports 0 errors, 87 unverified services and 101 locations with `hours_verified: false`. `--strict` promotes the unverified warnings to errors, so it fails until staff record verification. Until then the catalog must not be described as verified.
 6. **Privacy-office review of notices.** The wording of the AI notice, the privacy notice and the voice notice has not been reviewed by a privacy office.
 7. **Translation of the privacy notice.** The city-config privacy notice (`serviceGuide.copy.privacyNotice`) is English-only. The greeting notice and redaction notice are translated for Spanish, Vietnamese, Chinese and Arabic only (`backend/app/services/i18n.py`).
 8. **Retention and logging review.** Any persistent store added later needs encryption and a records-retention decision. Confirm no recipients, transcripts, or upstream response bodies reach production logs, and keep the voice debug trace off.
 9. **Broader PII review.** Pattern redaction is a safety net, not a complete control. Add a review of free-text identifiers the risk assessment cares about (see roadmap item 3).
 10. **Cloud deployment review.** The IaC templates are not applied to live accounts and need review against the city's own network and security standards.
+11. **CORS origins.** With `CORS_ORIGINS` unset the API allows credentialed requests from the default localhost dev origins. Set `CORS_ORIGINS` to the deployment's own origin in production.
+12. **Dependency advisories.** `npm audit --omit=dev` reports two moderate advisories in `react-router` 6.x (an open redirect through backslash paths in `Link`/`useNavigate`, and an SSR error-deserialization issue). Neither applies here: the SPA never navigates to a user-supplied target and does no server rendering. The fix is a major upgrade to React Router 7.
+13. **Public metadata endpoints.** `GET /api/v1/health` is outside the access gate and reports whether live AI is on. `/docs` and `/openapi.json` (behind the gate) describe every route. Consider trimming the health payload and disabling the docs in production.
 
 ## Engineering roadmap
 
