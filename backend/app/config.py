@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     openai_realtime_model: str = "gpt-realtime-2"
     openai_realtime_reasoning_effort: str = "medium"
     openai_realtime_voice: str = "marin"
-    openai_realtime_transcription_model: str = "gpt-4o-mini-transcribe"
+    openai_realtime_transcription_model: str = "gpt-4o-transcribe"
     openai_realtime_secret_ttl_seconds: int = 600
     realtime_debug_log_enabled: bool = False
     realtime_debug_log_path: str = "logs/realtime_debug.jsonl"

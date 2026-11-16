@@ -242,3 +242,162 @@ def test_spoken_ssn_rule_leaves_assistant_phone_numbers():
 
     text = "Social Security: 1 800 772 1213"
     assert redact(text, kinds=ASSISTANT_KINDS) == (text, [])
+
+
+# ── 6. Realtime session config: speakers-and-mic echo, no prompt leak ───
+
+def _realtime_session(client):
+    from app.models import IntakeState
+    from app.services.intake_state import session_from_state
+
+    return session_from_state(IntakeState.model_validate(_start_state(client)))
+
+
+def _sdk_extras(model, path="session") -> list[str]:
+    """Field paths the OpenAI SDK model doesn't know (it keeps them as extras)."""
+    from pydantic import BaseModel
+
+    found = [f"{path}.{key}" for key in (model.model_extra or {})]
+    for name in type(model).model_fields:
+        value = getattr(model, name)
+        children = value if isinstance(value, list) else [value]
+        for i, child in enumerate(children):
+            if isinstance(child, BaseModel):
+                suffix = f"[{i}]" if isinstance(value, list) else ""
+                found += _sdk_extras(child, f"{path}.{name}{suffix}")
+    return found
+
+
+def test_realtime_session_config_matches_openai_schema(client):
+    """Every field and enum value is one the OpenAI SDK's Realtime schema knows."""
+    from openai.types.realtime import RealtimeSessionCreateRequest
+
+    from app.services.realtime import build_realtime_session_config
+
+    config = build_realtime_session_config(_realtime_session(client))
+    model = RealtimeSessionCreateRequest.model_validate(config)
+    assert _sdk_extras(model) == []
+
+
+def test_realtime_session_config_is_tuned_for_speakers(client):
+    from app.services.realtime import build_realtime_session_config
+
+    audio_in = build_realtime_session_config(_realtime_session(client))["audio"]["input"]
+    # The transcription model can read its prompt back as the transcript of
+    # silence or echo, so there is none.
+    assert audio_in["transcription"] == {"model": "gpt-4o-transcribe"}
+    assert audio_in["noise_reduction"] == {"type": "far_field"}
+    assert audio_in["turn_detection"] == {
+        "type": "server_vad",
+        "create_response": False,
+        "interrupt_response": True,
+        "threshold": 0.6,
+        "prefix_padding_ms": 300,
+        "silence_duration_ms": 700,
+    }
+
+
+def test_realtime_transcription_language_follows_session(client):
+    from app.services.realtime import build_realtime_session_config
+
+    session = _realtime_session(client)
+    session.language = "es"
+    transcription = build_realtime_session_config(session)["audio"]["input"]["transcription"]
+    assert transcription == {"model": "gpt-4o-transcribe", "language": "es"}
+
+
+# ── 7. Transcripts that aren't resident speech are dropped ──────────────
+
+def _post_transcript(client, state: dict, role: str, content: str) -> dict:
+    res = client.post(
+        "/api/v1/intake/realtime/transcript",
+        json={"state": state, "role": role, "content": content},
+    )
+    assert res.status_code == 200, res.text
+    return res.json()
+
+
+def _realtime_state(client, monkeypatch) -> dict:
+    state = _start_state(client)
+    _set_live_ai(monkeypatch)
+    _set_voice(monkeypatch, "realtime_audio", True)
+    return state
+
+
+ASSISTANT_QUESTION = (
+    "Thanks for sharing that. What is your household's total monthly income, "
+    "before taxes?"
+)
+
+
+def test_assistant_echo_is_not_stored_as_resident_speech(client, monkeypatch):
+    state = _realtime_state(client, monkeypatch)
+    state = _post_transcript(client, state, "assistant", ASSISTANT_QUESTION)["state"]
+    before = state["conversation"]
+
+    # The mic heard the speakers; the transcriber dropped a word or two.
+    echo = "what is your household's total monthly income before taxes"
+    body = _post_transcript(client, state, "user", echo)
+    assert body["ignored"] == "assistant_echo"
+    assert body["messages"] == []
+    assert body["crisis_detected"] is False
+    assert body["state"]["conversation"] == before
+
+
+def test_greeting_echo_is_dropped(client, monkeypatch):
+    state = _realtime_state(client, monkeypatch)
+    greeting = state["conversation"][-1]
+    assert greeting["role"] == "assistant"
+    body = _post_transcript(client, state, "user", greeting["content"])
+    assert body["ignored"] == "assistant_echo"
+    assert body["state"]["conversation"] == state["conversation"]
+
+
+@pytest.mark.parametrize("noise", [".", "...", " - ", "¿?"])
+def test_punctuation_only_transcript_is_dropped(client, monkeypatch, noise):
+    state = _realtime_state(client, monkeypatch)
+    body = _post_transcript(client, state, "user", noise)
+    assert body["ignored"] == "empty"
+    assert body["messages"] == []
+    assert body["state"]["conversation"] == state["conversation"]
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "About two thousand a month.",
+        "Monthly income?",  # too short to call echo
+        "Total monthly income, um, before taxes is about 1800",
+        "What is my income? I get about two thousand from my job",
+        "78741",
+    ],
+)
+def test_real_answers_are_kept(client, monkeypatch, answer):
+    state = _realtime_state(client, monkeypatch)
+    state = _post_transcript(client, state, "assistant", ASSISTANT_QUESTION)["state"]
+    body = _post_transcript(client, state, "user", answer)
+    assert "ignored" not in body
+    assert body["messages"][0]["role"] == "user"
+    assert body["state"]["conversation"][-1]["content"] == body["messages"][0]["content"]
+
+
+def test_echo_check_only_looks_at_turns_since_the_resident_spoke(client, monkeypatch):
+    state = _realtime_state(client, monkeypatch)
+    state = _post_transcript(client, state, "assistant", ASSISTANT_QUESTION)["state"]
+    state = _post_transcript(client, state, "user", "about two thousand")["state"]
+    # Once the resident has answered, repeating the earlier question is
+    # their own turn, not echo.
+    body = _post_transcript(
+        client, state, "user", "what is your household's total monthly income before taxes"
+    )
+    assert "ignored" not in body
+    assert body["messages"][0]["role"] == "user"
+
+
+def test_crisis_words_are_never_dropped_as_echo(client, monkeypatch):
+    state = _realtime_state(client, monkeypatch)
+    spoken = "If you are not safe right now, please call 911."
+    state = _post_transcript(client, state, "assistant", spoken)["state"]
+    body = _post_transcript(client, state, "user", "if you are not safe right now please call 911")
+    assert "ignored" not in body
+    assert body["crisis_detected"] is True

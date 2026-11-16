@@ -195,7 +195,7 @@ Useful settings:
 - `OPENAI_REALTIME_MODEL` — model for the `realtime_audio` voice mode (default `gpt-realtime-2`). The Realtime settings below apply only to that mode.
 - `OPENAI_REALTIME_REASONING_EFFORT` — reasoning effort for the voice model (default `medium`).
 - `OPENAI_REALTIME_VOICE` — Realtime voice preset (default `marin`).
-- `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-mini-transcribe`).
+- `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-transcribe`).
 - `OPENAI_REALTIME_SECRET_TTL_SECONDS` — lifetime of the ephemeral client secret returned to the browser (default `600`).
 - `REALTIME_DEBUG_LOG_ENABLED` / `REALTIME_DEBUG_LOG_PATH` — opt-in trace for troubleshooting realtime voice sessions. Off by default; transcripts are short but sensitive, so keep this disabled outside local debugging.
 - `DEMO_MODE=true` — force the scripted fallback flow even when an API key is set. `realtime_audio` voice needs a key and `DEMO_MODE=false`; otherwise the voice button explains that voice isn't available and text chat keeps working.
