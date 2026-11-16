@@ -142,7 +142,7 @@ Because the backend holds no per-resident state, replicas need no session affini
 
 `frontend/src/`
 
-- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; lazy-loaded; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data), including `pages/admin/import/` (partner-list import).
+- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data), including `pages/admin/import/` (partner-list import). Every route except `Landing` is lazy-loaded (`App.tsx`, `lib/chunkReload.ts`, `components/common/RouteChunk.tsx`); `npm run build` fails if the first-load JavaScript goes over the gzip budget in `scripts/check-bundle-size.mjs`.
 - `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`, `FlowDiagram`).
 - `lib/`: `api.ts` (API client), `session.ts` (client-held intake state), `piiGuard.ts` (client PII pre-flight), `share.ts`, plus helpers.
 - `hooks/`: `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice), `useAuth` (stub).
