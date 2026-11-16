@@ -123,3 +123,49 @@ def test_large_or_costly_runs_skip_the_model(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(settings, "import_max_cost_usd", 0.0)
     outcome = asyncio.run(model_step.suggest(rows[:3], ["food"], settings))
     assert not outcome.used and "IMPORT_MAX_COST_USD" in outcome.note
+
+
+def test_cost_cap_uses_the_worst_case_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    from app.config import get_settings
+    from app.services.partner_import.to_drafts import RowDraft
+
+    monkeypatch.setattr(model_step, "_openai_client", lambda: (_ for _ in ()).throw(AssertionError("no client")))
+    settings = get_settings()
+    # One batch may bill up to its max_output_tokens, however few rows it has.
+    max_output = model_step.OUTPUT_TOKENS_PER_ROW * model_step.BATCH_ROWS + 4000
+    worst_output_usd = max_output / 1e6 * model_step.USD_PER_MTOK_OUTPUT
+    monkeypatch.setattr(settings, "import_max_cost_usd", worst_output_usd * 0.9)
+    rows = [RowDraft(row=1, cells=[], service={"name": "Pantry", "provider_name": "Org"})]
+    outcome = asyncio.run(model_step.suggest(rows, ["food"], settings))
+    assert not outcome.used and "IMPORT_MAX_COST_USD" in outcome.note
+    assert outcome.estimated_usd >= worst_output_usd
+
+
+def test_model_batches_share_one_concurrency_limit_across_requests(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    from app.config import get_settings
+    from app.services.partner_import.to_drafts import RowDraft
+
+    state = {"now": 0, "peak": 0}
+
+    async def create(**kwargs: Any) -> Any:
+        state["now"] += 1
+        state["peak"] = max(state["peak"], state["now"])
+        await asyncio.sleep(0.01)
+        state["now"] -= 1
+        return SimpleNamespace(output_text='{"rows": []}')
+
+    monkeypatch.setattr(model_step, "_openai_client", lambda: SimpleNamespace(responses=SimpleNamespace(create=create)))
+    settings = get_settings()
+    monkeypatch.setattr(settings, "import_max_cost_usd", 1000.0)
+    rows = [RowDraft(row=i, cells=[], service={"name": f"P{i}", "provider_name": "Org"})
+            for i in range(model_step.BATCH_ROWS * (model_step.CONCURRENCY + 1))]
+
+    async def two_requests() -> None:
+        await asyncio.gather(model_step.suggest(rows, ["food"], settings), model_step.suggest(rows, ["food"], settings))
+
+    asyncio.run(two_requests())
+    assert state["peak"] <= model_step.CONCURRENCY

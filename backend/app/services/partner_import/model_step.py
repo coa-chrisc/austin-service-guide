@@ -19,6 +19,7 @@ import asyncio
 import json
 import logging
 import re
+import weakref
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -35,14 +36,28 @@ log = logging.getLogger(__name__)
 GATES = ["veteran", "homeless_or_unstable_housing", "refugee_or_immigrant", "disability", "older_adult",
          "older_adult_or_disability", "has_children", "youth", "other_criteria"]
 BATCH_ROWS = 25
+# Model batches in flight across all imports in this process (not per request).
 CONCURRENCY = 4
 # The inline (in-request) path stops here; larger lists need the worker (#18).
 INLINE_MAX_ROWS = 200
 OUTPUT_TOKENS_PER_ROW = 250
+# The per-call output ceiling (reasoning tokens count against it too).
+MAX_OUTPUT_TOKENS = OUTPUT_TOKENS_PER_ROW * BATCH_ROWS + 4000
 REASONING_EFFORT = "low"
-# Planning estimate only, not billing: set these to your contract's prices.
+# Prices for the worst-case cost check, not billing: set these to your contract's prices.
 USD_PER_MTOK_INPUT = 5.0
 USD_PER_MTOK_OUTPUT = 40.0
+
+# One semaphore per event loop (in practice one per process), shared by every request.
+_GATES: weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore] = weakref.WeakKeyDictionary()
+
+
+def _batch_gate() -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    gate = _GATES.get(loop)
+    if gate is None:
+        gate = _GATES[loop] = asyncio.Semaphore(CONCURRENCY)
+    return gate
 _ZIP_RE = re.compile(r"\d{5}(-\d{4})?")
 _ADDRESS_KINDS = tuple(k for k in PLACEHOLDERS if k != "address")
 
@@ -116,9 +131,11 @@ def row_payload(draft: RowDraft) -> dict[str, str]:
 
 
 def estimate_usd(batches: list[str], schema: dict) -> float:
+    """Worst-case cost: every call uses its full output ceiling, and input is
+    counted at one token per character (an upper bound for any script)."""
     fixed = len(INSTRUCTIONS) + len(json.dumps(schema))
-    tokens_in = sum(fixed + len(b) for b in batches) / 4
-    tokens_out = sum(b.count('"ref"') for b in batches) * OUTPUT_TOKENS_PER_ROW
+    tokens_in = sum(fixed + len(b) for b in batches)
+    tokens_out = len(batches) * MAX_OUTPUT_TOKENS
     return tokens_in / 1e6 * USD_PER_MTOK_INPUT + tokens_out / 1e6 * USD_PER_MTOK_OUTPUT
 
 
@@ -135,12 +152,12 @@ async def suggest(rows: list[RowDraft], category_slugs: list[str], settings: Set
                for i in range(0, len(payloads), BATCH_ROWS)]
     outcome.estimated_usd = round(estimate_usd(batches, schema), 4)
     if outcome.estimated_usd > settings.import_max_cost_usd:
-        outcome.note = (f"The model step was skipped: the estimate (${outcome.estimated_usd:.2f}) is over "
+        outcome.note = (f"The model step was skipped: its worst-case cost (${outcome.estimated_usd:.2f}) is over "
                         f"IMPORT_MAX_COST_USD (${settings.import_max_cost_usd:.2f}).")
         return outcome
 
     client = _openai_client()
-    gate = asyncio.Semaphore(CONCURRENCY)
+    gate = _batch_gate()
 
     async def run(batch: str) -> list[dict]:
         async with gate:
@@ -150,7 +167,7 @@ async def suggest(rows: list[RowDraft], category_slugs: list[str], settings: Set
                 input=[{"role": "user", "content": batch}],
                 reasoning={"effort": REASONING_EFFORT},
                 text={"format": {"type": "json_schema", "name": "partner_rows", "strict": True, "schema": schema}},
-                max_output_tokens=OUTPUT_TOKENS_PER_ROW * BATCH_ROWS + 4000,
+                max_output_tokens=MAX_OUTPUT_TOKENS,
                 store=False,
             )
             data = json.loads(response.output_text or "{}")
