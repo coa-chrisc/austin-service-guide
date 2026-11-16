@@ -1,4 +1,4 @@
-# SearXNG settings for the planned research worker (#18). PLANNED, NOT YET USED.
+# SearXNG settings for the research worker (#18).
 #
 # A private metasearch instance that only the worker calls, over Railway's
 # private network (http://searxng.railway.internal:8080). It must never get a
@@ -11,11 +11,12 @@
 use_default_settings:
   engines:
     # A short list keeps the instance fast and its upstream footprint small.
+    # Not wikipedia: it refuses to load without general.contact_url, and
+    # encyclopedia pages are rarely where local service details live.
     keep_only:
       - duckduckgo
       - brave
       - bing
-      - wikipedia
 
 # bing ships disabled in SearXNG's defaults; turn it on.
 engines:
