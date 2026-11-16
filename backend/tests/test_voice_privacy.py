@@ -552,8 +552,10 @@ def test_echo_check_only_looks_at_turns_since_the_resident_spoke(client, monkeyp
 
 def test_crisis_words_are_never_dropped_as_echo(client, monkeypatch):
     state = _realtime_state(client, monkeypatch)
-    spoken = "If you are not safe right now, please call 911."
+    # Bare "not safe" is no longer a crisis phrase ("the area is not safe");
+    # "not safe at home" is.
+    spoken = "Are you telling me you are not safe at home right now?"
     state = _post_transcript(client, state, "assistant", spoken)["state"]
-    body = _post_transcript(client, state, "user", "if you are not safe right now please call 911")
+    body = _post_transcript(client, state, "user", "you are not safe at home right now")
     assert "ignored" not in body
     assert body["crisis_detected"] is True

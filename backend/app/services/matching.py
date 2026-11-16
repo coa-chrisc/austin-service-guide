@@ -21,6 +21,7 @@ from app.services.catalog_loader import (
     load_matching_rules,
     local_crisis_lines,
 )
+from app.services.crisis_phrases import ACUTE_KINDS, CRISIS_REPORTED
 from app.services.eligibility import eligibility_note, unconfirmed_gates
 
 
@@ -220,14 +221,20 @@ def crisis_services() -> dict[str, list[str]]:
     return load_matching_rules().crisis_services
 
 
-def _crisis_slugs(profile: ResidentProfile) -> list[str]:
-    """Crisis-direct service slugs for the profile, in indicator order."""
+def crisis_slugs(profile: ResidentProfile) -> list[str]:
+    """Crisis-direct service slugs for the profile, in indicator order.
+
+    A crisis the model reported without a kind (``crisis_reported``) gets
+    the services of every acute kind: over-offering beats missing one.
+    """
     out: list[str] = []
     rules = crisis_services()
     for indicator in profile.crisis_indicators:
-        for slug in rules.get(indicator, []):
-            if slug not in out:
-                out.append(slug)
+        keys = ACUTE_KINDS if indicator == CRISIS_REPORTED else (indicator,)
+        for key in keys:
+            for slug in rules.get(key, []):
+                if slug not in out:
+                    out.append(slug)
     return out
 
 
@@ -293,7 +300,7 @@ def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
         return []
 
     all_services = catalog.get_all_services(page=1, page_size=200)["items"]
-    crisis = _crisis_slugs(profile)
+    crisis = crisis_slugs(profile)
     by_slug = {svc.slug: svc for svc in all_services}
     scored: list[tuple[Service, float, list[str]]] = []
 
@@ -584,6 +591,8 @@ _SEQUENCE_REASONS: dict[str, str] = {
 }
 
 _DEFAULT_SEQUENCE_REASON = "Worth a look when you have time."
+#: Plan reason on a crisis-direct service.
+SAFETY_SEQUENCE_REASON = _SEQUENCE_REASONS["emergency"]
 
 
 def _rank_category(service: Service, target_cats: set[str]) -> str | None:
@@ -629,7 +638,7 @@ def recommend_application_order(
         remaining.remove(m)
         picks.append((m, cat))
 
-    for slug in _crisis_slugs(profile):
+    for slug in crisis_slugs(profile):
         m = next((m for m in remaining if m.service.slug == slug), None)
         if m:
             take(m, "emergency")

@@ -23,6 +23,7 @@ from app.models import (
     SchoolAgeChild,
 )
 from app.services import catalog
+from app.services.crisis import record_model_crisis
 from app.services.grounding import ground_service_ids
 from app.services.matching import assess_risks, calculate_benefits, match_services
 from app.services.prompts import format_known_facts
@@ -181,9 +182,13 @@ def dispatch_tool(
         if name == "get_service_details":
             return _tool_get_service_details(args), False
         if name == "get_crisis_resources":
+            # Asking for the crisis lines marks the session as a crisis,
+            # the same as a keyword hit, whatever kind the model names.
+            record_model_crisis(session, args.get("crisis_type"), reported=True)
             return _tool_get_crisis_resources(session, args), True
         if name == "extract_profile":
-            return _tool_extract_profile(session, args), False
+            crisis = record_model_crisis(session, args.get("crisis_indicators"))
+            return _tool_extract_profile(session, args), crisis
         if name == "find_matching_services":
             deferred = _guard_matching_or_completion(session, name)
             if deferred:

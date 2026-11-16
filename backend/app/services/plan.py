@@ -11,6 +11,7 @@ import logging
 
 from app.config import get_settings
 from app.models import IntakePlan, IntakeSession, MessageRole, PlanItem
+from app.services.crisis import lead_with_crisis
 from app.services.grounding import ground_service_ids
 from app.services.matching import recommend_application_order
 
@@ -22,7 +23,7 @@ def rules_plan(session: IntakeSession) -> IntakePlan:
     if not session.matches:
         return IntakePlan()
     items = recommend_application_order(session.matches, session.extracted_profile)
-    return IntakePlan(items=[PlanItem(**item) for item in items[:20]])
+    return lead_with_crisis(session, IntakePlan(items=[PlanItem(**item) for item in items[:20]]))
 
 
 async def build_application_order(session: IntakeSession) -> IntakePlan:
@@ -173,7 +174,8 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
         if not items_out:
             return fallback()
 
-        return IntakePlan(summary=summary, items=items_out, ai_generated=True)
+        # Crisis-direct services lead whatever the model picked.
+        return lead_with_crisis(session, IntakePlan(summary=summary, items=items_out, ai_generated=True))
     except Exception as exc:  # noqa: BLE001
         log.warning("build_application_order failed (%s); using rules fallback", type(exc).__name__)
         return fallback()

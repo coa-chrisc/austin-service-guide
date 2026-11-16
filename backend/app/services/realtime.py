@@ -17,7 +17,7 @@ from app.services.city import get_city
 from app.services.pii import ASSISTANT_KINDS, redact
 from app.services.prompts import LANGUAGE_NAMES, build_instructions
 from app.services.realtime_debug import record_realtime_debug_event, summarize_tool_output
-from app.services.scenarios import check_crisis, crisis_response
+from app.services.crisis import crisis_speech, crisis_turn, detect_crisis
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
 
@@ -224,6 +224,48 @@ def build_realtime_startup_response(session: IntakeSession) -> dict[str, Any]:
     }
 
 
+# response.create metadata purposes for the crisis reply. "stored": the
+# transcript endpoint already added the crisis message to the conversation,
+# so the client skips syncing the spoken copy. "spoken": a tool flagged the
+# crisis, nothing is stored yet, so the spoken copy is synced like any reply.
+CRISIS_REPLY_STORED = "crisis_response"
+CRISIS_REPLY_SPOKEN = "crisis_tool_response"
+
+
+def build_crisis_voice_response(session: IntakeSession, purpose: str) -> dict[str, Any]:
+    """response.create body that makes the voice model read the crisis lines.
+
+    No tools, no conversation context: the model gets the scripted crisis
+    text (``crisis.crisis_speech``) and instructions to read only that, so
+    a crisis turn is never answered with a free reply.
+    """
+    lang_name = _language_name(session.language)
+    how = (
+        "in English, word for word" if lang_name == "English"
+        else f"in {lang_name}, translated naturally, keeping every name and number exactly"
+    )
+    instructions = (
+        "The resident may be in crisis. Read the message below aloud "
+        f"{how}, calmly and warmly. Say each phone number digit by digit. "
+        "Say nothing else: no questions about services, no other advice, "
+        "no tool calls. Then stop and wait for the resident.\n\n"
+        f'"{crisis_speech(session)}"'
+    )
+    return {
+        "output_modalities": ["audio"],
+        "instructions": instructions,
+        "tool_choice": "none",
+        "metadata": {"purpose": purpose},
+        "input": [
+            {
+                "type": "message",
+                "role": "user",
+                "content": [{"type": "input_text", "text": "Read the crisis message now."}],
+            }
+        ],
+    }
+
+
 def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
     """Build a Realtime session config that mirrors the text intake agent.
 
@@ -328,6 +370,10 @@ def execute_realtime_tool(
         "crisis_detected": crisis_detected,
         "match_count": len(session.matches),
     }
+    if crisis_detected:
+        # The model flagged a crisis: its next spoken reply reads the crisis
+        # lines instead of continuing the intake.
+        result["crisis_response"] = build_crisis_voice_response(session, CRISIS_REPLY_SPOKEN)
     # Ship freshly rebuilt instructions after state-changing tools so the
     # client can push a session.update and the model stops re-asking.
     if not completed and name in _INSTRUCTION_REFRESH_TOOLS:
@@ -409,7 +455,7 @@ def _transcript_artifact(session: IntakeSession, text: str) -> str | None:
     """
     if not _WORD_RE.search(text):
         return "empty"
-    if _is_assistant_echo(session, text) and not check_crisis(text):
+    if _is_assistant_echo(session, text) and not detect_crisis(text):
         return "assistant_echo"
     return None
 
@@ -484,20 +530,22 @@ def record_realtime_transcript(
     session.conversation.append(msg)
 
     messages = [msg.model_dump()]
-    crisis_detected = False
-    if normalized_role == MessageRole.user:
-        crisis_kind = check_crisis(text)
-        if crisis_kind:
-            crisis_detected = True
-            session.extracted_profile.crisis_indicators.append(crisis_kind)
-            messages.append(crisis_response(session).model_dump())
+    crisis_reply = crisis_turn(session, text) if normalized_role == MessageRole.user else None
+    if crisis_reply is not None:
+        messages.append(crisis_reply.model_dump())
 
-    return {
+    result: dict[str, Any] = {
         "messages": messages,
         "status": session.status.value,
         "progress_percent": progress,
         "is_complete": session.status == IntakeStatus.completed,
-        "crisis_detected": crisis_detected,
+        "crisis_detected": crisis_reply is not None,
         "redacted": redacted_types,
         "redacted_content": text,
     }
+    if crisis_reply is not None:
+        # The browser sends this as the next response.create instead of a
+        # free model reply. The crisis message is already in the
+        # conversation, so the client does not sync the spoken copy.
+        result["crisis_response"] = build_crisis_voice_response(session, CRISIS_REPLY_STORED)
+    return result

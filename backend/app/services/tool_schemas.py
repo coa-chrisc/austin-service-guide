@@ -50,7 +50,9 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "description": (
             "Return 24/7 crisis hotlines (988, domestic violence, local crisis lines). "
             "Call this immediately when the user mentions suicidal thoughts, "
-            "domestic violence, or being in danger."
+            "domestic violence, or being in danger, in any language. Calling it "
+            "marks the intake as a crisis: the crisis lines stay on screen and "
+            "the plan leads with crisis services."
         ),
         "parameters": {
             "type": "object",
@@ -58,9 +60,14 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "language": {
                     "type": ["string", "null"],
                     "description": "ISO language code to filter resources by language support.",
-                }
+                },
+                "crisis_type": {
+                    "type": ["string", "null"],
+                    "enum": ["suicidal_ideation", "domestic_violence", "immediate_danger", None],
+                    "description": "The kind of crisis the resident described, or null if unclear.",
+                },
             },
-            "required": ["language"],
+            "required": ["language", "crisis_type"],
             "additionalProperties": False,
         },
         "strict": True,
@@ -123,6 +130,14 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                     "type": ["string", "null"],
                     "description": "ISO code of the resident's primary spoken language (e.g. 'es', 'ar', 'vi'). May differ from the conversation language.",
                 },
+                "crisis_indicators": {
+                    "type": ["array", "null"],
+                    "items": {
+                        "type": "string",
+                        "enum": ["suicidal_ideation", "domestic_violence", "immediate_danger"],
+                    },
+                    "description": "Set when the resident describes suicidal thoughts, abuse, or being in danger, in any language. Also call get_crisis_resources.",
+                },
                 "school_age_children": {
                     "type": ["array", "null"],
                     "description": "K-12 children in the household. Populate when the resident mentions school, grade level, or concerns about a child.",
@@ -149,7 +164,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "immediate_needs",
                 "is_outdoor_worker", "has_ac", "has_chronic_conditions",
                 "is_refugee_or_immigrant", "primary_language",
-                "school_age_children",
+                "crisis_indicators", "school_age_children",
             ],
             "additionalProperties": False,
         },
