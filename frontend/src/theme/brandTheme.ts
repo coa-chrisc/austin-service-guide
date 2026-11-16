@@ -27,6 +27,10 @@ const ROOT_PX = 16;
 const toPx = (length: string) =>
   length.endsWith("rem") ? parseFloat(length) * ROOT_PX : parseFloat(length);
 
+/** A chip (or chip label) inside a fixed-height data grid row. */
+const FIXED_GRID_CELL =
+  ".MuiDataGrid-row:not(.MuiDataGrid-row--dynamicHeight) .MuiDataGrid-cell &";
+
 const radius = {
   chip: toPx(cityTheme.radius.chip),
   control: toPx(cityTheme.radius.control),
@@ -245,21 +249,31 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
           // Labels wrap instead of truncating, so long labels and large
           // text settings stay readable on a phone; the minimum heights keep
           // MUI's default sizes for one-line labels.
+          // Data grid rows have a fixed height, so chips there keep MUI's
+          // fixed heights and one-line ellipsis. Rows with auto height
+          // (getRowHeight -> "auto") still wrap.
           root: {
             borderRadius: radius.chip,
             fontWeight: 500,
             maxWidth: "100%",
             height: "auto",
             minHeight: 32,
+            [FIXED_GRID_CELL]: { height: 32 },
           },
           sizeSmall: {
             minHeight: 24,
+            [FIXED_GRID_CELL]: { height: 24 },
           },
           label: {
             whiteSpace: "normal",
             overflowWrap: "break-word",
             paddingTop: 2,
             paddingBottom: 2,
+            [FIXED_GRID_CELL]: {
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            },
           },
           // Static chips are tags (chip radius); clickable chips are
           // choices and filters, shaped like pills so they read as controls.

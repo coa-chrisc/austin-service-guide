@@ -63,6 +63,8 @@ export default function ServiceDirectory() {
   const [totalPages, setTotalPages] = useState(1);
   const [popular, setPopular] = useState<Service[]>([]);
   const popularFetchedRef = useRef(false);
+  // The results list takes focus after a page change (see the pager).
+  const resultsRef = useRef<HTMLElement>(null);
   const pageSize = 12;
   // Phones: no sibling pages, so the pager stays on one line.
   const isPhone = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
@@ -280,7 +282,14 @@ export default function ServiceDirectory() {
       )}
 
       {/* Service grid */}
-      <Grid container spacing={2}>
+      <Grid
+        container
+        spacing={2}
+        ref={resultsRef}
+        component="section"
+        aria-label="Service results"
+        tabIndex={-1}
+      >
         {loading
           ? Array.from({ length: pageSize }).map((_, i) => (
               <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
@@ -355,8 +364,10 @@ export default function ServiceDirectory() {
             siblingCount={isPhone ? 0 : 1}
             onChange={(_, p) => {
               setPage(p);
-              // The pager sits under the list; start the new page at the top.
+              // The pager sits under the list; start the new page at the top
+              // and move keyboard focus to the list so Tab continues there.
               window.scrollTo(0, 0);
+              resultsRef.current?.focus({ preventScroll: true });
             }}
             color="primary"
           />

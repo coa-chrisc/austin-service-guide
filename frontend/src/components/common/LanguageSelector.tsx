@@ -91,12 +91,17 @@ export default function LanguageSelector() {
           color: "inherit",
           textTransform: "none",
           fontWeight: 500,
-          // Shrinks (label ellipsis) instead of pushing the header past a narrow screen.
-          minWidth: 0,
+          // Shrinks (label ellipsis) instead of pushing the header past a
+          // narrow screen, down to the icon alone; touch keeps a 44px target.
+          minWidth: 40,
           flexShrink: 1,
+          "@media (pointer: coarse)": { minWidth: 44, minHeight: 44 },
         }}
       >
-        <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Box
+          component="span"
+          sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
           {current?.label ?? "English"}
         </Box>
       </Button>
