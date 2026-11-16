@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import cityConfigPlugin, { loadCityConfig, logSwaps } from "./plugins/cityConfigPlugin";
+import precacheShell from "./plugins/precacheShellPlugin";
 
 /* ------------------------------------------------------------------ */
 /*  City config: CITY_CONFIG=presets/<id>.json or CITY_PRESET=<id>;     */
@@ -35,6 +36,7 @@ function tileOriginPattern(env: Record<string, string>): RegExp {
 
 export default defineConfig(({ mode }) => {
   const tileOrigin = tileOriginPattern(loadEnv(mode, __dirname, "VITE_"));
+  const shell = precacheShell();
   return {
     define: {
       __CITY_CONFIG__: JSON.stringify(brand),
@@ -42,6 +44,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       cityConfigPlugin(city),
+      shell.plugin,
       VitePWA({
         registerType: "autoUpdate",
         manifest: {
@@ -64,6 +67,12 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // Default app shell plus the logo the city-config plugin emits.
           globPatterns: ["**/*.{js,wasm,css,html}", "brand/logo.*"],
+          // Resident shell only: admin, map, login, demo and How it works
+          // chunks are fetched on demand and left to the HTTP cache, not the
+          // service worker (plugins/precacheShellPlugin.ts).
+          manifestTransforms: [shell.manifestTransform],
+          // Drop the previous build's precache when a new worker activates.
+          cleanupOutdatedCaches: true,
           // /access is the optional access-code gate (backend/app/access_gate.py); it must reach the server.
           // /reports/ holds pre-rendered report PDFs; a missing one must 404, not load the app shell.
           navigateFallbackDenylist: [/^\/api\//, /^\/access/, /^\/reports\//],
