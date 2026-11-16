@@ -13,7 +13,9 @@ signs the cookies; rotating it signs everyone out.
 
 This is a demo gate, not user authentication: codes are shared secrets, there
 is no per-user audit trail, and failed attempts are only slowed, not counted
-(serverless instances share no state).
+(serverless instances share no state). A valid cookie's label is put on the
+request scope (``scope["state"]["access_label"]``) as the defense principal,
+so rate limits and budgets apply per label.
 """
 
 from __future__ import annotations
@@ -85,14 +87,21 @@ def _sign(config: GateConfig, label: str) -> str:
     return f"{label}.{mac}"
 
 
-def cookie_is_valid(config: GateConfig, value: str | None) -> bool:
+def cookie_label(config: GateConfig, value: str | None) -> str | None:
+    """The label of a valid access cookie, else None."""
     if not value:
-        return False
+        return None
     label, _, _ = value.partition(".")
     if label not in config.codes:
-        return False
+        return None
     # Bytes, not str: compare_digest raises TypeError on non-ASCII str input.
-    return hmac.compare_digest(value.encode("utf-8", "surrogateescape"), _sign(config, label).encode())
+    if hmac.compare_digest(value.encode("utf-8", "surrogateescape"), _sign(config, label).encode()):
+        return label
+    return None
+
+
+def cookie_is_valid(config: GateConfig, value: str | None) -> bool:
+    return cookie_label(config, value) is not None
 
 
 def match_code(config: GateConfig, submitted: str) -> str | None:
@@ -182,7 +191,11 @@ class AccessGateMiddleware:
         request = Request(scope, receive)
         if path == GATE_PATH:
             response = await self._gate(request)
-        elif cookie_is_valid(self.config, request.cookies.get(COOKIE_NAME)):
+        elif (label := cookie_label(self.config, request.cookies.get(COOKIE_NAME))) is not None:
+            # The label is the defense principal (app/defense/principal.py).
+            # A new dict, so a server that shares one state dict across
+            # requests cannot leak a label into another request.
+            scope["state"] = {**(scope.get("state") or {}), "access_label": label}
             await self.app(scope, receive, _private_cache(send))
             return
         elif path == "/api" or path.startswith("/api/"):

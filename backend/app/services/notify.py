@@ -15,6 +15,7 @@ from typing import Any
 import httpx
 
 from app.config import get_settings
+from app.defense.usage import metered_send
 from app.services.city import get_city
 
 log = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ def _sendgrid_error_fields(resp: httpx.Response) -> list[str]:
     ]
 
 
+@metered_send("sms")
 async def send_sms(*, to: str, body: str) -> dict[str, Any]:
     """Send an SMS via Twilio. Stubs out when creds are missing."""
     settings = get_settings()
@@ -86,6 +88,7 @@ async def send_sms(*, to: str, body: str) -> dict[str, Any]:
     return {"ok": True, "demo": False, "channel": "sms", "to": to}
 
 
+@metered_send("email")
 async def send_email(
     *, to: str, subject: str, text: str, html: str | None = None
 ) -> dict[str, Any]:

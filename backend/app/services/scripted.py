@@ -373,6 +373,50 @@ async def demo_flow(session: IntakeSession, user_text: str, step_num: int) -> In
     return await _complete_intake_demo(session)
 
 
+def _asked_step(session: IntakeSession) -> int | None:
+    """DEMO_STEPS index of the scripted question the last assistant turn asked.
+
+    ``endswith``: a degraded-mode or redaction notice may precede it.
+    """
+    last = next((m for m in reversed(session.conversation) if m.role == MessageRole.assistant), None)
+    if last is None:
+        return None
+    for idx in range(1, len(DEMO_STEPS)):
+        if last.content.endswith(DEMO_STEPS[idx]["message"]):
+            return idx
+    return None
+
+
+async def resume_scripted(session: IntakeSession, user_text: str) -> IntakeMessage:
+    """Scripted turn when live AI stops partway through (budget, breaker, upstream error).
+
+    The step comes from the conversation, not the user-turn count: a reply
+    to a scripted question is read as its answer (the normal ``demo_flow``
+    step); anything else (a model turn, the greeting) only adds the needs
+    and facts it states, then gets the first scripted question whose field
+    is still blank. The intake completes only when the resident answers the
+    last scripted question, never because the model already had many turns.
+    """
+    asked = _asked_step(session)
+    if asked is not None:
+        return await demo_flow(session, user_text, asked + 1)
+
+    profile = session.extracted_profile
+    needs = _extract_initial_needs(user_text)
+    if needs:
+        profile.immediate_needs = list(set(profile.immediate_needs + needs))
+    _capture_stated_facts(session)
+    step = DEMO_STEPS[_next_unanswered_step(profile, 1)]
+    msg = IntakeMessage(
+        role=MessageRole.assistant,
+        content=step["message"],
+        suggested_buttons=step.get("buttons", []),
+        progress_percent=step.get("progress", 0),
+    )
+    session.conversation.append(msg)
+    return msg
+
+
 async def _complete_intake_demo(session: IntakeSession) -> IntakeMessage:
     profile = session.extracted_profile
     profile.languages_spoken = [session.language] if session.language != "en" else ["en"]
