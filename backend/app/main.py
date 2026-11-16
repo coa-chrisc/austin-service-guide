@@ -13,6 +13,7 @@ from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import admin, intake, services
+from app.security_headers import SecurityHeadersMiddleware
 from app.services.catalog import load_seed_data
 from app.services.city import check_env_file, get_city
 from app.spa import mount_spa
@@ -57,6 +58,14 @@ app.add_middleware(
 gate_config = load_gate_config()
 if gate_config is not None:
     app.add_middleware(AccessGateMiddleware, config=gate_config, app_name=city.app_name)
+
+# Security headers (CSP, frame-ancestors, nosniff, ...) wrap everything, the
+# gate's form and 401s included. FastAPI's docs pages load a CDN script, so
+# they skip the CSP only.
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    csp_exempt_paths=[p for p in (app.docs_url, app.redoc_url, app.swagger_ui_oauth2_redirect_url) if p],
+)
 
 # ── Routers ───────────────────────────────────────────────────────────
 
