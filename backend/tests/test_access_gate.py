@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
 from app import access_gate
@@ -38,7 +39,7 @@ def make_client(codes: str = CODES) -> TestClient:
 
     @app.get("/{full_path:path}")
     async def spa(full_path: str):
-        return {"spa": full_path}
+        return JSONResponse({"spa": full_path}, headers={"Cache-Control": "public, max-age=3600", "Vary": "Accept"})
 
     app.add_middleware(AccessGateMiddleware, config=config, app_name="Test Guide")
     return TestClient(app, base_url="https://testserver")
@@ -128,3 +129,17 @@ def test_forged_or_revoked_cookie_rejected():
 def test_oversized_form_rejected():
     r = make_client().post("/access", content=b"code=" + b"x" * 5000, headers={"content-type": "application/x-www-form-urlencoded"})
     assert r.status_code == 413
+
+
+def test_gated_responses_are_not_publicly_cacheable():
+    c = make_client()
+    login(c, "alpha-1234")
+    r = c.get("/results")
+    assert r.headers["cache-control"] == "private, max-age=3600"
+    assert r.headers["vary"] == "Accept, Cookie"
+
+
+def test_non_ascii_cookie_is_rejected_not_500():
+    c = make_client()
+    r = c.get("/api/v1/ping", headers={"cookie": f"{COOKIE_NAME}=chris.\u00e9".encode("utf-8")})
+    assert r.status_code == 401

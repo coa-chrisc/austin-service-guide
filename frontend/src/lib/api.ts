@@ -79,7 +79,14 @@ async function apiRequest<T>(
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new ApiError(res.status, errorDetail(text, res.status));
+      const detail = errorDetail(text, res.status);
+      // Optional access-code gate (private demo deployments): the cookie
+      // expired or was revoked, so send the visitor back to the code form.
+      if (res.status === 401 && detail === "Access code required.") {
+        const here = window.location.pathname + window.location.search;
+        window.location.assign(`/access?next=${encodeURIComponent(here)}`);
+      }
+      throw new ApiError(res.status, detail);
     }
     if (res.status === 204) return undefined as unknown as T;
     return res.json() as Promise<T>;

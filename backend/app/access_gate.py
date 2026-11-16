@@ -29,7 +29,7 @@ from urllib.parse import parse_qs, quote
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 COOKIE_NAME = "csg_access"
 COOKIE_MAX_AGE = 14 * 24 * 3600
@@ -91,7 +91,8 @@ def cookie_is_valid(config: GateConfig, value: str | None) -> bool:
     label, _, _ = value.partition(".")
     if label not in config.codes:
         return False
-    return hmac.compare_digest(value, _sign(config, label))
+    # Bytes, not str: compare_digest raises TypeError on non-ASCII str input.
+    return hmac.compare_digest(value.encode("utf-8", "surrogateescape"), _sign(config, label).encode())
 
 
 def match_code(config: GateConfig, submitted: str) -> str | None:
@@ -142,6 +143,25 @@ button{{margin-top:1rem;width:100%;font-size:1rem;font-weight:600;padding:.65rem
     return HTMLResponse(body, status_code=401 if error else 200, headers={"Cache-Control": "no-store"})
 
 
+def _private_cache(send: Send) -> Send:
+    """Gated responses must never land in a shared cache: public -> private, Vary: Cookie."""
+
+    async def wrapped(message: Message) -> None:
+        if message["type"] == "http.response.start":
+            headers = [
+                (k, v.replace(b"public", b"private") if k.lower() == b"cache-control" else v)
+                for k, v in message.get("headers", [])
+                if k.lower() != b"vary" or b"cookie" not in v.lower()
+            ]
+            vary = [v for k, v in headers if k.lower() == b"vary"]
+            headers = [(k, v) for k, v in headers if k.lower() != b"vary"]
+            headers.append((b"vary", b", ".join([*vary, b"Cookie"])))
+            message = {**message, "headers": headers}
+        await send(message)
+
+    return wrapped
+
+
 class AccessGateMiddleware:
     """Pure ASGI middleware so it also guards the SPA catch-all and streamed bodies."""
 
@@ -163,7 +183,7 @@ class AccessGateMiddleware:
         if path == GATE_PATH:
             response = await self._gate(request)
         elif cookie_is_valid(self.config, request.cookies.get(COOKIE_NAME)):
-            await self.app(scope, receive, send)
+            await self.app(scope, receive, _private_cache(send))
             return
         elif path == "/api" or path.startswith("/api/"):
             response = JSONResponse({"detail": "Access code required."}, status_code=401)
