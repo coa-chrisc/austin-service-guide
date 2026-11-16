@@ -32,6 +32,9 @@ import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { scrubPII } from "@/lib/piiGuard";
 import type { IntakeMessage, CrisisResource } from "@/types";
 
+/** Readable chat column: full width on phones, centered on wide screens. */
+const COLUMN = { width: "100%", maxWidth: 880, mx: "auto" } as const;
+
 interface ChatInterfaceProps {
   /** Changes whenever a different intake is shown; resets the chat. */
   intakeKey: number;
@@ -354,7 +357,7 @@ export default function ChatInterface({
       }}
     >
       {/* Progress bar */}
-      <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+      <Box sx={{ px: 2, pt: 2, pb: 1, "& > *": COLUMN }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
           <Typography variant="caption" color="text.secondary" fontWeight={500}>
             Intake Progress
@@ -381,14 +384,11 @@ export default function ChatInterface({
 
       {/* Crisis alert banner */}
       {crisisDetected && crisisResources.length > 0 && (
-        <Box sx={{ px: 2, pt: 1 }}>
+        <Box sx={{ px: 2, pt: 1, "& > *": COLUMN }}>
           <Alert
             severity="error"
             icon={<WarningAmberIcon />}
-            sx={{
-              borderRadius: 2,
-              "& .MuiAlert-message": { width: "100%" },
-            }}
+            sx={{ "& .MuiAlert-message": { width: "100%" } }}
           >
             <Typography variant="subtitle2" fontWeight={700} gutterBottom>
               Immediate Help Available
@@ -402,7 +402,7 @@ export default function ChatInterface({
                   size="small"
                   startIcon={<PhoneIcon />}
                   href={`tel:${r.phone}`}
-                  sx={{ fontWeight: 600, borderRadius: "20px" }}
+                  sx={{ borderRadius: (theme) => theme.shape.radius.pill }}
                 >
                   {r.name}: {r.phone}
                 </Button>
@@ -425,6 +425,8 @@ export default function ChatInterface({
           py: 2,
           display: "flex",
           flexDirection: "column",
+          // Center the column; the scrollbar stays at the window edge.
+          "& > *": { ...COLUMN },
         }}
       >
         {voice.welcomeVisible && <VoiceWelcome />}
@@ -474,7 +476,9 @@ export default function ChatInterface({
               key={idx}
               message={msg}
               onButtonClick={handleButtonClick}
-              isLatest={idx === arr.length - 1}
+              // Once the intake is complete the "See my plan" button is the
+              // next step; the server takes no more messages.
+              isLatest={idx === arr.length - 1 && !isComplete}
               // During voice the latest assistant bubble is replacing the
               // live-streaming bubble in place; replaying the entry
               // animation makes that swap feel like a redraw. Suppress it
@@ -564,12 +568,13 @@ export default function ChatInterface({
         <Box
           sx={{
             px: 2,
-            pb: 1.5,
+            pb: 2,
             pt: 1,
+            ...COLUMN,
             display: "flex",
             flexDirection: "column",
-            alignItems: "stretch",
-            gap: 1,
+            alignItems: "center",
+            gap: 1.25,
             "@media (prefers-reduced-motion: no-preference)": {
               animation: "ctaSlideIn 0.4s ease-out",
               "@keyframes ctaSlideIn": {
@@ -585,7 +590,8 @@ export default function ChatInterface({
               alignItems: "center",
               justifyContent: "center",
               gap: 1,
-              color: "success.main",
+              // success.dark: the bright fill color is too light for text.
+              color: "success.dark",
             }}
           >
             <CheckCircleIcon sx={{ fontSize: 22 }} />
@@ -596,11 +602,11 @@ export default function ChatInterface({
           <Button
             variant="contained"
             size="large"
-            fullWidth
             onClick={() => onComplete?.()}
             endIcon={<ArrowForwardIcon />}
             sx={{
-              borderRadius: "28px",
+              width: { xs: "100%", sm: "auto" },
+              minWidth: { sm: 320 },
               py: 1.75,
               fontSize: "1.125rem",
               fontWeight: 700,
@@ -629,77 +635,81 @@ export default function ChatInterface({
           bgcolor: "background.paper",
         }}
       >
-        {voice.realtime.isActive ? (
-          <>
-            <Box sx={{ display: "flex", mb: 1 }}>
-              <RawAudioBadge />
-            </Box>
-            <RealtimeVoicePanel
-              voice={voice.realtime}
-              onRetry={voice.start}
-              retryDisabled={isLoading || isComplete}
+        <Box sx={COLUMN}>
+          {voice.realtime.isActive ? (
+            <>
+              <Box sx={{ display: "flex", mb: 1 }}>
+                <RawAudioBadge />
+              </Box>
+              <RealtimeVoicePanel
+                voice={voice.realtime}
+                onRetry={voice.start}
+                retryDisabled={isLoading || isComplete}
+                onClear={voice.clear}
+              />
+            </>
+          ) : voice.local.isActive ? (
+            <OnDeviceVoicePanel
+              voice={voice.local}
+              onEnd={voice.end}
               onClear={voice.clear}
             />
-          </>
-        ) : voice.local.isActive ? (
-          <OnDeviceVoicePanel
-            voice={voice.local}
-            onEnd={voice.end}
-            onClear={voice.clear}
-          />
-        ) : (
-          <>
-            <VoiceNotices voice={voice} />
-            <PrivacyNotice sx={{ mb: 1, borderRadius: 2 }} />
-            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-              <VoiceMicButton voice={voice} />
-              <TextField
-                inputRef={inputRef}
-                fullWidth
-                multiline
-                maxRows={4}
-                placeholder={
-                  isComplete ? "Intake complete" : "Type your message..."
-                }
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isLoading || isComplete}
-                variant="outlined"
-                size="small"
-                slotProps={{
-                  htmlInput: { maxLength: 4000, "aria-label": "Message" },
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: "24px",
-                    bgcolor: "brand.subtle",
-                  },
-                }}
-              />
-              <IconButton
-                color="primary"
-                onClick={() => handleSend(inputValue)}
-                disabled={!inputValue.trim() || isLoading || isComplete}
-                aria-label="Send message"
-                sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  width: 44,
-                  height: 44,
-                  "&:hover": { bgcolor: "primary.dark" },
-                  "&:disabled": { bgcolor: "action.disabledBackground", color: "action.disabled" },
-                }}
-              >
-                {isLoading ? (
-                  <CircularProgress size={20} sx={{ color: "primary.contrastText" }} />
-                ) : (
-                  <SendIcon sx={{ fontSize: 20 }} />
-                )}
-              </IconButton>
-            </Box>
-          </>
-        )}
+          ) : (
+            <>
+              <VoiceNotices voice={voice} />
+              <PrivacyNotice sx={{ mb: 1.5 }} />
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+                <VoiceMicButton voice={voice} />
+                <TextField
+                  inputRef={inputRef}
+                  fullWidth
+                  multiline
+                  maxRows={4}
+                  placeholder={
+                    isComplete ? "Intake complete" : "Type your message..."
+                  }
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isLoading || isComplete}
+                  variant="outlined"
+                  size="small"
+                  slotProps={{
+                    htmlInput: { maxLength: 4000, "aria-label": "Message" },
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "24px",
+                      bgcolor: "brand.subtle",
+                      // 44px tall, level with the mic and send buttons.
+                      py: "10.5px",
+                    },
+                  }}
+                />
+                <IconButton
+                  color="primary"
+                  onClick={() => handleSend(inputValue)}
+                  disabled={!inputValue.trim() || isLoading || isComplete}
+                  aria-label="Send message"
+                  sx={{
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    width: 44,
+                    height: 44,
+                    "&:hover": { bgcolor: "primary.dark" },
+                    "&:disabled": { bgcolor: "action.disabledBackground", color: "action.disabled" },
+                  }}
+                >
+                  {isLoading ? (
+                    <CircularProgress size={20} sx={{ color: "primary.contrastText" }} />
+                  ) : (
+                    <SendIcon sx={{ fontSize: 20 }} />
+                  )}
+                </IconButton>
+              </Box>
+            </>
+          )}
+        </Box>
       </Box>
       <VoiceConsentDialog
         open={voice.consentOpen}
