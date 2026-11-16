@@ -77,14 +77,18 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
               size="small"
               variant="outlined"
               color={service.cost_type === "free" ? "success" : "default"}
-              sx={{ fontWeight: 500 }}
+              sx={{
+                fontWeight: 500,
+                // Outlined success text is success.main, under 4.5:1; success.dark is the text-safe green.
+                color: service.cost_type === "free" ? "success.dark" : undefined,
+              }}
             />
           </Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
             {service.name}
           </Typography>
           {service.provider_name && service.provider_name !== service.name && (
-            <Typography variant="h6" color="text.secondary" fontWeight={400}>
+            <Typography variant="h6" component="p" color="text.secondary" fontWeight={400}>
               {service.provider_name}
             </Typography>
           )}
@@ -103,7 +107,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
             {/* Eligibility */}
             {service.eligibility_summary && (
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
+                <Typography variant="h6" component="h2" fontWeight={600} gutterBottom>
                   Eligibility
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.7 }}>
@@ -115,7 +119,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
             {/* Documents needed */}
             {service.documents.length > 0 && (
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
+                <Typography variant="h6" component="h2" fontWeight={600} gutterBottom>
                   Documents Needed
                 </Typography>
                 <List dense disablePadding>
@@ -147,7 +151,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
             {/* How to apply */}
             {service.how_to_apply && (
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom>
+                <Typography variant="h6" component="h2" fontWeight={600} gutterBottom>
                   How to Apply
                 </Typography>
                 <Typography variant="body1" sx={{ lineHeight: 1.7 }}>
@@ -164,7 +168,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
               sx={{ bgcolor: "brand.subtle", mb: 3 }}
             >
               <CardContent>
-                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                <Typography variant="subtitle1" component="h2" fontWeight={600} gutterBottom>
                   Contact Information
                 </Typography>
 
@@ -366,7 +370,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                   }}
                 >
                   <TranslateIcon color="action" fontSize="small" />
-                  <Typography variant="subtitle2" fontWeight={600}>
+                  <Typography variant="subtitle2" component="h2" fontWeight={600}>
                     Languages
                   </Typography>
                 </Box>
@@ -395,7 +399,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                   }}
                 >
                   <AccessibleIcon color="action" fontSize="small" />
-                  <Typography variant="subtitle2" fontWeight={600}>
+                  <Typography variant="subtitle2" component="h2" fontWeight={600}>
                     Accessibility
                   </Typography>
                 </Box>

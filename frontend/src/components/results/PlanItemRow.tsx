@@ -53,7 +53,7 @@ export default function PlanItemRow({
             {rank}
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={700} noWrap>
+            <Typography variant="subtitle2" component="p" fontWeight={700} noWrap>
               {item.service_name}
             </Typography>
             <Typography

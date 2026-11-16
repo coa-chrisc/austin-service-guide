@@ -214,6 +214,7 @@ export default function StartHereHero({
             >
               <Typography
                 variant="subtitle2"
+                component="h3"
                 fontWeight={700}
                 gutterBottom
                 sx={{ display: "flex", alignItems: "center", gap: 1 }}

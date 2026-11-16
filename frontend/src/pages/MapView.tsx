@@ -165,7 +165,7 @@ export default function MapView() {
             mb: 1,
           }}
         >
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="h6" component="h1" fontWeight={600}>
             Locations ({filteredPins.length})
           </Typography>
           {isMobile && (

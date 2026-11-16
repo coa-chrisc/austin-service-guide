@@ -560,7 +560,7 @@ export default function Results() {
                     sx={{ mt: 0.25, flexShrink: 0 }}
                   />
                   <Box>
-                    <Typography variant="subtitle2" fontWeight={700}>
+                    <Typography variant="subtitle2" component="h2" fontWeight={700}>
                       {criticalRiskFlag.label ?? criticalRiskFlag.risk_type}
                     </Typography>
                     <Typography
@@ -698,7 +698,7 @@ export default function Results() {
               }}
             >
               <CardContent sx={{ p: { xs: 3, md: 4 } }}>
-                <Typography variant="h4" fontWeight={700} gutterBottom>
+                <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
                   {t("we_found_prefix")} {matches.length}{" "}
                   {matches.length !== 1 ? t("services") : t("service")}{" "}
                   {t("we_found_suffix")}
@@ -738,6 +738,7 @@ export default function Results() {
                       </Typography>
                       <Typography
                         variant="h3"
+                        component="p"
                         fontWeight={800}
                         sx={{ lineHeight: 1.1, mt: 0.5 }}
                       >
@@ -898,6 +899,7 @@ export default function Results() {
               <Box sx={{ mb: 4 }}>
                 <Typography
                   variant="h5"
+                  component="h2"
                   fontWeight={600}
                   gutterBottom
                   sx={{ display: "flex", alignItems: "center", gap: 1 }}
@@ -934,6 +936,7 @@ export default function Results() {
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Typography
                                   variant="subtitle2"
+                                  component="h3"
                                   fontWeight={700}
                                 >
                                   {flag.label ?? flag.risk_type}
@@ -983,6 +986,7 @@ export default function Results() {
             <Box sx={{ mb: 3 }}>
               <Typography
                 variant="subtitle2"
+                component="p"
                 color="text.secondary"
                 sx={{ mb: 1 }}
               >
@@ -1108,7 +1112,7 @@ export default function Results() {
 
             {filteredMatches.length === 0 && (
               <Box sx={{ textAlign: "center", py: 6 }}>
-                <Typography variant="h6" color="text.secondary">
+                <Typography variant="h6" component="p" color="text.secondary">
                   {t("no_services_match")}
                 </Typography>
                 <Button
@@ -1210,7 +1214,7 @@ export default function Results() {
             flexDirection: "column",
           }}
         >
-          <Typography variant="h6" fontWeight={600} gutterBottom>
+          <Typography variant="h6" component="h2" fontWeight={600} gutterBottom>
             {t("ask_followup")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
