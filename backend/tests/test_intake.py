@@ -142,6 +142,34 @@ def test_share_sms_is_limited_to_us_numbers(client, monkeypatch):
     assert sent == ["+15125551234"] * 4
 
 
+def test_share_sms_extra_countries_are_opt_in(client, monkeypatch):
+    from app.config import Settings
+    from app.routers import intake
+
+    sent: list[str] = []
+
+    async def fake_send_sms(*, to, body):
+        sent.append(to)
+        return {"ok": True, "demo": True, "channel": "sms", "to": to}
+
+    monkeypatch.setattr(intake, "send_sms", fake_send_sms)
+    monkeypatch.setattr(
+        intake, "get_settings", lambda: Settings(_env_file=None, sms_allowed_country_codes="1, +44")
+    )
+    ids = _completed_session(client).state["matched_service_ids"]
+
+    def share(recipient):
+        return client.post("/api/v1/intake/share", json={
+            "channel": "sms", "recipient": recipient, "service_ids": ids,
+        })
+
+    assert share("+44 7911 123456").status_code == 200
+    assert share("(512) 555-1234").status_code == 200
+    for bad in ("+2348012345678", "447911123456", "+1012555123"):
+        assert share(bad).status_code == 422, bad
+    assert sent == ["+447911123456", "+15125551234"]
+
+
 def _enable_raw_audio_voice(monkeypatch, live_ai=True):
     """Opt this test into the Realtime (raw-audio) endpoints.
 

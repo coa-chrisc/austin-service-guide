@@ -107,7 +107,7 @@ Limit: in `realtime_audio` mode the browser holds an ephemeral secret for a Real
 
 Input checks at the API edge:
 
-- `POST /api/v1/intake/share` accepts only US phone numbers for SMS (normalized to `+1XXXXXXXXXX`), so the public share relay cannot be used to send texts to premium-rate international numbers. A deployment outside the US must change `_US_PHONE_RE` in `backend/app/routers/intake.py`.
+- `POST /api/v1/intake/share` texts only the country codes in `SMS_ALLOWED_COUNTRY_CODES` (default `1`, US/NANP, normalized to `+1XXXXXXXXXX`), so the public share relay cannot be used to send texts to premium-rate international numbers. To serve other countries, add their calling codes (e.g. `1,44`; numbers outside NANP must be entered in full `+` E.164 form) and enable the same countries in Twilio's SMS Geo Permissions. Each added country widens toll-fraud exposure, so pair it with rate limiting.
 - `Service.website_url` (`backend/app/models.py`) and the catalog schema accept only `http://` or `https://` URLs (or empty), so an admin write or a data-pack file cannot store a `javascript:` link that the service page would render.
 
 ## Known gaps before production
