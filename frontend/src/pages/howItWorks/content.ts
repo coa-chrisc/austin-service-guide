@@ -34,117 +34,8 @@ export interface HowItWorksSection {
   related?: string[];
 }
 
-/** Icon names used by the page; HowItWorks maps each to an @mui/icons-material icon. */
-export type IconKey =
-  | "explore"
-  | "architecture"
-  | "shield"
-  | "scale"
-  | "status"
-  | "crisis"
-  | "redact"
-  | "catalog"
-  | "rules"
-  | "noStore"
-  | "policy"
-  | "limits"
-  | "review"
-  | "roadmap";
-
-/** The one-minute summary cards at the top of the page. Each links to the section that owns the detail. */
-export interface OverviewItem {
-  icon: IconKey;
-  label: string;
-  /** One or two short sentences. */
-  text: string;
-  /** Section id to read more. */
-  section: string;
-}
-
-export const OVERVIEW: OverviewItem[] = [
-  {
-    icon: "explore",
-    label: "What it does",
-    section: "what-this-is",
-    text: "Residents chat, talk or pick a topic, and the guide suggests local services that may fit. It does not decide eligibility or take applications.",
-  },
-  {
-    icon: "architecture",
-    label: "Architecture",
-    section: "architecture",
-    text: "One web page and one server. The server holds the service catalog, runs fixed matching rules and makes every AI call.",
-  },
-  {
-    icon: "shield",
-    label: "Safety",
-    section: "safety",
-    text: "Crisis lines come first. Personal details are removed before text reaches the AI, and service details come only from the catalog.",
-  },
-  {
-    icon: "scale",
-    label: "Scale",
-    section: "scaling",
-    text: "The server stores no resident sessions, so copies can be added as traffic grows. Another agency can run its own copy for its place.",
-  },
-  {
-    icon: "status",
-    label: "Status",
-    section: "status",
-    text: "A working demonstration. Staff sign-in, shared rate-limit counters, catalog checks and vendor agreements are still pending.",
-  },
-  {
-    icon: "roadmap",
-    label: "Phase 2 roadmap",
-    section: "status",
-    text: "With the grant: a shared multi-city standard, a staff-checked catalog, partner and 211 data updates, and demand signals for health leaders. None of it is built yet.",
-  },
-];
-
-/** Headline numbers. Each is backed by the code or by a dated measurement named in KEY_NUMBERS_NOTE. */
-export interface KeyNumber {
-  value: string;
-  label: string;
-  /** One plain line on why the number matters to residents. Measured facts only, never a target. */
-  why: string;
-  /** Section id that explains the number. */
-  section: string;
-}
-
-export const KEY_NUMBERS: KeyNumber[] = [
-  {
-    value: "0",
-    label: "resident conversations stored on the server",
-    section: "stateless",
-    why: "By default, the server keeps nothing from a resident's chat or voice intake.",
-  },
-  {
-    value: "8",
-    label: "languages the crisis check reads",
-    section: "crisis",
-    why: "A crisis phrase in any of them brings up crisis lines before any AI step.",
-  },
-  {
-    value: "~161 KB",
-    label: "compressed JavaScript to open the site",
-    section: "scaling",
-    why: "Less to download and run on older phones and slow or prepaid data plans.",
-  },
-  {
-    value: "98–100",
-    label: "Lighthouse mobile performance score",
-    section: "scaling",
-    why: "Pages load fast in tests that simulate a phone on a slow 4G connection.",
-  },
-  {
-    value: "100",
-    label: "Lighthouse mobile accessibility score",
-    section: "scaling",
-    why: "Passes Lighthouse's automated checks for screen-reader labels, color contrast and zoom.",
-  },
-];
-
-export const KEY_NUMBERS_NOTE =
-  "Lighthouse 13.6 mobile scores: home, directory and intake pages of the production demo, measured 16 November 2026 with simulated slow 4G. The first-load size is checked on every build.";
+/** Icon names used by the safeguard cards; icons.ts maps each to an @mui/icons-material icon. */
+export type IconKey = "crisis" | "redact" | "catalog" | "rules" | "noStore" | "policy" | "limits" | "review";
 
 /** The safeguards, one card each, shown in the safeguards section (id "safety"). */
 export interface SafetyLayer {
@@ -634,7 +525,7 @@ export const SECTIONS: HowItWorksSection[] = [
     detailsLabel: "See how each status is defined and tracked",
     limitsLabel: "Known limits before real resident use",
     summary:
-      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come. The Phase 2 roadmap is the path the grant would fund: a multi-city standard, replication in more cities, a staff-checked catalog, and the agreements and reviews that real resident use needs. None of the roadmap is built yet.",
+      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come. The Phase 2 roadmap is the path the grant would fund: a multi-city standard, replication in more cities, a staff-checked catalog, and the agreements and reviews that real resident use needs.",
     points: [
       "\"In place\" means it is in the code and running. \"In progress\" means work has started and an open issue tracks it; it is not active in this deployment yet. \"Phase 2 roadmap\" lists planned next steps; nothing in the code provides them yet.",
       "The overall plan for abuse and cost protection is issue #25. The plan for the staff console is issue #14.",

@@ -40,7 +40,7 @@ export default function SafetyLayers({ onJump }: { onJump: JumpHandler }) {
               <Icon fontSize="small" aria-hidden="true" />
             </Box>
             <Box sx={{ minWidth: 0 }}>
-              <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+              <Typography component="h4" variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
                 {layer.title}
               </Typography>
               <Typography variant="body2">{layer.text}</Typography>

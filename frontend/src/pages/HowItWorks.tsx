@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -10,15 +10,17 @@ import Typography from "@mui/material/Typography";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { getAbout, type AboutInfo } from "@/lib/api";
 import { SECTIONS } from "./howItWorks/content";
+import Infographic, { TECHNICAL_ID } from "./howItWorks/Infographic";
+import { HERO, TECHNICAL_TITLE } from "./howItWorks/infographicCopy";
 import LiveFacts from "./howItWorks/LiveFacts";
-import { KeyNumbers, OverviewCards } from "./howItWorks/Overview";
 import Section, { READING_WIDTH, SCROLL_MARGIN } from "./howItWorks/Section";
 import SectionLink, { type JumpHandler } from "./howItWorks/SectionLink";
 
 /* ------------------------------------------------------------------ */
-/*  /how-it-works and /admin/how-it-works: a plain-language account of */
-/*  the system for reviewers. Copy lives in howItWorks/content.ts;     */
-/*  live settings come from GET /api/v1/about.                         */
+/*  /how-it-works and /admin/how-it-works. On top, an infographic for  */
+/*  reviewers (copy in howItWorks/infographicCopy.ts); below it, the   */
+/*  technical detail for IT and security reviewers (copy in            */
+/*  howItWorks/content.ts, live settings from GET /api/v1/about).      */
 /* ------------------------------------------------------------------ */
 
 const DOCUMENTS = [
@@ -53,7 +55,7 @@ function Contents({ onJump }: { onJump: JumpHandler }) {
         p: { xs: 2, lg: 0 },
       }}
     >
-      <Typography component="h2" id="contents" variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Typography component="h3" id="contents" variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
         On this page
       </Typography>
       <Box
@@ -78,6 +80,7 @@ function Contents({ onJump }: { onJump: JumpHandler }) {
 
 export default function HowItWorks() {
   const navigate = useNavigate();
+  const inConsole = useLocation().pathname.startsWith("/admin");
   const repoUrl = useBrandConfig().serviceGuide.links.sourceRepoUrl;
   const [state, setState] = useState<AboutState>({ status: "loading" });
 
@@ -111,7 +114,7 @@ export default function HowItWorks() {
   const about = state.status === "ok" ? state.about : null;
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <>
       <GlobalStyles
         styles={{
           "@media print": {
@@ -122,68 +125,102 @@ export default function HowItWorks() {
           },
         }}
       />
-      <Typography component="h1" variant="h4" sx={{ fontWeight: 700, mb: 1.5 }}>
-        How the guide finds services and protects residents
-      </Typography>
-      <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
-        For reviewers, city technology leaders and residents: what the guide does today, how it is built, what
-        happens to resident data, how it uses AI, and where it goes next. Each section opens with a short summary;
-        its details and known limits are one click below, and planned work is marked as planned.
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        This page is in English only.
-      </Typography>
-
-      <OverviewCards onJump={onJump} />
-      <KeyNumbers onJump={onJump} />
-
-      {state.status === "failed" && (
-        <Alert severity="warning" sx={{ mb: 3 }}>
-          This deployment's live settings could not be loaded, so the specific values (model, voice mode, catalog
-          counts) are missing. The explanations below still apply.
-        </Alert>
-      )}
-      {state.status === "loading" && (
-        <Typography variant="body2" color="text.secondary" role="status" sx={{ mb: 2 }}>
-          Loading this deployment's settings…
+      {/* Full-width band on the resident site; a rounded banner inside the staff console's padded content. */}
+      <Box
+        sx={{
+          bgcolor: "primary.dark",
+          color: "primary.contrastText",
+          textAlign: "center",
+          px: 2,
+          // Extra room below the text: the numbers card overlaps the bottom of this band.
+          pt: { xs: 4, md: 5 },
+          pb: { xs: 8, md: 10 },
+          borderRadius: inConsole ? (t) => t.shape.radius.panel : 0,
+        }}
+      >
+        <Typography
+          component="h1"
+          variant="h3"
+          sx={{ fontWeight: 800, lineHeight: 1.15, mx: "auto", maxWidth: "68rem", fontSize: { xs: "1.875rem", sm: "2.5rem", md: "2.75rem" } }}
+        >
+          {HERO.title}
         </Typography>
-      )}
-      {about && <LiveFacts sectionId="summary" about={about} />}
+        <Typography sx={{ mt: 1.5, mx: "auto", maxWidth: "50rem", fontSize: { xs: "1.0625rem", md: "1.25rem" } }}>
+          {HERO.subtitle}
+        </Typography>
+      </Box>
 
-      <Grid container spacing={{ xs: 3, lg: 5 }} sx={{ mt: 1 }}>
-        <Grid size={{ xs: 12, lg: 3 }}>
-          <Contents onJump={onJump} />
-        </Grid>
-        <Grid size={{ xs: 12, lg: 9 }}>
-          {SECTIONS.map((section) => (
-            <Section key={section.id} section={section} about={about} repoUrl={repoUrl} onJump={onJump} />
-          ))}
-          {repoUrl && (
-            <Box
-              component="section"
-              aria-labelledby="full-documents"
-              sx={{ pt: 4, mb: 4, borderTop: 1, borderColor: "divider" }}
-            >
-              <Typography component="h2" variant="h5" id="full-documents" sx={{ fontWeight: 700, mb: 1.5 }}>
-                Read the full documents
-              </Typography>
-              <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
-                This page is a plain-language summary of these files. Where they differ, the files and the code are
-                correct and this page is out of date.
-              </Typography>
-              <Box component="ul" sx={{ m: 0, pl: 3 }}>
-                {DOCUMENTS.map((doc) => (
-                  <Typography component="li" variant="body1" key={doc.path}>
-                    <Link href={`${repoUrl}/blob/main/${doc.path}`} target="_blank" rel="noopener noreferrer">
-                      {doc.label}
-                    </Link>
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
+      <Container maxWidth="lg" disableGutters={inConsole} sx={{ py: { xs: 4, md: 6 } }}>
+        <Infographic onJump={onJump} />
+
+        <Box component="section" aria-labelledby={TECHNICAL_ID} sx={{ pt: { xs: 4, md: 5 }, borderTop: 2, borderColor: "divider" }}>
+          <Typography
+            component="h2"
+            variant="h4"
+            id={TECHNICAL_ID}
+            tabIndex={-1}
+            sx={{ fontWeight: 700, mb: 1.5, scrollMarginTop: SCROLL_MARGIN, fontSize: { xs: "1.5rem", md: "1.875rem" } }}
+          >
+            {TECHNICAL_TITLE}
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
+            How the guide is built, what happens to resident data, how it uses AI, and what runs today. Each section
+            opens with a short summary; its details and known limits are one click below, and planned work is marked
+            as planned.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            This page is in English only.
+          </Typography>
+
+          {state.status === "failed" && (
+            <Alert severity="warning" sx={{ mb: 3 }}>
+              This deployment's live settings could not be loaded, so the specific values (model, voice mode, catalog
+              counts) are missing. The explanations below still apply.
+            </Alert>
           )}
-        </Grid>
-      </Grid>
-    </Container>
+          {state.status === "loading" && (
+            <Typography variant="body2" color="text.secondary" role="status" sx={{ mb: 2 }}>
+              Loading this deployment's settings…
+            </Typography>
+          )}
+          {about && <LiveFacts sectionId="summary" about={about} headingLevel="h3" />}
+
+          <Grid container spacing={{ xs: 3, lg: 5 }} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, lg: 3 }}>
+              <Contents onJump={onJump} />
+            </Grid>
+            <Grid size={{ xs: 12, lg: 9 }}>
+              {SECTIONS.map((section) => (
+                <Section key={section.id} section={section} about={about} repoUrl={repoUrl} onJump={onJump} />
+              ))}
+              {repoUrl && (
+                <Box
+                  component="section"
+                  aria-labelledby="full-documents"
+                  sx={{ pt: 4, mb: 4, borderTop: 1, borderColor: "divider" }}
+                >
+                  <Typography component="h3" variant="h5" id="full-documents" sx={{ fontWeight: 700, mb: 1.5 }}>
+                    Read the full documents
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
+                    This page is a plain-language summary of these files. Where they differ, the files and the code
+                    are correct and this page is out of date.
+                  </Typography>
+                  <Box component="ul" sx={{ m: 0, pl: 3 }}>
+                    {DOCUMENTS.map((doc) => (
+                      <Typography component="li" variant="body1" key={doc.path}>
+                        <Link href={`${repoUrl}/blob/main/${doc.path}`} target="_blank" rel="noopener noreferrer">
+                          {doc.label}
+                        </Link>
+                      </Typography>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Grid>
+          </Grid>
+        </Box>
+      </Container>
+    </>
   );
 }
