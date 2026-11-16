@@ -181,7 +181,7 @@ Everything specific to this app sits in one optional block. Every key is optiona
 | `contact.phone311` | The "Call …" footer link | `311` |
 | `contact.agencyWebsite` | Footer agency link | Empty (the link is hidden) |
 | `contact.accessibilityUrl` | Footer "Accessibility" link | Empty (the link is hidden) |
-| `links.sourceRepoUrl` | The How it works page: "Read the full documents" links (`SECURITY.md`, `docs/PRIVACY.md`, `ARCHITECTURE.md` on `main`), source-file links and issue links. Must start with `https://` | Empty (those links are hidden; file paths and issue numbers show as plain text) |
+| `links.sourceRepoUrl` | The How it works page: "Primary engineering and security docs" links (`SECURITY.md`, `docs/PRIVACY.md`, `ARCHITECTURE.md` on `main`), source-file links and issue links. Must start with `https://` | Empty (those links are hidden; file paths and issue numbers show as plain text) |
 | `darkColors` | Dark mode palette | Derived (see [Dark mode](#4-dark-mode)) |
 | `categoryColors` | See below | Series colors |
 | `extraFontPackages` | Extra scripts | None |
