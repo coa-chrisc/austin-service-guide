@@ -51,7 +51,10 @@ app = FastAPI(
 # also leaves text/event-stream, 206 range replies and already-encoded
 # responses alone. Level 6 (not the default 9) keeps per-request CPU low: the
 # hashed assets are compressed again for every client that misses its cache.
-app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
+# Skipped on Vercel: its edge already serves Brotli, and it does not re-encode a
+# response that arrives with Content-Encoding, so gzip here would make it larger.
+if not os.environ.get("VERCEL"):
+    app.add_middleware(GZipMiddleware, minimum_size=1000, compresslevel=6)
 
 # Reject oversized intake bodies before they are parsed (413). Added before
 # CORS so CORS stays the outermost layer and the 413 carries CORS headers.
