@@ -192,4 +192,29 @@ describe("How it works content", () => {
     const ids = new Set(SECTIONS.map((s) => s.id));
     for (const id of Object.keys(DIAGRAMS_BY_SECTION)) expect(ids.has(id), id).toBe(true);
   });
+
+  // a11yGuard.test.ts makes every heading-sized Typography name its element, so
+  // the explicit h1-h6 tags in these files are the page's whole outline.
+  it("has one h1 and heading levels that do not skip", () => {
+    const files = [
+      path.join(FRONTEND_SRC, "pages/HowItWorks.tsx"),
+      ...fs
+        .readdirSync(HERE)
+        .filter((name) => name.endsWith(".tsx"))
+        .map((name) => path.join(HERE, name)),
+    ];
+    const levels: number[] = [];
+    const h1Files: string[] = [];
+    for (const file of files) {
+      const source = fs.readFileSync(file, "utf8");
+      for (const m of source.matchAll(/component="h([1-6])"|<h([1-6])[\s>]/g)) {
+        const level = Number(m[1] ?? m[2]);
+        levels.push(level);
+        if (level === 1) h1Files.push(path.basename(file));
+      }
+    }
+    expect(h1Files).toEqual(["HowItWorks.tsx"]);
+    const used = [...new Set(levels)].sort();
+    expect(used).toEqual(used.map((_, i) => i + 1));
+  });
 });

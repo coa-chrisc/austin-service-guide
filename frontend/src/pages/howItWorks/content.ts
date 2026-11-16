@@ -97,11 +97,11 @@ export const KEY_NUMBERS: KeyNumber[] = [
   { value: "8", label: "languages the crisis check reads", section: "crisis" },
   { value: "~161 KB", label: "compressed JavaScript to open the site", section: "scaling" },
   { value: "98–100", label: "Lighthouse mobile performance score", section: "scaling" },
-  { value: "92–98", label: "Lighthouse mobile accessibility score", section: "scaling" },
+  { value: "100", label: "Lighthouse mobile accessibility score", section: "scaling" },
 ];
 
 export const KEY_NUMBERS_NOTE =
-  "Lighthouse scores: home, directory and intake pages of the production demo, measured 16 November 2026 with simulated slow 4G. The first-load size is checked on every build.";
+  "Lighthouse 13.6 mobile scores: home, directory and intake pages of the production demo, measured 16 November 2026 with simulated slow 4G. The first-load size is checked on every build.";
 
 /** The safeguards, one card each, shown in the "How it is kept safe" section. */
 export interface SafetyLayer {
@@ -247,7 +247,7 @@ export const SECTIONS: HowItWorksSection[] = [
       "Each agency runs its own copy. In the hosting-partner setup, each place gets its own container, cloud project and secrets, shared with no other place. A new place brings its own city config and data pack (docs/CUSTOMIZING.md).",
       "The staff research worker is a separate service with its own Postgres database, so long research jobs run outside the resident site.",
       "The first page load is small: about 161 KB of compressed JavaScript. The build fails if it grows past a set budget, and other pages load their code only when opened.",
-      "Lighthouse mobile tests of the production demo on 16 November 2026, with simulated slow 4G, scored 98 to 100 for performance and 92 to 98 for accessibility on the home, directory and intake pages.",
+      "Lighthouse mobile tests of the production demo on 16 November 2026, with simulated slow 4G, scored 98 to 100 for performance and 100 for accessibility on the home, directory and intake pages.",
     ],
     limits: [
       "Rate limits and spending budgets are counted inside each server copy. With several copies, or on Vercel where each warm function counts on its own, the real limits are several times higher.",

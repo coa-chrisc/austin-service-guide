@@ -53,7 +53,7 @@ function Contents({ onJump }: { onJump: JumpHandler }) {
         p: { xs: 2, lg: 0 },
       }}
     >
-      <Typography id="contents" variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+      <Typography component="h2" id="contents" variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
         On this page
       </Typography>
       <Box
