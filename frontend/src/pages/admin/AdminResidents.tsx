@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
@@ -8,63 +8,55 @@ import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 import Skeleton from "@mui/material/Skeleton";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import SchoolIcon from "@mui/icons-material/School";
-import { useSearchParams } from "react-router-dom";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import { getAdminResidents } from "../../lib/api";
 import type { DemoResident } from "../../types";
+import { downloadCsv, toCsv } from "./reports/format";
 
-const COLUMNS: GridColDef[] = [
-  { field: "name", headerName: "Name", flex: 1, minWidth: 150 },
-  { field: "email", headerName: "Email", flex: 1.2, minWidth: 180 },
-  { field: "zip_code", headerName: "Zip", width: 90 },
-  { field: "household_size", headerName: "HH Size", width: 90, type: "number" },
+const COLUMNS: GridColDef<DemoResident>[] = [
+  { field: "name", headerName: "Sample case", flex: 1, minWidth: 180 },
+  { field: "zip_code", headerName: "ZIP", width: 90 },
+  { field: "household_size", headerName: "Household size", width: 130, type: "number" },
   {
     field: "language",
     headerName: "Language",
     width: 110,
-    renderCell: (params) => (
-      <Chip label={params.value} size="small" variant="outlined" />
-    ),
+    renderCell: (params) => <Chip label={params.value} size="small" variant="outlined" />,
   },
   {
     field: "matched_services_count",
-    headerName: "Services Matched",
-    width: 140,
+    headerName: "Services matched",
+    width: 150,
     type: "number",
   },
-  {
-    field: "last_active",
-    headerName: "Last Active",
-    width: 140,
-    valueFormatter: (value: string) => {
-      if (!value) return "";
-      return new Date(value).toLocaleDateString();
-    },
-  },
 ];
+
+const MH_KEYWORDS = ["anxiety", "depression", "behavioral", "self-harm", "trauma", "mental health"];
+
+function hasK12MentalHealth(r: DemoResident): boolean {
+  const kids = r.profile?.school_age_children ?? [];
+  return kids.some((c) =>
+    (c.concerns ?? []).some((concern) => MH_KEYWORDS.includes(concern.toLowerCase())),
+  );
+}
 
 export default function AdminResidents() {
   const navigate = useNavigate();
   const [residents, setResidents] = useState<DemoResident[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [snackbar, setSnackbar] = useState(false);
-
-  /* -- active filter chips ------------------------------------------ */
   const [zipFilter, setZipFilter] = useState("");
   const [langFilter, setLangFilter] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const k12mhActive = searchParams.get("filter") === "k12_mh";
+
   const toggleK12mh = () => {
     const next = new URLSearchParams(searchParams);
     if (k12mhActive) next.delete("filter");
@@ -72,77 +64,78 @@ export default function AdminResidents() {
     setSearchParams(next, { replace: true });
   };
 
-  const _MH_KEYWORDS = [
-    "anxiety",
-    "depression",
-    "behavioral",
-    "self-harm",
-    "trauma",
-    "mental health",
-  ];
-  const hasK12MentalHealth = (r: DemoResident): boolean => {
-    const kids = r.profile?.school_age_children ?? [];
-    return kids.some((c) =>
-      (c.concerns ?? []).some((concern) =>
-        _MH_KEYWORDS.includes(concern.toLowerCase()),
-      ),
-    );
-  };
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (search) params.search = search;
-      params.page = String(page + 1);
-      params.page_size = String(pageSize);
-      const res = await getAdminResidents(params);
-      setResidents(res.items);
-      setTotal(res.total);
-    } catch (err) {
-      console.error("Failed to load residents", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, page, pageSize]);
-
+  // The sample set is small: load it once and filter in the browser.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getAdminResidents({ page: 1, page_size: 100 });
+        if (!cancelled) setResidents(res.items);
+      } catch (err) {
+        console.error("Failed to load sample cases", err);
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  /* -- local filtering for zip / lang ------------------------------ */
+  const q = search.trim().toLowerCase();
   const filtered = residents.filter((r) => {
+    if (q && !r.name.toLowerCase().includes(q) && !r.zip_code.includes(q)) return false;
     if (zipFilter && r.zip_code !== zipFilter) return false;
     if (langFilter && r.language !== langFilter) return false;
     if (k12mhActive && !hasK12MentalHealth(r)) return false;
     return true;
   });
 
-  /* -- unique values for filter chips ------------------------------ */
   const uniqueZips = [...new Set(residents.map((r) => r.zip_code))].sort();
   const uniqueLangs = [...new Set(residents.map((r) => r.language))].sort();
 
+  const exportCsv = () => {
+    const csv = toCsv({
+      headers: ["sample_case", "zip", "household_size", "language", "services_matched"],
+      rows: filtered.map((r) => [
+        r.name,
+        r.zip_code,
+        r.household_size,
+        r.language,
+        r.matched_services_count,
+      ]),
+    });
+    downloadCsv("sample-cases.csv", csv);
+  };
+
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h5" fontWeight={700}>
-          Residents
-        </Typography>
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 3 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h5" fontWeight={700}>
+            Sample cases
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Illustrative synthetic personas for the demo. The live intake
+            creates no resident records.
+          </Typography>
+        </Box>
         <Button
           variant="outlined"
           startIcon={<FileDownloadIcon />}
-          onClick={() => setSnackbar(true)}
+          onClick={exportCsv}
+          disabled={loading || filtered.length === 0}
         >
           Export CSV
         </Button>
       </Box>
+
+      {loadError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Sample cases could not be loaded. Refresh the page to try again.
+        </Alert>
+      )}
 
       {/* -- search + filters ---------------------------------------- */}
       <Card sx={{ mb: 3 }}>
@@ -150,13 +143,11 @@ export default function AdminResidents() {
           <TextField
             fullWidth
             size="small"
-            placeholder="Search by name, email, or zip code..."
+            placeholder="Search by name or ZIP code"
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
+            onChange={(e) => setSearch(e.target.value)}
             slotProps={{
+              htmlInput: { "aria-label": "Search sample cases" },
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
@@ -169,11 +160,7 @@ export default function AdminResidents() {
           />
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mr: 1, mt: 0.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1, mt: 0.5 }}>
               Saved:
             </Typography>
             <Chip
@@ -187,12 +174,8 @@ export default function AdminResidents() {
           </Box>
 
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mr: 1, mt: 0.5 }}
-            >
-              Zip:
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1, mt: 0.5 }}>
+              ZIP:
             </Typography>
             {uniqueZips.map((z) => (
               <Chip
@@ -204,11 +187,7 @@ export default function AdminResidents() {
                 onClick={() => setZipFilter(zipFilter === z ? "" : z)}
               />
             ))}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ ml: 2, mr: 1, mt: 0.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 2, mr: 1, mt: 0.5 }}>
               Language:
             </Typography>
             {uniqueLangs.map((l) => (
@@ -228,7 +207,7 @@ export default function AdminResidents() {
       {/* -- data grid ----------------------------------------------- */}
       <Card>
         <CardContent sx={{ p: 0 }}>
-          {loading && residents.length === 0 ? (
+          {loading ? (
             <Box sx={{ p: 3 }}>
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} height={48} sx={{ mb: 1 }} />
@@ -238,15 +217,8 @@ export default function AdminResidents() {
             <DataGrid
               rows={filtered}
               columns={COLUMNS}
-              rowCount={total}
-              paginationMode="server"
-              paginationModel={{ page, pageSize }}
-              onPaginationModelChange={(m) => {
-                setPage(m.page);
-                setPageSize(m.pageSize);
-              }}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
               pageSizeOptions={[10, 25, 50]}
-              loading={loading}
               disableRowSelectionOnClick
               onRowClick={(params) => navigate(`/admin/residents/${params.id}`)}
               sx={{
@@ -259,20 +231,6 @@ export default function AdminResidents() {
           )}
         </CardContent>
       </Card>
-
-      <Snackbar
-        open={snackbar}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(false)}
-      >
-        <Alert
-          onClose={() => setSnackbar(false)}
-          severity="info"
-          variant="filled"
-        >
-          Export started — you will receive a download link shortly.
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

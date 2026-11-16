@@ -393,7 +393,7 @@ equity:
     portal_percentage: 21.3
     census_percentage: 11.5
     gap: 9.8
-  - label: Rest of Travis County
+  - label: Outside these districts
     portal_percentage: 11.5
     census_percentage: 60.0
     gap: -48.5
