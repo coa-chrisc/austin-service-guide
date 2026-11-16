@@ -138,9 +138,6 @@ export default function HowItWorks() {
           borderRadius: inConsole ? (t) => t.shape.radius.panel : 0,
         }}
       >
-        <Typography sx={{ fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontSize: "0.8125rem", mb: 1 }}>
-          {HERO.eyebrow}
-        </Typography>
         <Typography
           component="h1"
           variant="h3"
@@ -148,7 +145,7 @@ export default function HowItWorks() {
         >
           {HERO.title}
         </Typography>
-        <Typography sx={{ mt: 1.5, mx: "auto", maxWidth: "44rem", fontSize: { xs: "1.0625rem", md: "1.25rem" } }}>
+        <Typography sx={{ mt: 1.5, mx: "auto", maxWidth: "50rem", fontSize: { xs: "1.0625rem", md: "1.25rem" } }}>
           {HERO.subtitle}
         </Typography>
       </Box>

@@ -525,7 +525,7 @@ export const SECTIONS: HowItWorksSection[] = [
     detailsLabel: "See how each status is defined and tracked",
     limitsLabel: "Known limits before real resident use",
     summary:
-      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come. The Phase 2 roadmap is the path the grant would fund: a multi-city standard, replication in more cities, a staff-checked catalog, and the agreements and reviews that real resident use needs. None of the roadmap is built yet.",
+      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come. The Phase 2 roadmap is the path the grant would fund: a multi-city standard, replication in more cities, a staff-checked catalog, and the agreements and reviews that real resident use needs.",
     points: [
       "\"In place\" means it is in the code and running. \"In progress\" means work has started and an open issue tracks it; it is not active in this deployment yet. \"Phase 2 roadmap\" lists planned next steps; nothing in the code provides them yet.",
       "The overall plan for abuse and cost protection is issue #25. The plan for the staff console is issue #14.",

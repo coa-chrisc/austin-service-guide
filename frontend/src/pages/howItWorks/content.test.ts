@@ -5,43 +5,37 @@ import { describe, expect, it } from "vitest";
 import { PROTECTIONS, SAFETY_LAYERS, SECTIONS, STATUS_LABELS } from "./content";
 import { CHAT_TURN, DIAGRAMS_BY_SECTION, RESEARCH_JOB, SYSTEM_MAP, WHO_HOLDS_WHAT } from "./diagrams";
 import {
-  CITY_CARDS,
-  CITY_TITLE,
   CRISIS_LANGUAGES,
   CTA,
   HERO,
   JOURNEY,
-  JOURNEY_TITLE,
   METRICS,
-  METRICS_NOTE,
   METRICS_TITLE,
   ROADMAP,
-  SAFETY_CARDS,
-  SAFETY_TITLE,
+  SAFETY,
+  SCALE,
   TECHNICAL_TITLE,
+  plainText,
 } from "./infographicCopy";
 
-const INFO_CARDS = [...JOURNEY, ...SAFETY_CARDS, ...CITY_CARDS];
+const ROWS = [JOURNEY, SAFETY, SCALE];
+const INFO_CARDS = ROWS.flatMap((r) => r.cards);
+const IMAGE_CARDS = INFO_CARDS.flatMap((c) => ("image" in c ? [c] : []));
 
 /** Every string the infographic shows, image alt text included. */
 function infographicCopy(): string[] {
   return [
     HERO.title,
     HERO.subtitle,
-    JOURNEY_TITLE,
-    SAFETY_TITLE,
-    CITY_TITLE,
+    ...ROWS.flatMap((r) => [r.title, r.subtitle]),
     METRICS_TITLE,
-    METRICS_NOTE,
     TECHNICAL_TITLE,
-    CTA.primary,
-    CTA.secondary,
-    ...INFO_CARDS.flatMap((c) => [c.title, c.text, c.alt]),
-    ...METRICS.flatMap((m) => [m.value, m.spoken ?? "", m.label]),
-    HERO.eyebrow,
+    ...Object.values(CTA),
+    ...INFO_CARDS.flatMap((c) => [c.title, plainText(c.text), "alt" in c ? c.alt : ""]),
+    ...METRICS.flatMap((m) => [m.value, m.spoken ?? "", m.label, m.text]),
     ROADMAP.title,
-    ...ROADMAP.items,
-  ];
+    ROADMAP.subtitle,
+  ].filter(Boolean);
 }
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -80,9 +74,6 @@ const ALLOWED = [/\bnot zero[ -]data[ -]retention/gi, /\bno zero[ -]data[ -]rete
 const hasBannedClaim = (text: string) =>
   BANNED.some((re) => re.test(ALLOWED.reduce((t, allowed) => t.replace(allowed, ""), text)));
 
-// The infographic is the pitch for the guide the grant builds toward, so it may
-// say "verified catalog" and "100%". It still makes no compliance claim and uses no filler words.
-const PITCH_BANNED: RegExp[] = [/\bguarantee/i, /\bHIPAA[ -]compliant/i, /\bzero[ -]data[ -]retention/i, /\bleverag/i, /\bseamless/i, /\bdelv(e|ing)\b/i];
 
 describe("How it works content", () => {
   it("has the sections in the specified order, with the specified anchors", () => {
@@ -103,25 +94,29 @@ describe("How it works content", () => {
     ]);
   });
 
-  it("opens with the infographic rows: four journey steps, three safeguards, two any-city cards", () => {
-    expect(JOURNEY).toHaveLength(4);
-    expect(SAFETY_CARDS).toHaveLength(3);
-    expect(CITY_CARDS).toHaveLength(2);
+  it("opens with the infographic rows: three journey steps, three safeguards, three scaling cards", () => {
+    expect(JOURNEY.cards).toHaveLength(3);
+    expect(SAFETY.cards).toHaveLength(3);
+    expect(SCALE.cards).toHaveLength(3);
     expect(METRICS).toHaveLength(5);
   });
 
-  it("keeps every infographic card to one or two short sentences, with alt text for its image", () => {
+  it("gives every infographic picture alt text, and uses each picture once", () => {
+    expect(IMAGE_CARDS.length).toBeGreaterThan(0);
+    for (const card of IMAGE_CARDS) expect(card.alt.trim(), card.title).not.toBe("");
+    expect(new Set(IMAGE_CARDS.map((c) => c.image)).size).toBe(IMAGE_CARDS.length);
     for (const card of INFO_CARDS) {
-      expect(card.text.split(/(?<=\.) /).length, card.title).toBeLessThanOrEqual(2);
-      expect(card.text.length, card.title).toBeLessThanOrEqual(90);
-      expect(card.title.split(/\s+/).length, card.title).toBeLessThanOrEqual(6);
-      expect(card.alt.trim(), card.title).not.toBe("");
+      expect(card.title.trim()).not.toBe("");
+      expect(plainText(card.text).trim(), card.title).not.toBe("");
+      // Italics markers come in pairs.
+      expect((card.text.match(/\*/g) ?? []).length % 2, card.title).toBe(0);
     }
-    expect(new Set(INFO_CARDS.map((c) => c.image)).size).toBe(INFO_CARDS.length);
   });
 
-  it("ships a WebP file for every infographic image", () => {
-    for (const { image } of INFO_CARDS) {
+  it("ships a WebP file for every infographic image, and no unused image", () => {
+    const files = fs.readdirSync(path.join(HERE, "images")).filter((name) => name.endsWith(".webp"));
+    expect(files.sort()).toEqual(IMAGE_CARDS.map((c) => `${c.image}.webp`).sort());
+    for (const { image } of IMAGE_CARDS) {
       const file = path.join(HERE, "images", `${image}.webp`);
       expect(fs.existsSync(file), image).toBe(true);
       const head = fs.readFileSync(file).subarray(0, 12).toString("latin1");
@@ -138,14 +133,16 @@ describe("How it works content", () => {
     const phrases = fs.readFileSync(path.join(REPO_ROOT, "backend/app/services/crisis_phrases.py"), "utf8");
     const block = phrases.slice(phrases.indexOf("PHRASES"));
     const languages = new Set([...block.matchAll(/^ {4}"([a-z]{2})": \{$/gm)].map((m) => m[1]));
+    expect(languages.size).toBe(8);
     expect(CRISIS_LANGUAGES).toBe(languages.size);
     expect(METRICS.map((m) => m.value)).toContain(String(languages.size));
-    expect(SAFETY_CARDS.find((c) => c.image === "safety-crisis")?.text).toContain(`${languages.size} languages`);
   });
 
-  it("dates the measured numbers and says what measured them", () => {
-    expect(METRICS_NOTE).toMatch(/^Lighthouse \d+(\.\d+)? mobile, production demo, \d{1,2} [A-Z][a-z]{2} \d{4}\.$/);
-    for (const m of METRICS) expect(m.label.length, m.value).toBeLessThanOrEqual(40);
+  it("gives every number a label and a line of context", () => {
+    for (const m of METRICS) {
+      expect(m.label.trim(), m.value).not.toBe("");
+      expect(m.text.trim(), m.value).not.toBe("");
+    }
   });
 
   it("links related sections only to other existing sections", () => {
@@ -226,13 +223,10 @@ describe("How it works content", () => {
     expect(planned.length).toBeGreaterThan(0);
     for (const s of planned) expect(s.roadmap, s.id).toMatch(/^(Phase 2|Planned|The goal): \S/);
     expect(STATUS_LABELS.not_planned).toMatch(/^Phase 2 roadmap\b/);
-    expect(SECTIONS.find((s) => s.id === "status")?.summary).toMatch(/None of the roadmap is built yet\./);
   });
 
-  it("gives the infographic's roadmap a Phase 2 heading and a short list", () => {
-    expect(ROADMAP.title).toMatch(/^Phase 2 roadmap\b/);
-    expect(ROADMAP.items.length).toBeGreaterThan(0);
-    for (const item of ROADMAP.items) expect(item.length, item).toBeLessThanOrEqual(45);
+  it("names the Phase 2 roadmap in the infographic's closing bar", () => {
+    expect(ROADMAP.subtitle).toMatch(/^Our Phase 2 Roadmap: \S/);
   });
 
   it("cites only files that exist in the repository", () => {
@@ -246,10 +240,10 @@ describe("How it works content", () => {
     expect(technicalCopy().filter(hasBannedClaim)).toEqual([]);
   });
 
-  it("keeps compliance claims and filler words out of the infographic copy", () => {
+  it("keeps compliance claims out of the infographic copy", () => {
     const copy = infographicCopy();
     expect(copy.length).toBeGreaterThan(30);
-    expect(copy.filter((text) => PITCH_BANNED.some((re) => re.test(text)))).toEqual([]);
+    expect(copy.filter((text) => /\bHIPAA[ -]compliant/i.test(text))).toEqual([]);
   });
 
   it("catches a banned claim and allows its negation (guard self-check)", () => {

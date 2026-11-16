@@ -15,7 +15,7 @@ const ORDER: ProtectionStatus[] = ["in_place", "in_progress", "not_planned"];
 const STYLE: Record<ProtectionStatus, { color: "success" | "warning" | "default"; Icon: SvgIconComponent; note?: string }> = {
   in_place: { color: "success", Icon: CheckCircleOutline },
   in_progress: { color: "warning", Icon: ScheduleOutlined, note: "Not yet active in this deployment" },
-  not_planned: { color: "default", Icon: RouteOutlined, note: "Planned next steps. None of them is built yet." },
+  not_planned: { color: "default", Icon: RouteOutlined, note: "Planned next steps." },
 };
 
 /** The status list (in place, in progress, Phase 2 roadmap), one card per status. Each item's status lives in content.ts. */
