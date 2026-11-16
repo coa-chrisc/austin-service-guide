@@ -79,7 +79,7 @@ def good_pack() -> dict:
             "seed_profile": {"immediate_needs": ["food"], "household_size": 2, "crisis_indicators": ["homelessness"]},
             "script": [{"role": "user", "content": "Hi", "delay_ms": 0}],
         }},
-        "admin_demo.yaml": {"analytics": {"total_sessions": 1}, "eligibility_rules": []},
+        "admin_demo.yaml": {"analytics": {"total_sessions": 1}},
         "services/pantry.yaml": svc("pantry", ["food"]),
         "services/shelter.yaml": svc("shelter", ["housing"]),
     }
@@ -172,11 +172,6 @@ S = "services/pantry.yaml"
 LOC = ["locations", 0]
 
 
-def _many_services(p: dict) -> None:
-    for i in range(200):
-        p[f"services/extra-{i}.yaml"] = svc(f"extra-{i}", ["food"])
-
-
 def _second_primary(p: dict) -> None:
     extra = copy.deepcopy(p[S]["locations"][0])
     extra["id"] = "loc-pantry-2"
@@ -228,7 +223,6 @@ CASES = [
     ("bbox order", lambda p: _set(p, "pack.yaml", ["bbox"], [-99, 39, -101, 41]), "error", "bbox_order", "pack.yaml"),
     ("zip not covered", lambda p: _set(p, S, [*LOC, "zip_code"], "00009"), "warning", "zip_not_covered", "zip_centroids.yaml"),
     ("too many categories", lambda p: (p["categories.yaml"].extend({"id": f"cat-{c}", "name": c, "slug": c} for c in ("legal", "senior", "veterans", "utilities")), _set(p, S, ["categories"], ["food", "housing", "legal", "senior", "veterans", "utilities"])), "warning", "too_many_categories", S),
-    ("over the match cap", _many_services, "error", "match_cap", "services/"),
     ("verified in future", lambda p: _set(p, S, ["last_verified_date"], (date.today() + timedelta(days=3)).isoformat()), "error", "date_in_future", S),
     ("html in description", lambda p: _set(p, S, ["description"], "Call <a href='x'>here</a>"), "warning", "markup_in_text", S),
     ("markdown link", lambda p: _set(p, S, ["how_to_apply"], "Apply [online](https://evil.example)"), "warning", "markup_in_text", S),

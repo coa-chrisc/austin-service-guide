@@ -277,3 +277,90 @@ def test_crisis_plan_round_trips_through_the_plan_endpoint(client):
     results = client.post("/api/v1/intake/results", json={"state": new_state}).json()
     assert results["application_order"][0]["service_slug"] == "safe-alliance"
     assert results["profile"]["crisis_indicators"] == ["domestic_violence"]
+
+
+# ── Rate limits, budgets and breakers never hold back a crisis ───────
+
+def _limit(monkeypatch, policy: str, rule: str, value: int) -> None:
+    from app.defense import limits
+
+    monkeypatch.setenv(f"RL_{policy}_{rule}".upper(), str(value))
+    limits.reset_policies()
+
+
+@pytest.fixture
+def defense_store():
+    from app.defense import limits
+    from tests.defense_support import use_store
+
+    use_store()
+    yield
+    limits.reset_policies()
+
+
+@pytest.mark.parametrize("text", ["I want to kill myself", "Quiero suicidarme", "我想死"])
+def test_rate_limited_message_still_gets_the_crisis_reply(client, monkeypatch, defense_store, text):
+    _limit(monkeypatch, "intake_message", "principal", 1)
+    intake = Intake(client)
+    intake.say("I need food")
+    assert intake.say_raw("2").status_code == 429
+    res = intake.say_raw(text)
+    assert res.status_code == 200, res.text
+    reply = res.json()["response"]
+    assert reply["crisis_detected"] is True and "988" in reply["content"]
+    # The counselor button on the crisis message gets through too.
+    res = intake.say_raw("Connect with crisis counselor")
+    assert res.status_code == 200 and "988" in res.json()["response"]["content"]
+
+
+def test_rate_limited_voice_crisis_still_gets_the_constrained_reply(client, monkeypatch, defense_store):
+    from tests.test_intake import _enable_raw_audio_voice
+
+    intake = Intake(client)
+    _enable_raw_audio_voice(monkeypatch)
+    _limit(monkeypatch, "voice_tool", "principal", 1)
+    assert intake.post("realtime/transcript", role="user", content="I need food").status_code == 200
+    assert intake.post("realtime/transcript", role="user", content="2 people").status_code == 429
+
+    res = intake.post("realtime/transcript", role="user", content="ya no quiero vivir")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["crisis_detected"] is True
+    assert body["crisis_response"]["metadata"] == {"purpose": "crisis_response"}
+
+    tool = intake.post("realtime/tool", name="get_crisis_resources", arguments={"crisis_type": None})
+    assert tool.status_code == 200, tool.text
+    assert tool.json()["crisis_response"]["tool_choice"] == "none"
+
+
+def test_budget_degraded_session_still_gets_the_crisis_reply(client, monkeypatch):
+    from app.config import get_settings
+    from app.services import ai
+
+    intake = Intake(client)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "demo_mode", False)
+    monkeypatch.setattr(settings, "openai_api_key", "sk-test")
+    monkeypatch.setattr(settings, "kill_switch_live_ai", True)
+
+    def _no_model():
+        raise AssertionError("the model must not be called")
+
+    monkeypatch.setattr(ai, "_openai_client", _no_model)
+    reply = intake.say_raw("my husband beats me").json()["response"]
+    assert reply["crisis_detected"] is True
+    assert "1-800-799-7233" in reply["content"]
+    assert intake.profile["crisis_indicators"] == ["domestic_violence"]
+
+
+def test_crisis_lines_endpoint_is_never_limited(client, monkeypatch, defense_store):
+    from app.defense.limits import DEFAULT_POLICIES
+
+    for policy in DEFAULT_POLICIES:
+        for rule in policy.rules:
+            _limit(monkeypatch, policy.name, rule.name, 1)
+    for _ in range(20):
+        res = client.get("/api/v1/crisis-resources")
+        assert res.status_code == 200
+        assert "RateLimit-Limit" not in res.headers
+    assert any(r["phone"] == "988" for r in res.json())

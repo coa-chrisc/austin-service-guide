@@ -134,6 +134,14 @@ def _is_counselor_request(text: str) -> bool:
     return any(t == normalize(b, fold_accents=True) for b in COUNSELOR_REQUESTS)
 
 
+def is_crisis_turn(text: str) -> bool:
+    """Would ``crisis_turn`` answer this resident text with the crisis reply?
+
+    The rate-limit crisis bypass asks this, so a crisis turn is never refused.
+    """
+    return bool(detect_crisis(text)) or _is_counselor_request(text)
+
+
 # ── Session state ────────────────────────────────────────────────────
 
 def mark_crisis(profile: ResidentProfile, kinds: Iterable[str]) -> None:

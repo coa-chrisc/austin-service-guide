@@ -35,10 +35,10 @@
     },
     "locations": {"type": "array", "items": {"$ref": "#/$defs/location"}, "description": "Physical sites. May be empty for phone-only or online-only services."},
     "documents": {"type": "array", "items": {"$ref": "#/$defs/document"}, "description": "Documents a resident should bring or submit."},
-    "last_verified_date": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) a person last confirmed this entry against the provider. Optional; absent means unverified. Not read by the server yet (the loader drops it). Never set by a tool or AI agent."},
-    "verified_by": {"type": "string", "minLength": 1, "description": "Role or team (not a personal name) that last verified this entry. Optional; absent means unverified. Not read by the server yet (the loader drops it). Never set by a tool or AI agent."},
-    "provider_type": {"enum": ["city", "county", "state", "federal", "nonprofit", "other"], "description": "Jurisdiction level of the provider. Optional. Not read by the server yet (the loader drops it)."},
-    "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}, "description": "Where the facts in this entry came from. Optional. Not read by the server yet (the loader drops it)."}
+    "last_verified_date": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) a person last confirmed this entry against the provider. Optional; absent means unverified. Loaded and shown in the staff console; not used by matching. Never set by a tool or AI agent."},
+    "verified_by": {"type": "string", "minLength": 1, "description": "Role or team (not a personal name) that last verified this entry. Optional; absent means unverified. Loaded and shown in the staff console; not used by matching. Never set by a tool or AI agent."},
+    "provider_type": {"enum": ["city", "county", "state", "federal", "nonprofit", "other"], "description": "Jurisdiction level of the provider. Optional. Loaded and shown in the staff console; not used by matching."},
+    "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}, "description": "Where the facts in this entry came from. Optional. Loaded and shown in the staff console; not used by matching."}
   },
   "anyOf": [
     {"required": ["phone"], "properties": {"phone": {"type": "string", "minLength": 1}}},

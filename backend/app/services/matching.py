@@ -2,11 +2,17 @@
 
 Takes a ResidentProfile and returns ranked ServiceMatch results plus
 risk assessment and estimated benefit value.
+
+Functions that read the pack's local rules take an optional ``rules``
+(``MatchingRules``); None means the live rules (``load_matching_rules``).
+The admin profile tester passes edited rules to preview a change without
+applying it. ``explain_matches`` gives the engine's verdict on every
+service, from the same code path as ``match_services``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from app.models import (
     ResidentProfile,
@@ -17,12 +23,13 @@ from app.models import (
 )
 from app.services import catalog
 from app.services.catalog_loader import (
+    MatchingRules,
     PreventionEntry,
     load_matching_rules,
     local_crisis_lines,
 )
 from app.services.crisis_phrases import ACUTE_KINDS, CRISIS_REPORTED
-from app.services.eligibility import eligibility_note, unconfirmed_gates
+from app.services.eligibility import eligibility_note, gate_states, unconfirmed_gates
 
 
 # ── Category keyword mapping ──────────────────────────────────────────
@@ -95,12 +102,16 @@ _NEED_TO_CATEGORIES: dict[str, list[str]] = {
 }
 
 
-def _high_heat_zips() -> set[str]:
+def _rules(rules: MatchingRules | None) -> MatchingRules:
+    return rules if rules is not None else load_matching_rules()
+
+
+def _high_heat_zips(rules: MatchingRules | None = None) -> set[str]:
     """ZIPs with elevated heat vulnerability, from the pack's matching rules."""
-    return set(load_matching_rules().high_heat_zips)
+    return set(_rules(rules).high_heat_zips)
 
 
-def _matching_categories(profile: ResidentProfile) -> set[str]:
+def _matching_categories(profile: ResidentProfile, rules: MatchingRules | None = None) -> set[str]:
     """Determine which categories are relevant for a profile."""
     cats: set[str] = set()
     for need in profile.immediate_needs:
@@ -135,7 +146,7 @@ def _matching_categories(profile: ResidentProfile) -> set[str]:
     if (
         profile.is_outdoor_worker
         or profile.has_ac is False
-        or (profile.has_chronic_conditions and profile.zip_code in _high_heat_zips())
+        or (profile.has_chronic_conditions and profile.zip_code in _high_heat_zips(rules))
     ):
         cats.add("cooling")
         cats.add("utilities")
@@ -163,49 +174,69 @@ def _matching_categories(profile: ResidentProfile) -> set[str]:
     return cats
 
 
+# Points ``_score_service`` adds; the admin Eligibility page shows this table.
+_SCORE_WEIGHTS: dict[str, int] = {
+    "category_overlap_each": 20,   # per shared category ...
+    "category_overlap_max": 40,    # ... up to this many points
+    "need_keyword": 5,             # each stated need in the name or description
+    "language": 10,                # offers a language the resident speaks
+    "low_income_free": 10,         # free or sliding scale, for a low-income bracket
+    "same_zip": 10,                # a location in the resident's ZIP
+    "same_zip3": 5,                # else a location sharing the first 3 ZIP digits
+    "veteran": 5,                  # veteran resident, veterans category
+    "disability": 5,               # resident with a disability, disability category
+}
+_LOW_INCOME_BRACKETS = ("$0-$10,000", "$10,000-$20,000", "$20,000-$30,000")
+_KEEP_ABOVE = 10           # a service must score more than this to match
+_HIGH_BAND = 50            # score >= this is "high" confidence
+_MEDIUM_BAND = 30          # score >= this is "medium"; below is "low"
+_UNCONFIRMED_CAP = 29.0    # unconfirmed gates keep a match in the "low" band
+
+
 def _score_service(service: Service, profile: ResidentProfile, target_cats: set[str]) -> float:
     """Score a service 0-100 based on how well it matches the profile."""
+    w = _SCORE_WEIGHTS
     score = 0.0
 
     # Category overlap (up to 40 points)
     svc_cats = set(service.categories)
     overlap = svc_cats & target_cats
     if overlap:
-        score += min(40, len(overlap) * 20)
+        score += min(w["category_overlap_max"], len(overlap) * w["category_overlap_each"])
 
-    # Immediate needs keyword matching (up to 20 points)
+    # Immediate needs keyword matching (5 points each)
     for need in profile.immediate_needs:
         if need.lower() in service.description.lower() or need.lower() in service.name.lower():
-            score += 5
+            score += w["need_keyword"]
 
     # Language match (10 points)
     if profile.languages_spoken:
         if any(lang in service.languages_offered for lang in profile.languages_spoken):
-            score += 10
+            score += w["language"]
 
     # Cost accessibility (10 points)
     if service.cost_type in ("free", "sliding_scale"):
-        if profile.income_bracket in ("$0-$10,000", "$10,000-$20,000", "$20,000-$30,000"):
-            score += 10
+        if profile.income_bracket in _LOW_INCOME_BRACKETS:
+            score += w["low_income_free"]
 
     # Geographic proximity heuristic (10 points) — if zip codes overlap
     if profile.zip_code:
         for loc in service.locations:
             if loc.zip_code == profile.zip_code:
-                score += 10
+                score += w["same_zip"]
                 break
             # Adjacent zip proximity (5 pts)
             if loc.zip_code and loc.zip_code[:3] == profile.zip_code[:3]:
-                score += 5
+                score += w["same_zip3"]
                 break
 
     # Veteran-specific boost (5 points)
     if profile.veteran_status and "veterans" in svc_cats:
-        score += 5
+        score += w["veteran"]
 
     # Disability-specific boost (5 points)
     if profile.has_disability and "disability" in svc_cats:
-        score += 5
+        score += w["disability"]
 
     return min(100, score)
 
@@ -213,26 +244,26 @@ def _score_service(service: Service, profile: ResidentProfile, target_cats: set[
 _MAX_MATCHES = 15
 
 
-def crisis_services() -> dict[str, list[str]]:
+def crisis_services(rules: MatchingRules | None = None) -> dict[str, list[str]]:
     """Crisis indicator -> service slugs that directly answer it, most local
     first (``crisis_services`` in the pack's matching rules). They skip the
     relevance filter, eligibility gates, and the match cap, and lead the
     application plan."""
-    return load_matching_rules().crisis_services
+    return _rules(rules).crisis_services
 
 
-def crisis_slugs(profile: ResidentProfile) -> list[str]:
+def crisis_slugs(profile: ResidentProfile, rules: MatchingRules | None = None) -> list[str]:
     """Crisis-direct service slugs for the profile, in indicator order.
 
     A crisis the model reported without a kind (``crisis_reported``) gets
     the services of every acute kind: over-offering beats missing one.
     """
     out: list[str] = []
-    rules = crisis_services()
+    by_indicator = crisis_services(rules)
     for indicator in profile.crisis_indicators:
         keys = ACUTE_KINDS if indicator == CRISIS_REPORTED else (indicator,)
         for key in keys:
-            for slug in rules.get(key, []):
+            for slug in by_indicator.get(key, []):
                 if slug not in out:
                     out.append(slug)
     return out
@@ -257,9 +288,9 @@ def _to_match(
     *,
     crisis: bool = False,
 ) -> ServiceMatch:
-    if crisis or score >= 50:
+    if crisis or score >= _HIGH_BAND:
         confidence = "high"
-    elif score >= 30:
+    elif score >= _MEDIUM_BAND:
         confidence = "medium"
     else:
         confidence = "low"
@@ -286,29 +317,33 @@ def _to_match(
     )
 
 
-def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
-    """Return services ranked by relevance to the resident profile.
+def _rank(
+    profile: ResidentProfile,
+    services: Iterable[Service] | None,
+    rules: MatchingRules | None,
+) -> tuple[list[ServiceMatch], list[tuple[Service, float, list[str]]], dict[str, tuple[str, float | None]]]:
+    """The engine's pass over the catalog.
 
-    Crisis-direct services (``crisis_services()``) come first and do not
-    count toward the cap. Services with ``eligibility_requires`` gates the
-    profile contradicts are dropped. Gates the profile cannot confirm keep
-    the service, but capped at "low" confidence and ranked after every
-    confirmed fit.
+    Returns (matches, every scored service in rank order, verdict per slug
+    for the services that were not scored). ``match_services`` returns the
+    first; ``explain_matches`` reports all three.
     """
-    target_cats = _matching_categories(profile)
+    all_services = list(catalog.iter_active_services() if services is None else services)
+    target_cats = _matching_categories(profile, rules)
     if not target_cats:
-        return []
+        return [], [], {svc.slug: ("not_relevant", None) for svc in all_services}
 
-    all_services = catalog.get_all_services(page=1, page_size=200)["items"]
-    crisis = crisis_slugs(profile)
+    crisis = crisis_slugs(profile, rules)
     by_slug = {svc.slug: svc for svc in all_services}
     scored: list[tuple[Service, float, list[str]]] = []
+    dropped: dict[str, tuple[str, float | None]] = {}
 
     for svc in all_services:
         if svc.slug in crisis:
             continue
         unconfirmed = unconfirmed_gates(svc, profile)
         if unconfirmed is None:
+            dropped[svc.slug] = ("excluded_by_gate", None)
             continue
         # Language/cost/zip points alone are not relevance — require a
         # shared category or a stated need named in the listing.
@@ -316,12 +351,15 @@ def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
         if not (set(svc.categories) & target_cats) and not any(
             n.lower() in text for n in profile.immediate_needs
         ):
+            dropped[svc.slug] = ("not_relevant", None)
             continue
         score = _score_service(svc, profile, target_cats)
-        if score > 10:
+        if score > _KEEP_ABOVE:
             if unconfirmed:
-                score = min(score, 29.0)  # stays in the "low" band
+                score = min(score, _UNCONFIRMED_CAP)  # stays in the "low" band
             scored.append((svc, score, unconfirmed))
+        else:
+            dropped[svc.slug] = ("below_threshold", score)
 
     # Confirmed-eligible services first, then by score.
     scored.sort(key=lambda x: (not x[2], x[1]), reverse=True)
@@ -335,7 +373,78 @@ def match_services(profile: ResidentProfile) -> list[ServiceMatch]:
         _to_match(svc, score, unconfirmed, profile, target_cats)
         for svc, score, unconfirmed in scored[:_MAX_MATCHES]
     ]
-    return matches
+    return matches, scored, dropped
+
+
+def match_services(
+    profile: ResidentProfile,
+    *,
+    services: Iterable[Service] | None = None,
+    rules: MatchingRules | None = None,
+) -> list[ServiceMatch]:
+    """Return services ranked by relevance to the resident profile.
+
+    Crisis-direct services (``crisis_services()``) come first and do not
+    count toward the cap. Services with ``eligibility_requires`` gates the
+    profile contradicts are dropped. Gates the profile cannot confirm keep
+    the service, but capped at "low" confidence and ranked after every
+    confirmed fit. ``services`` (default: every active catalog service) and
+    ``rules`` (default: the live rules) let the admin tester preview edits.
+    """
+    return _rank(profile, services, rules)[0]
+
+
+def explain_matches(
+    profile: ResidentProfile,
+    *,
+    services: Iterable[Service] | None = None,
+    rules: MatchingRules | None = None,
+) -> list[dict]:
+    """Every service with the engine's verdict for the profile.
+
+    ``outcome`` is one of ``crisis_direct`` and ``matched`` (both returned by
+    ``match_services``; ``matched`` rows with unconfirmed gates are
+    ``check_eligibility``), ``over_cap`` (scored but past the
+    ``_MAX_MATCHES`` cut), ``below_threshold``, ``not_relevant`` or
+    ``excluded_by_gate``. Matched rows come first, in result order.
+    """
+    all_services = list(catalog.iter_active_services() if services is None else services)
+    matches, scored, dropped = _rank(profile, all_services, rules)
+    rows: list[dict] = []
+
+    def row(svc: Service, outcome: str, score: float | None, match: ServiceMatch | None = None) -> dict:
+        return {
+            "id": svc.id,
+            "slug": svc.slug,
+            "name": svc.name,
+            "categories": list(svc.categories),
+            "outcome": outcome,
+            "score": None if score is None else round(score, 1),
+            "confidence": match.match_confidence if match else None,
+            "reasoning": match.match_reasoning if match else "",
+            "gates": [
+                {"gate": gate, "state": state}
+                for gate, state in gate_states(svc, profile).items()
+            ],
+        }
+
+    crisis_count = len(matches) - min(len(scored), _MAX_MATCHES)
+    for i, m in enumerate(matches):
+        if i < crisis_count:
+            outcome = "crisis_direct"
+        else:
+            outcome = "check_eligibility" if scored[i - crisis_count][2] else "matched"
+        rows.append(row(m.service, outcome, m.match_score, m))
+    for svc, score, _ in scored[_MAX_MATCHES:]:
+        rows.append(row(svc, "over_cap", score))
+    listed = {r["slug"] for r in rows}
+    for svc in all_services:
+        if svc.slug in listed:
+            continue
+        outcome, score = dropped.get(svc.slug, ("not_relevant", None))
+        rows.append(row(svc, outcome, score))
+        listed.add(svc.slug)
+    return rows
 
 
 # ── Risk Assessment ───────────────────────────────────────────────────
@@ -347,10 +456,16 @@ def _entry_label(entry: PreventionEntry) -> str | None:
     return svc.name if svc else None
 
 
-def _prevention(risk_type: str, *, lead: Sequence[str] = (), tail: Sequence[str] = ()) -> list[str]:
+def _prevention(
+    rules: MatchingRules | None,
+    risk_type: str,
+    *,
+    lead: Sequence[str] = (),
+    tail: Sequence[str] = (),
+) -> list[str]:
     """Prevention services for a risk flag: ``lead``, the pack's entries for
     ``risk_type`` (catalog names or display text), then ``tail``."""
-    entries = load_matching_rules().prevention_services.get(risk_type, [])
+    entries = _rules(rules).prevention_services.get(risk_type, [])
     pack = [label for label in map(_entry_label, entries) if label]
     return [*lead, *pack, *tail]
 
@@ -359,7 +474,7 @@ def _crisis_line_labels(topic: str) -> list[str]:
     return [f"{r.name} ({r.phone})" for r in local_crisis_lines(topic)]
 
 
-def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
+def assess_risks(profile: ResidentProfile, rules: MatchingRules | None = None) -> list[RiskFlag]:
     """Identify risk factors from the resident profile."""
     flags: list[RiskFlag] = []
 
@@ -370,7 +485,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical,
             description="Currently experiencing homelessness",
             contributing_factors=["No stable housing", profile.employment_status or "Unknown employment"],
-            prevention_services=_prevention("homelessness"),
+            prevention_services=_prevention(rules, "homelessness"),
         ))
     elif profile.housing_situation in ("unstable",):
         flags.append(RiskFlag(
@@ -378,7 +493,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.high,
             description="At risk of homelessness — unstable housing situation",
             contributing_factors=["Unstable housing"],
-            prevention_services=_prevention("housing_instability"),
+            prevention_services=_prevention(rules, "housing_instability"),
         ))
 
     # Food insecurity
@@ -390,7 +505,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.high,
             description="High risk of food insecurity based on income and stated need",
             contributing_factors=["Low income", "Food identified as immediate need"],
-            prevention_services=_prevention("food_insecurity"),
+            prevention_services=_prevention(rules, "food_insecurity"),
         ))
 
     # Uninsured
@@ -401,7 +516,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=sev,
             description="No health insurance coverage",
             contributing_factors=["Uninsured status"],
-            prevention_services=_prevention("uninsured"),
+            prevention_services=_prevention(rules, "uninsured"),
         ))
 
     # Crisis indicators
@@ -412,6 +527,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             description="Indicators of domestic violence or unsafe home environment",
             contributing_factors=["Self-reported safety concern"],
             prevention_services=_prevention(
+                rules,
                 "domestic_violence",
                 lead=_crisis_line_labels("domestic_violence"),
                 tail=["National DV Hotline (1-800-799-7233)"],
@@ -425,6 +541,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             description="Indicators of suicidal ideation or severe mental health crisis",
             contributing_factors=["Self-reported mental health crisis"],
             prevention_services=_prevention(
+                rules,
                 "mental_health_crisis",
                 lead=["988 Suicide & Crisis Lifeline", *_crisis_line_labels("mental_health")],
             ),
@@ -437,7 +554,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
                 severity=RiskSeverity.high,
                 description="At risk of or currently experiencing homelessness",
                 contributing_factors=["Self-reported homelessness concern"],
-                prevention_services=_prevention("homelessness"),
+                prevention_services=_prevention(rules, "homelessness"),
             ))
 
     # Social isolation (senior alone)
@@ -448,7 +565,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.medium,
             description="Older adult living alone — potential social isolation risk",
             contributing_factors=["Age 70+", "Single-person household"],
-            prevention_services=_prevention("social_isolation"),
+            prevention_services=_prevention(rules, "social_isolation"),
         ))
 
     # Heat vulnerability — combined risk from outdoor work, no AC, chronic
@@ -460,7 +577,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
         heat_factors.append("No working AC at home")
     if profile.has_chronic_conditions:
         heat_factors.append("Chronic condition compounding heat risk")
-    if profile.zip_code in _high_heat_zips():
+    if profile.zip_code in _high_heat_zips(rules):
         heat_factors.append(f"High-heat zip ({profile.zip_code})")
 
     # Child mental-health risk — when any school-age child has a flagged
@@ -481,7 +598,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=RiskSeverity.critical if severe_concern else RiskSeverity.high,
             description="School-age child with mental-health concerns reported by household.",
             contributing_factors=flagged_children,
-            prevention_services=_prevention("child_mental_health_risk"),
+            prevention_services=_prevention(rules, "child_mental_health_risk"),
         ))
 
     if len(heat_factors) >= 2:
@@ -495,7 +612,7 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
             severity=sev,
             description="Elevated risk of heat-related illness during summer heat advisories",
             contributing_factors=heat_factors,
-            prevention_services=_prevention("heat_vulnerable"),
+            prevention_services=_prevention(rules, "heat_vulnerable"),
         ))
 
     return flags
@@ -503,15 +620,19 @@ def assess_risks(profile: ResidentProfile) -> list[RiskFlag]:
 
 # ── Benefits Estimation ──────────────────────────────────────────────
 
+# Monthly value for a matched free service with no benefit_estimates entry.
+_DEFAULT_FREE_VALUE = 25.0
+
 def calculate_benefits(
     profile: ResidentProfile,
     matched_services: list[ServiceMatch],
+    rules: MatchingRules | None = None,
 ) -> dict:
     """Estimate the monthly value of matched benefits."""
     breakdown: list[dict] = []
     total_monthly = 0.0
 
-    estimates = load_matching_rules().benefit_estimates
+    estimates = _rules(rules).benefit_estimates
     uninsured = profile.insurance_status == "uninsured"
 
     for m in matched_services:
@@ -529,7 +650,7 @@ def calculate_benefits(
             label = est.label
         elif svc.cost_type == "free":
             # Generic free service modest value
-            value = 25.0
+            value = _DEFAULT_FREE_VALUE
 
         if value > 0:
             breakdown.append({"service": label, "monthly_value": value})
@@ -668,3 +789,33 @@ def recommend_application_order(
             "reason": _SEQUENCE_REASONS.get(cat or "") or _DEFAULT_SEQUENCE_REASON,
         })
     return out
+
+
+# ── Engine description (admin Eligibility page) ──────────────────────
+
+def describe_engine() -> dict:
+    """The engine's built-in constants, read from the code that uses them.
+
+    Shown read-only on the admin Eligibility page; changing any of them is
+    a code change in this file (age bands: ``eligibility.py``).
+    """
+    from app.services.eligibility import age_bands
+
+    return {
+        "source": "backend/app/services/matching.py",
+        "need_keywords": {k: list(v) for k, v in _NEED_TO_CATEGORIES.items()},
+        "score_weights": dict(_SCORE_WEIGHTS),
+        "low_income_brackets": list(_LOW_INCOME_BRACKETS),
+        "bands": {
+            "keep_above": _KEEP_ABOVE,
+            "high": _HIGH_BAND,
+            "medium": _MEDIUM_BAND,
+            "unconfirmed_cap": _UNCONFIRMED_CAP,
+        },
+        "max_matches": _MAX_MATCHES,
+        "sequence_priority": dict(_SEQUENCE_PRIORITY),
+        "sequence_reasons": dict(_SEQUENCE_REASONS),
+        "default_sequence_reason": _DEFAULT_SEQUENCE_REASON,
+        "age_bands": age_bands(),
+        "default_free_value": _DEFAULT_FREE_VALUE,
+    }

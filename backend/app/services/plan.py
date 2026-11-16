@@ -10,6 +10,8 @@ import json
 import logging
 
 from app.config import get_settings
+from app.defense.budget import ai_allowed
+from app.defense.usage import metered
 from app.models import IntakePlan, IntakeSession, MessageRole, PlanItem
 from app.services.crisis import lead_with_crisis
 from app.services.grounding import ground_service_ids
@@ -50,7 +52,7 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
     def fallback() -> IntakePlan:
         return rules_plan(session)
 
-    if not settings.use_live_ai or session.entry_source.startswith("persona:"):
+    if session.entry_source.startswith("persona:") or not await ai_allowed():
         return fallback()
 
     profile = session.extracted_profile
@@ -118,7 +120,7 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
     try:
         from openai import AsyncOpenAI
 
-        client = AsyncOpenAI(api_key=settings.openai_api_key)
+        client = metered(AsyncOpenAI(api_key=settings.openai_api_key), "plan")
         response = await client.responses.create(
             model=settings.openai_model,
             input=[{"role": "user", "content": prompt}],

@@ -84,7 +84,7 @@ describe("How it works content", () => {
     }
     expect(new Set(PROTECTIONS.map((p) => p.label)).size).toBe(PROTECTIONS.length);
     expect(PROTECTIONS.filter((p) => p.status === "in_progress").map((p) => p.issue)).toEqual([
-      26, 27, 28, 29, 30, 14, 20,
+      28, 29, 30, 14,
     ]);
   });
 
