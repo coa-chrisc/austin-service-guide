@@ -41,7 +41,9 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import HomeIcon from "@mui/icons-material/Home";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import LogoutIcon from "@mui/icons-material/Logout";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import { useAuth } from "@/hooks/useAuth";
+import { useImportConfig } from "@/pages/admin/import/useImportConfig";
 
 const DRAWER_WIDTH = 260;
 
@@ -104,7 +106,14 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
   },
 ];
 
+// Shown only when the server has partner-list import turned on.
+const IMPORT_ITEM: NavItem = { label: "Import Partner List", path: "/admin/import", icon: <GroupAddIcon /> };
+
 export default function AdminLayout() {
+  const { config: importConfig } = useImportConfig();
+  const sections = importConfig
+    ? SECTIONS.map((s) => (s.heading === "SERVICES" ? { ...s, items: [...s.items, IMPORT_ITEM] } : s))
+    : SECTIONS;
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -154,7 +163,7 @@ export default function AdminLayout() {
 
       {/* Nav sections */}
       <Box sx={{ flex: 1, overflowY: "auto" }}>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <List
             key={section.heading}
             dense
