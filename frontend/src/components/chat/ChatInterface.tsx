@@ -441,7 +441,7 @@ export default function ChatInterface({
           "& > *": { ...COLUMN },
         }}
       >
-        {voice.welcomeVisible && <VoiceWelcome />}
+        {voice.welcomeVisible && <VoiceWelcome realtime={voice.isRealtime} />}
 
         {messages.length === 0 && !isLoading && initialMode !== "voice" && (
           <Box

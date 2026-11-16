@@ -4,6 +4,8 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
+import { useStoredLanguage } from "@/components/common/LanguageSelector";
+import { makeVoiceT } from "./voiceI18n";
 
 interface VoiceConsentDialogProps {
   open: boolean;
@@ -11,34 +13,29 @@ interface VoiceConsentDialogProps {
   onAgree: () => void;
 }
 
-/** Consent before raw microphone audio is streamed to OpenAI. */
+/** Consent before raw microphone audio is streamed to OpenAI (UI language). */
 export default function VoiceConsentDialog({
   open,
   onCancel,
   onAgree,
 }: VoiceConsentDialogProps) {
+  const t = makeVoiceT(useStoredLanguage());
   return (
     <Dialog
       open={open}
       onClose={onCancel}
+      dir="auto"
       aria-labelledby="voice-consent-title"
       aria-describedby="voice-consent-description"
     >
       <DialogTitle id="voice-consent-title" sx={{ fontWeight: 700 }}>
-        Your voice will be sent to OpenAI
+        {t("consent_title")}
       </DialogTitle>
       <DialogContent>
         <DialogContentText id="voice-consent-description" sx={{ mb: 1.5 }}>
-          In this voice mode, the audio from your microphone is streamed
-          directly to OpenAI's Realtime API, which listens and answers out
-          loud. This mode is intended for deployments that have a
-          zero-data-retention agreement with OpenAI.
+          {t("consent_body")}
         </DialogContentText>
-        <DialogContentText>
-          Please do not say your name, street address, phone number, or Social
-          Security number. If you'd rather not send audio, choose Cancel and
-          type your messages instead.
-        </DialogContentText>
+        <DialogContentText>{t("consent_privacy")}</DialogContentText>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button
@@ -46,7 +43,7 @@ export default function VoiceConsentDialog({
           autoFocus
           sx={{ textTransform: "none", fontWeight: 600 }}
         >
-          Cancel
+          {t("consent_cancel")}
         </Button>
         <Button
           variant="contained"
@@ -54,7 +51,7 @@ export default function VoiceConsentDialog({
           onClick={onAgree}
           sx={{ textTransform: "none", fontWeight: 600 }}
         >
-          I agree, start voice
+          {t("consent_agree")}
         </Button>
       </DialogActions>
     </Dialog>
