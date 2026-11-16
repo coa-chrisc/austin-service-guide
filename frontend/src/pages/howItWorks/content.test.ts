@@ -88,6 +88,16 @@ describe("How it works content", () => {
     ]);
   });
 
+  it("describes the research agent (#18) as in place with its limits stated", () => {
+    const research = PROTECTIONS.filter((p) => p.issue === 18);
+    expect(research).toHaveLength(1);
+    expect(research[0].status).toBe("in_place");
+    expect(research[0].label).toMatch(/runs on Railway/);
+    expect(research[0].label).toMatch(/off until an OpenAI key is set/);
+    expect(research[0].label).toMatch(/approve each search plan/);
+    expect(research[0].label).toMatch(/by hand/);
+  });
+
   it("places each diagram in an existing section", () => {
     const ids = new Set(SECTIONS.map((s) => s.id));
     for (const id of Object.keys(DIAGRAMS_BY_SECTION)) expect(ids.has(id), id).toBe(true);

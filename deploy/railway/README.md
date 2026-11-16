@@ -5,20 +5,20 @@ Railway runs the app from the repo's `Dockerfile` as one always-on container, wi
 There are two shapes:
 
 - **Shape A, the whole app on Railway.** Available now and documented below.
-- **Shape B, Vercel app plus a Railway back end** (job worker, Postgres, private SearXNG). **Planned, not built.** The worker arrives with #18 (used by #19) and the database work with #14 P1. See [Planned: shape B](#planned-shape-b-job-worker-postgres-and-searxng).
+- **Shape B, Vercel app plus a Railway back end** (the research job worker from #18, its Postgres and a private SearXNG). **Built and deployed** for the reference project on 2026-11-15; #19 and #14 P1 will reuse the worker and database. See [Shape B](#shape-b-job-worker-postgres-and-searxng).
 
-No Railway project has been created for this repo yet. Read [What was and was not validated](#what-was-and-was-not-validated) before you rely on any step.
+`.railway/railway.ts` describes shape B (`WITH_APP_SERVICE = false`, `WITH_JOB_SERVICES = true`); shape A is documented and was type-checked but has not been deployed. Read [What was and was not validated](#what-was-and-was-not-validated) before you rely on any step.
 
 ## How it fits together
 
 | File | Role |
 | --- | --- |
 | `Dockerfile` (repo root) | The image. Railway uses a file named `Dockerfile` at the root of the source automatically ([Dockerfiles](https://docs.railway.com/builds/dockerfiles)). Its `CMD` listens on `$PORT`. |
-| `.railway/railway.ts` | Infrastructure as code: the `app` service's health check, region and variables, plus the planned shape-B services behind `WITH_JOB_SERVICES = false`. |
+| `.railway/railway.ts` | Infrastructure as code. `WITH_APP_SERVICE` adds the `app` service (shape A: health check, region, variables); `WITH_JOB_SERVICES` adds `worker`, `postgres` and `searxng` (shape B). |
 | `.railway/package.json` | Deploy-time tooling only: the `railway` SDK (which provides `railway/iac`) and TypeScript for `npm run --prefix .railway typecheck`. Not part of the app build. |
 | `.railwayignore` | Keeps local state (`.claude/`, `graft/`, env files, `node_modules`) out of `railway up` uploads, like `.vercelignore` does for Vercel. |
 | `backend/app/access_gate.py` | Optional access-code gate, on when `ACCESS_CODES` is set. Unchanged from Vercel. |
-| `deploy/railway/searxng/` | Planned: `settings.yml` and a two-line `Dockerfile` for the private SearXNG service. |
+| `deploy/railway/searxng/` | `settings.yml` and a two-line `Dockerfile` for the private SearXNG service (shape B). |
 
 **Why `.railway/railway.ts` and not `railway.toml` or `railway.json`.** Railway's Config as Code files are deprecated: "Existing Config as Code files stop being read on **2026-12-01** (hard cutoff)", and "New services cannot opt into Config as Code" ([Infrastructure as Code](https://docs.railway.com/infrastructure-as-code)). Do not add either file. Infrastructure as Code is evaluated by the Railway CLI on your machine (or in CI); "Railway doesn't read `.railway/` during deploys", so the file changes nothing until someone runs `railway config apply`.
 
@@ -38,7 +38,7 @@ No Railway project has been created for this repo yet. Read [What was and was no
 
 Prerequisites: a Railway account on a plan that allows always-on services (see [Cost](#cost)), the Railway CLI at **5.42.1 or newer** (the `railway` SDK 3.17.0 refuses older CLIs; check with `railway --version`, update with `railway upgrade`), Node 22 or newer for the SDK, and an OpenAI API key.
 
-Creating the project starts billing. The commands below run from the repo root.
+Creating the project starts billing. The commands below run from the repo root. These steps are shape A: first set `WITH_APP_SERVICE = true` in `.railway/railway.ts` (and `WITH_JOB_SERVICES = false` unless you also want the research worker).
 
 ### 1. Project and service
 
@@ -180,41 +180,57 @@ Usage-based, on top of a plan fee: Hobby is $5 a month including $5 of usage, Pr
 - **Pipe values instead of typing them.** `railway variable set NAME --stdin` reads one value from stdin; `KEY=VALUE` on the command line lands in shell history.
 - **Erasable TypeScript only.** The CLI runs `railway.ts` with Node's type stripping, so enums, namespaces and parameter properties fail. `tsconfig.json` sets `erasableSyntaxOnly` so the type check catches them first.
 - **Private networking in older projects.** Environments created before October 16, 2025 resolve `*.railway.internal` to IPv6 only ([How Private Networking Works](https://docs.railway.com/networking/private-networking/how-it-works)). Shape A does not use the private network. For shape B see below.
+- **Database region.** `postgres(...)` lands in Railway's default region unless the file sets one, and moving it afterwards is a destructive plan (a volume migration). Set `JOB_REGION` before the first apply.
+- **Service regions can drift silently.** With CLI 5.74.0, changing the `replicas` region of a service that had not been deployed yet planned as "already up to date". Check `railway service list --json` (`regions`) after a region change.
 
-## Planned: shape B (job worker, Postgres and SearXNG)
+## Shape B (job worker, Postgres and SearXNG)
 
-**Not built. Requires #18** (`app.worker.main`, signed job tokens, `JOB_BACKEND`), which #19 also uses, and **#14 P1** for the database schema. Nothing below has run. What exists now is the gated block in `.railway/railway.ts` (`WITH_JOB_SERVICES = false`) and the SearXNG files in `deploy/railway/searxng/`.
-
-In shape B, Vercel keeps the resident UI and API (the demo URL does not move) and Railway runs the long-running back end that Vercel cannot: no 300-second function cap, no work after the response, no shared state between instances. No resident intake data goes to Railway in this shape; it holds job parameters, public page text and reduced partner lists.
+In shape B, Vercel keeps the resident UI and API (the demo URL does not move) and Railway runs the long-running back end that Vercel cannot: no 300-second function cap, no work after the response, no shared state between instances. No resident intake data goes to Railway in this shape; it holds job parameters, public page text, the drafts built from it, and job events.
 
 | Service | Public address | What protects it | Secrets and references |
 | --- | --- | --- | --- |
-| Vercel app | Yes (the demo URL) | Access gate | `JOB_BACKEND=remote`, `JOB_WORKER_URL`, `JOB_WORKER_SECRET` |
-| `worker` | Yes, a Railway domain, because Vercel calls it over the internet | Signed token on every route except `GET /healthz`; 401 with no detail on a bad token; no docs routes (`docs_url=None`, `openapi_url=None`) | `JOB_WORKER_SECRET`, `JOB_WORKER_SECRET_PREVIOUS`, `OPENAI_API_KEY` (or a separate `OPENAI_RESEARCH_API_KEY` with its own spend cap), `DATABASE_URL` by reference |
+| Vercel app | Yes (the demo URL) | Access gate; every job route also needs `X-Admin-Token` | `JOB_BACKEND=remote`, `JOB_WORKER_URL`, `JOB_WORKER_SECRET` |
+| `worker` | Yes, a Railway domain, because Vercel calls it over the internet | Signed, single-use token (HMAC over method, path, query and body, 60-second window) on every route except `GET /healthz`; 401 with no detail on a bad token; no docs routes | `JOB_WORKER_SECRET`, `JOB_WORKER_SECRET_PREVIOUS`, `OPENAI_API_KEY` (or a separate `OPENAI_RESEARCH_API_KEY` with its own spend cap), `DATABASE_URL` by reference |
 | `postgres` | None. Railway databases are "deployed private by default" ([PostgreSQL](https://docs.railway.com/databases/postgresql)); never add **Public Access**, which creates a TCP proxy | Private network only | Generated by Railway; the worker gets `DATABASE_URL` as `db.env.DATABASE_URL` |
 | `searxng` | None. Never generate a domain: an open instance is quickly abused as a proxy | Private network only, at `http://searxng.railway.internal:8080` | `SEARXNG_SECRET` |
 
-Exactly two public addresses: the Vercel app and the worker. The worker's outbound fetcher must reject `*.railway.internal` and private address ranges, because it sits on a private network next to the database; only the configured `SEARXNG_URL` is exempt, and that value never comes from user input (#18's SSRF rules).
+Exactly two public addresses: the Vercel app and the worker. The worker's page fetcher (`backend/app/research/fetch.py`) refuses `*.railway.internal`, `localhost`, single-label names and every non-global address (private, loopback, link-local, CGNAT, NAT64, Teredo, 6to4 or IPv4-mapped forms of those), resolves and checks again on every redirect hop, and connects to the checked address only. The configured `SEARXNG_URL` is exempt because the search provider calls it with its own client; that value never comes from user input.
 
-**SearXNG.** `deploy/railway/searxng/settings.yml` keeps the defaults, enables the `json` format the worker reads, turns the limiter and public-instance features off, and keeps four engines (DuckDuckGo, Brave, Bing and Wikipedia). It holds no secret: the official image reads `server.secret_key` from `SEARXNG_SECRET` ([SearXNG server settings](https://docs.searxng.org/admin/settings/settings_server.html)). Railway IaC has no config-file mount, so the `Dockerfile` next to it bakes the file into the pinned official image. The image listens on `[::]:8080`, which serves IPv4 and IPv6, so it works in both new and legacy private networks.
+**Search backend.** `RESEARCH_SEARCH_PROVIDER` on the worker picks one:
 
-**Turning it on, once #18 has merged:**
+| | `searxng` (default here) | `openai_web_search` (alias `openai`) |
+| --- | --- | --- |
+| Where queries go | Your SearXNG, which forwards them to DuckDuckGo, Brave and Bing | OpenAI's hosted `web_search` tool |
+| Extra services | `searxng` (about 110 MB of RAM idle) | None; `searxng` can be left out |
+| Extra cost | Railway usage only | A per-call tool fee (about $0.01 per search; check OpenAI's pricing page) plus the tokens the search results add |
+| Failure mode | Upstream engines rate-limit or block a busy instance | Depends on OpenAI only |
 
-1. Check the variable names in the `WITH_JOB_SERVICES` block against #18 as merged, and set `WITH_JOB_SERVICES = true`.
-2. Create the `worker` and `searxng` services (`railway add --service worker`, `railway add --service searxng`) and set their `preserve()` variables, as in step 2 above. Generate `SEARXNG_SECRET` with `python3 -c "import secrets;print(secrets.token_hex(32),end='')"`.
-3. `railway config plan`, check it adds `postgres` and changes nothing on `app`, then `railway config apply`. Put Postgres in the same region as the worker (dashboard: the database's settings); the file does not set a database region.
-4. Deploy SearXNG from its folder: `railway up deploy/railway/searxng --path-as-root --service searxng`. For a GitHub source instead, set the root directory: `railway environment edit --service-config searxng source.rootDirectory /deploy/railway/searxng` ([Monorepo](https://docs.railway.com/deployments/monorepo)).
-5. Deploy the worker from the repo root (`railway up --service worker`, or connect the repo); `INSTALL_WORKER_DEPS=true` is the build argument #18 adds to the `Dockerfile`. Generate its domain: `railway domain --service worker --port 8000`.
-6. On Vercel, set `JOB_BACKEND=remote`, `JOB_WORKER_URL=https://<worker domain>` and the same `JOB_WORKER_SECRET`, and redeploy.
-7. Test locally first with `docker compose --profile jobs up` (the profile #18 adds), then check from outside Railway that the Postgres and SearXNG names do not resolve and that the worker answers only `/healthz` without a token.
+Either way the worker fetches the pages itself through the fetcher above, and the model reads only that fetched text. Change the provider with `railway variable set RESEARCH_SEARCH_PROVIDER=openai_web_search --service worker` (it redeploys) and edit the value in `.railway/railway.ts` to match.
+
+**SearXNG.** `deploy/railway/searxng/settings.yml` keeps the defaults, enables the `json` format the worker reads, turns the limiter and public-instance features off, and keeps three engines (DuckDuckGo, Brave and Bing; Wikipedia refuses to load without `general.contact_url`). It holds no secret: the official image reads `server.secret_key` from `SEARXNG_SECRET` ([SearXNG server settings](https://docs.searxng.org/admin/settings/settings_server.html)). Railway IaC has no config-file mount, so the `Dockerfile` next to it bakes the file into the pinned official image. The image listens on `[::]:8080`, which serves IPv4 and IPv6, so it works in both new and legacy private networks.
+
+**Setting it up** (what was run for the reference project; prefix the commands with nothing, they read the linked project):
+
+1. `railway init --name <project> --workspace <workspace>` from the repo root, which links the directory.
+2. Pick `JOB_REGION` in `.railway/railway.ts`, then `railway config plan` (it should add `postgres`, `searxng` and `worker`) and `railway config apply`.
+3. Set the secrets without echoing them, for example:
+   `python3 -c "import secrets,sys;sys.stdout.write(secrets.token_urlsafe(48))" > /tmp/jws` (mode 0600), then `railway variable set JOB_WORKER_SECRET --stdin --service worker < /tmp/jws`. Do the same for `SEARXNG_SECRET` (`--service searxng`) and pipe in `OPENAI_API_KEY` for the worker. Keep the worker secret for Vercel, then delete the file.
+4. Deploy SearXNG: `railway up deploy/railway/searxng --path-as-root --service searxng --ci`. For a GitHub source instead, set the root directory: `railway environment edit --service-config searxng source.rootDirectory /deploy/railway/searxng` ([Monorepo](https://docs.railway.com/deployments/monorepo)).
+5. Deploy the worker from the repo root: `railway up --service worker --ci`. `INSTALL_WORKER_DEPS=true` reaches the `Dockerfile` as a build argument and installs `backend/requirements-worker.txt` (SQLAlchemy, psycopg). The worker creates its tables on start.
+6. `railway domain --service worker --port 8000`. Do not generate one for `searxng` or `postgres`.
+7. Check it from outside Railway: `JOB_WORKER_URL=https://<worker domain> JOB_WORKER_SECRET=... python backend/scripts/research_e2e.py smoke` (health, 401 unsigned, no docs, signed config, no-op job).
+8. On Vercel, set `JOB_BACKEND=remote`, `JOB_WORKER_URL=https://<worker domain>` and the same `JOB_WORKER_SECRET` (and `ADMIN_API_TOKEN` if it is not set), and redeploy. The **Research agent** item appears in the staff console when the worker reports research enabled.
+9. A real run, once the OpenAI key is set: `python backend/scripts/research_e2e.py research --county "Travis County" --state TX --topic "food pantries" --max-cost 2 --approve`.
+
+Locally, `docker compose --profile jobs up --build` runs the same three services next to the app.
 
 **Rotating `JOB_WORKER_SECRET`:** set `JOB_WORKER_SECRET_PREVIOUS` on the worker to the current value, set the new `JOB_WORKER_SECRET` on the worker, and let it deploy; then change `JOB_WORKER_SECRET` on Vercel and redeploy; then clear `JOB_WORKER_SECRET_PREVIOUS` on the worker.
 
 **Bind address.** The worker is called over its public domain and binds `0.0.0.0`. Railway environments created after October 16, 2025 resolve private names to IPv4 and IPv6; older ones to IPv6 only. Anything that must accept private-network traffic in an older environment has to listen on `::`.
 
-**Database operations.** The Railway Postgres template is a single node. Backups are a separate feature you turn on ([Backups](https://docs.railway.com/volumes/backups)); choose a policy before the database holds anything you cannot regenerate.
+**Database operations.** The Railway Postgres template is a single node. Backups are a separate feature you turn on ([Backups](https://docs.railway.com/volumes/backups)); choose a policy before the database holds anything you cannot regenerate. Finished jobs and their drafts are deleted after `JOB_RETENTION_DAYS` (30).
 
-**Cost.** Small instances for the worker and SearXNG, the smallest Postgres. Not yet measured. SearXNG and the worker can be stopped between research runs.
+**Cost.** Each service is capped at 1 vCPU and 1 GB in the file; Railway bills what is used. Measured idle on 2026-11-15, one hour after deploy: worker 65 MB, SearXNG 113 MB, Postgres 113 MB, all under 0.01 vCPU on average. At $10 per GB-month of RAM and $20 per vCPU-month that is about **$3 to $4 a month idle** for the three services, plus storage at $0.15 per GB-month. A research run adds a few minutes of CPU and the OpenAI usage, which the job caps (`RESEARCH_MAX_COST_USD`, default $20 per job). On the Hobby plan the included $5 of usage covers the idle cost. Remeasure with `railway metrics --service <name>` after real use.
 
 ## What was and was not validated
 
@@ -224,11 +240,14 @@ As of 2026-11-15:
 | --- | --- |
 | Railway docs | Read on 2026-11-15: every page linked in this guide. |
 | `.railway/railway.ts` | `npm run --prefix .railway typecheck` passes (TypeScript 5.9.3, `railway` SDK 3.17.0). Evaluated with Node 24 type stripping, as the CLI does: with the flag off it describes one service, `app`, with the health check, region and ten variables; with the flag on it adds `postgres`, `searxng` and `worker`, with `DATABASE_URL` as a reference to `postgres`. |
-| Railway CLI | Only read-only commands were run (`--version`, `whoami`, `list`, `--help`). |
+| Railway CLI | 5.74.0. Shape B was created and deployed with the commands above on 2026-11-15. |
 | `docker build` of the root `Dockerfile` | Not re-run for this guide (the Docker daemon was not running). The image itself is validated in [deploy/README.md](../README.md#status). |
-| `railway config plan` / `apply`, deploy, smoke test, custom domain | Not run. No Railway project was created. |
-| `preserve()` on a variable that is not set yet | Not tested. The guide sets the secrets before the first apply to avoid the case. |
+| `railway config plan` / `apply` (shape B) | Run on 2026-11-15: the plan added `postgres`, `searxng` and `worker`; apply created them; the plan after deploy and domain generation reported no changes. |
+| Shape B deploy and smoke test | Run on 2026-11-15: all three services `SUCCESS`; `research_e2e.py smoke` passed (healthz 200, unsigned 401, `/docs` 404, signed config 200, no-op job finished). |
+| Shape B research run, SearXNG from the worker over the private network | Not run: the worker has no OpenAI key yet (`research_enabled: false`). `railway ssh` needs a registered SSH key, which was not added. |
+| Shape A deploy, custom domain | Not run. |
+| `preserve()` on a variable that is not set yet | Applied with `OPENAI_API_KEY` and `JOB_WORKER_SECRET_PREVIOUS` unset: no variable was created and the plan stays clean. |
 | Rebuild on a variable change | Not tested; the guide says to start a fresh build. |
-| Shape B, SearXNG image, private-network checks | Not run; requires #18. |
+| SearXNG image | Built and started on Railway (`Listening at: http://[::]:8080`). |
 
-Record the commands you run, their dates and the observed start time and monthly cost here once a project exists.
+Record the commands you run, their dates and the observed monthly cost here as the deployment changes.

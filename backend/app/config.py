@@ -77,10 +77,13 @@ class Settings(BaseSettings):
 
     # ── Partner-list import (admin, issue #19) ─────────────────────
     # Off unless IMPORT_ENABLED=true AND JOB_BACKEND is not "off" AND
-    # ADMIN_API_TOKEN is set; otherwise the routes return 404. "inline"
-    # runs the import inside the request (no worker or database yet).
+    # ADMIN_API_TOKEN is set; otherwise the routes return 404. The import
+    # always runs inside the request; it does not use the job worker.
     import_enabled: bool = False
-    job_backend: Literal["off", "inline"] = "off"
+    # One setting with app/jobs/settings.py (research jobs, #18), which reads
+    # the same variable and validates it: "remote" proxies jobs to
+    # JOB_WORKER_URL, "inline" runs them in process (refused on Vercel).
+    job_backend: Literal["off", "inline", "remote"] = "off"
     # Send the filtered rows to the model for hours, address, category and
     # eligibility suggestions. Needs live AI too.
     import_use_model: bool = False

@@ -43,7 +43,9 @@ import LinkOffIcon from "@mui/icons-material/LinkOff";
 import LogoutIcon from "@mui/icons-material/Logout";
 import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import { useAuth } from "@/hooks/useAuth";
+import { useJobsConfig } from "@/hooks/useJobsConfig";
 import { useImportConfig } from "@/pages/admin/import/useImportConfig";
 
 const DRAWER_WIDTH = 260;
@@ -80,6 +82,11 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
         label: "Eligibility Rules",
         path: "/admin/eligibility",
         icon: <RuleIcon />,
+      },
+      {
+        label: "Research agent",
+        path: "/admin/research",
+        icon: <TravelExploreIcon />,
       },
     ],
   },
@@ -128,6 +135,8 @@ export default function AdminLayout() {
   const location = useLocation();
   const { residentName, staffRole, logout } = useAuth();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  // The research agent entry shows only when the feature is on (issue #18).
+  const researchEnabled = useJobsConfig()?.research_enabled === true;
   // Without a staff sign-in the console is the demo: a generic admin persona.
   const displayName = (staffRole && residentName) || "Demo Staff";
   const roleLabel = (staffRole ?? "admin").replace("_", " ").toUpperCase();
@@ -189,7 +198,9 @@ export default function AdminLayout() {
               </ListSubheader>
             }
           >
-            {section.items.map((item) => {
+            {section.items
+              .filter((item) => researchEnabled || item.path !== "/admin/research")
+              .map((item) => {
               const isActive =
                 item.path === "/admin"
                   ? location.pathname === "/admin"

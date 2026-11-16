@@ -25,6 +25,9 @@ import AdminDemandMap from "@/pages/admin/AdminDemandMap";
 import AdminReports from "@/pages/admin/AdminReports";
 import AdminPartnerGaps from "@/pages/admin/AdminPartnerGaps";
 import ReportView from "@/pages/admin/reports/ReportView";
+import ResearchJobs from "@/pages/admin/research/ResearchJobs";
+import JobDetail from "@/pages/admin/research/JobDetail";
+import DraftReview from "@/pages/admin/research/DraftReview";
 import AdminPartnerImport from "@/pages/admin/import/AdminPartnerImport";
 import Box from "@mui/material/Box";
 
@@ -51,6 +54,9 @@ export default function App() {
         <Route path="services/new" element={<AdminServiceEdit />} />
         <Route path="services/:id/edit" element={<AdminServiceEdit />} />
         <Route path="eligibility" element={<AdminEligibility />} />
+        <Route path="research" element={<ResearchJobs />} />
+        <Route path="research/:id" element={<JobDetail />} />
+        <Route path="research/drafts/:draftId" element={<DraftReview />} />
         <Route path="import" element={<AdminPartnerImport />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="demand-map" element={<AdminDemandMap />} />

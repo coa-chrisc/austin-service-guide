@@ -243,6 +243,8 @@ Replace the files in your copy (and delete the Austin `README.md`):
 
 Field-by-field schemas, validation rules and the validator are in [DATA_PACK.md](DATA_PACK.md); check a whole pack with `CITY_DATA_DIR=data/my-city npm run validate:pack` from `frontend/`. Do not repeat them here.
 
+**Drafting entries with the research agent.** If your deployment runs the job worker (`JOB_BACKEND`, see [deploy/railway/README.md](../deploy/railway/README.md#shape-b-job-worker-postgres-and-searxng)), staff can start a research job for a place and topic from **Research agent** in the admin console. It drafts `services/<slug>.yaml` entries from public web pages, each field with a source link and quote, checks them against the pack rules and for duplicates, and exports accepted drafts as a zip laid out like a pack. Copy the files into your pack by hand; nothing goes live on its own, and drafts are unverified like any other entry.
+
 Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
 
 ## Import an existing partner list
@@ -254,6 +256,8 @@ IMPORT_ENABLED=true
 JOB_BACKEND=inline
 ADMIN_API_TOKEN=<a long random secret>
 ```
+
+`JOB_BACKEND` is the setting the research agent uses too, and the import works with any value other than `off`: on a deployment that already proxies research jobs to a worker (`JOB_BACKEND=remote`), keep that value. The import itself always runs inside the request and never uses the worker. `inline` also mounts the research job routes in-process; those need `requirements-worker.txt`, and `inline` is refused on Vercel.
 
 Then open **Import Partner List** in the admin console (`/admin/import`), unlock it with the token, and upload the file (`.xlsx`, `.csv` or `.docx`, up to 4 MB). The import proposes which column feeds which catalog field and drops contact names, cell numbers, personal emails and notes by default; confirm or change the mapping, review each draft, and download a zip of `services/<slug>.yaml` files plus `review-issues.csv`. Nothing is written to the catalog. Copy the files you accept into your pack's `services/` folder, check each entry with the provider, and run `npm run validate:pack`.
 
