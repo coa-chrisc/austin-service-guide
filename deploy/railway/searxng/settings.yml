@@ -1,0 +1,40 @@
+# SearXNG settings for the planned research worker (#18). PLANNED, NOT YET USED.
+#
+# A private metasearch instance that only the worker calls, over Railway's
+# private network (http://searxng.railway.internal:8080). It must never get a
+# public domain: an open instance is quickly abused as a proxy.
+#
+# No secret here. The container reads server.secret_key from the SEARXNG_SECRET
+# environment variable, set on Railway (see deploy/railway/README.md).
+# Reference: https://docs.searxng.org/admin/settings/settings.html
+
+use_default_settings:
+  engines:
+    # A short list keeps the instance fast and its upstream footprint small.
+    keep_only:
+      - duckduckgo
+      - brave
+      - bing
+      - wikipedia
+
+# bing ships disabled in SearXNG's defaults; turn it on.
+engines:
+  - name: bing
+    disabled: false
+
+general:
+  instance_name: "service-guide-search"
+
+search:
+  safe_search: 1
+  # json is what the worker reads; html is kept for checking by hand.
+  formats:
+    - html
+    - json
+
+server:
+  # Private, single-client instance: the limiter (which needs Valkey) and
+  # public-instance features stay off.
+  limiter: false
+  public_instance: false
+  image_proxy: false

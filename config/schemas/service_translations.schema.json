@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/service_translations.schema.json",
+  "title": "Service translations (service_translations.yaml)",
+  "description": "Optional. Service slug -> language code -> {description}. Shown on the results page in place of the English description when the resident's language matches; anything not listed shows the English description. Read by catalog_loader.load_service_translations into ServiceTranslation.",
+  "type": "object",
+  "propertyNames": {"pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+  "additionalProperties": {
+    "type": "object",
+    "propertyNames": {"pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$"},
+    "additionalProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": {"type": "string", "minLength": 1, "description": "Translated description. Plain text."}
+      }
+    }
+  }
+}

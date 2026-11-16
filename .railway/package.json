@@ -1,0 +1,16 @@
+{
+  "name": "civic-service-guide-railway-config",
+  "private": true,
+  "description": "Deploy-time tooling for .railway/railway.ts. Not part of the app build. See deploy/railway/README.md.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "railway": "3.17.0",
+    "typescript": "~5.9.3"
+  }
+}

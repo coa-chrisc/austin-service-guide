@@ -4,6 +4,8 @@ Vercel is the fastest path to a hosted demo: no container registry, no network s
 
 The Austin reference deployment runs this way at `https://civic-service-guide.vercel.app` (gated).
 
+To run the same app as an always-on container instead, see [deploy/railway/README.md](../railway/README.md). That guide also describes the planned Railway back end (job worker, Postgres, private SearXNG) that this Vercel deployment would call for long-running work.
+
 ## How it fits together
 
 | File (repo root) | Role |

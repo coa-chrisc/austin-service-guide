@@ -240,7 +240,7 @@ Replace the files in your copy (and delete the Austin `README.md`):
 | `personas.yaml` | Demo personas. Optional. With none, the demo launcher is hidden. |
 | `admin_demo.yaml` | Synthetic data for the admin console, including `council_districts`. Optional. With none, admin views are empty. |
 
-Field-by-field schemas, validation rules and the loader are in [backend/app/data/README.md](../backend/app/data/README.md). Do not repeat them here.
+Field-by-field schemas, validation rules and the validator are in [DATA_PACK.md](DATA_PACK.md); check a whole pack with `CITY_DATA_DIR=data/my-city npm run validate:pack` from `frontend/`. Do not repeat them here.
 
 Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
 
@@ -257,7 +257,7 @@ Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data
 2. **Logo.** Put it under `config/brand/<id>/` and set `brand.logoUrl`, or leave it `null` for the generated tile.
 3. **Data pack.** Copy `backend/app/data` to `config/data/<id>/` and replace the files.
 4. **Map tiles.** Set `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` for production (see [Map](#8-map)).
-5. **Environment variables.** `CITY_CONFIG=presets/<id>.json` and `CITY_DATA_DIR=data/<id>` for the build and the runtime; then the usual `OPENAI_API_KEY`, `PUBLIC_ORIGIN`, `CORS_ORIGINS`, `ADMIN_API_TOKEN` (see [deploy/README.md](../deploy/README.md); on Vercel these are project env vars, see [deploy/vercel/README.md](../deploy/vercel/README.md)).
+5. **Environment variables.** `CITY_CONFIG=presets/<id>.json` and `CITY_DATA_DIR=data/<id>` for the build and the runtime; then the usual `OPENAI_API_KEY`, `PUBLIC_ORIGIN`, `CORS_ORIGINS`, `ADMIN_API_TOKEN` (see [deploy/README.md](../deploy/README.md); on Vercel these are project env vars, see [deploy/vercel/README.md](../deploy/vercel/README.md); on Railway they are service variables, and the city, pack and map variables also reach the Docker build, so changing them needs a fresh build, see [deploy/railway/README.md](../deploy/railway/README.md#another-place-build-time-variables)).
 6. **Verify.** Run the build, tests and catalog check in [Check your work](#11-check-your-work) with your variables set.
 
 The admin console has no real authentication, and the privacy, security and legal reviews in [SECURITY.md](../SECURITY.md) still apply.

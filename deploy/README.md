@@ -9,6 +9,7 @@ These are **starter templates**, not a turnkey production setup. Review them aga
 | `backend/app/spa.py` | `pytest backend/tests/test_spa.py`: 11 passed. Wired in `main.py` (mounted when `STATIC_DIR` is set) | Behaviour behind a real proxy/CDN |
 | `Dockerfile` | `docker build` succeeded (Docker 29.8). Ran with `--read-only --tmpfs /tmp --cap-drop ALL`, `DEMO_MODE=true`: process ran as uid 10001, container health `healthy`, `/api/v1/health` 200, the SPA served at `/` and client routes (`/results`, `/services`), unknown `/api/*` paths returned JSON 404, a `../` traversal path returned 404, and `POST /api/v1/intake/start` returned a new intake state | Live-AI mode (needs `OPENAI_API_KEY`); voice over WebRTC from a deployed origin |
 | `vercel.json`, `vercel_app.py`, `backend/app/access_gate.py` | `pytest backend/tests/test_access_gate.py` passed. `vercel deploy --prod` (CLI 54.1) built and served the app: without a code, `/` returned 303 to `/access`, `/api/v1/*` and assets returned 401/303, and `/api/v1/health` returned 200; with a code, the SPA, hashed assets (`Cache-Control: private`) and `/api/v1/services` (87 services) returned 200 | Live-AI turns longer than 300 s; realtime voice from the deployed origin at the time of writing |
+| `.railway/railway.ts`, `.railway/package.json`, `deploy/railway/` | 2026-11-15: `npm run --prefix .railway typecheck` passed (TypeScript 5.9.3, `railway` SDK 3.17.0); the file evaluated under Node 24 type stripping (as the Railway CLI runs it) to the intended services; every key used was checked against Railway's docs | No Railway project created: `railway config plan`/`apply`, a deploy, the smoke test against Railway and a custom domain were not run. Shape B (job worker, Postgres, SearXNG) is planned and needs #18; its files are unexercised |
 | `docker-compose.yml` | `docker compose config` parses | `docker compose up` |
 | `aws/ecs-fargate.tf` | `terraform fmt -check`, `terraform init -backend=false` and `terraform validate` (Terraform 1.9 in Docker, AWS provider ~> 5) all passed | `plan`/`apply`; no live AWS account |
 | `azure/container-app.bicep` | `az bicep build` compiles with no errors or warnings | `az deployment group create`; no live Azure subscription |
@@ -45,6 +46,7 @@ az deployment group create -g <rg> -f deploy/azure/container-app.bicep \
   -p image=<registry>/service-guide:<tag> citySlug=<city> openAiKeySecretUri=<kv-secret-uri> publicOrigin=https://...
 gcloud run services replace deploy/gcp/cloud-run.yaml --region <region>   # after editing placeholders
 vercel deploy --prod   # no image needed; Vercel builds from source (see deploy/vercel/README.md)
+railway up --service app   # Railway builds the Dockerfile itself (see deploy/railway/README.md)
 ```
 
 Create the OpenAI key secret first (Secrets Manager, Key Vault, or Secret Manager) and grant only the workload identity read access to it. The AWS and Azure templates need pre-existing network (AWS) or vault (Azure) resources, as described in their headers.
@@ -52,6 +54,10 @@ Create the OpenAI key secret first (Secrets Manager, Key Vault, or Secret Manage
 ## Vercel
 
 Vercel runs the whole app as one Python function, with no container registry or network setup and an optional access-code gate for private demos. It is the quickest way to get a hosted, HTTPS demo. Full guide, env vars, access codes, smoke test and gotchas: [deploy/vercel/README.md](vercel/README.md).
+
+## Railway
+
+Railway builds the root `Dockerfile` and runs it as one always-on container with a Railway HTTPS domain and the same optional access-code gate. Its configuration is code: `.railway/railway.ts` (Railway Infrastructure as Code; the older `railway.toml` / `railway.json` stop being read on 2026-12-01). A Vercel app with a Railway back end (job worker, Postgres, private SearXNG) is documented there as planned, for the work in #18, #19 and #14. Full guide, env vars, access codes, smoke test and gotchas: [deploy/railway/README.md](railway/README.md).
 
 ## Configuration
 
@@ -94,12 +100,13 @@ Local run: `docker compose up --build` (override with `CITY_CONFIG=presets/<city
 
 ## Logging
 
-The app writes to stdout/stderr. Each platform collects it: CloudWatch Logs (`/ecs/<city>-service-guide`, 30-day retention), Log Analytics (Container Apps), Cloud Logging (Cloud Run), the project's Logs tab or `vercel logs` (Vercel). Resident text is PII-redacted before storage or any model call (see `docs/PRIVACY.md`), but keep log retention short and restrict log access. Do not enable `REALTIME_DEBUG_LOG_ENABLED` in production.
+The app writes to stdout/stderr. Each platform collects it: CloudWatch Logs (`/ecs/<city>-service-guide`, 30-day retention), Log Analytics (Container Apps), Cloud Logging (Cloud Run), the project's Logs tab or `vercel logs` (Vercel), `railway logs` (Railway). Resident text is PII-redacted before storage or any model call (see `docs/PRIVACY.md`), but keep log retention short and restrict log access. Do not enable `REALTIME_DEBUG_LOG_ENABLED` in production.
 
 ## Known limitations
 
 - **AWS:** no WAF, no access logs on the ALB, no VPC or certificate creation; the task needs outbound HTTPS (NAT or endpoints). The security group allows egress to `0.0.0.0/0` on 443 because OpenAI has no fixed IP range. Image architecture defaults to `X86_64`.
 - **Azure:** the managed certificate requires the custom domain's CNAME and `asuid` TXT record to exist before deployment; otherwise leave `customDomain` empty, deploy, add DNS, then redeploy. Role assignments (Key Vault Secrets User, AcrPull) are not created by the template.
 - **Vercel:** no container; static files are served through the function, not the CDN, while the access gate is on; Hobby plan terms are non-commercial; Preview deployments only get Preview-scoped env vars (an ungated preview is possible). See [vercel/README.md](vercel/README.md#gotchas-we-hit).
+- **Railway:** not yet deployed from this repo; the edge closes a request after 5 minutes with no data, so a single long agent turn has about the same ceiling as on Vercel; sealed variables are not copied into PR environments (an ungated copy is possible). See [railway/README.md](railway/README.md#gotchas).
 - **GCP:** the manifest does not create the service account, secret, or public-access binding; custom domains are configured outside it.
 - **All:** admin auth is the demo stub, so put admin routes behind the platform's own access control for anything beyond a demo.
