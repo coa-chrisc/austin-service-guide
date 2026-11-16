@@ -340,3 +340,115 @@ def test_disabled_restores_todays_behaviour(client, defense_off, monkeypatch):
         "mode": "intercepted_text", "raw_audio_allowed": False, "live_ai": False,
     }
     assert get_store() is store and store.snapshot()["counters"] == {}
+
+
+# ── Review fixes ────────────────────────────────────────────────────────
+
+def test_gated_presenter_can_email_themselves_repeatedly():
+    """share_recipient takes the access multiplier: 3 a day x 10 for a label."""
+    use_store()
+    presenter, device = principal("access", "office"), principal("device")
+
+    async def run():
+        for _ in range(10):
+            await check("share_recipient", presenter, recipient_hash="me")
+        for _ in range(3):
+            await check("share_recipient", device, recipient_hash="victim")
+        with pytest.raises(DefenseRefusal) as refused:
+            await check("share_recipient", device, recipient_hash="victim")
+        assert refused.value.status == 429
+
+    asyncio.run(run())
+
+
+def _voice_intake(client, monkeypatch) -> Intake:
+    from tests.test_intake import _enable_raw_audio_voice
+
+    intake = Intake(client)
+    _enable_raw_audio_voice(monkeypatch)
+    return intake
+
+
+CRISIS = "I want to kill myself"
+
+
+@pytest.mark.parametrize("defense", ["on", "off"])
+def test_crisis_transcript_is_answered_while_voice_is_switched_off(client, monkeypatch, defense):
+    """A refused voice route still answers a crisis (breaker / kill switch: 503)."""
+    from app.config import get_settings
+
+    use_store()
+    intake = _voice_intake(client, monkeypatch)
+    monkeypatch.setattr(get_settings(), "kill_switch_voice", True)
+    if defense == "off":
+        monkeypatch.setattr(get_settings(), "defense_enabled", False)
+    assert intake.post("realtime/transcript", role="user", content="I need food").status_code == 503
+    res = intake.post("realtime/transcript", role="user", content=CRISIS)
+    assert res.status_code == 200, res.text
+    assert res.json()["crisis_detected"] is True
+    tool = intake.post("realtime/tool", name="get_crisis_resources", arguments={})
+    assert tool.status_code == 200, tool.text
+    assert intake.post("realtime/tool", name="search_services", arguments={"query": "food"}).status_code == 503
+
+
+def test_crisis_transcript_and_tool_skip_the_voice_rate_limit(client, monkeypatch):
+    from app.defense import breakers
+
+    use_store()
+    intake = _voice_intake(client, monkeypatch)
+    _override(monkeypatch, "voice_tool", "principal", 1)
+    assert intake.post("realtime/transcript", role="user", content="I need food").status_code == 200
+    assert intake.post("realtime/transcript", role="user", content="2 people").status_code == 429
+    res = intake.post("realtime/transcript", role="user", content=CRISIS)
+    assert res.status_code == 200 and res.json()["crisis_detected"] is True
+    assert intake.post("realtime/tool", name="get_crisis_resources", arguments={}).status_code == 200
+    # Assistant speech is not a resident in crisis: no bypass.
+    assert intake.post("realtime/transcript", role="assistant", content=CRISIS).status_code == 429
+    asyncio.run(breakers.trip("voice", "manual"))
+    assert intake.post("realtime/transcript", role="user", content=CRISIS).status_code == 200
+
+
+def test_bad_rate_limit_override_fails_startup(monkeypatch):
+    from app.defense.keys import check_defense_config
+    from app.defense.store import DefenseConfigError
+
+    monkeypatch.setenv("RL_INTAKE_MESSAGE_PRINCIPAL", "twenty")
+    limits.reset_policies()
+    with pytest.raises(DefenseConfigError, match="RL_INTAKE_MESSAGE_PRINCIPAL"):
+        check_defense_config()
+
+
+@pytest.mark.parametrize(("channel", "a", "b"), [
+    ("email", "Jane.Doe+demo@GoogleMail.com", "janedoe@gmail.com"),
+    ("email", "j.doe+x@Example.org ", "j.doe@example.org"),
+    ("sms", "+1 (512) 555-1234", "+15125551234"),
+    ("sms", "512.555.1234", "+15125551234"),
+])
+def test_recipient_variants_share_one_key(channel, a, b):
+    assert limits.canonical_recipient(channel, a) == limits.canonical_recipient(channel, b)
+
+
+def test_recipient_canonicalisation_keeps_distinct_addresses_apart():
+    canon = limits.canonical_recipient
+    assert canon("email", "j.doe@example.org") != canon("email", "jdoe@example.org")
+    assert canon("email", "jdoe@gmail.com") != canon("email", "jdoe@example.org")
+    assert canon("sms", "+15125551234") != canon("sms", "+15125559999")
+    assert canon("sms", "+15125551234") != canon("email", "15125551234@x.org")
+
+
+def test_share_recipient_counts_email_aliases_together(client, monkeypatch):
+    from app.routers import intake as intake_router
+    from app.services import catalog
+
+    use_store()
+
+    async def fake_send_email(*, to, subject, text, html):
+        return {"ok": True, "demo": True, "channel": "email", "to": to}
+
+    monkeypatch.setattr(intake_router, "send_email", fake_send_email)
+    _override(monkeypatch, "share_recipient", "day", 1)
+    sid = catalog.get_all_services(page=1, page_size=1)["items"][0].id
+    body = {"channel": "email", "service_ids": [sid]}
+    assert client.post("/api/v1/intake/share", json={**body, "recipient": "jane.doe@gmail.com"}).status_code == 200
+    again = client.post("/api/v1/intake/share", json={**body, "recipient": "Jane.Doe+2@googlemail.com"})
+    assert again.status_code == 429 and again.json()["policy"] == "share_recipient"

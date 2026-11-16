@@ -34,7 +34,7 @@ from app.services.matching import assess_risks, match_services
 from app.services.pii import redact
 from app.services.prompts import build_instructions
 from app.services.scenarios import check_crisis, crisis_response, scenario_first_followup
-from app.services.scripted import DEMO_STEPS, demo_flow, welcome_message
+from app.services.scripted import DEMO_STEPS, demo_flow, resume_scripted, welcome_message
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
 
@@ -87,7 +87,7 @@ async def start_session(
             # Live AI is configured but paused (budget or breaker): later
             # turns may use it again, so keep the AI notice.
             content=(
-                welcome_message(get_city(), AI_NOTICE_I18N["en"])
+                welcome_message(get_city(), ai_notice(session.language) or AI_NOTICE_I18N["en"])
                 if get_settings().use_live_ai else step["message"]
             ),
             suggested_buttons=step["buttons"],
@@ -152,7 +152,14 @@ async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMess
                 progress_percent=0,
             ))
 
-    return add_degraded_notice(session, await demo_flow(session, user_text, _scripted_step_num(session)))
+    if get_settings().use_live_ai:
+        # Live AI is configured but paused (budget, breaker) or failing: the
+        # earlier turns were with the model, so the user-turn count says
+        # nothing about which scripted question comes next.
+        reply = await resume_scripted(session, user_text)
+    else:
+        reply = await demo_flow(session, user_text, _scripted_step_num(session))
+    return add_degraded_notice(session, reply)
 
 
 def _scripted_step_num(session: IntakeSession) -> int:
@@ -267,7 +274,7 @@ async def _live_greeting(session: IntakeSession) -> str:
         # The model dropped the AI disclosure; never send a greeting without it.
         text = f"{text}\n\n{notice or AI_NOTICE_I18N['en']}"
     # Live AI is on here, so the fallback greeting keeps the AI notice.
-    return text or welcome_message(get_city(), AI_NOTICE_I18N["en"])
+    return text or welcome_message(get_city(), notice or AI_NOTICE_I18N["en"])
 
 
 def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:

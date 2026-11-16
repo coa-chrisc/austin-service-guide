@@ -92,9 +92,13 @@ def reset_keys() -> None:
 
 def check_defense_config() -> None:
     """Fail startup on unusable DEFENSE_* settings; log the store caveat."""
+    from app.defense.limits import policies
     from app.defense.store import get_store
     from app.defense.usage import check_price_table
 
+    # A bad RL_* override fails here, not as a 500 on every limited route
+    # (the routes read the table even with defense off, for the kill switches).
+    policies()
     if not defense_enabled():
         log.warning("DEFENSE_ENABLED=false: no rate limits, metering or budgets are applied.")
         return

@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.config import get_settings
 from app.defense.breakers import voice_config_overrides
-from app.defense.budget import voice_reservation
+from app.defense.budget import release_voice_reservation, voice_reservation
 from app.defense.context import degraded as defense_degraded
 from app.defense.limits import limit, limit_recipient
 from app.models import (
@@ -427,7 +427,7 @@ def _require_realtime_debug_enabled() -> None:
 
 
 @router.post("/realtime/client-secret", dependencies=[
-    Depends(_require_raw_audio_voice), Depends(limit("voice_mint")), Depends(voice_reservation),
+    Depends(_require_raw_audio_voice), Depends(limit("voice_mint")),
 ])
 async def create_realtime_client_secret(body: RealtimeSecretRequest):
     """Create an ephemeral Realtime client secret for browser voice intake.
@@ -435,9 +435,14 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
     The session instructions are built from the client-sent state. Only the
     server's API key is sent to OpenAI; no inbound request headers are
     forwarded.
+
+    Voice seconds are reserved only once the request is valid (a dependency
+    would also run for a 422 or a completed intake) and given back when
+    OpenAI refuses or cannot be reached.
     """
     session = session_from_state(body.state)
     _require_in_progress(session)
+    await voice_reservation()
     if body.language:
         session.language = normalize_language(body.language, session.language)
 
@@ -472,6 +477,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             )
             res.raise_for_status()
     except httpx.HTTPStatusError as exc:
+        await release_voice_reservation()
         record_realtime_debug_event(trace_id, {
             "event": "client_secret_failed",
             "source": "server",
@@ -484,6 +490,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             status_code=502, detail="Realtime voice is temporarily unavailable."
         ) from exc
     except httpx.HTTPError as exc:
+        await release_voice_reservation()
         record_realtime_debug_event(trace_id, {
             "event": "client_secret_failed",
             "source": "server",

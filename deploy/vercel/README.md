@@ -95,19 +95,19 @@ With `ACCESS_CODES` set, every path except `/access` (the code form), `/api/v1/h
 
 ## Abuse limits and spend
 
-The app rate-limits and budgets its paid routes itself (`backend/app/defense/`; the table and limits are in [SECURITY.md](../../SECURITY.md), section 10). On Vercel its counters live in each function instance's memory: a cold start resets them, and N warm instances allow up to N times any limit, including the dollar budgets. They are a seatbelt. The vendor's hard limit is the backstop.
+The app rate-limits and budgets its paid routes itself (`backend/app/defense/`; the table and limits are in [SECURITY.md](../../SECURITY.md), section 10). On Vercel its counters live in each function instance's memory: a cold start resets them, and N warm instances allow up to N times any limit, including any dollar budget you set. They are a seatbelt. The vendor's hard limit is the backstop.
 
 Environment variables for a gated demo (codes in `ACCESS_CODES`, so no proof-of-work challenge):
 
 ```bash
 printf 1 | vercel env add DEFENSE_TRUSTED_PROXY_HOPS production   # Vercel sets X-Forwarded-For
 python3 -c "import secrets;print(secrets.token_urlsafe(48),end='')" | vercel env add DEFENSE_HASH_KEY production
-# Whole-site dollar caps (estimates): keep them under what the OpenAI project can spend.
-printf 15 | vercel env add BUDGET_USD_GLOBAL_DAY production
-printf 18 | vercel env add BUDGET_USD_GLOBAL_MONTH production
-# Optional: a label shared by a group gets this many times one person's limits (default 10).
+# Optional: a label gets this many times one person's limits (default 10).
+# Use about 30 when one code is shared by the whole group.
 printf 10 | vercel env add DEFENSE_ACCESS_MULTIPLIER production
 ```
+
+The whole-site dollar budgets (`BUDGET_USD_GLOBAL_HOUR`, `_DAY`, `_MONTH`) are off by default: the OpenAI project's hard limit, or a prepaid balance with auto-reload off, is what stops spend. Set them only if you want the app to fall back to the guided questions before the vendor limit is reached, and remember they are per instance here.
 
 Leave `DEFENSE_ENABLED` and `CHALLENGE_PROVIDER` unset (`true` and `auto`). Without the gate (a public deployment) the challenge turns on, and `DEFENSE_TOKEN_SECRET` (32+ characters) is required or the function fails to start:
 
@@ -119,7 +119,7 @@ When a dollar or token budget is spent, chat keeps working on the guided (script
 
 **Vendor limits (do these first).**
 
-1. Put the deployment on its own OpenAI project and key. In the project's limits, set a monthly budget with "Enforce a hard limit" on, and alerts at 50% and 80% to at least two people. OpenAI notes enforcement is not instantaneous, so the app's budgets act first. Set `BUDGET_USD_GLOBAL_MONTH` to about 80% of the vendor limit so the app degrades before the vendor cuts it off. A prepaid balance with auto-reload off is a hard limit too: when it runs out, OpenAI answers `insufficient_quota`, the app's `live_ai` breaker opens, and chat continues on the guided questions.
+1. Put the deployment on its own OpenAI project and key. In the project's limits, set a monthly budget with "Enforce a hard limit" on, and alerts at 50% and 80% to at least two people. OpenAI notes enforcement is not instantaneous. If you want the app to degrade before the vendor cuts it off, set `BUDGET_USD_GLOBAL_MONTH` to about 80% of the vendor limit (per instance, see above). A prepaid balance with auto-reload off is a hard limit too: when it runs out, OpenAI answers `insufficient_quota`, the app's `live_ai` breaker opens, and chat continues on the guided questions.
 2. Twilio: allow only the countries in `SMS_ALLOWED_COUNTRY_CODES` in SMS Geo Permissions, and set an account spend alert. SendGrid: keep the plan's daily send cap low.
 
 ### Firewall

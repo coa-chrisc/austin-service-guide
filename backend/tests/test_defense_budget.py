@@ -196,3 +196,107 @@ def test_voice_reservation_charges_the_session_length(monkeypatch):
 
     asyncio.run(run())
     assert _counter(store, "use:voice:g", DAY) == 600 * 18
+
+
+# ── Review fixes ────────────────────────────────────────────────────────
+
+def test_global_dollar_budgets_are_off_until_the_operator_sets_them():
+    """Spec defense-02 §9: the operator sets dollar budgets; the vendor hard limit is the backstop."""
+    from app.config import Settings
+
+    fields = Settings.model_fields
+    assert fields["budget_usd_global_hour"].default == 0
+    assert fields["budget_usd_global_day"].default == 0
+    assert fields["budget_usd_global_month"].default == 0
+
+
+def test_demo_office_voice_retries_fit_the_default_global_budget():
+    """Ten people on their own labels, each starting voice four times in one hour."""
+    store, _ = use_store()
+    people = [principal("access", f"person-{i}") for i in range(10)]
+
+    async def run():
+        for _ in range(4):
+            for who in people:
+                await reserve_voice(who)
+
+    asyncio.run(run())
+    assert _counter(store, "use:voice:g", HOUR) == 40 * get_settings().realtime_max_session_seconds
+
+
+class _FailingHttpx:
+    def __init__(self, **_):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+    async def post(self, *args, **kwargs):
+        import httpx
+
+        raise httpx.ConnectError("upstream down")
+
+
+def test_failed_voice_mint_refunds_the_reservation(monkeypatch):
+    from app.main import app
+    from app.routers import intake as intake_router
+    from tests.defense_support import gated_client, login
+    from tests.test_intake import _enable_raw_audio_voice
+
+    store, _ = use_store()
+    fake_openai(monkeypatch)
+    client = gated_client(app)
+    login(client, "alpha-code-1")
+    intake = Intake(client)
+    _enable_raw_audio_voice(monkeypatch)
+    monkeypatch.setattr(intake_router.httpx, "AsyncClient", _FailingHttpx)
+    assert client.post("/api/v1/intake/realtime/client-secret", json={}).status_code == 422
+    for _ in range(3):
+        res = intake.post("realtime/client-secret")
+        assert res.status_code == 502, res.text
+    reserved = {k: v for k, (v, _) in store.snapshot()["counters"].items()
+                if k.startswith(("use:voice:", "use:mints:"))}
+    assert reserved and all(v == 0 for v in reserved.values()), reserved
+
+
+def test_paused_ai_greeting_uses_the_session_language(client, monkeypatch):
+    from app.services.i18n import AI_NOTICE_I18N
+
+    use_store()
+    fake_openai(monkeypatch)
+    monkeypatch.setattr(get_settings(), "kill_switch_live_ai", True)
+    greeting = client.post("/api/v1/intake/start", json={"language": "es"}).json()["greeting"]["content"]
+    assert AI_NOTICE_I18N["es"] in greeting
+    assert AI_NOTICE_I18N["en"] not in greeting
+
+
+def test_ai_paused_mid_conversation_does_not_complete_the_intake(client, monkeypatch):
+    """Eight live turns, then the breaker opens: the scripted flow asks, it does not finish."""
+    from app.services.scripted import DEMO_STEPS
+
+    use_store()
+    fake_openai(monkeypatch, text="Tell me more about what you need.")
+    intake = Intake(client)
+    for text in ("I need food", "we have kids", "it is hard", "yes", "ok", "sure", "maybe", "thanks"):
+        intake.say(text)
+    monkeypatch.setattr(get_settings(), "kill_switch_live_ai", True)
+    body = intake.say_raw("what else?").json()
+    reply = body["response"]
+    assert reply["is_complete"] is False and body["status"] != "completed"
+    assert reply["content"].endswith(DEMO_STEPS[1]["message"])  # household size: the first blank field
+    # The answer is read as an answer to that question, then the next one is asked.
+    reply = intake.say_raw("3 people").json()["response"]
+    assert intake.profile["household_size"] == 3
+    assert reply["content"].endswith(DEMO_STEPS[2]["message"])
+    assert reply["is_complete"] is False
+    # Every scripted question survives the client state round trip, and the
+    # intake finishes only on the answer to the last one.
+    for idx, answer in enumerate(("78741", "I rent", "Working full-time", "Under $1,000", "Medicaid"), 3):
+        reply = intake.say_raw(answer).json()["response"]
+        assert reply["is_complete"] is False
+        assert reply["content"].endswith(DEMO_STEPS[idx]["message"]), idx
+    assert intake.profile["zip_code"] == "78741" and intake.profile["insurance_status"] == "medicaid"
+    assert intake.say_raw("None of these").json()["response"]["is_complete"] is True

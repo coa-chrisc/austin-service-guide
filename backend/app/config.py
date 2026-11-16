@@ -114,13 +114,16 @@ class Settings(BaseSettings):
     budget_tokens_global_day: int = 100_000_000
     budget_voice_seconds_principal_hour: int = 900
     budget_voice_seconds_principal_day: int = 1_800
-    budget_voice_seconds_global_hour: int = 18_000
+    # 60 mints of REALTIME_MAX_SESSION_SECONDS (600), the voice_mint global row.
+    budget_voice_seconds_global_hour: int = 36_000
     budget_voice_seconds_global_day: int = 72_000
     budget_usd_principal_hour: float = 2.0
     budget_usd_principal_day: float = 4.0
+    # Global dollar budgets are off until the operator sets them; the
+    # OpenAI project's hard limit (or a prepaid balance) is the backstop.
     budget_usd_global_hour: float = 0.0
-    budget_usd_global_day: float = 15.0
-    budget_usd_global_month: float = 18.0
+    budget_usd_global_day: float = 0.0
+    budget_usd_global_month: float = 0.0
     # Stop the agent loop once one resident turn has used this many tokens.
     openai_max_tokens_per_turn: int = 120_000
     # JSON that replaces config/model_prices.json (same shape).

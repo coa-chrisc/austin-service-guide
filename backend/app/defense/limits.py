@@ -8,9 +8,11 @@ behind it.
 
 Tiers:
 
-- gated (access label, admin): per-principal rows x DEFENSE_ACCESS_MULTIPLIER
-  (a label is often shared by a group), network rows skipped (one office
-  NAT is not a signal for known users); global rows apply as written.
+- gated (access label, admin): per-principal and per-recipient rows x
+  DEFENSE_ACCESS_MULTIPLIER (a label is often shared by a group, and a
+  presenter may send to their own address many times), network rows
+  skipped (one office NAT is not a signal for known users); global rows
+  apply as written.
 - device: the table as written. A device token younger than
   DEFENSE_NEW_TOKEN_WARMUP_SECONDS cannot mint voice yet.
 - anon, when a challenge is available: a quarter of the intake_start and
@@ -31,6 +33,12 @@ Never limited here (decision D6): the service directory, search, map,
 results hydration beyond its generous row, crisis resources. A crisis turn
 inside ``/message`` is answered by the scripted crisis check before any
 model call; ``intake_message`` only refuses floods (20 a minute).
+
+Crisis lines are never refused (``crisis_bypass``): a ``/message`` or
+``/realtime/transcript`` turn that trips the crisis check, and a realtime
+``get_crisis_resources`` tool call, go through even when the policy's
+limit (429), breaker or kill switch (503) would refuse them. None of those
+calls a model.
 """
 
 from __future__ import annotations
@@ -51,7 +59,7 @@ from app.config import get_settings
 from app.defense import context
 from app.defense.keys import challenge_provider, defense_enabled, keyed_hash
 from app.defense.principal import Principal, resolve_principal
-from app.defense.store import DAY, HOUR, get_store, window_bounds
+from app.defense.store import DAY, HOUR, DefenseConfigError, get_store, window_bounds
 from app.defense.store_memory import MemoryStore
 
 log = logging.getLogger(__name__)
@@ -77,8 +85,9 @@ class Policy:
     anon: Literal["same", "quarter", "refuse"] = "same"
     #: Breaker that must not be open for this route (see breakers.py).
     breaker: str | None = None
-    #: A 429 is waived when the resident's message trips the crisis check
-    #: (decision D6: crisis responses always go out; they never call a model).
+    #: Any refusal (429 limit, 503 breaker or kill switch) is waived for a
+    #: crisis request (see ``_is_crisis``). Decision D6: crisis responses
+    #: always go out; they never call a model.
     crisis_bypass: bool = False
 
 
@@ -104,7 +113,8 @@ DEFAULT_POLICIES: tuple[Policy, ...] = (
         _r("net", "net", 30, HOUR), _r("global", "global", 60, HOUR),
         _r("global_day", "global", 200, DAY),
     ), "closed", anon="refuse", breaker="voice"),
-    Policy("voice_tool", (_r("principal", "principal", 120, 60),), "local", breaker="voice"),
+    Policy("voice_tool", (_r("principal", "principal", 120, 60),), "local", breaker="voice",
+           crisis_bypass=True),
     Policy("share", (
         _r("principal", "principal", 3, HOUR), _r("principal_day", "principal", 6, DAY),
         _r("net", "net", 20, HOUR), _r("global_day", "global", 100, DAY),
@@ -183,7 +193,9 @@ def policies() -> dict[str, Policy]:
                 try:
                     rule = replace(rule, limit=max(0, int(raw)))
                 except ValueError as exc:
-                    raise ValueError(f"RL_{policy.name}_{rule.name}".upper() + " must be an integer") from exc
+                    raise DefenseConfigError(
+                        f"RL_{policy.name}_{rule.name}".upper() + " must be an integer"
+                    ) from exc
             rules.append(rule)
         out[policy.name] = replace(policy, rules=tuple(rules))
     return out
@@ -220,11 +232,11 @@ def _subject(rule: Rule, principal: Principal, recipient_hash: str | None) -> st
 
 def _effective_limit(rule: Rule, policy: Policy, principal: Principal, challenge: bool) -> int:
     limit = rule.limit
-    if rule.scope != "principal" or limit <= 0:
+    if rule.scope not in ("principal", "recipient") or limit <= 0:
         return limit
     if principal.gated:
         return max(1, math.floor(limit * get_settings().defense_access_multiplier))
-    if principal.kind == "anon" and challenge and policy.anon == "quarter":
+    if rule.scope == "principal" and principal.kind == "anon" and challenge and policy.anon == "quarter":
         return max(1, limit // 4)
     return limit
 
@@ -311,20 +323,21 @@ def limit(policy_name: str):
         raise ValueError(f"unknown rate-limit policy {policy_name!r}")
 
     async def dependency(request: Request, response: Response) -> None:
-        if not defense_enabled():
-            # Kill switches still apply with defense off: they are explicit "off" flags.
-            policy = policies()[policy_name]
-            if policy.breaker:
-                from app.defense.breakers import breaker_refusal
-
-                await breaker_refusal(policy.breaker, policy_name)
-            return
-        principal = resolve_principal(request, get_store().now())
-        context.bind(principal)
         try:
+            if not defense_enabled():
+                # Kill switches still apply with defense off: they are explicit "off" flags.
+                policy = policies()[policy_name]
+                if policy.breaker:
+                    from app.defense.breakers import breaker_refusal
+
+                    await breaker_refusal(policy.breaker, policy_name)
+                return
+            principal = resolve_principal(request, get_store().now())
+            context.bind(principal)
             decision = await check(policy_name, principal)
         except DefenseRefusal as refusal:
-            if refusal.status == 429 and policies()[policy_name].crisis_bypass and await _is_crisis(request):
+            if refusal.status in (429, 503) and policies()[policy_name].crisis_bypass \
+                    and await _is_crisis(request):
                 return
             raise
         response.headers.update(rate_headers(decision))
@@ -333,8 +346,16 @@ def limit(policy_name: str):
     return dependency
 
 
+_CRISIS_TOOL = "get_crisis_resources"
+
+
 async def _is_crisis(request: Request) -> bool:
-    """Does this request's ``message`` trip the scripted crisis check?"""
+    """Is this a crisis request that must never be refused?
+
+    ``/message``: the resident's ``message`` trips the scripted crisis check.
+    ``/realtime/transcript``: a resident (``role: user``) turn trips it.
+    ``/realtime/tool``: the voice model asked for the crisis resources.
+    """
     from app.services.pii import redact
     from app.services.scenarios import check_crisis
 
@@ -342,21 +363,56 @@ async def _is_crisis(request: Request) -> bool:
         body = await request.json()
     except Exception:  # noqa: BLE001 — unreadable body: no bypass
         return False
-    message = body.get("message") if isinstance(body, dict) else None
-    if not isinstance(message, str) or len(message) > 4_000:
+    if not isinstance(body, dict):
         return False
-    return bool(check_crisis(redact(message).text))
+    if body.get("name") == _CRISIS_TOOL:
+        return True
+    text = body.get("message")
+    if text is None and body.get("role") == "user":
+        text = body.get("content")
+    if not isinstance(text, str) or len(text) > 5_000:
+        return False
+    return bool(check_crisis(redact(text).text))
+
+
+_GMAIL_DOMAINS = frozenset({"gmail.com", "googlemail.com"})
+
+
+def canonical_recipient(channel: str, recipient: str) -> str:
+    """One spelling per mailbox or phone, so aliases share one counter.
+
+    Email: lowercase, ``+tag`` dropped from the local part; for Gmail,
+    dots dropped too and ``googlemail.com`` folded into ``gmail.com``
+    (Gmail delivers all of those to one inbox). Phone: ``+`` and digits
+    only. ``ShareRequest`` has already turned it into E.164 (US numbers
+    get their ``+1``); a bare ten-digit US number gets ``+1`` here too.
+    """
+    value = recipient.strip().lower()
+    if channel == "sms":
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if not value.startswith("+") and len(digits) == 10:
+            digits = "1" + digits
+        return f"sms:+{digits}"
+    local, sep, domain = value.rpartition("@")
+    if not sep:
+        return f"{channel}:{value}"
+    domain = domain.rstrip(".")
+    local = local.split("+", 1)[0]
+    if domain in _GMAIL_DOMAINS:
+        domain, local = "gmail.com", local.replace(".", "")
+    return f"{channel}:{local}@{domain}"
 
 
 async def limit_recipient(channel: str, recipient: str) -> None:
     """``share_recipient``: at most N sends a day to one phone number or email.
 
-    Only a keyed hash of the normalized recipient is kept, for one day.
+    Only a keyed hash of the canonical recipient (``canonical_recipient``)
+    is kept, for one day.
     """
     if not defense_enabled():
         return
     ctx = context.current()
     if ctx.principal is None:
         return
-    digest = keyed_hash(f"{channel}:{recipient.strip().lower()}")
+    digest = keyed_hash(canonical_recipient(channel, recipient))
     await check("share_recipient", ctx.principal, recipient_hash=digest)

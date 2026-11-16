@@ -140,11 +140,29 @@ async def ai_allowed() -> bool:
     return True
 
 
+def _voice_items(principal: Principal, sign: int) -> list[tuple[str, int, int]]:
+    seconds = sign * get_settings().realtime_max_session_seconds
+    items = [(f"use:voice:p:{principal.hash}", w, seconds) for w in (HOUR, DAY)]
+    items += [("use:voice:g", w, seconds) for w in (HOUR, DAY, CALENDAR_MONTH)]
+    items += [(f"use:mints:p:{principal.hash}", DAY, sign), ("use:mints:g", DAY, sign)]
+    return items
+
+
 async def reserve_voice(principal: Principal) -> None:
     """Reserve REALTIME_MAX_SESSION_SECONDS for one mint, or refuse with 429.
 
     The server cannot see Realtime usage before issue 04, so each mint is
-    charged its maximum length up front.
+    charged its maximum length up front. ``release_voice_reservation``
+    gives it back when the mint fails.
+
+    Advisory until server-brokered sessions (#29): the session is a WebRTC
+    connection between the browser and OpenAI, and OpenAI's client-secret
+    request has no session-length control (``expires_after`` /
+    OPENAI_REALTIME_SECRET_TTL_SECONDS only ends the window for *starting*
+    a session). Nothing ends a session at REALTIME_MAX_SESSION_SECONDS yet:
+    ``voice-config`` reports it, but the browser does not enforce it, and a
+    modified client could ignore it anyway. A session can run longer than
+    it was charged. The OpenAI project's hard limit is the backstop.
     """
     from app.defense.limits import DefenseRefusal
 
@@ -156,14 +174,11 @@ async def reserve_voice(principal: Principal) -> None:
                     429, "voice_budget", "Voice is busy right now. You can keep going by typing.",
                     policy="voice_budget",
                 )
-    items = [(f"use:voice:p:{principal.hash}", w, seconds) for w in (HOUR, DAY)]
-    items += [("use:voice:g", w, seconds) for w in (HOUR, DAY, CALENDAR_MONTH)]
-    items += [(f"use:mints:p:{principal.hash}", DAY, 1), ("use:mints:g", DAY, 1)]
-    await get_store().incr_many(items)
+    await get_store().incr_many(_voice_items(principal, 1))
 
 
 async def voice_reservation() -> None:
-    """Route dependency for the realtime mint, after ``limit("voice_mint")``."""
+    """Called by the realtime mint route, after ``limit("voice_mint")`` and body validation."""
     from app.defense.limits import _UNAVAILABLE, DefenseRefusal
 
     if not defense_enabled():
@@ -178,3 +193,20 @@ async def voice_reservation() -> None:
     except Exception as exc:  # noqa: BLE001 — store down: voice fails closed (D5)
         code, detail = _UNAVAILABLE["voice_mint"]
         raise DefenseRefusal(503, code, detail, policy="voice_budget") from exc
+
+
+async def release_voice_reservation() -> None:
+    """Give back this request's voice reservation (the OpenAI mint failed).
+
+    Same conditions as ``voice_reservation``, so it only undoes a
+    reservation that was made. Never raises: the caller is already failing.
+    """
+    if not defense_enabled():
+        return
+    principal = context.current().principal
+    if principal is None:
+        return
+    try:
+        await get_store().incr_many(_voice_items(principal, -1))
+    except Exception:  # noqa: BLE001 — the reservation simply stays charged
+        pass
