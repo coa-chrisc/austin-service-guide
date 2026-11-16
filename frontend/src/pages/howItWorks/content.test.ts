@@ -3,14 +3,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { PROTECTIONS, SECTIONS, STATUS_LABELS } from "./content";
-import { CHAT_TURN, DIAGRAMS_BY_SECTION, WHO_HOLDS_WHAT } from "./diagrams";
+import { CHAT_TURN, DIAGRAMS_BY_SECTION, RESEARCH_JOB, WHO_HOLDS_WHAT } from "./diagrams";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../../..");
 
 /** Every string the page shows from the content and diagram modules. */
 function allCopy(): string[] {
-  const diagramText = [CHAT_TURN, WHO_HOLDS_WHAT].flatMap((d) => [
+  const diagramText = [CHAT_TURN, WHO_HOLDS_WHAT, RESEARCH_JOB].flatMap((d) => [
     d.caption,
     ...d.lanes.flatMap((l) => [l.label, l.boundaryBefore ?? "", ...l.nodes.flatMap((n) => [n.title, n.detail])]),
   ]);
@@ -36,7 +36,7 @@ const hasBannedClaim = (text: string) =>
   BANNED.some((re) => re.test(ALLOWED.reduce((t, allowed) => t.replace(allowed, ""), text)));
 
 describe("How it works content", () => {
-  it("has the nine sections in the specified order, with the specified anchors", () => {
+  it("has the ten sections in the specified order, with the specified anchors", () => {
     expect(SECTIONS.map((s) => s.id)).toEqual([
       "what-this-is",
       "architecture",
@@ -46,8 +46,22 @@ describe("How it works content", () => {
       "grounding",
       "crisis",
       "consistency",
+      "research",
       "security",
     ]);
+  });
+
+  it("states the research agent's caveats next to its claims", () => {
+    const research = SECTIONS.find((s) => s.id === "research");
+    const limits = research?.limits.join(" ") ?? "";
+    expect(limits).toMatch(/Every draft is unverified/);
+    expect(limits).toMatch(/by hand/);
+    expect(limits).toMatch(/one at a time/);
+    expect(limits).toMatch(/robots\.txt cannot be reached, the fetch goes ahead/);
+    expect(limits).toMatch(/estimate/);
+    expect(research?.points.join(" ")).toMatch(/left blank, not guessed/);
+    expect(DIAGRAMS_BY_SECTION.research).toBe(RESEARCH_JOB);
+    expect(new Set(RESEARCH_JOB.lanes.map((l) => l.label)).size).toBe(RESEARCH_JOB.lanes.length);
   });
 
   it("gives every section a summary, points, limits and sources", () => {
