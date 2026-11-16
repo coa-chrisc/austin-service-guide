@@ -370,7 +370,6 @@ export default function Landing() {
               fontSize: "1.1rem",
               px: 5,
               py: 1.5,
-              borderRadius: "28px",
               "&:hover": {
                 bgcolor: (theme) => alpha(theme.palette.primary.contrastText, 0.92),
                 transform: "translateY(-1px)",
@@ -593,8 +592,8 @@ export default function Landing() {
                   <Grid key={i} size={{ xs: 6, sm: 4, md: 3 }}>
                     <Skeleton
                       variant="rounded"
-                      height={140}
-                      sx={{ borderRadius: 2 }}
+                      height={152}
+                      sx={{ borderRadius: (theme) => theme.shape.radius.card }}
                     />
                   </Grid>
                 ))
@@ -612,7 +611,16 @@ export default function Landing() {
                     >
                       <CardActionArea
                         onClick={() => navigate(`/intake?event=${event.slug}`)}
-                        sx={{ height: "100%", p: 2.5 }}
+                        sx={{
+                          height: "100%",
+                          p: { xs: 2, sm: 2.5 },
+                          // Top-align so icons and titles line up across a row
+                          // even when a title wraps.
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          justifyContent: "flex-start",
+                        }}
                       >
                         <Box
                           sx={{
@@ -631,8 +639,8 @@ export default function Landing() {
                         </Box>
                         <Typography
                           variant="subtitle1"
-                          fontWeight={600}
-                          gutterBottom
+                          component="h3"
+                          sx={{ mb: 0.5, lineHeight: 1.3 }}
                         >
                           {event.name}
                         </Typography>
@@ -641,11 +649,9 @@ export default function Landing() {
                           color="text.secondary"
                           sx={{
                             overflow: "hidden",
-                            textOverflow: "ellipsis",
                             display: "-webkit-box",
-                            WebkitLineClamp: 2,
+                            WebkitLineClamp: 3,
                             WebkitBoxOrient: "vertical",
-                            lineHeight: 1.5,
                           }}
                         >
                           {event.description}
@@ -711,19 +717,26 @@ export default function Landing() {
       >
         <Box sx={{ bgcolor: "primary.dark", color: onInk, py: 5, px: 2 }}>
           <Container maxWidth="lg">
-            <Grid container spacing={4} alignItems="center">
+            <Grid container spacing={4} alignItems="flex-start">
               <Grid size={{ xs: 12, md: 5 }}>
+                {/* Logo on a surface tile: forcing it to one color turns
+                    a filled logo into a blank square. */}
                 <Box
-                  component="img"
-                  src={brand.logoSrc}
-                  alt={brand.agency.name}
                   sx={{
-                    height: 40,
-                    width: "auto",
-                    filter: "brightness(0) invert(1)",
+                    display: "inline-flex",
+                    p: 1,
                     mb: 1.5,
+                    borderRadius: (theme) => theme.shape.radius.control,
+                    bgcolor: "background.paper",
                   }}
-                />
+                >
+                  <Box
+                    component="img"
+                    src={brand.logoSrc}
+                    alt={brand.agency.name}
+                    sx={{ height: 32, width: "auto", display: "block" }}
+                  />
+                </Box>
                 <Typography
                   variant="body2"
                   sx={{ opacity: 0.7, maxWidth: 320 }}

@@ -68,6 +68,7 @@ import type {
   RiskFlag,
   BenefitsEstimate,
 } from "@/types";
+import { categoryLabel } from "@/lib/categoryLabel";
 
 interface ResultsData {
   matches: ServiceMatch[];
@@ -278,12 +279,12 @@ export default function Results() {
         <Skeleton
           variant="rounded"
           height={120}
-          sx={{ mb: 3, borderRadius: 3 }}
+          sx={{ mb: 3, borderRadius: (theme) => theme.shape.radius.card }}
         />
         <Skeleton
           variant="rounded"
           height={60}
-          sx={{ mb: 2, borderRadius: 2 }}
+          sx={{ mb: 2, borderRadius: (theme) => theme.shape.radius.card }}
         />
         <Grid container spacing={2}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -291,7 +292,7 @@ export default function Results() {
               <Skeleton
                 variant="rounded"
                 height={200}
-                sx={{ borderRadius: 3 }}
+                sx={{ borderRadius: (theme) => theme.shape.radius.card }}
               />
             </Grid>
           ))}
@@ -371,26 +372,34 @@ export default function Results() {
         }
       `}</style>
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
-        {/* View toggle */}
+        {/* Page title (simple view; the all-matches card has its own) + view toggle */}
         <Box
           sx={{
             display: "flex",
-            justifyContent: "flex-end",
-            mb: 2,
+            alignItems: "center",
+            justifyContent: view === "simple" ? "space-between" : "flex-end",
+            gap: 2,
+            mb: { xs: 2, sm: 3 },
           }}
-          className="no-print"
         >
+          {view === "simple" && (
+            <Typography
+              variant="h4"
+              component="h1"
+              sx={{ fontSize: { xs: "1.75rem", sm: "2.125rem" } }}
+            >
+              {t("my_plan")}
+            </Typography>
+          )}
           <ToggleButtonGroup
             value={view}
             exclusive
             size="small"
+            className="no-print"
             onChange={(_, v) => v && setView(v)}
             sx={{
-              "& .MuiToggleButton-root": {
-                textTransform: "none",
-                fontWeight: 600,
-                px: 2,
-              },
+              flexShrink: 0,
+              "& .MuiToggleButton-root": { px: 2 },
             }}
           >
             <ToggleButton value="simple">{t("my_plan")}</ToggleButton>
@@ -406,8 +415,9 @@ export default function Results() {
               <Box
                 sx={{
                   mb: 2.5,
-                  p: 2,
-                  borderRadius: 2,
+                  px: 2.5,
+                  py: 2,
+                  borderRadius: (theme) => theme.shape.radius.card,
                   bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
                   border: "1px solid",
                   borderColor: "success.light",
@@ -417,7 +427,7 @@ export default function Results() {
                 }}
               >
                 <CheckCircleIcon color="success" />
-                <Typography variant="body1" sx={{ fontSize: "1rem" }}>
+                <Typography variant="body1">
                   {t("qualify_prefix")}{" "}
                   <Box component="span" sx={{ fontWeight: 800 }}>
                     {formatCurrency(benefits.total_monthly_value)}
@@ -433,7 +443,6 @@ export default function Results() {
               <Card
                 variant="outlined"
                 sx={{
-                  borderRadius: 2,
                   mb: 2.5,
                   bgcolor: "brand.primarySoft",
                   borderColor: "primary.light",
@@ -472,9 +481,10 @@ export default function Results() {
                 {data.plan_synthesis && (
                   <Box
                     sx={{
-                      mb: 2,
-                      p: 2,
-                      borderRadius: 2,
+                      mb: 2.5,
+                      px: 2.5,
+                      py: 2,
+                      borderRadius: (theme) => theme.shape.radius.card,
                       bgcolor: "brand.primarySoft",
                       border: "1px solid",
                       borderColor: "primary.light",
@@ -484,10 +494,8 @@ export default function Results() {
                       variant="overline"
                       sx={{
                         display: "block",
-                        fontWeight: 700,
                         color: "brand.inkText",
                         mb: 0.5,
-                        letterSpacing: 0.5,
                       }}
                     >
                       {t("why_this_order")}
@@ -512,9 +520,8 @@ export default function Results() {
                   color="text.secondary"
                   sx={{
                     display: "block",
-                    mt: 2,
-                    px: 0.5,
-                    lineHeight: 1.5,
+                    mt: 3,
+                    textAlign: "center",
                   }}
                 >
                   {data.plan_ai_generated
@@ -566,7 +573,6 @@ export default function Results() {
             <Card
               sx={{
                 mb: 4,
-                borderRadius: 3,
                 // primary to ink, not to accent: text over the accent end cannot reach AA.
                 background: (theme) =>
                   `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
@@ -593,7 +599,7 @@ export default function Results() {
                     sx={{
                       mt: 3,
                       p: 2.5,
-                      borderRadius: 2,
+                      borderRadius: (theme) => theme.shape.radius.control,
                       bgcolor: (theme) => alpha(theme.palette.brand.ink, 0.25),
                       display: "flex",
                       flexWrap: "wrap",
@@ -729,7 +735,6 @@ export default function Results() {
               <Card
                 sx={{
                   mb: 4,
-                  borderRadius: 3,
                   border: "1px solid",
                   borderColor: "primary.light",
                 }}
@@ -760,7 +765,7 @@ export default function Results() {
                           gap: 1.5,
                           alignItems: "flex-start",
                           p: 1.5,
-                          borderRadius: 2,
+                          borderRadius: (theme) => theme.shape.radius.control,
                           bgcolor: "brand.primarySoft",
                           cursor: "pointer",
                           transition: "background 0.15s",
@@ -826,7 +831,6 @@ export default function Results() {
                         <Card
                           variant="outlined"
                           sx={{
-                            borderRadius: 2,
                             height: "100%",
                             bgcolor: visual.tint,
                             borderColor: visual.ring,
@@ -919,7 +923,7 @@ export default function Results() {
                 {categories.map((cat) => (
                   <Chip
                     key={cat}
-                    label={cat}
+                    label={categoryLabel(cat)}
                     onClick={() =>
                       setFilterCategory(filterCategory === cat ? null : cat)
                     }
@@ -978,14 +982,12 @@ export default function Results() {
                 defaultExpanded
                 sx={{
                   mb: 2,
-                  borderRadius: "12px !important",
-                  "&::before": { display: "none" },
                   boxShadow: (theme) => `0 1px 3px ${alpha(theme.palette.brand.ink, 0.08)}`,
                 }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="h6" fontWeight={600}>
-                    {category}
+                    {categoryLabel(category)}
                   </Typography>
                   <Chip
                     label={catMatches.length}
@@ -1050,31 +1052,33 @@ export default function Results() {
             pt: 1,
             pb: "calc(8px + env(safe-area-inset-bottom, 0px))",
             px: 1,
-            display: "flex",
-            gap: 1,
           }}
         >
-          {topPhone && (
+          {/* Keep the pair a thumb-width wide on desktop instead of spanning the window. */}
+          <Box sx={{ display: "flex", gap: 1, maxWidth: 560, mx: "auto" }}>
+            {topPhone && (
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                fullWidth
+                startIcon={<PhoneIcon />}
+                href={`tel:${topPhone}`}
+                sx={{ fontWeight: 700 }}
+              >
+                {t("call")}
+              </Button>
+            )}
             <Button
-              variant="contained"
-              color="primary"
+              variant="outlined"
+              size="large"
               fullWidth
-              startIcon={<PhoneIcon />}
-              href={`tel:${topPhone}`}
-              sx={{ minHeight: 48, fontWeight: 700, borderRadius: "24px" }}
+              startIcon={<ShareIcon />}
+              onClick={handleShare}
             >
-              {t("call")}
+              {t("send_to_me")}
             </Button>
-          )}
-          <Button
-            variant="outlined"
-            fullWidth
-            startIcon={<ShareIcon />}
-            onClick={handleShare}
-            sx={{ minHeight: 48, fontWeight: 600, borderRadius: "24px" }}
-          >
-            {t("send_to_me")}
-          </Button>
+          </Box>
         </Paper>
       )}
 
@@ -1085,7 +1089,8 @@ export default function Results() {
         onClick={() => setChatOpen(true)}
         sx={{
           position: "fixed",
-          bottom: 24,
+          // Sit above the sticky action bar when it is showing.
+          bottom: view === "simple" && topItem ? 88 : 24,
           right: 24,
           display: view === "simple" ? { xs: "none", md: "flex" } : "flex",
           zIndex: 1200,

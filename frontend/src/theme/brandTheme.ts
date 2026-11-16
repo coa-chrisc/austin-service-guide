@@ -9,7 +9,9 @@
 //   resolveTextOn(), the same resolution the build gate checks.
 //   Roles without an MUI slot live in theme.palette.brand (see palette.d.ts).
 // Radius: chip -> MuiChip, control -> Button/TextField/Select (and
-// shape.borderRadius), card -> MuiCard, panel -> Paper/Dialog/Drawer.
+// shape.borderRadius), card -> MuiCard/Alert/Accordion, panel ->
+// Paper/Dialog/Drawer; large Buttons are pills. shape.radius exposes all of
+// them as CSS lengths for sx.
 import "virtual:theme-fonts";
 import { createTheme, alpha, type Theme } from "@mui/material/styles";
 import type { TypographyVariantsOptions } from "@mui/material/styles";
@@ -97,17 +99,22 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
     textOn,
   };
 
+  // One type scale for every screen: tighter tracking and leading on
+  // headings, roomier leading on body text, and a consistent eyebrow style.
   const typography: TypographyVariantsOptions = {
     fontFamily: fontStack,
-    h1: { fontWeight: 700 },
-    h2: { fontWeight: 700 },
-    h3: { fontWeight: 600 },
-    h4: { fontWeight: 600 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
-    subtitle1: { fontWeight: 600 },
-    body1: { fontWeight: 400 },
-    body2: { fontWeight: 400 },
+    h1: { fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em" },
+    h2: { fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.02em" },
+    h3: { fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.015em" },
+    h4: { fontWeight: 700, lineHeight: 1.25, letterSpacing: "-0.015em" },
+    h5: { fontWeight: 600, lineHeight: 1.3, letterSpacing: "-0.01em" },
+    h6: { fontWeight: 600, lineHeight: 1.35, letterSpacing: "-0.005em" },
+    subtitle1: { fontWeight: 600, lineHeight: 1.45 },
+    subtitle2: { fontWeight: 600, lineHeight: 1.45 },
+    body1: { fontWeight: 400, lineHeight: 1.6 },
+    body2: { fontWeight: 400, lineHeight: 1.55 },
+    caption: { lineHeight: 1.45 },
+    overline: { fontWeight: 700, lineHeight: 1.6, letterSpacing: "0.08em" },
     button: { textTransform: "none" as const, fontWeight: 600 },
   };
   for (const [variant, step] of VARIANT_STEPS) {
@@ -133,6 +140,14 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
     },
     shape: {
       borderRadius: radius.control,
+      // CSS lengths, for sx: `borderRadius: (t) => t.shape.radius.card`.
+      radius: {
+        chip: `${radius.chip}px`,
+        control: `${radius.control}px`,
+        card: `${radius.card}px`,
+        panel: `${radius.panel}px`,
+        pill: "999px",
+      },
     },
     typography,
     components: {
@@ -167,10 +182,47 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
             fontWeight: 600,
             padding: "8px 20px",
           },
+          sizeSmall: {
+            padding: "5px 14px",
+          },
+          // Large buttons are the resident-facing calls to action: one
+          // height and a pill shape everywhere.
           sizeLarge: {
             padding: "12px 28px",
             fontSize: "1rem",
+            minHeight: 48,
+            borderRadius: 999,
           },
+        },
+      },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: {
+            textTransform: "none" as const,
+            fontWeight: 600,
+          },
+        },
+      },
+      MuiAlert: {
+        styleOverrides: {
+          root: {
+            borderRadius: radius.card,
+          },
+        },
+      },
+      MuiAccordion: {
+        styleOverrides: {
+          root: {
+            borderRadius: radius.card,
+            "&::before": { display: "none" },
+            "&:first-of-type, &:last-of-type": { borderRadius: radius.card },
+          },
+        },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          // Inputs read as fields on the tinted page background too.
+          root: ({ theme }) => ({ backgroundColor: theme.palette.background.paper }),
         },
       },
       MuiCard: {
@@ -191,6 +243,11 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
           root: {
             borderRadius: radius.chip,
             fontWeight: 500,
+          },
+          // Static chips are tags (chip radius); clickable chips are
+          // choices and filters, shaped like pills so they read as controls.
+          clickable: {
+            borderRadius: 999,
           },
         },
       },

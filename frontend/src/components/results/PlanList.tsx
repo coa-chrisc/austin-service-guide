@@ -63,13 +63,7 @@ export default function PlanList({
         <Box sx={{ mt: 1, mb: 2 }}>
           <Typography
             variant="overline"
-            sx={{
-              display: "block",
-              fontWeight: 700,
-              color: "text.secondary",
-              letterSpacing: 0.6,
-              mb: 1,
-            }}
+            sx={{ display: "block", color: "text.secondary", mb: 1 }}
           >
             {t("then_these")}
           </Typography>
@@ -94,12 +88,7 @@ export default function PlanList({
             fullWidth
             onClick={() => setExtendedOpen((v) => !v)}
             endIcon={extendedOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            sx={{
-              minHeight: 52,
-              fontSize: "1rem",
-              fontWeight: 600,
-              borderRadius: "28px",
-            }}
+            sx={{ minHeight: 52 }}
           >
             {extendedOpen
               ? t("show_fewer")
@@ -134,7 +123,7 @@ export default function PlanList({
             <Button
               size="small"
               onClick={onShowAll}
-              sx={{ fontWeight: 600, textTransform: "none" }}
+              sx={{ fontWeight: 600 }}
             >
               {t("browse_all")}
             </Button>

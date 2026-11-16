@@ -24,6 +24,7 @@ import {
 } from "@/lib/session";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import type { IntakeMessage } from "@/types";
+import { BELOW_HEADER } from "@/components/layout/viewport";
 
 type IntakeMode = "text" | "voice";
 type Phase = "checking" | "choosing" | "recovering" | "starting" | "ready";
@@ -274,7 +275,7 @@ export default function Intake() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          minHeight: "calc(100vh - 64px)",
+          minHeight: BELOW_HEADER,
           p: 3,
         }}
       >
@@ -282,7 +283,6 @@ export default function Intake() {
           sx={{
             maxWidth: 480,
             width: "100%",
-            borderRadius: 3,
             border: "2px solid",
             borderColor: "primary.main",
           }}
@@ -315,7 +315,7 @@ export default function Intake() {
                 sx={{
                   mb: 3,
                   p: 1.75,
-                  borderRadius: 2,
+                  borderRadius: (theme) => theme.shape.radius.control,
                   bgcolor: "brand.primarySoft",
                   border: "1px solid",
                   borderColor: "primary.light",
@@ -330,7 +330,7 @@ export default function Intake() {
               </Box>
             )}
             {confirmStartOver && (
-              <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="info" sx={{ mb: 2 }}>
                 This will clear your plan from this tab. Are you sure?
               </Alert>
             )}
@@ -341,11 +341,7 @@ export default function Intake() {
                 fullWidth
                 startIcon={<AssignmentTurnedInIcon />}
                 onClick={handleResumePlan}
-                sx={{
-                  minHeight: 52,
-                  fontWeight: 700,
-                  borderRadius: "26px",
-                }}
+                sx={{ minHeight: 52, fontWeight: 700 }}
               >
                 See my plan
               </Button>
@@ -356,11 +352,7 @@ export default function Intake() {
                 fullWidth
                 startIcon={<RefreshIcon />}
                 onClick={handleStartOver}
-                sx={{
-                  minHeight: 52,
-                  fontWeight: 600,
-                  borderRadius: "26px",
-                }}
+                sx={{ minHeight: 52 }}
               >
                 {confirmStartOver ? "Yes, start over" : "Start over"}
               </Button>
@@ -385,7 +377,7 @@ export default function Intake() {
     return (
       <Box
         sx={{
-          minHeight: "calc(100vh - 64px)",
+          minHeight: BELOW_HEADER,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -396,7 +388,7 @@ export default function Intake() {
       >
         <Box sx={{ width: "100%", maxWidth: 760 }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
@@ -432,7 +424,8 @@ export default function Intake() {
               onClick={() => beginNewIntake("voice")}
               sx={{
                 minHeight: 96,
-                borderRadius: 2,
+                // Choice tiles, not pill CTAs: card radius.
+                borderRadius: (theme) => theme.shape.radius.card,
                 justifyContent: "flex-start",
                 px: 3,
                 py: 2.25,
@@ -477,7 +470,8 @@ export default function Intake() {
               onClick={() => beginNewIntake("text")}
               sx={{
                 minHeight: 96,
-                borderRadius: 2,
+                // Choice tiles, not pill CTAs: card radius.
+                borderRadius: (theme) => theme.shape.radius.card,
                 justifyContent: "flex-start",
                 px: 3,
                 py: 2.25,
@@ -518,7 +512,7 @@ export default function Intake() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          height: "calc(100vh - 64px)",
+          height: BELOW_HEADER,
           gap: 2,
         }}
       >
@@ -535,7 +529,7 @@ export default function Intake() {
   if (!intake) return null;
 
   return (
-    <Box sx={{ height: "calc(100vh - 64px)" }}>
+    <Box sx={{ height: BELOW_HEADER }}>
       <ChatInterface
         intakeKey={intake.key}
         initialConversation={intake.conversation}
