@@ -9,7 +9,10 @@ from __future__ import annotations
 
 from app.defense import context
 from app.models import IntakeMessage, IntakeSession, MessageRole
+from app.services.city import get_city
 
+#: ``ai_credits`` (OpenAI quota or spend limit reached) is not in this table:
+#: its text is ``serviceGuide.creditsExhaustedMessage`` (see ``notice_text``).
 NOTICES: dict[str, dict[str, str]] = {
     # Per-principal budget used up.
     "ai_budget": {
@@ -30,7 +33,11 @@ NOTICES: dict[str, dict[str, str]] = {
 }
 
 
-def notice_text(key: str, language: str) -> str:
+def notice_text(key: str, language: str = "en") -> str:
+    if key == "ai_credits":
+        # The operator's own words (city config), shown as written in every
+        # language: machine-translating who to contact could garble it.
+        return get_city().credits_exhausted_message
     lang = (language or "en").split("-")[0].lower()
     table = NOTICES[key]
     return table.get(lang, table["en"])

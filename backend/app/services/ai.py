@@ -22,6 +22,8 @@ from copy import deepcopy
 from typing import Any
 
 from app.config import get_settings
+from app.defense import context as defense_context
+from app.defense.breakers import spend_limit_error
 from app.defense.budget import ai_allowed
 from app.defense.messages import add_degraded_notice
 from app.defense.usage import metered, turn_may_continue
@@ -74,14 +76,20 @@ async def start_session(
         if cleaned:
             session.extracted_profile.immediate_needs = cleaned[:20]
 
+    greeting: IntakeMessage | None = None
     if await ai_allowed():
-        greeting = IntakeMessage(
-            role=MessageRole.assistant,
-            content=await _live_greeting(session),
-            suggested_buttons=[],
-            progress_percent=0,
-        )
-    else:
+        try:
+            greeting = IntakeMessage(
+                role=MessageRole.assistant,
+                content=await _live_greeting(session),
+                suggested_buttons=[],
+                progress_percent=0,
+            )
+        except Exception as exc:  # noqa: BLE001 — fall back on any SDK failure
+            # Type only: SDK error text can quote the request input.
+            log.warning("Responses API greeting failed (%s); using the scripted greeting", type(exc).__name__)
+            _degrade_on_spend_limit(exc)
+    if greeting is None:
         step = DEMO_STEPS[0]
         greeting = IntakeMessage(
             role=MessageRole.assistant,
@@ -143,6 +151,7 @@ async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMess
                 "Responses API call failed (%s); falling back to scripted demo",
                 type(exc).__name__,
             )
+            _degrade_on_spend_limit(exc)
             session.conversation.append(IntakeMessage(
                 role=MessageRole.assistant,
                 content=(
@@ -160,6 +169,13 @@ async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMess
     else:
         reply = await demo_flow(session, user_text, _scripted_step_num(session))
     return add_degraded_notice(session, reply)
+
+
+def _degrade_on_spend_limit(exc: BaseException) -> None:
+    """OpenAI says the account is out of credits: report it on this request
+    too, not only from the next one (when the breaker it opened answers)."""
+    if spend_limit_error(exc):
+        defense_context.current().degrade("ai_credits", "ai_credits")
 
 
 def _scripted_step_num(session: IntakeSession) -> int:

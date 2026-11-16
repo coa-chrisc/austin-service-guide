@@ -76,6 +76,7 @@
   },
   "serviceGuide": {
     "timezone": "America/Chicago",
+    "creditsExhaustedMessage": "The AI assistant has used up its testing credits for now. Please ask your Big Cities Health Coalition or CDC Foundation contact to load more credits. In the meantime you can keep going with the guided questions, browse the service directory, or use the map.",
     "shortName": "ASG",
     "description": "Find local services in Austin that may fit your situation, built by Austin Public Health.",
     "copy": {

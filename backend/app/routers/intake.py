@@ -21,6 +21,7 @@ from app.config import get_settings
 from app.defense.breakers import voice_config_overrides
 from app.defense.budget import release_voice_reservation, voice_reservation
 from app.defense.context import degraded as defense_degraded
+from app.defense.messages import notice_text
 from app.defense.limits import limit, limit_recipient
 from app.models import (
     MAX_MATCHED_IDS,
@@ -163,6 +164,17 @@ def _state(session: IntakeSession) -> dict[str, Any]:
     return state_from_session(session).model_dump()
 
 
+def _degraded_fields() -> dict[str, str]:
+    """``degraded`` when this request skipped live AI, plus ``degraded_notice``
+    (the city config's text, shown as-is) when the AI is out of credits."""
+    degraded = defense_degraded()
+    if not degraded:
+        return {}
+    if degraded == "ai_credits":
+        return {"degraded": degraded, "degraded_notice": notice_text("ai_credits")}
+    return {"degraded": degraded}
+
+
 def _require_in_progress(session: IntakeSession) -> None:
     if session.status == IntakeStatus.completed:
         raise HTTPException(status_code=400, detail="Intake already completed")
@@ -210,6 +222,7 @@ async def start_intake(body: IntakeStartRequest | None = None):
         "state": _state(session),
         "language": session.language,
         "greeting": session.conversation[0].model_dump() if session.conversation else None,
+        **_degraded_fields(),
     }
 
 
@@ -218,7 +231,8 @@ async def send_message(body: IntakeMessageRequest):
     """Send a resident message; returns the reply and the updated state.
 
     A spent AI budget never errors: the scripted flow answers and
-    ``degraded`` says why ("ai_budget" or "disabled").
+    ``degraded`` says why ("ai_budget", "ai_credits" or "disabled");
+    "ai_credits" also carries ``degraded_notice``.
     """
     session = session_from_state(body.state)
     _require_in_progress(session)
@@ -230,9 +244,8 @@ async def send_message(body: IntakeMessageRequest):
         # client can replace its optimistic local copy.
         "user_message": user_message.model_dump(),
         "status": session.status.value,
+        **_degraded_fields(),
     }
-    if degraded := defense_degraded():
-        payload["degraded"] = degraded
     return payload
 
 

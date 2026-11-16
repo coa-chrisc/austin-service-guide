@@ -188,6 +188,7 @@ Everything specific to this app sits in one optional block. Every key is optiona
 | `pwa.themeColor`, `pwa.backgroundColor` | PWA manifest | `primary` and `page` |
 | `timezone` | IANA zone, for example `America/Chicago`. Drives "open now" and next-open hours on the backend. An unknown zone fails backend startup | UTC, so set it |
 | `languages` | Language codes in the selector, in display order, from `en, es, zh, hi, ar, vi, fr, ko`. Must include `en` | All eight |
+| `creditsExhaustedMessage` | Said once in the chat and shown as a banner on the intake page when the OpenAI account is out of credits or over its spend limit (the AI pauses and the guided questions take over). Shown as written, not translated; say who to contact | "The AI assistant is paused because its usage credits have run out. Please let the site's operator know. …" |
 
 The privacy notice is English-only.
 
