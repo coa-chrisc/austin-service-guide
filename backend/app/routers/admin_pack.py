@@ -98,6 +98,9 @@ class Overrides(_Strict):
                 + sum(len(v) for v in r.crisis_services.values())
                 + sum(len(v) for v in r.prevention_services.values())
                 + len(r.benefit_estimates)
+                + sum(len(e.services) for e in r.benefit_estimates)
+                + len(r.crisis_services)
+                + len(r.prevention_services)
             )
             if entries > _MAX_RULE_ENTRIES:
                 raise ValueError(f"matching_rules has more than {_MAX_RULE_ENTRIES} entries")

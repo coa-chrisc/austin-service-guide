@@ -220,3 +220,13 @@ def test_token_free_preview_rejects_oversized_rule_overrides(client):
         "overrides": {"matching_rules": {"crisis_services": {"immediate_danger": slugs}}},
     })
     assert resp.status_code == 422
+
+
+def test_token_free_preview_counts_nested_benefit_services(client):
+    resp = client.post(f"{BASE}/eligibility/evaluate", json={
+        "profile": {},
+        "overrides": {"matching_rules": {"benefit_estimates": [
+            {"services": [f"s{i}" for i in range(3000)], "label": "x", "monthly_value": 1}
+        ]}},
+    })
+    assert resp.status_code == 422
