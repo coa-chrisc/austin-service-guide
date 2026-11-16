@@ -47,6 +47,23 @@ gcloud run services replace deploy/gcp/cloud-run.yaml --region <region>   # afte
 
 Create the OpenAI key secret first (Secrets Manager, Key Vault, or Secret Manager) and grant only the workload identity read access to it. The AWS and Azure templates need pre-existing network (AWS) or vault (Azure) resources, as described in their headers.
 
+## Vercel (private demo)
+
+The repo root deploys to Vercel as one Python function: `vercel_app.py` imports the same FastAPI app the container runs and serves the built SPA from `frontend/dist`, just as the image does with `STATIC_DIR`. `vercel.json` sets the build command (`npm ci && npm run build` in `frontend/`), a 300 s function timeout for long agent turns, and the files to leave out of the bundle. `pyproject.toml` exists only for Vercel. Its dependency list mirrors `backend/requirements.txt`, so keep the two in sync.
+
+```bash
+vercel link                       # once, from the repo root
+vercel env add OPENAI_API_KEY production
+vercel env add ACCESS_CODES production        # label:code,label:code (codes ≥ 8 chars)
+vercel env add ACCESS_GATE_SECRET production  # ≥ 32 chars; python -c "import secrets; print(secrets.token_urlsafe(32))"
+vercel env add PUBLIC_ORIGIN production       # https://<your-domain>
+vercel deploy --prod
+```
+
+**Access gate.** When `ACCESS_CODES` is set, `backend/app/access_gate.py` requires an access cookie for every path except `/access` (the code form), `/api/v1/health` and the PWA manifest. Pages redirect to the form, and API calls get a 401, so nobody without a code can run the model. Give each person or group its own `label:code` pair. To revoke one, delete or change that pair and redeploy; cookies issued for it stop working. Rotating `ACCESS_GATE_SECRET` signs everyone out. The gate is a demo control, not user authentication: codes are shared secrets, and failed attempts are slowed by one second but not counted. When `ACCESS_CODES` is unset (local dev, tests, the Docker image), the gate is off.
+
+**Voice.** The `realtime_audio` mode works on Vercel because the browser opens its WebRTC connection straight to OpenAI. The function only mints the client secret and runs tool calls. That mode still requires `VOICE_PIPELINE_MODE=realtime_audio`, `ALLOW_RAW_AUDIO_STREAM=true` and the zero-data-retention caveat on `ALLOW_RAW_AUDIO_STREAM` in the root `README.md`.
+
 ## Configuration
 
 Set via environment variables (see `backend/.env.example` and `backend/app/config.py`). Never put secret values in the image or in plain environment settings of the templates.
