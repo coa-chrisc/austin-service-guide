@@ -133,6 +133,25 @@ def load_services() -> list[Service]:
 
 
 @lru_cache(maxsize=1)
+def load_verified_slugs() -> frozenset[str]:
+    """Slugs of service files that record both ``last_verified_date`` and
+    ``verified_by`` (the validator's notion of verified, ``pack_validator.py``).
+
+    Read from the YAML because the ``Service`` model does not keep those
+    fields yet (issue #20).
+    """
+    root = services_dir()
+    if not root.is_dir():
+        return frozenset()
+    slugs: set[str] = set()
+    for path in sorted(root.glob("*.yaml")):
+        data = _read_yaml(path)
+        if isinstance(data, dict) and data.get("last_verified_date") and data.get("verified_by"):
+            slugs.add(str(data.get("slug") or ""))
+    return frozenset(slugs - {""})
+
+
+@lru_cache(maxsize=1)
 def load_life_events() -> list[LifeEvent]:
     raw = read_yaml("life_events.yaml") or []
     return [LifeEvent.model_validate(d) for d in raw]
@@ -183,6 +202,7 @@ def reload_all() -> None:
     data_pack.data_dir.cache_clear()
     load_categories.cache_clear()
     load_services.cache_clear()
+    load_verified_slugs.cache_clear()
     load_life_events.cache_clear()
     load_crisis_resources.cache_clear()
     load_zip_centroids.cache_clear()
