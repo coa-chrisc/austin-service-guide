@@ -110,6 +110,17 @@ Input checks at the API edge:
 - `POST /api/v1/intake/share` texts only the country codes in `SMS_ALLOWED_COUNTRY_CODES` (default `1`, US/NANP, normalized to `+1XXXXXXXXXX`), so the public share relay cannot be used to send texts to premium-rate international numbers. To serve other countries, add their calling codes (e.g. `1,44`; numbers outside NANP must be entered in full `+` E.164 form) and enable the same countries in Twilio's SMS Geo Permissions. Each added country widens toll-fraud exposure, so pair it with rate limiting.
 - `Service.website_url` (`backend/app/models.py`) and the catalog schema accept only `http://` or `https://` URLs (or empty), so an admin write or a data-pack file cannot store a `javascript:` link that the service page would render.
 
+### 10. Research job worker (#18)
+
+Off unless `JOB_BACKEND` is set. In the reference deployment the worker runs on Railway and the Vercel app proxies staff calls to it (`deploy/railway/README.md`, shape B).
+
+- **Staff routes.** `/api/v1/admin/research/*`, `/admin/jobs*` and `/admin/drafts*` need `X-Admin-Token` and refuse bodies over 128 KiB; only `GET /api/v1/admin/jobs/config` is open (it reports whether research is enabled). Bodies are validated before they are forwarded.
+- **App to worker.** Every worker route except `GET /healthz` needs a token signed with `JOB_WORKER_SECRET` (HMAC-SHA256, 32+ characters, bound to the method, path, query and body hash, valid at most 60 seconds, single use). A bad token gets a bare 401. `JOB_WORKER_SECRET_PREVIOUS` allows rotation. The worker serves no docs or OpenAPI routes, and its Postgres and SearXNG have no public address.
+- **Fetching the web.** `app/research/fetch.py` allows only `http`/`https` on ports 80 and 443, no credentials in URLs, and refuses `localhost`, single-label names and `.internal`, `.local`, `.localhost`, `.localdomain`, `.home.arpa` and `.onion` names. It resolves every name itself, refuses the request if any answer is not a global address (private, loopback, link-local, CGNAT, multicast, NAT64 `64:ff9b::/96` and `64:ff9b:1::/48`, `2001::/23`, and IPv4-mapped or 6to4 forms of those), and connects to the checked address with the original `Host` and SNI, so a DNS answer cannot change between check and connect. Redirects (at most 3) are checked the same way at every hop. It sends no cookies or auth headers, asks for `identity` encoding, and caps both the bytes received and the decoded body at 2 MB, inflating gzip/deflate with a bounded decompressor and refusing any other encoding.
+- **Untrusted page text.** Extraction calls have no tools and use strict structured output, with page text marked as data. `app/research/evidence.py` then checks every quote, phone, email and URL against the stored page text; unsupported fields are blanked and flagged, and sentences that look like instructions to a model are removed from the text used for checking and reported to the reviewer.
+- **Spend.** Per-job caps on steps, searches, pages, pages per host, runtime, drafts and estimated cost (`RESEARCH_MAX_*`; staff can only lower them), one active research job at a time, and a plan-approval step (on by default, `RESEARCH_REQUIRE_PLAN_APPROVAL`) before any search or page fetch.
+- **Review.** Drafts are revalidated against the data-pack rules on every edit, checked for duplicates, and accepted or rejected by staff. Nothing is written to the live catalog.
+
 ## Known gaps before production
 
 These are not implemented. Do not treat the demo as ready for real resident data until they are addressed.
@@ -126,7 +137,8 @@ These are not implemented. Do not treat the demo as ready for real resident data
 10. **Cloud deployment review.** The IaC templates are not applied to live accounts and need review against the city's own network and security standards.
 11. **CORS origins.** With `CORS_ORIGINS` unset the API allows credentialed requests from the default localhost dev origins. Set `CORS_ORIGINS` to the deployment's own origin in production.
 12. **Dependency advisories.** `npm audit --omit=dev` reports two moderate advisories in `react-router` 6.x (an open redirect through backslash paths in `Link`/`useNavigate`, and an SSR error-deserialization issue). Neither applies here: the SPA never navigates to a user-supplied target and does no server rendering. The fix is a major upgrade to React Router 7.
-13. **Public metadata endpoints.** `GET /api/v1/health` is outside the access gate and reports whether live AI is on. `/docs` and `/openapi.json` (behind the gate) describe every route. Consider trimming the health payload and disabling the docs in production.
+13. **Research worker review.** The worker's signed-token scheme and fetcher rules are covered by tests, not by an outside review. Staff identity on research jobs is the shared admin token plus the self-declared `X-Staff-Role`.
+14. **Public metadata endpoints.** `GET /api/v1/health` is outside the access gate and reports whether live AI is on. `/docs` and `/openapi.json` (behind the gate) describe every route. Consider trimming the health payload and disabling the docs in production.
 
 ## Engineering roadmap
 
@@ -140,6 +152,7 @@ Goal: let a new city turn the messy source material it already has (spreadsheets
 - Output: draft entries in the existing catalog format, one YAML file per service under `backend/app/data/services/`.
 - Hard requirement: every draft must pass `backend/scripts/validate_catalog.py` against `config/services.schema.json` (including the cross-reference rules the schema cannot express) before it is accepted into the review queue. Drafts that fail are returned with the validator's errors, not edited silently.
 - Drafts are marked unverified. They never publish on the strength of the agent alone (see item 2).
+- Partly started: the research agent (section 10 above) drafts entries from public web pages. Spreadsheets and PDFs are not covered by it.
 
 ### 2. Human-in-the-Loop SME Verification Portal
 

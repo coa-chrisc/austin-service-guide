@@ -180,7 +180,17 @@ Admin read endpoints (`GET /api/v1/admin/...`) are open. They return synthetic d
 
 Admin write endpoints (`POST`, `PATCH`, `DELETE` under `/api/v1/admin/services`) change the catalog that residents are matched against. They require an `X-Admin-Token` header that matches the server's `ADMIN_API_TOKEN` setting, compared in constant time. If `ADMIN_API_TOKEN` is empty (the default), every write returns 403 with a message explaining how to enable it. This is a shared-secret stopgap, not staff authentication. Catalog edits live only in the memory of the server instance that received them: they are lost on restart, and on serverless or multi-instance hosting (Vercel, for example) other instances never see them, so they are not durable.
 
-## What a real deployment still needs
+## Catalog research jobs (staff)
+
+The research agent (#18) is a staff tool that drafts catalog entries from public web pages. It is off unless `JOB_BACKEND` is set (`remote` or, locally, `inline`), every job route needs `X-Admin-Token`, and drafts never reach the live catalog on their own: a reviewer accepts them and exports a pack zip to merge by hand.
+
+- **No resident data.** A job's input is a place, a topic, categories, seed URLs and allowed domains typed by staff. Nothing from the intake goes to the worker.
+- **What the worker stores.** Job parameters, the public page text it fetched, the drafts built from it with their source quotes, and job events, in its own Postgres (SQLite in `inline` mode). The staff actor recorded on a job is the `X-Staff-Role` value or `token`. Finished jobs are deleted after `JOB_RETENTION_DAYS` (30).
+- **What goes to OpenAI.** Planning, extraction and checking prompts that contain the place, topic and fetched public page text, through the Responses API with `store=False` and the `OPENAI_RESEARCH_MODEL` model (default `gpt-6.1-sol`). `OPENAI_RESEARCH_API_KEY` can give it a separate OpenAI project and spend cap.
+- **Where search queries go.** With `RESEARCH_SEARCH_PROVIDER=searxng`, to the operator's own SearXNG, which forwards them to DuckDuckGo, Brave and Bing. With `openai_web_search`, to OpenAI. The queries name the place and topic, nothing about a resident.
+- **Pages fetched.** The worker identifies itself with `RESEARCH_USER_AGENT`, honours `robots.txt`, and reads public pages only (see SECURITY.md for the address rules).
+- **Personal contact details.** An email that looks like a person's (`first.last@`) is removed from a draft and flagged; drafts keep organisation contacts only.
+
 
 This is a demo. Before it handles real residents, it needs at least:
 
