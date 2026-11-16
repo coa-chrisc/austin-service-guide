@@ -1,0 +1,4 @@
+- id: cat-food
+  name: Food
+  slug: food
+  description: Groceries, meals and food benefits

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/admin_demo.schema.json",
+  "title": "Synthetic admin-console data (admin_demo.yaml)",
+  "description": "Optional; without it the admin console shows empty demo views. SYNTHETIC DEMO DATA ONLY: invented analytics, staff, residents and reports for the admin console (app/services/seed_data.py). Never put real people or real usage figures here. Deliberately loose: only the top-level shape is checked.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "analytics": {"type": "object"},
+    "demographics": {"type": "object"},
+    "equity": {"type": "object"},
+    "service_demand": {"$ref": "#/$defs/rows"},
+    "languages": {"$ref": "#/$defs/rows"},
+    "demand_map": {"$ref": "#/$defs/rows"},
+    "partner_gaps": {"$ref": "#/$defs/rows"},
+    "reports": {"$ref": "#/$defs/rows"},
+    "audit_log": {"$ref": "#/$defs/rows"},
+    "staff": {"type": "array", "items": {"type": "object", "required": ["last_login_days_ago"]}},
+    "residents": {"type": "array", "items": {"type": "object", "required": ["signup_days_ago", "last_active_days_ago"]}},
+    "council_districts": {"$ref": "#/$defs/rows"}
+  },
+  "$defs": {
+    "rows": {"type": "array", "items": {"type": "object"}}
+  }
+}

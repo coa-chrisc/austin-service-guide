@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/life_events.schema.json",
+  "title": "Life events (life_events.yaml)",
+  "description": "Required file; may be an empty list. Landing-page life-event cards. Read by catalog_loader.load_life_events into app.models.LifeEvent and served by GET /api/v1/life-events.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "name", "slug"],
+    "properties": {
+      "id": {"type": "string", "minLength": 1, "description": "Unique id, by convention le-<slug>."},
+      "name": {"type": "string", "minLength": 1, "description": "Card title."},
+      "slug": {"type": "string", "pattern": "^[a-z0-9]+([_-][a-z0-9]+)*$", "description": "Unique machine name. The intake treats _ and - alike (new_baby = new-baby). Slugs app/services/life_events.py knows get scenario-specific guidance and starting needs; others get a generic fallback."},
+      "description": {"type": "string", "description": "Card text."},
+      "icon": {"type": "string", "description": "Icon name the landing page maps (for example ChildFriendly, HomeWork, work); unknown names fall back to a keyword match, then a search icon."},
+      "related_categories": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$"}, "description": "Category slugs from categories.yaml."}
+    }
+  }
+}

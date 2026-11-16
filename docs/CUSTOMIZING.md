@@ -240,7 +240,7 @@ Replace the files in your copy (and delete the Austin `README.md`):
 | `personas.yaml` | Demo personas. Optional. With none, the demo launcher is hidden. |
 | `admin_demo.yaml` | Synthetic data for the admin console, including `council_districts`. Optional. With none, admin views are empty. |
 
-Field-by-field schemas, validation rules and the loader are in [backend/app/data/README.md](../backend/app/data/README.md). Do not repeat them here.
+Field-by-field schemas, validation rules and the validator are in [DATA_PACK.md](DATA_PACK.md); check a whole pack with `CITY_DATA_DIR=data/my-city npm run validate:pack` from `frontend/`. Do not repeat them here.
 
 Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
 

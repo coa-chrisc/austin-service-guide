@@ -1,0 +1,16 @@
+{
+  "$comment": "Data-pack contract index: one entry per pack file, in the order the validator checks them. Read by backend/app/services/pack_validator.py; documented in docs/DATA_PACK.md. Schema paths are relative to this file.",
+  "contract_version": 1,
+  "files": [
+    {"path": "pack.yaml", "schema": "pack.schema.json", "required": false, "shape": "mapping", "description": "Manifest: contract version, pack id, region, bbox, provenance. Not read by the server."},
+    {"path": "categories.yaml", "schema": "categories.schema.json", "required": true, "shape": "list", "description": "Service categories, referenced by slug."},
+    {"path": "services/<slug>.yaml", "schema": "../services.schema.json", "required": true, "shape": "mapping", "description": "One service per file; the file stem equals the slug. The services/ folder is required; it may be empty."},
+    {"path": "life_events.yaml", "schema": "life_events.schema.json", "required": true, "shape": "list", "description": "Landing-page life events. May be []."},
+    {"path": "crisis_resources.yaml", "schema": "crisis_resources.schema.json", "required": true, "shape": "list", "description": "Crisis lines. May be []."},
+    {"path": "zip_centroids.yaml", "schema": "zip_centroids.schema.json", "required": false, "shape": "list", "description": "ZIP centres for radius search and the scripted ZIP quick replies."},
+    {"path": "matching_rules.yaml", "schema": "matching_rules.schema.json", "required": false, "shape": "mapping", "description": "Heat ZIPs, crisis-direct services, prevention lists, benefit estimates."},
+    {"path": "service_translations.yaml", "schema": "service_translations.schema.json", "required": false, "shape": "mapping", "description": "Translated service descriptions."},
+    {"path": "personas.yaml", "schema": "personas.schema.json", "required": false, "shape": "mapping", "description": "Synthetic demo personas for the ?demo=1 launcher."},
+    {"path": "admin_demo.yaml", "schema": "admin_demo.schema.json", "required": false, "shape": "mapping", "description": "Synthetic admin-console demo data."}
+  ]
+}

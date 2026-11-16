@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/zip_centroids.schema.json",
+  "title": "ZIP centroids (zip_centroids.yaml)",
+  "description": "Optional. Approximate centre of each ZIP, for 'services near this ZIP' radius search (catalog.get_all_services, the search_services tool). A ZIP not listed, or a pack without this file, is not radius-filtered. featured ZIPs are the scripted intake's quick replies. Read by catalog_loader.load_zip_centroids into ZipCentroid.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["zip", "latitude", "longitude"],
+    "properties": {
+      "zip": {"type": "string", "pattern": "^[0-9]{5}$", "description": "Five-digit ZIP, quoted."},
+      "latitude": {"type": "number", "minimum": -90, "maximum": 90},
+      "longitude": {"type": "number", "minimum": -180, "maximum": 180},
+      "featured": {"type": "boolean", "description": "Offer as a quick reply in the scripted intake (file order). With none featured, the first five are used."}
+    }
+  }
+}
