@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -90,10 +91,19 @@ export default function LanguageSelector() {
           color: "inherit",
           textTransform: "none",
           fontWeight: 500,
-          minWidth: "auto",
+          // Shrinks (label ellipsis) instead of pushing the header past a
+          // narrow screen, down to the icon alone; touch keeps a 44px target.
+          minWidth: 40,
+          flexShrink: 1,
+          "@media (pointer: coarse)": { minWidth: 44, minHeight: 44 },
         }}
       >
-        {current?.label ?? "English"}
+        <Box
+          component="span"
+          sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+        >
+          {current?.label ?? "English"}
+        </Box>
       </Button>
       <Menu
         anchorEl={anchorEl}

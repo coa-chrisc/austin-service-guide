@@ -226,7 +226,7 @@ export default function MapView() {
                   <Chip
                     label={getCategoryDisplayName(pin.category)}
                     size="small"
-                    sx={{ mt: 0.5, fontSize: 11, height: 20 }}
+                    sx={{ mt: 0.5, fontSize: "0.75rem", minHeight: 20 }}
                   />
                 </>
               }

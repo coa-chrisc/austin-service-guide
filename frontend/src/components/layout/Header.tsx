@@ -133,7 +133,11 @@ export default function Header() {
               gap: 1.5,
               textDecoration: "none",
               color: "inherit",
-              mr: 2,
+              mr: { xs: 0, sm: 2 },
+              // Lets the logo give way before the controls push past a narrow
+              // screen (small phones, large text settings).
+              minWidth: 0,
+              flexShrink: 1,
             }}
           >
             <Box
@@ -143,6 +147,10 @@ export default function Header() {
               sx={{
                 height: { xs: 32, sm: 36 },
                 width: "auto",
+                minWidth: 0,
+                maxWidth: "100%",
+                objectFit: "contain",
+                objectPosition: "left center",
               }}
             />
             <Typography

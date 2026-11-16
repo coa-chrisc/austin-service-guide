@@ -385,8 +385,8 @@ export default function AdminDemandMap() {
                               variant="outlined"
                               sx={{
                                 textTransform: "capitalize",
-                                height: 20,
-                                fontSize: "0.7rem",
+                                minHeight: 20,
+                                fontSize: "0.75rem",
                               }}
                             />
                           ))}

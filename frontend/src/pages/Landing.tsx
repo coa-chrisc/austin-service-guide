@@ -45,6 +45,7 @@ import {
   type PersonaSummary,
 } from "@/lib/api";
 import { alpha, type Theme } from "@mui/material/styles";
+import { fadedText } from "@/theme/contrast";
 import { brandConfig, useBrandConfig } from "@/hooks/useBrandConfig";
 import NeedNavigator from "@/components/landing/NeedNavigator";
 import DemoLauncher from "@/components/landing/DemoLauncher";
@@ -101,6 +102,9 @@ function getIconForEvent(event: LifeEvent): React.ReactNode {
 
 /** Text color that reaches AA on the footer's ink (primary.dark) background. */
 const onInk = (t: Theme) => t.palette.brand.textOn(t.palette.primary.dark);
+/** Quieter footer text: onInk faded toward the ink, never below AA (dark mode included). */
+const onInkFaded = (opacity: number) => (t: Theme) =>
+  fadedText(onInk(t), t.palette.primary.dark, opacity);
 
 const FALLBACK_EVENTS: LifeEvent[] = [
   {
@@ -521,10 +525,11 @@ export default function Landing() {
                           height: "100%",
                           p: { xs: 2, sm: 2.5 },
                           // Top-align so icons and titles line up across a row
-                          // even when a title wraps.
+                          // even when a title wraps. Stretch (not flex-start) keeps
+                          // the text inside the card when a long word meets large text.
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: "flex-start",
+                          alignItems: "stretch",
                           justifyContent: "flex-start",
                         }}
                       >
@@ -648,7 +653,7 @@ export default function Landing() {
                 </Box>
                 <Typography
                   variant="body2"
-                  sx={{ opacity: 0.7, maxWidth: 320 }}
+                  sx={{ color: onInkFaded(0.7), maxWidth: 320 }}
                 >
                   Connecting {brand.region.cityName} residents to the services they need through
                   AI-powered guidance.
@@ -661,7 +666,7 @@ export default function Landing() {
                   sx={{
                     fontWeight: 700,
                     mb: 1,
-                    opacity: 0.5,
+                    color: onInkFaded(0.5),
                     letterSpacing: 1,
                   }}
                 >
@@ -676,7 +681,7 @@ export default function Landing() {
                       underline="hover"
                       sx={{
                         ...FOOTER_LINK_TARGET,
-                        color: (theme) => alpha(onInk(theme), 0.8),
+                        color: onInkFaded(0.8),
                         fontSize: 14,
                         "&:hover": { color: onInk },
                       }}
@@ -693,16 +698,16 @@ export default function Landing() {
                   sx={{
                     fontWeight: 700,
                     mb: 1,
-                    opacity: 0.5,
+                    color: onInkFaded(0.5),
                     letterSpacing: 1,
                   }}
                 >
                   EMERGENCY
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                <Typography variant="body2" sx={{ color: onInkFaded(0.8) }}>
                   If you are in crisis, call 988
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                <Typography variant="body2" sx={{ color: onInkFaded(0.8) }}>
                   Emergency: 911
                 </Typography>
               </Grid>
@@ -716,10 +721,10 @@ export default function Landing() {
                 textAlign: "center",
               }}
             >
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              <Typography variant="caption" sx={{ color: onInkFaded(0.7) }}>
                 {brand.serviceGuide.copy.footerDisclaimer}
               </Typography>
-              <Typography variant="caption" sx={{ display: "block", opacity: 0.7, mt: 0.5 }}>
+              <Typography variant="caption" sx={{ display: "block", color: onInkFaded(0.7), mt: 0.5 }}>
                 Demonstration data. Confirm details with the provider.
               </Typography>
               <Box
@@ -748,7 +753,7 @@ export default function Landing() {
                     underline="hover"
                     sx={{
                       ...FOOTER_LINK_TARGET,
-                      color: (theme) => alpha(onInk(theme), 0.8),
+                      color: onInkFaded(0.8),
                       fontSize: 13,
                     }}
                   >

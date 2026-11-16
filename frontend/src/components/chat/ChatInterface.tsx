@@ -374,7 +374,7 @@ export default function ChatInterface({
                 variant="outlined"
                 color={voice.liveAi ? "primary" : "default"}
                 label={voice.liveAi ? "Live AI" : "Guided questions (AI off)"}
-                sx={{ height: 20, fontSize: 11, fontWeight: 600 }}
+                sx={{ minHeight: 20, fontSize: "0.75rem", fontWeight: 600 }}
               />
             )}
           </Box>
@@ -400,7 +400,21 @@ export default function ChatInterface({
 
       {/* Crisis lines: pinned once a crisis is detected; works offline. */}
       {crisisDetected && (
-        <Box sx={{ px: 2, pt: 1, "& > *": COLUMN }}>
+        // Crisis lines come first: the cap leaves room for the message box
+        // (the privacy notice shrinks to one line) and lets 9-1-1, 988 and the
+        // local line show in full on a 360x640 phone. Further lines scroll
+        // inside it, and it gives way before the message box is pushed off.
+        <Box
+          sx={{
+            px: 2,
+            pt: 1,
+            maxHeight: "60%",
+            minHeight: 0,
+            overflowY: "auto",
+            flexShrink: 1,
+            "& > *": COLUMN,
+          }}
+        >
           <CrisisLinesBlock />
         </Box>
       )}
@@ -415,7 +429,10 @@ export default function ChatInterface({
           flex: 1,
           overflowY: "auto",
           px: 2,
-          py: 2,
+          // Tighter during a crisis: on a short phone the room goes to the
+          // crisis lines, but a line of the latest reply stays readable.
+          py: crisisDetected ? 1 : 2,
+          minHeight: crisisDetected ? 48 : 0,
           display: "flex",
           flexDirection: "column",
           // Center the column; the scrollbar stays at the window edge.
@@ -649,7 +666,8 @@ export default function ChatInterface({
           ) : (
             <>
               <VoiceNotices voice={voice} />
-              <PrivacyNotice sx={{ mb: 1.5 }} />
+              {/* One line during a crisis, so the crisis lines get the room. */}
+              <PrivacyNotice compact={crisisDetected} sx={{ mb: crisisDetected ? 1 : 1.5 }} />
               <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
                 <VoiceMicButton voice={voice} />
                 <TextField

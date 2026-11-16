@@ -315,8 +315,8 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
                                 size="small"
                                 variant={status.open ? "filled" : "outlined"}
                                 sx={{
-                                  height: 20,
-                                  fontSize: 11,
+                                  minHeight: 20,
+                                  fontSize: "0.75rem",
                                   fontWeight: 600,
                                   bgcolor: status.open
                                     ? (theme) => alpha(theme.palette.success.main, 0.12)

@@ -25,6 +25,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Paper from "@mui/material/Paper";
+import Link from "@mui/material/Link";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { alpha, useTheme } from "@mui/material/styles";
 import MapIcon from "@mui/icons-material/Map";
@@ -430,7 +431,7 @@ export default function Results() {
   const topPhone = topMatch?.service.phone?.replace(/[^\d+]/g, "") ?? "";
 
   return (
-    <Box sx={{ pb: 10 }} className="results-root">
+    <Box sx={{ pb: view === "simple" && topItem ? 0 : 10 }} className="results-root">
       <style>{`
         @media print {
           @page { margin: 0.5in; }
@@ -475,6 +476,7 @@ export default function Results() {
         <Box
           sx={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             justifyContent: view === "simple" ? "space-between" : "flex-end",
             gap: 2,
@@ -635,21 +637,14 @@ export default function Results() {
                   {data.plan_ai_generated
                     ? t("ai_suggested_footer") + " "
                     : t("suggested_footer") + " "}
-                  <Box
-                    component="a"
-                    onClick={(e: React.MouseEvent) => {
-                      e.preventDefault();
-                      setView("all");
-                    }}
-                    sx={{
-                      color: "primary.main",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                    }}
+                  <Link
+                    component="button"
+                    type="button"
+                    onClick={() => setView("all")}
+                    sx={{ fontWeight: 600, verticalAlign: "baseline" }}
                   >
                     {t("see_all_matches")}
-                  </Box>{" "}
+                  </Link>{" "}
                   {t("see_all_matches_suffix")}
                 </Typography>
                 <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }} className="no-print">
@@ -964,7 +959,7 @@ export default function Results() {
                                         size="small"
                                         variant="outlined"
                                         sx={{
-                                          fontSize: 11,
+                                          fontSize: "0.75rem",
                                           bgcolor: "background.paper",
                                         }}
                                       />
@@ -1136,9 +1131,9 @@ export default function Results() {
           elevation={8}
           className="no-print"
           sx={{
-            position: "fixed",
-            left: 0,
-            right: 0,
+            // Sticky, not fixed: it rides the bottom of the screen but takes
+            // its own space at the end, so it never covers the last card.
+            position: "sticky",
             bottom: 0,
             zIndex: 1100,
             borderRadius: 0,

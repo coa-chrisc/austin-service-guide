@@ -428,9 +428,9 @@ export default function Intake() {
           fontWeight: 600,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, maxWidth: "100%" }}>
           <MicIcon />
-          <Typography component="span" variant="h6" fontWeight={800}>
+          <Typography component="span" variant="h6" fontWeight={800} sx={{ overflowWrap: "anywhere" }}>
             Voice conversation
           </Typography>
         </Box>
@@ -482,9 +482,9 @@ export default function Intake() {
           fontWeight: 600,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, maxWidth: "100%" }}>
           <ChatBubbleOutlineIcon />
-          <Typography component="span" variant="h6" fontWeight={800}>
+          <Typography component="span" variant="h6" fontWeight={800} sx={{ overflowWrap: "anywhere" }}>
             Text chat
           </Typography>
         </Box>

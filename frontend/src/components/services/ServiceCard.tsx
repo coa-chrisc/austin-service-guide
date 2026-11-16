@@ -119,11 +119,11 @@ export default function ServiceCard({
                 label={categoryLabel(cat)}
                 size="small"
                 sx={{
-                  fontSize: 11,
+                  fontSize: "0.75rem",
                   fontWeight: 600,
                   bgcolor: "primary.main",
                   color: "primary.contrastText",
-                  height: 22,
+                  minHeight: 22,
                 }}
               />
             ))}
@@ -134,9 +134,9 @@ export default function ServiceCard({
                 color={CONFIDENCE_COLORS[matchConfidence]}
                 variant="outlined"
                 sx={{
-                  fontSize: 11,
+                  fontSize: "0.75rem",
                   fontWeight: 600,
-                  height: 22,
+                  minHeight: 22,
                   ml: "auto",
                   ...CONFIDENCE_TEXT[matchConfidence],
                 }}
@@ -200,9 +200,9 @@ export default function ServiceCard({
               size="small"
               variant="outlined"
               sx={{
-                fontSize: 11,
+                fontSize: "0.75rem",
                 fontWeight: 500,
-                height: 22,
+                minHeight: 22,
                 // success.dark is the text-safe green (positive); success.main
                 // (positiveFill) is under 4.5:1 as small text.
                 color:
@@ -223,9 +223,9 @@ export default function ServiceCard({
                     size="small"
                     variant={open ? "filled" : "outlined"}
                     sx={{
-                      fontSize: 11,
+                      fontSize: "0.75rem",
                       fontWeight: 600,
-                      height: 22,
+                      minHeight: 22,
                       bgcolor: open ? (theme) => alpha(theme.palette.success.main, 0.12) : "transparent",
                       color: open ? "success.dark" : "text.secondary",
                       borderColor: open ? "success.light" : "divider",
@@ -290,14 +290,14 @@ export default function ServiceCard({
                         size="small"
                         color="error"
                         variant="outlined"
-                        sx={{ height: 18, fontSize: 10, fontWeight: 600 }}
+                        sx={{ minHeight: 18, fontSize: "0.75rem", fontWeight: 600 }}
                       />
                     ) : (
                       <Chip
                         label="Optional"
                         size="small"
                         variant="outlined"
-                        sx={{ height: 18, fontSize: 10 }}
+                        sx={{ minHeight: 18, fontSize: "0.75rem" }}
                       />
                     )}
                   </Box>

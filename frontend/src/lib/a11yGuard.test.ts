@@ -8,6 +8,7 @@
 //   `component`. MUI maps the variant to a tag by default (subtitle1 -> h6,
 //   h4 -> h4), which is how the pages ended up with no h1 and skipped levels
 //   (axe heading-order). Choose the level (or "p"/"span") on purpose.
+// - Every <a> (or component="a") has an href; click-only links are buttons.
 //
 // Staff pages (admin/**) are out of scope.
 import fs from "node:fs";
@@ -57,6 +58,7 @@ export function openingTags(source: string, name: string): { line: number; text:
 
 const HEADING_VARIANT = /\bvariant="(h[1-6]|subtitle[12])"/;
 const SELECT_NAMED = /\blabelId=|aria-label(?:ledby)?\b/;
+const ANCHOR = /\bcomponent="a"/;
 
 describe("a11y guard", () => {
   const files = residentFiles();
@@ -82,6 +84,22 @@ describe("a11y guard", () => {
         .map((tag) => `${rel}:${tag.line} ${tag.text.match(HEADING_VARIANT)![1]}`),
     );
     expect(implicit).toEqual([]);
+  });
+
+  it("every element rendered as a link has an href", () => {
+    // An <a> without href is not focusable and has no role, so a click-only
+    // "link" is invisible to keyboard and screen reader users. Use a button
+    // (MUI <Link component="button">) for actions.
+    const missing = files.flatMap((rel) => {
+      const source = fs.readFileSync(path.join(SRC_DIR, rel), "utf8");
+      const names = new Set(["a", ...[...source.matchAll(/<([A-Z]\w*)/g)].map((m) => m[1])]);
+      return [...names].flatMap((name) =>
+        openingTags(source, name)
+          .filter((tag) => (name === "a" || ANCHOR.test(tag.text)) && !/\bhref=|\{\.\.\./.test(tag.text))
+          .map((tag) => `${rel}:${tag.line} <${name}>`),
+      );
+    });
+    expect(missing).toEqual([]);
   });
 
   it("finds tags whose props contain arrow functions", () => {

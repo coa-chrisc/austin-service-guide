@@ -10,6 +10,7 @@ import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { alpha, type Theme } from "@mui/material/styles";
+import { resolveTextOn } from "@/theme/contrast";
 import cityImg from "./images/city-swap.webp";
 import cloudImg from "./images/cloud-hosting.webp";
 import askImg from "./images/journey-ask.webp";
@@ -79,6 +80,13 @@ const restingShadow = (t: Theme) => `0 2px 8px ${alpha(t.palette.brand.ink, 0.08
 const rowGap = { mb: { xs: 4, md: 5 } } as const;
 const listSx = { listStyle: "none", m: 0, p: 0 } as const;
 
+/** Primary text on the roadmap's subtle fill, or body text where primary misses AA (dark mode). */
+const onSubtle = (t: Theme) =>
+  resolveTextOn(t.palette.brand.subtle, [
+    { role: "primary", color: t.palette.primary.main },
+    { role: "body", color: t.palette.text.primary },
+  ]).color;
+
 type Responsive = string | Partial<Record<"xs" | "sm" | "md" | "lg", string>>;
 
 /** Card text, with the parts between asterisks in italics. */
@@ -112,6 +120,7 @@ function CardTitle({ children, step }: { children: ReactNode; step?: number }) {
         fontWeight: 700,
         lineHeight: 1.3,
         fontSize: { xs: "1.0625rem", sm: "1.125rem" },
+        overflowWrap: "anywhere",
         display: "flex",
         alignItems: "flex-start",
         gap: 1,
@@ -237,7 +246,7 @@ function Metrics() {
               }}
             >
               {/* On a phone the label sits beside the number to save a line. */}
-              <Box sx={{ display: "flex", flexDirection: { xs: "row", sm: "column" }, alignItems: { xs: "baseline", sm: "flex-start" }, columnGap: 1.5 }}>
+              <Box sx={{ display: "flex", flexDirection: { xs: "row", sm: "column" }, flexWrap: "wrap", alignItems: { xs: "baseline", sm: "flex-start" }, columnGap: 1.5 }}>
                 <Typography
                   component="p"
                   sx={{ color: "primary.main", fontSize: { xs: "1.875rem", md: "2.25rem" }, fontWeight: 800, lineHeight: 1.1, whiteSpace: "nowrap" }}
@@ -312,13 +321,14 @@ function ListPanel({ row, id }: { row: InfoRow; id: string }) {
       sx={{ height: "100%", p: { xs: 2, md: 3 }, borderRadius: (t: Theme) => t.shape.radius.panel }}
     >
       <RowHeading row={row} id={id} align="left" />
-      <Box component="ul" sx={{ ...listSx, display: "grid", gap: { xs: 2, md: 2.5 } }}>
+      <Box component="ul" sx={{ ...listSx, display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: { xs: 2, md: 2.5 } }}>
         {row.cards.map((card, i) => (
           <Box
             component="li"
             key={card.title}
             sx={{
               display: "flex",
+              flexWrap: "wrap",
               alignItems: "flex-start",
               gap: { xs: 1.5, sm: 2.5 },
               pt: i > 0 ? { xs: 2, md: 2.5 } : 0,
@@ -327,7 +337,7 @@ function ListPanel({ row, id }: { row: InfoRow; id: string }) {
             }}
           >
             <CardVisual card={card} width={{ xs: "96px", sm: "140px" }} />
-            <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Box sx={{ minWidth: 0, flex: "1 1 8rem" }}>
               <CardTitle>{card.title}</CardTitle>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontSize: "0.9375rem", lineHeight: 1.5 }}>
                 <CardText text={card.text} />
@@ -387,7 +397,7 @@ function Roadmap({ onJump }: { onJump: JumpHandler }) {
             component="h2"
             variant="h5"
             id="roadmap-row"
-            sx={{ fontWeight: 700, lineHeight: 1.25, display: "flex", alignItems: "center", gap: 1, fontSize: { xs: "1.25rem", md: "1.375rem" } }}
+            sx={{ fontWeight: 700, lineHeight: 1.25, overflowWrap: "anywhere", display: "flex", alignItems: "center", gap: 1, fontSize: { xs: "1.25rem", md: "1.375rem" } }}
           >
             <RouteOutlined aria-hidden="true" color="primary" />
             {ROADMAP.title}
@@ -408,6 +418,7 @@ function Roadmap({ onJump }: { onJump: JumpHandler }) {
               href={`#${TECHNICAL_ID}`}
               onClick={(e) => onJump(e, TECHNICAL_ID)}
               aria-describedby="cta-secondary-note"
+              sx={{ color: onSubtle }}
             >
               {CTA.secondary}
             </Button>
