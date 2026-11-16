@@ -230,6 +230,13 @@ const FOOTER_LINKS = [
   { label: "How it works", path: "/how-it-works" },
 ];
 
+/** Footer links: a 44 px tall tap target on phones, 24 px (WCAG 2.2 SC 2.5.8) above that. */
+const FOOTER_LINK_TARGET = {
+  display: "inline-flex",
+  alignItems: "center",
+  minHeight: { xs: 44, md: 24 },
+} as const;
+
 export default function Landing() {
   const navigate = useNavigate();
   const brand = useBrandConfig();
@@ -660,7 +667,7 @@ export default function Landing() {
                 >
                   QUICK LINKS
                 </Typography>
-                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                <Box sx={{ display: "flex", columnGap: 2, rowGap: { xs: 0, md: 1 }, flexWrap: "wrap" }}>
                   {FOOTER_LINKS.map((link) => (
                     <Link
                       key={link.path}
@@ -668,6 +675,7 @@ export default function Landing() {
                       to={link.path}
                       underline="hover"
                       sx={{
+                        ...FOOTER_LINK_TARGET,
                         color: (theme) => alpha(onInk(theme), 0.8),
                         fontSize: 14,
                         "&:hover": { color: onInk },
@@ -718,7 +726,8 @@ export default function Landing() {
                 sx={{
                   mt: 1,
                   display: "flex",
-                  gap: 2,
+                  columnGap: 2,
+                  rowGap: { xs: 0, md: 1 },
                   justifyContent: "center",
                   flexWrap: "wrap",
                 }}
@@ -737,7 +746,11 @@ export default function Landing() {
                     key={l.label}
                     href={l.href}
                     underline="hover"
-                    sx={{ color: (theme) => alpha(onInk(theme), 0.8), fontSize: 13 }}
+                    sx={{
+                      ...FOOTER_LINK_TARGET,
+                      color: (theme) => alpha(onInk(theme), 0.8),
+                      fontSize: 13,
+                    }}
                   >
                     {l.label}
                   </Link>
