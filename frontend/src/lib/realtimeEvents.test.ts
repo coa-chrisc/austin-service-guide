@@ -3,6 +3,8 @@ import {
   isFatalRealtimeError,
   runnableFunctionCalls,
   sessionUpdatePayload,
+  STARTUP_GREETING_PURPOSE,
+  startupGreetingResponse,
 } from "./realtimeEvents";
 
 const call = (name: string, status?: string) => ({
@@ -119,5 +121,30 @@ describe("sessionUpdatePayload", () => {
     expect("model" in payload).toBe(false);
     // The stored config keeps its model for the debug summary.
     expect(config.model).toBe("gpt-realtime-2.1");
+  });
+});
+
+describe("startupGreetingResponse", () => {
+  it("passes the server greeting through, tagged as the startup greeting", () => {
+    const server = {
+      output_modalities: ["audio"],
+      instructions: "Say this greeting aloud exactly once, in Spanish.",
+      tool_choice: "none",
+      input: [{ type: "message", role: "user", content: [] }],
+    };
+    expect(startupGreetingResponse(server)).toEqual({
+      ...server,
+      metadata: { purpose: STARTUP_GREETING_PURPOSE },
+    });
+  });
+
+  it("keeps the tag even if the server sent other metadata", () => {
+    const out = startupGreetingResponse({ metadata: { purpose: "x", a: "b" } });
+    expect(out?.metadata).toEqual({ purpose: "startup_greeting", a: "b" });
+  });
+
+  it("returns null when there is no greeting to speak", () => {
+    expect(startupGreetingResponse(undefined)).toBeNull();
+    expect(startupGreetingResponse(null)).toBeNull();
   });
 });

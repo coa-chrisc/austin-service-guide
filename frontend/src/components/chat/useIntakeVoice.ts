@@ -6,6 +6,7 @@
 /*     speakable(reply) plus catalog-sourced contact/summary speech.   */
 /*   - "realtime_audio": the OpenAI Realtime WebRTC session, behind a  */
 /*     raw-audio badge and a consent dialog once per page session.     */
+/*     Nothing is spoken on the device: the voice model greets first.  */
 /* ------------------------------------------------------------------ */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -13,6 +14,7 @@ import {
   getCrisisResources,
   getIntakeResults,
   getVoiceConfig,
+  type RealtimeToolResult,
   type VoicePipelineMode,
 } from "@/lib/api";
 import { withIntakeState } from "@/lib/session";
@@ -30,8 +32,12 @@ import {
   type SpokenSegment,
   type UtteranceOutcome,
 } from "@/hooks/useOnDeviceVoiceIntake";
-import { getStoredLanguage } from "@/components/common/LanguageSelector";
+import {
+  getStoredLanguage,
+  setStoredLanguage,
+} from "@/components/common/LanguageSelector";
 import type { IntakeMessage } from "@/types";
+import { languageAfterToolResult, startRealtimeVoice } from "./voiceStart";
 
 type RealtimeOptions = Parameters<typeof useRealtimeVoiceSession>[0];
 
@@ -70,8 +76,9 @@ export function useIntakeVoice({
   const [liveAi, setLiveAi] = useState<boolean | null>(null);
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
-  const [welcomePlaying, setWelcomePlaying] = useState(false);
-  const didSpeakRealtimeIntroRef = useRef(false);
+  // The realtime model has started its greeting for this intake; set once
+  // OpenAI accepts it, so a retry after a drop never replays it.
+  const didGreetRealtimeRef = useRef(false);
   const didAutoStartRef = useRef(false);
   const startGenRef = useRef(0);
   // True from a start request until that start finishes or is cancelled, so
@@ -104,7 +111,25 @@ export function useIntakeVoice({
     };
   }, []);
 
-  const realtime = useRealtimeVoiceSession(realtimeOptions);
+  // When the voice model calls set_language, the returned state carries the
+  // new language: switch the UI language too, so the screen, later turns
+  // (typed or a voice retry) and the plan all follow.
+  const { onToolResult } = realtimeOptions;
+  const handleRealtimeToolResult = useCallback(
+    (result: RealtimeToolResult) => {
+      const next = languageAfterToolResult(
+        result.state?.language,
+        getStoredLanguage(),
+      );
+      if (next) setStoredLanguage(next);
+      onToolResult(result);
+    },
+    [onToolResult],
+  );
+  const realtime = useRealtimeVoiceSession({
+    ...realtimeOptions,
+    onToolResult: handleRealtimeToolResult,
+  });
 
   const onUtterance = useCallback(
     async (text: string, kinds: PiiKind[]): Promise<UtteranceOutcome | null> => {
@@ -146,11 +171,6 @@ export function useIntakeVoice({
 
   const local = useOnDeviceVoiceIntake({ onUtterance });
 
-  // If realtime startup fails, let a retry replay the greeting.
-  useEffect(() => {
-    if (realtime.status === "error") didSpeakRealtimeIntroRef.current = false;
-  }, [realtime.status]);
-
   const startOnDevice = useCallback(async () => {
     const gen = ++startGenRef.current;
     const lang = toBcp47(getStoredLanguage());
@@ -165,28 +185,23 @@ export function useIntakeVoice({
     }
   }, [local.checkAvailability, local.startSession]);
 
-  const startRealtime = useCallback(async () => {
-    const gen = ++startGenRef.current;
-    startingRef.current = true;
-    setWelcomeVisible(true);
-    // The privacy welcome is spoken locally before any audio is streamed.
-    setWelcomePlaying(true);
-    await local.speak([WELCOME_SEGMENT]);
-    setWelcomePlaying(false);
-    if (gen !== startGenRef.current) return;
+  const startRealtime = useCallback(() => {
+    // Cancel any pending on-device start; nothing is spoken on the device in
+    // this mode. The privacy reminder is shown on screen (VoiceWelcome) and
+    // the voice model speaks first, in the UI language.
+    ++startGenRef.current;
     startingRef.current = false;
-    const language = getStoredLanguage();
-    const intro = messages.find((m) => m.role === "assistant")?.content || "";
-    const shouldSpeakIntro = !didSpeakRealtimeIntroRef.current && !!intro.trim();
-    const startupMicLockMs = shouldSpeakIntro
-      ? Math.min(8000, Math.max(2500, intro.length * 45))
-      : 0;
-    if (shouldSpeakIntro) didSpeakRealtimeIntroRef.current = true;
-    realtime.start(language, messages, {
-      speakInitialGreeting: shouldSpeakIntro,
-      startupMicLockMs,
+    setWelcomeVisible(true);
+    startRealtimeVoice({
+      realtime: { start: realtime.start },
+      language: getStoredLanguage(),
+      messages,
+      alreadyGreeted: didGreetRealtimeRef.current,
+      onStartupGreeting: () => {
+        didGreetRealtimeRef.current = true;
+      },
     });
-  }, [local.speak, messages, realtime.start]);
+  }, [messages, realtime.start]);
 
   /** Mic button. */
   const start = useCallback(() => {
@@ -230,7 +245,6 @@ export function useIntakeVoice({
   const end = useCallback(() => {
     startGenRef.current += 1;
     startingRef.current = false;
-    setWelcomePlaying(false);
     local.clear();
     realtime.stop();
   }, [local.clear, realtime.stop]);
@@ -246,11 +260,11 @@ export function useIntakeVoice({
     setConsentOpen(false);
   }, [end]);
 
-  /** New intake: clear voice and allow the auto-start and intro again. */
+  /** New intake: clear voice and allow the auto-start and greeting again. */
   const reset = useCallback(() => {
     clear();
     didAutoStartRef.current = false;
-    didSpeakRealtimeIntroRef.current = false;
+    didGreetRealtimeRef.current = false;
   }, [clear]);
 
   // Voice-first intakes start voice once the mode is known.
@@ -282,7 +296,6 @@ export function useIntakeVoice({
         ? { role: "user", content: local.interim }
         : null;
   const starting =
-    welcomePlaying ||
     realtime.status === "connecting" ||
     local.availability === "checking";
   const hasVoiceState =

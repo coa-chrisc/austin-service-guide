@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@mui/material/Button";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -23,12 +23,39 @@ const ALL_LANGUAGES = [
 // Only the configured languages, in configured order.
 const LANGUAGES = brandConfig.serviceGuide.languages.flatMap((code) => ALL_LANGUAGES.filter((l) => l.code === code));
 
+/** Fired on window when the UI language changes in this tab. */
+export const LANGUAGE_CHANGE_EVENT = "asg:language";
+
 export function getStoredLanguage(): string {
   try {
     return localStorage.getItem("asg-language") || "en";
   } catch {
     return "en";
   }
+}
+
+/**
+ * Save the UI language and tell this tab's listeners. Used by the selector
+ * and when the voice model switches language for the resident.
+ */
+export function setStoredLanguage(code: string): void {
+  try {
+    localStorage.setItem("asg-language", code);
+  } catch {
+    /* no-op */
+  }
+  window.dispatchEvent(new CustomEvent(LANGUAGE_CHANGE_EVENT, { detail: code }));
+}
+
+/** The stored UI language, re-rendering when it changes in this tab. */
+export function useStoredLanguage(): string {
+  const [language, setLanguage] = useState(getStoredLanguage);
+  useEffect(() => {
+    const onChange = () => setLanguage(getStoredLanguage());
+    window.addEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+  }, []);
+  return language;
 }
 
 export function getLanguageLabel(code: string): string {
@@ -38,7 +65,7 @@ export function getLanguageLabel(code: string): string {
 
 export default function LanguageSelector() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selected, setSelected] = useState(getStoredLanguage);
+  const selected = useStoredLanguage();
   const open = Boolean(anchorEl);
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -48,12 +75,7 @@ export default function LanguageSelector() {
   const handleClose = () => setAnchorEl(null);
 
   const handleSelect = (code: string) => {
-    setSelected(code);
-    try {
-      localStorage.setItem("asg-language", code);
-    } catch {
-      /* no-op */
-    }
+    setStoredLanguage(code);
     handleClose();
   };
 

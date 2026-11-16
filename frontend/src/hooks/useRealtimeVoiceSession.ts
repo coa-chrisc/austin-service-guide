@@ -12,6 +12,7 @@ import {
   isFatalRealtimeError,
   runnableFunctionCalls,
   sessionUpdatePayload,
+  startupGreetingResponse,
   type RealtimeErrorDetail,
   type RealtimeFunctionCall,
 } from "@/lib/realtimeEvents";
@@ -50,8 +51,15 @@ type LiveTranscriptRole = "user" | "assistant";
 const REDACTED_TRANSCRIPT_FALLBACK = "[details removed]";
 
 interface RealtimeStartOptions {
+  /**
+   * Ask the voice model to speak first, with the server-built greeting
+   * (`startup_response` from the client-secret call). Nothing is spoken on
+   * the device.
+   */
   speakInitialGreeting?: boolean;
   startupMicLockMs?: number;
+  /** Called once when OpenAI accepts the greeting response. */
+  onStartupGreeting?: () => void;
 }
 
 const REALTIME_CALLS_URL = "https://api.openai.com/v1/realtime/calls";
@@ -278,7 +286,9 @@ export function useRealtimeVoiceSession({
   const lastPushedInstructionsRef = useRef<string>("");
   const sessionUpdateTimerRef = useRef<number | null>(null);
   const initialResponseEventRef = useRef<Record<string, unknown> | null>(null);
-  const initialGreetingTextRef = useRef("");
+  // The greeting response.create body for this start, or null for none.
+  const startupResponseRef = useRef<Record<string, unknown> | null>(null);
+  const onStartupGreetingRef = useRef<(() => void) | null>(null);
   const initialResponseTimerRef = useRef<number | null>(null);
   const statusRef = useRef<VoiceStatus>("idle");
   const thinkingStartedAtRef = useRef<number | null>(null);
@@ -719,7 +729,8 @@ export function useRealtimeVoiceSession({
       sessionUpdateTimerRef.current = null;
     }
     initialResponseEventRef.current = null;
-    initialGreetingTextRef.current = "";
+    startupResponseRef.current = null;
+    onStartupGreetingRef.current = null;
   }, []);
 
   const stop = useCallback(() => {
@@ -790,41 +801,15 @@ export function useRealtimeVoiceSession({
         if (!event) return;
         initialResponseAttemptsRef.current += 1;
         startupResponsePendingRef.current = true;
-        const greetingText = initialGreetingTextRef.current.trim();
         recordDebug("startup_response_create_sent", {
           attempt: initialResponseAttemptsRef.current,
           data_channel_open: dataChannelOpenRef.current,
           session_ready: sessionReadyRef.current,
-          greeting_length: greetingText.length,
         });
-        if (greetingText) {
-          const response = {
-            ...((event.response as Record<string, unknown> | undefined) || {}),
-            input: [
-              {
-                type: "message",
-                role: "user",
-                content: [
-                  {
-                    type: "input_text",
-                    text:
-                      "Voice mode just connected. The resident is waiting for " +
-                      "the guide to speak first. Read the startup greeting " +
-                      "below aloud exactly once, then stop and wait for the " +
-                      "resident. Do not call tools.\n\nStartup greeting:\n" +
-                      greetingText,
-                  },
-                ],
-              },
-            ],
-          };
-          requestModelResponse("startup_greeting", response);
-        } else {
-          requestModelResponse(
-            "startup_greeting",
-            event.response as Record<string, unknown>,
-          );
-        }
+        requestModelResponse(
+          "startup_greeting",
+          event.response as Record<string, unknown>,
+        );
         if (initialResponseAttemptsRef.current < 2) {
           initialResponseTimerRef.current = window.setTimeout(() => {
             if (
@@ -1382,6 +1367,10 @@ export function useRealtimeVoiceSession({
           initialResponseIdRef.current = response.id;
           startupResponsePendingRef.current = false;
           startupResponseActiveRef.current = true;
+          // The greeting is under way: a later retry must not replay it.
+          const onGreeting = onStartupGreetingRef.current;
+          onStartupGreetingRef.current = null;
+          onGreeting?.();
         }
         if (!isStartupCreated && completionFlowRef.current && response?.id) {
           finalResponseIdRef.current = response.id;
@@ -1762,6 +1751,7 @@ export function useRealtimeVoiceSession({
       stoppedRef.current = false;
       transcriptItemIdsRef.current.clear();
       resetSessionState();
+      onStartupGreetingRef.current = options.onStartupGreeting ?? null;
       setError("");
       clearLiveTranscript();
       setStatus("connecting");
@@ -1782,6 +1772,9 @@ export function useRealtimeVoiceSession({
           return;
         }
         sessionConfigRef.current = secret.session_config || null;
+        startupResponseRef.current = options.speakInitialGreeting
+          ? startupGreetingResponse(secret.startup_response)
+          : null;
         recordDebug("client_secret_request_completed", {
           model: secret.model,
           client_session_id: secret.client_secret.session?.id,
@@ -1814,10 +1807,11 @@ export function useRealtimeVoiceSession({
           noise_suppression: micSettings?.noiseSuppression ?? null,
           auto_gain_control: micSettings?.autoGainControl ?? null,
         });
-        const startupMicLockMs = Math.max(
-          0,
-          Math.min(8000, options?.startupMicLockMs ?? 0),
-        );
+        // The startup lock covers the greeting only; with no greeting to
+        // play, the mic opens as soon as the session is up.
+        const startupMicLockMs = startupResponseRef.current
+          ? Math.max(0, Math.min(8000, options?.startupMicLockMs ?? 0))
+          : 0;
         if (startupMicLockMs > 0) {
           startupMicLockedRef.current = true;
           syncInputTracks();
@@ -1905,25 +1899,12 @@ export function useRealtimeVoiceSession({
           recordDebug("data_channel_opened", {
             conversation_length: conversation.length,
           });
-          const introText =
-            conversation
-              .find((m) => m.role === "assistant" && m.content.trim())
-              ?.content.trim() || "";
-          const shouldSpeakInitialGreeting =
-            !!options.speakInitialGreeting && !!introText;
-          let skippedInitialGreeting = false;
+          // The whole visible conversation, text greeting included, is
+          // context. The spoken greeting is its own short response with its
+          // own input, so the long text greeting is never read aloud.
           for (const message of conversation.filter(
             (m) => m.role !== "system",
           )) {
-            if (
-              shouldSpeakInitialGreeting &&
-              !skippedInitialGreeting &&
-              message.role === "assistant" &&
-              message.content.trim() === introText
-            ) {
-              skippedInitialGreeting = true;
-              continue;
-            }
             const item = messageContent(message);
             if (item) {
               dc.send(
@@ -1931,27 +1912,15 @@ export function useRealtimeVoiceSession({
               );
             }
           }
+          const startupResponse = startupResponseRef.current;
           recordDebug("conversation_history_preloaded", {
             message_count: conversation.length,
-            skipped_initial_greeting: skippedInitialGreeting,
-            will_speak_initial_greeting: shouldSpeakInitialGreeting,
+            will_speak_initial_greeting: !!startupResponse,
           });
-          if (shouldSpeakInitialGreeting) {
-            initialGreetingTextRef.current = introText;
+          if (startupResponse) {
             initialResponseEventRef.current = {
-              event_id: `startup_greeting_${Date.now()}`,
               type: "response.create",
-              response: {
-                output_modalities: ["audio"],
-                instructions:
-                  "The resident has just started voice mode. Speak the " +
-                  "requested greeting aloud exactly once. Do not add new " +
-                  "information, do not call tools, and do not wait for " +
-                  "microphone input before speaking.",
-                metadata: {
-                  purpose: "startup_greeting",
-                },
-              },
+              response: startupResponse,
             };
           }
           dataChannelOpenRef.current = true;
