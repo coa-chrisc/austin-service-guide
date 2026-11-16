@@ -32,7 +32,7 @@ This is the kind of civic technology that can be prototyped rapidly with modern 
 ## Demo Highlights
 
 - **AI-powered intake chatbot** that can run with OpenAI's Responses API or fall back to a scripted demo flow.
-- **Voice intake with on-device speech recognition by default.** In the default `intercepted_text` mode, speech is recognized in the browser (no raw audio leaves the device), the transcript is PII-scrubbed in the browser and again on the server, and the reply is spoken with on-device voices. An opt-in `realtime_audio` mode streams raw audio to OpenAI's Realtime API (`gpt-realtime-2`) over WebRTC and is meant only for deployments with an OpenAI zero-data-retention agreement.
+- **Voice intake with on-device speech recognition by default.** In the default `intercepted_text` mode, speech is recognized in the browser (no raw audio leaves the device), the transcript is PII-scrubbed in the browser and again on the server, and the reply is spoken with on-device voices. An opt-in `realtime_audio` mode streams raw audio to OpenAI's Realtime API (`gpt-realtime-2.1`) over WebRTC and is meant only for deployments with an OpenAI zero-data-retention agreement.
 - **Tool-calling AI workflow** that searches services, extracts profile information, finds matches, changes language, retrieves crisis resources, and completes the intake.
 - **No-account-first, stateless resident experience** so a resident can get recommendations without signing up. The intake state lives in the browser tab, not on the server, and "Start over" clears it.
 - **Need-first navigation**: the landing page leads with need chips (food, healthcare, housing, maternal and child, financial and benefits, mental health), a ZIP select, and a language selector. Chat and voice are the secondary path.
@@ -192,8 +192,8 @@ Useful settings:
 - `OPENAI_MAX_TOOL_ITERATIONS` — safety cap on tool-call rounds per assistant turn (default `6`).
 - `VOICE_PIPELINE_MODE` — `intercepted_text` (default) or `realtime_audio`. In `intercepted_text` the browser recognizes speech on-device and only scrubbed text reaches the server and model. In `realtime_audio` the browser streams raw microphone audio to OpenAI's Realtime API.
 - `ALLOW_RAW_AUDIO_STREAM` — default `false`. `realtime_audio` takes effect only when `VOICE_PIPELINE_MODE=realtime_audio` AND `ALLOW_RAW_AUDIO_STREAM=true` (and live AI is on); otherwise the server returns 403 on `/api/v1/intake/realtime/client-secret|tool|transcript`. Set it only for a deployment with an OpenAI zero-data-retention agreement; the app does not verify that agreement. The browser reads the effective mode from `GET /api/v1/intake/voice-config`.
-- `OPENAI_REALTIME_MODEL` — model for the `realtime_audio` voice mode (default `gpt-realtime-2`). The Realtime settings below apply only to that mode.
-- `OPENAI_REALTIME_REASONING_EFFORT` — reasoning effort for the voice model (default `medium`).
+- `OPENAI_REALTIME_MODEL` — model for the `realtime_audio` voice mode (default `gpt-realtime-2.1`). The Realtime settings below apply only to that mode.
+- `OPENAI_REALTIME_REASONING_EFFORT` — reasoning effort for the voice model (default `low`, OpenAI's recommended starting point for voice agents).
 - `OPENAI_REALTIME_VOICE` — Realtime voice preset (default `marin`).
 - `OPENAI_REALTIME_TRANSCRIPTION_MODEL` — model used for live transcription (default `gpt-4o-transcribe`).
 - `OPENAI_REALTIME_SECRET_TTL_SECONDS` — lifetime of the ephemeral client secret returned to the browser (default `600`).
