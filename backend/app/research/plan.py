@@ -36,8 +36,10 @@ INSTRUCTIONS = (
     "published automatically. Propose specific web search queries that find official pages of services "
     "residents of the place can use: government agencies and established nonprofits that state who they "
     "serve, where, when and how to contact them. Prefer queries that name the place. Do not include personal "
-    "names. To limit a query to one website, start it with the operator site:<domain> written with a colon "
-    "(for example site:example.gov food pantry), at most one per query; never write site.<domain>. "
+    "names. Most queries should be open searches that name the place and the need (for example '<county> "
+    "food pantry hours'), so the search finds services you do not already know about. Use the operator "
+    "site:<domain>, written with a colon and at most one per query, only for a minority of queries that dig "
+    "into one organisation's own website for details; never write site.<domain>. "
     "official_domains lists bare domains (example.gov) you expect for the place's city and county "
     "governments; expected_sources lists organisations or agencies you expect to find. Keep rationales short."
 )
