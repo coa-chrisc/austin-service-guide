@@ -47,7 +47,7 @@ def mount_spa(app: FastAPI, static_dir: str | Path) -> None:
                 raise HTTPException(status_code=404, detail="Not Found")
             if candidate.is_file():
                 return _file(candidate)
-            # A missing hashed asset must 404, not return HTML.
-            if full_path.startswith("assets/"):
+            # A missing hashed asset or report file must 404, not return HTML.
+            if full_path.startswith(("assets/", "reports/")):
                 raise HTTPException(status_code=404, detail="Not Found")
         return _file(index)

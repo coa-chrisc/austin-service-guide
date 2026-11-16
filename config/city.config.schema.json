@@ -442,6 +442,10 @@
             "const": "en"
           }
         },
+        "showBenefitEstimates": {
+          "type": "boolean",
+          "description": "Show the estimated-benefits banner and the all-matches hero band on the results page. The estimates are rough rule-of-thumb figures, not eligibility decisions. Default: false."
+        },
         "copy": {
           "type": "object",
           "additionalProperties": false,

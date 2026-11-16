@@ -26,9 +26,15 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
-import { getServices, deleteAdminService, ApiError } from "../../lib/api";
+import {
+  getCategories,
+  getServices,
+  deleteAdminService,
+  ApiError,
+} from "../../lib/api";
+import { categoryLabel } from "../../lib/categoryLabel";
 import AdminTokenButton from "./AdminTokenButton";
-import type { Service, ServiceStatus } from "../../types";
+import type { Service, ServiceCategory, ServiceStatus } from "../../types";
 
 const STATUS_COLORS: Record<ServiceStatus, "success" | "default" | "warning"> =
   {
@@ -94,10 +100,21 @@ export default function AdminServices() {
     ? services.filter((s) => s.status === statusFilter)
     : services;
 
-  /* -- unique categories from loaded data -------------------------- */
-  const uniqueCategories = [
-    ...new Set(services.flatMap((s) => s.categories)),
-  ].sort();
+  /* -- every catalog category, with its display name ---------------- */
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    getCategories()
+      .then((res) => {
+        if (!cancelled) setCategories(res);
+      })
+      .catch((err) => console.error("Failed to load categories", err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const categoryNames = Object.fromEntries(categories.map((c) => [c.slug, c.name]));
+  const categoryName = (slug: string) => categoryNames[slug] ?? categoryLabel(slug);
 
   const handleDelete = async (id: string) => {
     setDeleteDialog(null);
@@ -125,7 +142,7 @@ export default function AdminServices() {
       flex: 0.8,
       minWidth: 140,
       valueGetter: (_value: string[], row: Service) =>
-        (row.categories ?? []).join(", "),
+        (row.categories ?? []).map(categoryName).join(", "),
     },
     {
       field: "status",
@@ -239,9 +256,9 @@ export default function AdminServices() {
               }}
             >
               <MenuItem value="">All</MenuItem>
-              {uniqueCategories.map((c) => (
-                <MenuItem key={c} value={c}>
-                  {c}
+              {categories.map((c) => (
+                <MenuItem key={c.slug} value={c.slug}>
+                  {c.name}
                 </MenuItem>
               ))}
             </Select>

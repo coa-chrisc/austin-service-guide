@@ -30,6 +30,7 @@ import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import LanguageSelector from "@/components/common/LanguageSelector";
 import { useAuth } from "@/hooks/useAuth";
+import { useOpenStaffDemo } from "@/hooks/useOpenStaffDemo";
 import { useThemeMode } from "@/theme/ThemeContext";
 import StartOverButton from "@/components/layout/StartOverButton";
 import {
@@ -52,6 +53,7 @@ export default function Header() {
   const location = useLocation();
   const { isAuthenticated, isStaff, residentName, logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
+  const openStaffDemo = useOpenStaffDemo();
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
@@ -73,7 +75,11 @@ export default function Header() {
   }, [location.pathname]);
 
   const onResultsPage = location.pathname.startsWith("/results");
-  const showPlanPill = hasPlan && !onResultsPage;
+  // The demo replay ends with its own "See this resident's plan" button.
+  const onDemoPage = location.pathname.startsWith("/demo");
+  const showPlanPill = hasPlan && !onResultsPage && !onDemoPage;
+  // With a plan, the map opens on the plan's services.
+  const navPath = (path: string) => (path === "/map" && hasPlan ? "/map?plan=1" : path);
 
   const handleUserMenuOpen = (e: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(e.currentTarget);
@@ -162,7 +168,7 @@ export default function Header() {
                 <Button
                   key={item.path}
                   component={RouterLink}
-                  to={item.path}
+                  to={navPath(item.path)}
                   sx={{
                     color:
                       location.pathname === item.path
@@ -224,18 +230,30 @@ export default function Header() {
           {/* Start over — wipes this tab's intake after a confirm dialog */}
           {hasIntake && !isMobile && <StartOverButton />}
 
-          {/* Demo launcher — opens persona drawer on Landing */}
+          {/* Demo entry points: resident scenarios on Landing, and the staff console */}
           {!isMobile && (
-            <Button
-              variant="outlined"
-              size="small"
-              color="secondary"
-              startIcon={<PlayCircleOutlineIcon />}
-              onClick={() => navigate("/?demo=1")}
-              sx={{ borderRadius: (t) => t.shape.radius.pill, mr: 0.5 }}
-            >
-              Demo
-            </Button>
+            <>
+              <Button
+                variant="outlined"
+                size="small"
+                color="secondary"
+                startIcon={<PlayCircleOutlineIcon />}
+                onClick={() => navigate("/?demo=1")}
+                sx={{ borderRadius: (t) => t.shape.radius.pill, mr: 0.5, whiteSpace: "nowrap" }}
+              >
+                Resident demo
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                color="secondary"
+                startIcon={<AdminPanelSettingsIcon />}
+                onClick={openStaffDemo}
+                sx={{ borderRadius: (t) => t.shape.radius.pill, mr: 0.5, whiteSpace: "nowrap" }}
+              >
+                Staff console demo
+              </Button>
+            </>
           )}
 
           {/* Language selector */}
@@ -361,7 +379,7 @@ export default function Header() {
             <ListItemButton
               key={item.path}
               onClick={() => {
-                navigate(item.path);
+                navigate(navPath(item.path));
                 setDrawerOpen(false);
               }}
               selected={location.pathname === item.path}
@@ -379,7 +397,18 @@ export default function Header() {
             <ListItemIcon>
               <PlayCircleOutlineIcon />
             </ListItemIcon>
-            <ListItemText primary="Demo" />
+            <ListItemText primary="Resident demo" />
+          </ListItemButton>
+          <ListItemButton
+            onClick={() => {
+              setDrawerOpen(false);
+              openStaffDemo();
+            }}
+          >
+            <ListItemIcon>
+              <AdminPanelSettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Staff console demo" />
           </ListItemButton>
           {hasIntake && (
             <StartOverButton

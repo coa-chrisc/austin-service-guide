@@ -1,29 +1,57 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
-import Chip from "@mui/material/Chip";
-import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
+import ReplayIcon from "@mui/icons-material/Replay";
+import PauseIcon from "@mui/icons-material/Pause";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ChatBubble from "@/components/chat/ChatBubble";
+import DemoScenarioBanner from "@/components/demo/DemoScenarioBanner";
 import type { IntakeMessage } from "@/types";
 import type { PersonaScriptTurn } from "@/lib/api";
 
-interface DemoState {
+/** Router state the scenario launcher passes to /demo. */
+export interface DemoState {
   openingMessage: string;
   script: PersonaScriptTurn[];
   personaLabel?: string;
+  personaSummary?: string;
+}
+
+// Reading-time pacing: wait long enough to read the previous bubble.
+const MIN_DELAY_MS = 1500;
+const MAX_DELAY_MS = 5000;
+const MS_PER_CHAR = 30;
+const FIRST_DELAY_MS = 400;
+
+function delayBefore(prev: IntakeMessage | undefined, scripted?: number): number {
+  if (!prev) return FIRST_DELAY_MS;
+  const reading = prev.content.length * MS_PER_CHAR;
+  return Math.min(MAX_DELAY_MS, Math.max(MIN_DELAY_MS, reading, scripted ?? 0));
+}
+
+function bubble(role: "user" | "assistant", content: string): IntakeMessage {
+  return {
+    role,
+    content,
+    suggested_buttons: [],
+    progress_percent: 0,
+    is_complete: false,
+    crisis_detected: false,
+  };
 }
 
 function TypingIndicator() {
   return (
     <Box
       role="status"
-      aria-label="Assistant is typing"
+      aria-label="Guide is typing"
       sx={{
         display: "flex",
         alignItems: "center",
@@ -39,7 +67,7 @@ function TypingIndicator() {
       }}
     >
       <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.main" }}>
-        <HealthAndSafetyIcon sx={{ fontSize: 18 }} />
+        <SmartToyIcon sx={{ fontSize: 20 }} />
       </Avatar>
       <Box
         sx={{
@@ -78,206 +106,182 @@ function TypingIndicator() {
 }
 
 export default function DemoIntake() {
-  const navigate = useNavigate();
   const location = useLocation();
   const state = location.state as DemoState | null;
+  // Opened directly (no launcher state): send the visitor to the launcher.
+  if (!state || (!state.openingMessage && state.script.length === 0)) {
+    return <Navigate to="/?demo=1" replace />;
+  }
+  return <DemoReplay demo={state} />;
+}
 
-  const fullSequence = useMemo<IntakeMessage[]>(() => {
-    if (!state) return [];
-    const seq: IntakeMessage[] = [];
-    if (state.openingMessage) {
-      seq.push({
-        role: "user",
-        content: state.openingMessage,
-        suggested_buttons: [],
-        progress_percent: 0,
-        is_complete: false,
-        crisis_detected: false,
-      });
+function DemoReplay({ demo }: { demo: DemoState }) {
+  const navigate = useNavigate();
+
+  const sequence = useMemo(() => {
+    const items: { message: IntakeMessage; scriptedDelay?: number }[] = [];
+    if (demo.openingMessage) {
+      items.push({ message: bubble("user", demo.openingMessage) });
     }
-    for (const t of state.script) {
-      seq.push({
-        role: t.role,
-        content: t.content,
-        suggested_buttons: [],
-        progress_percent: 0,
-        is_complete: false,
-        crisis_detected: false,
-      });
+    for (const turn of demo.script) {
+      items.push({ message: bubble(turn.role, turn.content), scriptedDelay: turn.delay_ms });
     }
-    return seq;
-  }, [state]);
+    return items;
+  }, [demo]);
 
-  const delays = useMemo<number[]>(() => {
-    if (!state) return [];
-    const arr: number[] = [];
-    if (state.openingMessage) arr.push(400);
-    for (const t of state.script) arr.push(t.delay_ms ?? 800);
-    return arr;
-  }, [state]);
-
-  const [shown, setShown] = useState<IntakeMessage[]>([]);
-  const [typing, setTyping] = useState(false);
-  const [done, setDone] = useState(false);
+  const total = sequence.length;
+  const [shownCount, setShownCount] = useState(0);
+  const [paused, setPaused] = useState(false);
   const [skipped, setSkipped] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const timeouts = useRef<number[]>([]);
+  const done = shownCount >= total;
+  const next = done ? undefined : sequence[shownCount];
+  // The typing dots show only while the next bubble is the guide's.
+  const typing = !paused && next?.message.role === "assistant";
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [shown, typing]);
+    if (paused || !next) return;
+    const prev = sequence[shownCount - 1]?.message;
+    const timer = window.setTimeout(
+      () => setShownCount((n) => n + 1),
+      delayBefore(prev, next.scriptedDelay),
+    );
+    return () => window.clearTimeout(timer);
+  }, [paused, next, shownCount, sequence]);
 
   useEffect(() => {
-    if (!state || fullSequence.length === 0) {
-      // No state — user navigated directly. Skip straight to results.
-      navigate("/results", { replace: true });
-      return;
-    }
-
-    let i = 0;
-    const queueNext = () => {
-      if (i >= fullSequence.length) {
-        setTyping(false);
-        setDone(true);
-        return;
-      }
-      const msg = fullSequence[i];
-      const delay = delays[i] ?? 800;
-      const isAssistant = msg.role === "assistant";
-      // Show typing indicator only before assistant bubbles.
-      if (isAssistant) setTyping(true);
-      const t = window.setTimeout(() => {
-        setTyping(false);
-        setShown((prev) => [...prev, msg]);
-        i += 1;
-        // Small gap between bubbles before scheduling the next.
-        const gap = window.setTimeout(queueNext, 300);
-        timeouts.current.push(gap);
-      }, delay);
-      timeouts.current.push(t);
-    };
-    queueNext();
-
-    return () => {
-      timeouts.current.forEach((t) => clearTimeout(t));
-      timeouts.current = [];
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [shownCount, typing]);
 
   const handleSkip = () => {
-    timeouts.current.forEach((t) => clearTimeout(t));
-    timeouts.current = [];
     setSkipped(true);
-    setTyping(false);
-    setShown(fullSequence);
-    setDone(true);
+    setPaused(false);
+    setShownCount(total);
   };
 
-  const handleViewPlan = () => {
-    navigate("/results");
+  const handleReplay = () => {
+    setSkipped(false);
+    setPaused(false);
+    setShownCount(0);
   };
-
-  if (!state) return null;
 
   return (
-    <Container maxWidth="md" sx={{ py: 3 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 2,
-          flexWrap: "wrap",
-          gap: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Chip
-            label="DEMO"
-            size="small"
-            color="warning"
-            sx={{ fontWeight: 700 }}
-          />
-          {state.personaLabel && (
-            <Typography variant="body2" color="text.secondary">
-              {state.personaLabel}
-            </Typography>
-          )}
-        </Box>
-        {!done && (
-          <Button
-            size="small"
-            variant="text"
-            startIcon={<SkipNextIcon />}
-            onClick={handleSkip}
-          >
-            Skip to plan
-          </Button>
+    <Box>
+      <DemoScenarioBanner
+        sticky
+        label={demo.personaLabel}
+        message="Scripted replay, not a live AI conversation."
+      />
+
+      <Container maxWidth="md" sx={{ py: 3 }}>
+        {demo.personaSummary && (
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+            {demo.personaSummary}
+          </Typography>
         )}
-      </Box>
 
-      <Box
-        sx={{
-          bgcolor: "background.paper",
-          borderRadius: (theme) => theme.shape.radius.card,
-          border: "1px solid",
-          borderColor: "divider",
-          p: { xs: 2, sm: 3 },
-          minHeight: 400,
-        }}
-      >
-        {shown.map((m, idx) => (
-          <ChatBubble
-            key={idx}
-            message={m}
-            isLatest={idx === shown.length - 1}
-          />
-        ))}
-        {typing && <TypingIndicator />}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      {done && (
         <Box
           sx={{
             display: "flex",
-            justifyContent: "center",
-            mt: 3,
-            "@media (prefers-reduced-motion: no-preference)": {
-              animation: "fadeSlideIn 0.4s ease-out",
-              "@keyframes fadeSlideIn": {
-                from: { opacity: 0, transform: "translateY(8px)" },
-                to: { opacity: 1, transform: "translateY(0)" },
-              },
-            },
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 2,
+            flexWrap: "wrap",
+            gap: 1,
           }}
         >
-          <Button
-            variant="contained"
-            size="large"
-            endIcon={<ArrowForwardIcon />}
-            onClick={handleViewPlan}
+          <Typography variant="body2" color="text.secondary" aria-live="polite">
+            Step {Math.max(1, shownCount)} of {total}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {!done && (
+              <Button
+                size="small"
+                variant="text"
+                startIcon={paused ? <PlayArrowIcon /> : <PauseIcon />}
+                onClick={() => setPaused((p) => !p)}
+              >
+                {paused ? "Play" : "Pause"}
+              </Button>
+            )}
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<ReplayIcon />}
+              onClick={handleReplay}
+              disabled={shownCount === 0}
+            >
+              Replay
+            </Button>
+            {!done && (
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<SkipNextIcon />}
+                onClick={handleSkip}
+              >
+                Skip to plan
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            bgcolor: "background.paper",
+            borderRadius: (theme) => theme.shape.radius.card,
+            border: "1px solid",
+            borderColor: "divider",
+            p: { xs: 2, sm: 3 },
+            minHeight: 400,
+          }}
+        >
+          {sequence.slice(0, shownCount).map(({ message }, idx) => (
+            <ChatBubble
+              key={idx}
+              message={message}
+              isLatest={idx === shownCount - 1}
+              speakerLabel={message.role === "user" ? "Sample resident" : "Guide"}
+            />
+          ))}
+          {typing && <TypingIndicator />}
+          <div ref={messagesEndRef} />
+        </Box>
+
+        {done && (
+          <Box
             sx={{
-              minHeight: 52,
-              px: 4,
-              fontWeight: 700,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              mt: 3,
+              "@media (prefers-reduced-motion: no-preference)": {
+                animation: "fadeSlideIn 0.4s ease-out",
+                "@keyframes fadeSlideIn": {
+                  from: { opacity: 0, transform: "translateY(8px)" },
+                  to: { opacity: 1, transform: "translateY(0)" },
+                },
+              },
             }}
           >
-            View My Plan
-          </Button>
-        </Box>
-      )}
-
-      {skipped && (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", textAlign: "center", mt: 1 }}
-        >
-          Conversation skipped — plan ready.
-        </Typography>
-      )}
-    </Container>
+            <Button
+              variant="contained"
+              size="large"
+              disableElevation
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => navigate("/results")}
+              sx={{ minHeight: 52, px: 4, fontWeight: 700, textTransform: "none" }}
+            >
+              See this resident's plan
+            </Button>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+              {skipped
+                ? "Conversation skipped. The plan comes from the real matching engine."
+                : "The plan comes from the real matching engine and service catalog."}
+            </Typography>
+          </Box>
+        )}
+      </Container>
+    </Box>
   );
 }

@@ -1,9 +1,14 @@
 """Demo personas for the four PH-commissioner scenarios.
 
-A persona seeds an intake session with a baseline profile + a canned opening
-message. The live LLM then drives the rest of the conversation and may
-overwrite seeded fields if what the resident actually says contradicts the
-seed (e.g. "I'm a parent of a construction worker, not the worker myself").
+A persona is a pre-written resident scenario: a seed profile, an opening
+message and a scripted conversation. Loading one makes no model call: the
+seed profile goes through the rules-based matching engine, the intake is
+marked completed, and the browser replays the script before showing the
+plan. ``summary`` and ``shows`` describe the scenario on the launcher card.
+
+``persona_note`` stays on the session for prompts that later run on a
+persona's state (a live-AI plan build reads the transcript); it tells the
+model the seed is a hypothesis, not a fact.
 
 The persona definitions are data: ``personas.yaml`` in the data pack (optional;
 a pack without it offers no personas).
@@ -33,6 +38,8 @@ class Persona:
     id: str
     label: str
     language: str
+    summary: str
+    shows: list[str]
     seed_profile: ResidentProfile
     opening_message: str
     persona_note: str
@@ -60,6 +67,8 @@ def _load_personas() -> dict[str, Persona]:
             id=entry["id"],
             label=entry["label"],
             language=entry["language"],
+            summary=entry.get("summary", ""),
+            shows=[str(tag) for tag in entry.get("shows") or []],
             seed_profile=ResidentProfile(**entry["seed_profile"]),
             opening_message=entry["opening_message"],
             persona_note=f"{_HYBRID_NOTE_PREFIX}\n\n{entry['persona_note']}",
@@ -75,6 +84,12 @@ def get_persona(persona_id: str) -> Persona | None:
 def list_personas() -> list[dict]:
     """Lightweight metadata for the demo launcher UI."""
     return [
-        {"id": p.id, "label": p.label, "language": p.language}
+        {
+            "id": p.id,
+            "label": p.label,
+            "language": p.language,
+            "summary": p.summary,
+            "shows": p.shows,
+        }
         for p in _load_personas().values()
     ]

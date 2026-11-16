@@ -65,7 +65,8 @@ export default defineConfig(({ mode }) => {
           // Default app shell plus the logo the city-config plugin emits.
           globPatterns: ["**/*.{js,wasm,css,html}", "brand/logo.*"],
           // /access is the optional access-code gate (backend/app/access_gate.py); it must reach the server.
-          navigateFallbackDenylist: [/^\/api\//, /^\/access/],
+          // /reports/ holds pre-rendered report PDFs; a missing one must 404, not load the app shell.
+          navigateFallbackDenylist: [/^\/api\//, /^\/access/, /^\/reports\//],
           runtimeCaching: [
             {
               urlPattern: /\/api\/v1\/services\b/,
