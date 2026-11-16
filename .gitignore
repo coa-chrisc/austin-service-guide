@@ -89,3 +89,7 @@ backend/dedupe_review.csv
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
 .playwright-mcp/
+
+# Local agent and code-index tooling (never commit)
+.claude/
+.ignore
