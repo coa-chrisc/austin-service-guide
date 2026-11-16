@@ -5,14 +5,11 @@ import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
-import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
 import Chip from "@mui/material/Chip";
 import SendIcon from "@mui/icons-material/Send";
-import PhoneIcon from "@mui/icons-material/Phone";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -24,17 +21,27 @@ import VoiceConsentDialog from "./VoiceConsentDialog";
 import VoiceWelcome from "./VoiceWelcome";
 import { VoiceMicButton, VoiceNotices } from "./VoiceControls";
 import { useIntakeVoice } from "./useIntakeVoice";
-import { sendIntakeMessage, getCrisisResources } from "@/lib/api";
-import { withIntakeState } from "@/lib/session";
+import { sendIntakeMessage } from "@/lib/api";
+import { loadIntakeState, withIntakeState } from "@/lib/session";
+import { hasSafetyCrisis } from "@/lib/crisisLines";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import PrivacyNotice from "@/components/common/PrivacyNotice";
 import PrivacySnackbar from "@/components/common/PrivacySnackbar";
+import CrisisLinesBlock from "@/components/common/CrisisLinesBlock";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import { scrubPII } from "@/lib/piiGuard";
-import type { IntakeMessage, CrisisResource } from "@/types";
+import type { IntakeMessage } from "@/types";
 
 /** Readable chat column: full width on phones, centered on wide screens. */
 const COLUMN = { width: "100%", maxWidth: 880, mx: "auto" } as const;
+
+/** A stored intake already in crisis keeps the crisis lines pinned on reload. */
+function startsInCrisis(conversation: IntakeMessage[]): boolean {
+  return (
+    conversation.some((m) => m.crisis_detected) ||
+    hasSafetyCrisis(loadIntakeState()?.profile)
+  );
+}
 
 interface ChatInterfaceProps {
   /** Changes whenever a different intake is shown; resets the chat. */
@@ -61,8 +68,10 @@ export default function ChatInterface({
     initialMessages[initialMessages.length - 1]?.progress_percent ?? 0,
   );
   const [isComplete, setIsComplete] = useState(false);
-  const [crisisDetected, setCrisisDetected] = useState(false);
-  const [crisisResources, setCrisisResources] = useState<CrisisResource[]>([]);
+  // Once set, the crisis lines stay pinned for the rest of this intake.
+  const [crisisDetected, setCrisisDetected] = useState(() =>
+    startsInCrisis(initialMessages),
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const intakeKeyRef = useRef(intakeKey);
@@ -76,17 +85,6 @@ export default function ChatInterface({
     [],
   );
   const showPrivacyToast = useCallback(() => setPrivacyToast(true), []);
-
-  const loadCrisisResources = useCallback(async () => {
-    if (crisisDetected) return;
-    setCrisisDetected(true);
-    try {
-      const resources = await getCrisisResources();
-      setCrisisResources(resources);
-    } catch {
-      /* best effort */
-    }
-  }, [crisisDetected]);
 
   const appendMessages = useCallback((incoming: IntakeMessage[]) => {
     if (incoming.length === 0) return;
@@ -165,13 +163,13 @@ export default function ChatInterface({
       appendMessages(result.messages);
       setProgress(result.progress_percent);
       if (result.crisis_detected) {
-        void loadCrisisResources();
+        setCrisisDetected(true);
       }
       if (result.is_complete) {
         setIsComplete(true);
       }
     },
-    [appendMessages, loadCrisisResources],
+    [appendMessages],
   );
 
   const handleVoiceToolResult = useCallback(
@@ -182,13 +180,13 @@ export default function ChatInterface({
     }) => {
       setProgress(result.progress_percent);
       if (result.crisis_detected) {
-        void loadCrisisResources();
+        setCrisisDetected(true);
       }
       if (result.is_complete) {
         setIsComplete(true);
       }
     },
-    [loadCrisisResources],
+    [],
   );
 
   const voice = useIntakeVoice({
@@ -242,8 +240,7 @@ export default function ChatInterface({
       setIsLoading(false);
       setProgress(convo[convo.length - 1]?.progress_percent ?? 0);
       setIsComplete(false);
-      setCrisisDetected(false);
-      setCrisisResources([]);
+      setCrisisDetected(startsInCrisis(convo));
     }
   }, [intakeKey, initialConversation]);
 
@@ -295,8 +292,8 @@ export default function ChatInterface({
       ]);
       setProgress(response.progress_percent);
 
-      if (response.crisis_detected && !crisisDetected) {
-        await loadCrisisResources();
+      if (response.crisis_detected) {
+        setCrisisDetected(true);
       }
 
       if (response.is_complete) {
@@ -394,33 +391,10 @@ export default function ChatInterface({
         />
       </Box>
 
-      {/* Crisis alert banner */}
-      {crisisDetected && crisisResources.length > 0 && (
+      {/* Crisis lines: pinned once a crisis is detected; works offline. */}
+      {crisisDetected && (
         <Box sx={{ px: 2, pt: 1, "& > *": COLUMN }}>
-          <Alert
-            severity="error"
-            icon={<WarningAmberIcon />}
-            sx={{ "& .MuiAlert-message": { width: "100%" } }}
-          >
-            <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-              Immediate Help Available
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {crisisResources.map((r) => (
-                <Button
-                  key={r.phone}
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  startIcon={<PhoneIcon />}
-                  href={`tel:${r.phone}`}
-                  sx={{ borderRadius: (theme) => theme.shape.radius.pill }}
-                >
-                  {r.name}: {r.phone}
-                </Button>
-              ))}
-            </Box>
-          </Alert>
+          <CrisisLinesBlock />
         </Box>
       )}
 

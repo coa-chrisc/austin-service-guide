@@ -94,6 +94,9 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     previous_step: "Previous step",
     next_step: "Next step",
     other_match: "Another service that may help",
+    crisis_heading: "Help is available right now",
+    crisis_intro: "If you are in immediate danger, call 9-1-1. These lines are free, confidential and open 24/7.",
+    crisis_text_988: "Text 988",
   },
   es: {
     my_plan: "Mi plan",
@@ -179,6 +182,9 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     previous_step: "Paso anterior",
     next_step: "Paso siguiente",
     other_match: "Otro servicio que puede ayudarle",
+    crisis_heading: "Hay ayuda disponible ahora mismo",
+    crisis_intro: "Si está en peligro inmediato, llame al 9-1-1. Estas líneas son gratuitas, confidenciales y atienden las 24 horas, todos los días.",
+    crisis_text_988: "Enviar un mensaje de texto al 988",
   },
   vi: {
     my_plan: "Kế hoạch của tôi",
@@ -264,6 +270,9 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     previous_step: "Bước trước",
     next_step: "Bước tiếp theo",
     other_match: "Một dịch vụ khác có thể giúp bạn",
+    crisis_heading: "Có người sẵn sàng giúp bạn ngay bây giờ",
+    crisis_intro: "Nếu bạn đang gặp nguy hiểm ngay lập tức, hãy gọi 9-1-1. Các đường dây này miễn phí, bảo mật và hoạt động 24/7.",
+    crisis_text_988: "Nhắn tin tới 988",
   },
   zh: {
     my_plan: "我的计划",
@@ -347,6 +356,9 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     previous_step: "上一步",
     next_step: "下一步",
     other_match: "另一项可能有帮助的服务",
+    crisis_heading: "现在就可以获得帮助",
+    crisis_intro: "如果您正处于紧急危险中，请拨打 9-1-1。这些热线免费、保密，全天 24 小时开放。",
+    crisis_text_988: "发短信至 988",
   },
   ar: {
     my_plan: "خطتي",
@@ -431,6 +443,9 @@ export const RESULTS_I18N: Record<string, Record<string, string>> = {
     previous_step: "الخطوة السابقة",
     next_step: "الخطوة التالية",
     other_match: "خدمة أخرى قد تساعدك",
+    crisis_heading: "المساعدة متاحة الآن",
+    crisis_intro: "إذا كنت في خطر مباشر، اتصل بالرقم 9-1-1. هذه الخطوط مجانية وسرية ومتاحة على مدار الساعة.",
+    crisis_text_988: "أرسل رسالة نصية إلى 988",
   },
 };
 
