@@ -132,18 +132,23 @@ export default function HowItWorks() {
           color: "primary.contrastText",
           textAlign: "center",
           px: 2,
-          py: { xs: 5, md: 7 },
+          // Extra room below the text: the numbers card overlaps the bottom of this band.
+          pt: { xs: 4, md: 5 },
+          pb: { xs: 8, md: 10 },
           borderRadius: inConsole ? (t) => t.shape.radius.panel : 0,
         }}
       >
+        <Typography sx={{ fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", fontSize: "0.8125rem", mb: 1 }}>
+          {HERO.eyebrow}
+        </Typography>
         <Typography
           component="h1"
           variant="h3"
-          sx={{ fontWeight: 700, fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" } }}
+          sx={{ fontWeight: 800, lineHeight: 1.15, mx: "auto", maxWidth: "68rem", fontSize: { xs: "1.875rem", sm: "2.5rem", md: "2.75rem" } }}
         >
           {HERO.title}
         </Typography>
-        <Typography sx={{ mt: 1.5, mx: "auto", maxWidth: "46rem", fontSize: { xs: "1.0625rem", md: "1.25rem" } }}>
+        <Typography sx={{ mt: 1.5, mx: "auto", maxWidth: "44rem", fontSize: { xs: "1.0625rem", md: "1.25rem" } }}>
           {HERO.subtitle}
         </Typography>
       </Box>

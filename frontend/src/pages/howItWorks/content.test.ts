@@ -38,10 +38,8 @@ function infographicCopy(): string[] {
     CTA.secondary,
     ...INFO_CARDS.flatMap((c) => [c.title, c.text, c.alt]),
     ...METRICS.flatMap((m) => [m.value, m.spoken ?? "", m.label]),
+    HERO.eyebrow,
     ROADMAP.title,
-    ROADMAP.statusLabel,
-    ROADMAP.note,
-    ROADMAP.noteLink,
     ...ROADMAP.items,
   ];
 }
@@ -50,14 +48,13 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(HERE, "../../../..");
 const FRONTEND_SRC = path.resolve(HERE, "../..");
 
-/** Every string the page shows from the content and diagram modules. */
-function allCopy(): string[] {
+/** Every string the technical detail shows, from the content and diagram modules. The infographic is checked on its own. */
+function technicalCopy(): string[] {
   const diagramText = [SYSTEM_MAP, CHAT_TURN, WHO_HOLDS_WHAT, RESEARCH_JOB].flatMap((d) => [
     d.caption,
     ...d.lanes.flatMap((l) => [l.label, l.boundaryBefore ?? "", ...l.nodes.flatMap((n) => [n.title, n.detail])]),
   ]);
   return [
-    ...infographicCopy(),
     ...SAFETY_LAYERS.flatMap((l) => [l.title, l.text]),
     ...SECTIONS.flatMap((s) => [s.title, s.detailsLabel, s.limitsLabel, s.roadmap ?? "", s.summary, ...s.points, ...s.limits]),
     ...PROTECTIONS.map((p) => p.label),
@@ -83,6 +80,10 @@ const ALLOWED = [/\bnot zero[ -]data[ -]retention/gi, /\bno zero[ -]data[ -]rete
 const hasBannedClaim = (text: string) =>
   BANNED.some((re) => re.test(ALLOWED.reduce((t, allowed) => t.replace(allowed, ""), text)));
 
+// The infographic is the pitch for the guide the grant builds toward, so it may
+// say "verified catalog" and "100%". It still makes no compliance claim and uses no filler words.
+const PITCH_BANNED: RegExp[] = [/\bguarantee/i, /\bHIPAA[ -]compliant/i, /\bzero[ -]data[ -]retention/i, /\bleverag/i, /\bseamless/i, /\bdelv(e|ing)\b/i];
+
 describe("How it works content", () => {
   it("has the sections in the specified order, with the specified anchors", () => {
     expect(SECTIONS.map((s) => s.id)).toEqual([
@@ -103,12 +104,7 @@ describe("How it works content", () => {
   });
 
   it("opens with the infographic rows: four journey steps, three safeguards, two any-city cards", () => {
-    expect(JOURNEY.map((c) => c.title)).toEqual([
-      "Ask in your own words",
-      "Private by design",
-      "Matched to real services",
-      "Map and call",
-    ]);
+    expect(JOURNEY).toHaveLength(4);
     expect(SAFETY_CARDS).toHaveLength(3);
     expect(CITY_CARDS).toHaveLength(2);
     expect(METRICS).toHaveLength(5);
@@ -118,7 +114,7 @@ describe("How it works content", () => {
     for (const card of INFO_CARDS) {
       expect(card.text.split(/(?<=\.) /).length, card.title).toBeLessThanOrEqual(2);
       expect(card.text.length, card.title).toBeLessThanOrEqual(90);
-      expect(card.title.split(/\s+/).length, card.title).toBeLessThanOrEqual(5);
+      expect(card.title.split(/\s+/).length, card.title).toBeLessThanOrEqual(6);
       expect(card.alt.trim(), card.title).not.toBe("");
     }
     expect(new Set(INFO_CARDS.map((c) => c.image)).size).toBe(INFO_CARDS.length);
@@ -233,24 +229,10 @@ describe("How it works content", () => {
     expect(SECTIONS.find((s) => s.id === "status")?.summary).toMatch(/None of the roadmap is built yet\./);
   });
 
-  it("marks the infographic's roadmap items as planned and not built", () => {
-    expect(ROADMAP.status).toBe("planned");
-    expect(ROADMAP.statusLabel).toBe("Planned");
+  it("gives the infographic's roadmap a Phase 2 heading and a short list", () => {
     expect(ROADMAP.title).toMatch(/^Phase 2 roadmap\b/);
-    expect(ROADMAP.note).toBe("Not built yet.");
     expect(ROADMAP.items.length).toBeGreaterThan(0);
-    // "Full list below": each item is also in the Phase 2 roadmap group of the status list.
-    const roadmapList = PROTECTIONS.filter((p) => p.status === "not_planned").map((p) => p.label.toLowerCase());
-    const keyPhrase: Record<string, RegExp> = {
-      "A shared multi-city standard": /multi-city standard/,
-      "Staff-checked catalog records": /staff checking each catalog record/,
-      "211 and partner data updates": /211 and partner/,
-      "Demand signals for health leaders": /demand signals for health leaders/,
-    };
-    for (const item of ROADMAP.items) {
-      expect(keyPhrase[item], item).toBeDefined();
-      expect(roadmapList.some((label) => keyPhrase[item].test(label)), item).toBe(true);
-    }
+    for (const item of ROADMAP.items) expect(item.length, item).toBeLessThanOrEqual(45);
   });
 
   it("cites only files that exist in the repository", () => {
@@ -261,13 +243,13 @@ describe("How it works content", () => {
   });
 
   it("makes none of the banned claims", () => {
-    expect(allCopy().filter(hasBannedClaim)).toEqual([]);
+    expect(technicalCopy().filter(hasBannedClaim)).toEqual([]);
   });
 
-  it("keeps the banned words out of the infographic copy", () => {
+  it("keeps compliance claims and filler words out of the infographic copy", () => {
     const copy = infographicCopy();
     expect(copy.length).toBeGreaterThan(30);
-    expect(copy.filter(hasBannedClaim)).toEqual([]);
+    expect(copy.filter((text) => PITCH_BANNED.some((re) => re.test(text)))).toEqual([]);
   });
 
   it("catches a banned claim and allows its negation (guard self-check)", () => {

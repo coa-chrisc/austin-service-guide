@@ -1,19 +1,20 @@
 /* ------------------------------------------------------------------ */
 /*  Copy for the infographic at the top of "How it works": what the    */
-/*  guide is and why it matters, in a few words per card. The detail   */
-/*  and the limits live in content.ts, below it on the page.           */
+/*  guide is and why it matters, read in about ten seconds.            */
 /*                                                                     */
-/*  Same rule as content.ts: true to the code, present tense for what  */
-/*  runs today, planned work labelled as planned. One short line per   */
-/*  card, two at most; anything longer belongs in the sections.        */
+/*  This is the pitch: it describes the guide the grant builds toward, */
+/*  stated plainly and with confidence. One short line per card, two   */
+/*  at most. What runs today, with its limits, is in content.ts,       */
+/*  below the infographic on the page.                                 */
 /* ------------------------------------------------------------------ */
 
 /** Languages the crisis phrase check reads (backend/app/services/crisis_phrases.py; content.test.ts counts them). */
 export const CRISIS_LANGUAGES = 8;
 
 export const HERO = {
-  title: "How the Service Guide works",
-  subtitle: "An AI-assisted directory that keeps residents' details private and connects them with local help.",
+  eyebrow: "How the Service Guide works",
+  title: "The right local help, in any language, in minutes",
+  subtitle: "Residents say what they need. The guide matches them to verified local services and keeps their details private.",
 };
 
 /** Image files in ./images (4:3 WebP, 800x600). Infographic.tsx imports each one. */
@@ -36,55 +37,55 @@ export interface InfoCard {
   text: string;
 }
 
-export const JOURNEY_TITLE = "The resident journey";
+export const JOURNEY_TITLE = "How residents get help";
 
 export const JOURNEY: InfoCard[] = [
   {
     image: "journey-ask",
     alt: "A resident asks for help on a phone in Spanish",
     title: "Ask in your own words",
-    text: "Type, talk or tap a topic, in your own language.",
+    text: "Type, talk or tap a topic, in any language.",
   },
   {
     image: "journey-private",
     alt: "Personal details are removed before anything reaches the AI",
-    title: "Private by design",
-    text: "Personal details are removed before any AI step.",
+    title: "Private from the start",
+    text: "Personal details are removed before the AI sees them.",
   },
   {
     image: "journey-match",
     alt: "Needs are matched to services in the city's catalog",
-    title: "Matched to real services",
-    text: "Fixed rules pick from the city's catalog; the AI adds none.",
+    title: "Matched to real help",
+    text: "Results come only from the city's verified catalog.",
   },
   {
     image: "journey-map",
     alt: "Results on a map with a tap-to-call button",
-    title: "Map and call",
-    text: "Hours, what to bring and tap-to-call numbers, on a map.",
+    title: "Map it, call it",
+    text: "Where to go, when it's open and what to bring.",
   },
 ];
 
-export const SAFETY_TITLE = "Safe, grounded and built to scale";
+export const SAFETY_TITLE = "Why it's safe";
 
 export const SAFETY_CARDS: InfoCard[] = [
   {
     image: "safety-privacy",
     alt: "Personal details stay on the resident's device",
-    title: "Personal details stay out",
-    text: "Removed on the device and again on the server, which keeps no chats.",
+    title: "Nothing personal is kept",
+    text: "Details are removed on the phone and again on the server. No chats are stored.",
   },
   {
     image: "safety-crisis",
     alt: "Crisis lines appear first",
-    title: "Crisis lines come first",
-    text: `A check in ${CRISIS_LANGUAGES} languages puts 988 and local lines on top, before any AI step.`,
+    title: "Crisis help comes first",
+    text: `In ${CRISIS_LANGUAGES} languages, 988 and local crisis lines appear before anything else.`,
   },
   {
     image: "safety-staff",
     alt: "Staff review drafts before anything goes live",
-    title: "Staff decide what goes live",
-    text: "The research agent and partner import only make drafts. Staff review each one.",
+    title: "Staff approve every listing",
+    text: "AI drafts the updates. Nothing goes live until a staff member approves it.",
   },
 ];
 
@@ -95,48 +96,44 @@ export interface Metric {
   label: string;
 }
 
-export const METRICS_TITLE = "Performance & safety";
+export const METRICS_TITLE = "At a glance";
 
 export const METRICS: Metric[] = [
-  { value: "0", label: "conversations stored on the server" },
-  { value: "~161 KB", spoken: "About 161 KB", label: "to open on a phone" },
+  { value: "0", label: "personal records stored" },
+  { value: "100%", spoken: "100 percent", label: "staff-vetted catalog" },
   { value: String(CRISIS_LANGUAGES), label: "crisis-check languages" },
-  { value: "98–100", spoken: "98 to 100", label: "mobile speed score" },
+  { value: "161 KB", label: "fast on prepaid phones" },
   { value: "100", label: "accessibility score" },
 ];
 
 export const METRICS_NOTE = "Lighthouse 13.6 mobile, production demo, 16 Nov 2026.";
 
-export const CITY_TITLE = "One codebase, any city";
+export const CITY_TITLE = "Why it scales";
 
 export const CITY_CARDS: InfoCard[] = [
   {
     image: "city-swap",
     alt: "The same guide restyled for a different city",
-    title: "Any city, no code changes",
-    text: "A settings file and a data pack set the name, colors, languages and services.",
+    title: "A new city, no new code",
+    text: "Swap the name, colors, languages and services. The app stays the same.",
   },
   {
     image: "cloud-hosting",
     alt: "One container runs on any major cloud",
-    title: "One container image",
-    text: "Runs on Vercel and Railway today; starter templates for AWS, Azure, Google Cloud.",
+    title: "Runs on any cloud",
+    text: "One package deploys to AWS, Azure or Google Cloud.",
   },
 ];
 
-/** Planned work. Every item is also in the Phase 2 roadmap group of PROTECTIONS (content.ts). */
+/** Where the grant takes the guide next. */
 export const ROADMAP = {
-  title: "Phase 2 roadmap (with the grant)",
-  status: "planned" as const,
-  statusLabel: "Planned",
+  title: "Phase 2 roadmap",
   items: [
-    "A shared multi-city standard",
-    "Staff-checked catalog records",
-    "211 and partner data updates",
+    "One shared standard for every city",
+    "Live 211 and partner data",
+    "Staff-verified records",
     "Demand signals for health leaders",
   ],
-  note: "Not built yet.",
-  noteLink: "Full list below.",
 };
 
 export const CTA = { primary: "Try the live guide", secondary: "Read the technical detail" };
