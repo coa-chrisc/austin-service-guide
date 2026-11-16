@@ -8,6 +8,13 @@ import {
   type RealtimeToolResult,
   type RealtimeTranscriptResult,
 } from "@/lib/api";
+import {
+  isFatalRealtimeError,
+  runnableFunctionCalls,
+  sessionUpdatePayload,
+  type RealtimeErrorDetail,
+  type RealtimeFunctionCall,
+} from "@/lib/realtimeEvents";
 import { withIntakeState } from "@/lib/session";
 import type { IntakeMessage } from "@/types";
 
@@ -35,13 +42,6 @@ interface UseRealtimeVoiceSessionOptions {
   ) => void;
   onTranscriptSync: (result: RealtimeTranscriptResult) => void;
   onToolResult: (result: RealtimeToolResult) => void;
-}
-
-interface RealtimeFunctionCall {
-  type: "function_call";
-  name: string;
-  call_id: string;
-  arguments: string;
 }
 
 type LiveTranscriptRole = "user" | "assistant";
@@ -76,20 +76,13 @@ const ASSISTANT_AUDIO_GATE_MAX_MS = 60000;
 // so an error about that delete is not treated as a lost connection.
 const DROP_ITEM_EVENT_PREFIX = "drop_input_item_";
 const DEBUG_TEXT_LIMIT = 800;
-const RECOVERABLE_REALTIME_ERROR_PATTERNS = [
-  "active response",
-  "conversation already has",
-  "response already",
-  "no response",
-  "cancelled",
-];
-
-function isRecoverableRealtimeError(message: string) {
-  const lower = message.toLowerCase();
-  return RECOVERABLE_REALTIME_ERROR_PATTERNS.some((pattern) =>
-    lower.includes(pattern),
-  );
-}
+// "disconnected" often recovers on its own; give it this long before the
+// voice session is treated as lost.
+const PEER_DISCONNECTED_GRACE_MS = 5000;
+const CONNECTION_LOST_MESSAGE =
+  "Voice chat lost its connection. You can keep typing or restart voice.";
+const SESSION_ENDED_MESSAGE =
+  "The voice session ended. You can keep typing or restart voice.";
 
 function parseArguments(raw: string): Record<string, unknown> {
   if (!raw) return {};
@@ -275,6 +268,7 @@ export function useRealtimeVoiceSession({
   const assistantAudioReleaseTimerRef = useRef<number | null>(null);
   const assistantAudioGateMaxTimerRef = useRef<number | null>(null);
   const dropItemSeqRef = useRef(0);
+  const peerDisconnectTimerRef = useRef<number | null>(null);
   const dataChannelOpenRef = useRef(false);
   const sessionReadyRef = useRef(false);
   const sessionCreatedRef = useRef(false);
@@ -622,6 +616,17 @@ export function useRealtimeVoiceSession({
     [recordDebug, sendEvent],
   );
 
+  // A resident turn that gets no reply (empty, not resident speech, or a
+  // failed transcription). Without this the status stays "thinking" until
+  // the watchdog reports a stuck reply.
+  const settleWithoutReply = useCallback(
+    (itemId: string, reason: string) => {
+      dropInputItem(itemId, reason);
+      if (statusRef.current === "thinking") setStatus("connected");
+    },
+    [dropInputItem],
+  );
+
   // Closes and nulls the WebRTC transport handles (mic stream, data channel,
   // peer connection, playback audio). Idempotent — safe to call when refs are
   // already null. Used by stop(), start() (defensive pre-clean), and any
@@ -694,6 +699,10 @@ export function useRealtimeVoiceSession({
       window.clearTimeout(startupMicUnlockTimerRef.current);
       startupMicUnlockTimerRef.current = null;
     }
+    if (peerDisconnectTimerRef.current) {
+      window.clearTimeout(peerDisconnectTimerRef.current);
+      peerDisconnectTimerRef.current = null;
+    }
     if (initialResponseTimerRef.current) {
       window.clearTimeout(initialResponseTimerRef.current);
       initialResponseTimerRef.current = null;
@@ -735,6 +744,34 @@ export function useRealtimeVoiceSession({
   useEffect(() => {
     stopSessionRef.current = stop;
   }, [stop]);
+
+  // The voice session can't continue (transport gone, session expired). Tear
+  // it down and show the error state, whose retry button starts voice again.
+  // A plan that was already built is shown instead of the error.
+  const endSessionOnFailure = useCallback(
+    (reason: string, message: string, detail: Record<string, unknown> = {}) => {
+      if (stoppedRef.current) return;
+      const completionResult = pendingCompletionResultRef.current;
+      const completionToolResult = pendingCompletionToolResultRef.current;
+      recordDebug("voice_session_lost", {
+        reason,
+        completion_pending: !!(completionResult || completionToolResult),
+        ...detail,
+      });
+      stop();
+      if (completionResult) {
+        onTranscriptSyncRef.current({ ...completionResult, is_complete: true });
+        return;
+      }
+      if (completionToolResult) {
+        onToolResultRef.current({ ...completionToolResult, is_complete: true });
+        return;
+      }
+      setError(message);
+      setStatus("error");
+    },
+    [recordDebug, stop],
+  );
 
   const sendInitialResponseWhenReady = useCallback(() => {
     if (
@@ -1256,9 +1293,10 @@ export function useRealtimeVoiceSession({
             typeof sessionConfigRef.current.instructions === "string"
               ? (sessionConfigRef.current.instructions as string)
               : "";
+          const sessionUpdate = sessionUpdatePayload(sessionConfigRef.current);
           const sent = sendEvent({
             type: "session.update",
-            session: sessionConfigRef.current,
+            session: sessionUpdate,
           });
           if (!sent) {
             // The data channel rejected the initial session.update, so the
@@ -1280,7 +1318,7 @@ export function useRealtimeVoiceSession({
           sessionUpdateSentRef.current = true;
           recordDebug(
             "session_update_sent",
-            realtimeSessionSummary(sessionConfigRef.current),
+            realtimeSessionSummary(sessionUpdate),
           );
           // Seed the diff baseline only after the send succeeded so the
           // first post-tool refresh isn't suppressed as a no-op.
@@ -1413,10 +1451,7 @@ export function useRealtimeVoiceSession({
         }
         return;
       }
-      if (
-        type === "response.output_audio.delta" ||
-        type === "response.audio.delta"
-      ) {
+      if (type === "response.output_audio.delta") {
         setStatus("speaking");
         return;
       }
@@ -1427,9 +1462,7 @@ export function useRealtimeVoiceSession({
       }
       if (
         type === "response.output_audio_transcript.delta" ||
-        type === "response.audio_transcript.delta" ||
-        type === "response.output_text.delta" ||
-        type === "response.text.delta"
+        type === "response.output_text.delta"
       ) {
         const delta = String(event.delta || "");
         if (isStartupResponse) return;
@@ -1445,15 +1478,9 @@ export function useRealtimeVoiceSession({
         });
         if (itemId && transcript.trim())
           transcriptItemIdsRef.current.add(itemId);
-        // A turn that isn't resident speech gets no reply. Without this the
-        // status stays "thinking" until the watchdog reports a stuck reply.
-        const settleWithoutReply = (reason: string) => {
-          dropInputItem(itemId, reason);
-          if (statusRef.current === "thinking") setStatus("connected");
-        };
         if (!transcript.trim()) {
           if (!stoppedRef.current && !completionFlowRef.current) {
-            settleWithoutReply("empty");
+            settleWithoutReply(itemId, "empty");
           }
           return;
         }
@@ -1465,16 +1492,31 @@ export function useRealtimeVoiceSession({
               output_modalities: ["audio"],
             });
           } else if (outcome === "ignored") {
-            settleWithoutReply("not_resident_speech");
+            settleWithoutReply(itemId, "not_resident_speech");
           }
         })();
         return;
       }
+      // A turn whose transcription failed is settled like an empty one: no
+      // reply, and the audio item is dropped so the model never answers it.
+      if (type === "conversation.item.input_audio_transcription.failed") {
+        const itemId = String(event.item_id || "");
+        const transcriptionError = event.error as
+          | { code?: string; message?: string }
+          | undefined;
+        recordDebug("input_transcription_failed", {
+          item_id: itemId,
+          code: transcriptionError?.code || null,
+          message: transcriptionError?.message || null,
+        });
+        if (!stoppedRef.current && !completionFlowRef.current) {
+          settleWithoutReply(itemId, "transcription_failed");
+        }
+        return;
+      }
       if (
         type === "response.output_audio_transcript.done" ||
-        type === "response.audio_transcript.done" ||
-        type === "response.output_text.done" ||
-        type === "response.text.done"
+        type === "response.output_text.done"
       ) {
         const itemId = String(event.item_id || "");
         const transcript = String(event.transcript || event.text || "");
@@ -1549,12 +1591,27 @@ export function useRealtimeVoiceSession({
           return;
         }
         const outputs = Array.isArray(response?.output) ? response.output : [];
-        const calls = outputs.filter(
-          (item): item is RealtimeFunctionCall =>
-            !!item &&
-            typeof item === "object" &&
-            (item as { type?: string }).type === "function_call",
-        );
+        // A cancelled response runs none of its tool calls, and an
+        // incomplete one (token limit, content filter) runs only calls that
+        // finished. Either way the turn falls through to "connected" below.
+        const calls = runnableFunctionCalls(response);
+        if (
+          response?.status === "cancelled" ||
+          response?.status === "incomplete"
+        ) {
+          const offered = outputs.filter(
+            (item) =>
+              !!item &&
+              typeof item === "object" &&
+              (item as { type?: string }).type === "function_call",
+          ).length;
+          recordDebug("response_not_completed", {
+            response_id: doneResponseId || null,
+            status: response.status,
+            reason: response.status_details?.reason || null,
+            function_calls_skipped: offered - calls.length,
+          });
+        }
         if (calls.length > 0) {
           void handleFunctionCalls(calls);
           return;
@@ -1603,38 +1660,42 @@ export function useRealtimeVoiceSession({
         return;
       }
       if (type === "error") {
-        const err = event.error as
-          | { message?: string; event_id?: string }
-          | undefined;
-        const message = err?.message || "Realtime voice failed.";
-        // Deleting a dropped turn can fail harmlessly (already gone); that
-        // must not end the voice session.
-        if (String(err?.event_id || "").startsWith(DROP_ITEM_EVENT_PREFIX)) {
-          recordDebug("input_item_drop_failed", { message });
+        const err = event.error as RealtimeErrorDetail | undefined;
+        const message = err?.message || "Realtime voice error.";
+        const clientEventId = String(err?.event_id || "");
+        // Deleting a dropped turn can fail harmlessly (already gone).
+        if (clientEventId.startsWith(DROP_ITEM_EVENT_PREFIX)) {
+          recordDebug("input_item_drop_failed", {
+            message,
+            client_event_id: clientEventId,
+          });
           return;
         }
+        const fatal = isFatalRealtimeError(err);
         recordDebug("realtime_error_received", {
           message,
-          recoverable: isRecoverableRealtimeError(message),
+          error_type: err?.type || null,
+          code: err?.code || null,
+          client_event_id: clientEventId || null,
+          fatal,
         });
-        if (isRecoverableRealtimeError(message)) {
-          setError("");
-          setStatus("connected");
+        if (fatal) {
+          endSessionOnFailure("realtime_error", SESSION_ENDED_MESSAGE, {
+            code: err?.code || null,
+            error_type: err?.type || null,
+          });
           return;
         }
-        onLocalTranscriptRef.current(
-          "assistant",
-          "I hit a voice connection problem. You can keep going, or restart voice chat if the microphone stopped.",
-        );
-        stopSessionRef.current?.();
-        setError(
-          "Voice chat lost its connection. You can keep typing or restart voice.",
-        );
-        setStatus("error");
+        // A rejected request leaves the session usable. Clear a "thinking"
+        // status that may be waiting on it; the next event sets the real one.
+        setError("");
+        if (!completionFlowRef.current && statusRef.current === "thinking") {
+          setStatus("connected");
+        }
       }
     },
     [
-      dropInputItem,
+      endSessionOnFailure,
       handleFunctionCalls,
       muteMicForAssistantAudio,
       recordDebug,
@@ -1643,6 +1704,7 @@ export function useRealtimeVoiceSession({
       scheduleMicReopen,
       sendEvent,
       sendInitialResponseWhenReady,
+      settleWithoutReply,
       syncTranscript,
       unlockStartupMic,
     ],
@@ -1799,14 +1861,35 @@ export function useRealtimeVoiceSession({
             connection_state: pc.connectionState,
             ice_connection_state: pc.iceConnectionState,
           });
-          // Only "failed" is terminal per the WebRTC spec — "disconnected"
-          // is transient and frequently recovers, so tearing the session
-          // down on it causes false-positive errors during brief network
-          // blips.
-          if (pc.connectionState === "failed") {
-            stop();
-            setError("Realtime voice connection was interrupted.");
-            setStatus("error");
+          const state = pc.connectionState;
+          if (state !== "disconnected" && peerDisconnectTimerRef.current) {
+            window.clearTimeout(peerDisconnectTimerRef.current);
+            peerDisconnectTimerRef.current = null;
+          }
+          if (state === "failed" || state === "closed") {
+            endSessionOnFailure(
+              `peer_connection_${state}`,
+              CONNECTION_LOST_MESSAGE,
+            );
+            return;
+          }
+          // "disconnected" is often a brief network blip that recovers, so
+          // the session is ended only if it lasts past the grace period.
+          if (state === "disconnected" && !peerDisconnectTimerRef.current) {
+            peerDisconnectTimerRef.current = window.setTimeout(() => {
+              peerDisconnectTimerRef.current = null;
+              if (startCancelled()) return;
+              if (
+                pc.connectionState === "disconnected" ||
+                pc.connectionState === "failed"
+              ) {
+                endSessionOnFailure(
+                  "peer_connection_disconnected",
+                  CONNECTION_LOST_MESSAGE,
+                  { grace_ms: PEER_DISCONNECTED_GRACE_MS },
+                );
+              }
+            }, PEER_DISCONNECTED_GRACE_MS);
           }
         };
 
@@ -1904,21 +1987,22 @@ export function useRealtimeVoiceSession({
             });
           }
         };
+        // stop() closes the channel itself and bumps the start generation
+        // first, so only an unexpected close gets past startCancelled().
         dc.onclose = () => {
           if (startCancelled()) return;
           dataChannelOpenRef.current = false;
           recordDebug("data_channel_closed", {
             ready_state: dc.readyState,
           });
+          endSessionOnFailure("data_channel_closed", CONNECTION_LOST_MESSAGE);
         };
         dc.onerror = () => {
           if (startCancelled()) return;
           recordDebug("data_channel_error", {
             ready_state: dc.readyState,
           });
-          stop();
-          setError("Realtime voice data channel failed.");
-          setStatus("error");
+          endSessionOnFailure("data_channel_error", CONNECTION_LOST_MESSAGE);
         };
 
         const offer = await pc.createOffer();
@@ -1990,6 +2074,7 @@ export function useRealtimeVoiceSession({
     },
     [
       clearLiveTranscript,
+      endSessionOnFailure,
       handleRealtimeEvent,
       recordDebug,
       resetSessionState,

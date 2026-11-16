@@ -12,7 +12,7 @@ This is a demonstration application. Where something is a stub or not built, thi
 | API | FastAPI, Pydantic v2 | Stateless intake endpoints, catalog and search, admin demo endpoints. Serves the built SPA in the container image (`STATIC_DIR`). |
 | Catalog | YAML files in `backend/app/data/` | 87 services plus categories, life events and crisis resources, loaded into memory at startup. The only data the server holds. |
 | OpenAI Responses API | `gpt-5.5-2026-04-23`, `store=False` | Text intake agent loop, greeting, and plan ordering. Called only from the server. |
-| OpenAI Realtime API | `gpt-realtime-2` over WebRTC | Opt-in `realtime_audio` voice mode only (needs `VOICE_PIPELINE_MODE=realtime_audio` and `ALLOW_RAW_AUDIO_STREAM=true`). Audio goes directly from the browser. Not used in the default `intercepted_text` mode. |
+| OpenAI Realtime API | `gpt-realtime-2.1` over WebRTC | Opt-in `realtime_audio` voice mode only (needs `VOICE_PIPELINE_MODE=realtime_audio` and `ALLOW_RAW_AUDIO_STREAM=true`). Audio goes directly from the browser. Not used in the default `intercepted_text` mode. |
 | Twilio / SendGrid | Optional | Send a list of catalog services by SMS or email. Stubbed when credentials are unset. |
 
 ## Data flow

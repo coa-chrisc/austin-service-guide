@@ -279,6 +279,38 @@ def test_realtime_session_config_matches_openai_schema(client):
     assert _sdk_extras(model) == []
 
 
+def test_realtime_defaults_are_current_model_at_low_effort():
+    """gpt-realtime-2.1 at low effort, the voice-agent starting point."""
+    from typing import Literal, get_args, get_origin
+
+    from openai.types.realtime import RealtimeSessionCreateRequest
+
+    fields = Settings.model_fields
+    assert fields["openai_realtime_model"].default == "gpt-realtime-2.1"
+    assert fields["openai_realtime_reasoning_effort"].default == "low"
+    # The installed SDK lists the id as a known Realtime model, not only as
+    # a free-form string.
+    model_annotation = RealtimeSessionCreateRequest.model_fields["model"].annotation
+    known = {
+        value
+        for arg in get_args(model_annotation)
+        if get_origin(arg) is Literal
+        for value in get_args(arg)
+    }
+    assert "gpt-realtime-2.1" in known
+
+
+def test_realtime_session_config_uses_configured_model_and_effort(client, monkeypatch):
+    from app.services.realtime import build_realtime_session_config
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "openai_realtime_model", "gpt-realtime-2.1")
+    monkeypatch.setattr(settings, "openai_realtime_reasoning_effort", "low")
+    config = build_realtime_session_config(_realtime_session(client))
+    assert config["model"] == "gpt-realtime-2.1"
+    assert config["reasoning"] == {"effort": "low"}
+
+
 def test_realtime_session_config_is_tuned_for_speakers(client):
     from app.services.realtime import build_realtime_session_config
 
