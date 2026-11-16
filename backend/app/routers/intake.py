@@ -45,6 +45,7 @@ from app.services.personas import get_persona, list_personas
 from app.services.plan import build_application_order
 from app.services.realtime import (
     build_realtime_session_config,
+    build_realtime_startup_response,
     execute_realtime_tool,
     record_realtime_transcript,
 )
@@ -490,6 +491,8 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
         "state": _state(session),
         "model": settings.openai_realtime_model,
         "session_config": payload["session"],
+        # The browser sends this once, when voice starts on a new intake.
+        "startup_response": build_realtime_startup_response(session),
         "client_secret": data,
     }
 
