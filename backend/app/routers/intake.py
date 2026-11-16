@@ -63,7 +63,10 @@ _TRACE_ID_PATTERN = r"^[A-Za-z0-9_-]{0,80}$"
 _MAX_SHARED_SERVICES = 8
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-_PHONE_RE = re.compile(r"^\+?\d{10,15}$")
+# US/NANP numbers only (optional +1 or 1, then a valid area code and
+# exchange). An open SMS relay to international numbers invites SMS-pumping
+# toll fraud; the app assumes a US setting.
+_US_PHONE_RE = re.compile(r"^(?:\+?1)?([2-9]\d{2}[2-9]\d{6})$")
 
 
 # ── Request bodies ───────────────────────────────────────────────────
@@ -89,9 +92,10 @@ class ShareRequest(BaseModel):
     def _check_recipient(self) -> "ShareRequest":
         value = self.recipient.strip()
         if self.channel == "sms":
-            value = re.sub(r"[\s().-]", "", value)
-            if not _PHONE_RE.match(value):
-                raise ValueError("recipient must be a phone number")
+            match = _US_PHONE_RE.match(re.sub(r"[\s().-]", "", value))
+            if not match:
+                raise ValueError("recipient must be a US phone number")
+            value = f"+1{match.group(1)}"
         elif not _EMAIL_RE.match(value):
             raise ValueError("recipient must be an email address")
         self.recipient = value
@@ -456,8 +460,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             "detail": {"error": type(exc).__name__},
         })
         raise HTTPException(
-            status_code=502,
-            detail=f"OpenAI Realtime client secret failed: {type(exc).__name__}",
+            status_code=502, detail="Realtime voice is temporarily unavailable."
         ) from exc
 
     data = res.json()
