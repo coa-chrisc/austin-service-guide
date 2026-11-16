@@ -168,7 +168,7 @@ export default function ServiceDirectory() {
             setSearch(text);
           }}
           size="small"
-          sx={{ flex: 1, minWidth: 200 }}
+          sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: 200 }}
           slotProps={{
             input: {
               startAdornment: (
@@ -179,7 +179,7 @@ export default function ServiceDirectory() {
             },
           }}
         />
-        <FormControl size="small" sx={{ minWidth: 140 }}>
+        <FormControl size="small" sx={{ flex: { xs: 1, sm: "none" }, minWidth: 140 }}>
           <InputLabel>Sort</InputLabel>
           <Select
             value={sort}
@@ -194,7 +194,7 @@ export default function ServiceDirectory() {
           </Select>
         </FormControl>
         {zips.length > 0 && (
-          <FormControl size="small" sx={{ minWidth: 140 }}>
+          <FormControl size="small" sx={{ flex: { xs: 1, sm: "none" }, minWidth: 140 }}>
             <InputLabel id="dir-zip-label">ZIP code</InputLabel>
             <Select
               labelId="dir-zip-label"
@@ -215,7 +215,20 @@ export default function ServiceDirectory() {
 
       {/* Category filter chips */}
       {categories.length > 0 && (
-        <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mb: 3 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.75,
+            // Phones: one swipeable row; the full set would push results below the fold.
+            flexWrap: { xs: "nowrap", sm: "wrap" },
+            overflowX: { xs: "auto", sm: "visible" },
+            scrollbarWidth: "none",
+            mx: { xs: -2, sm: 0 },
+            px: { xs: 2, sm: 0 },
+            mb: 3,
+            "& .MuiChip-root": { flexShrink: 0 },
+          }}
+        >
           <Chip
             label={openNowOnly ? "Open now ✓" : "Open now"}
             onClick={() => {
@@ -269,7 +282,7 @@ export default function ServiceDirectory() {
                 <Skeleton
                   variant="rounded"
                   height={220}
-                  sx={{ borderRadius: 3 }}
+                  sx={{ borderRadius: (theme) => theme.shape.radius.card }}
                 />
               </Grid>
             ))

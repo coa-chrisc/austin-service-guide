@@ -236,7 +236,7 @@ export default function ServiceDetail() {
             <Box
               sx={{
                 height: 400,
-                borderRadius: 3,
+                borderRadius: (theme) => theme.shape.radius.card,
                 overflow: "hidden",
                 border: "1px solid",
                 borderColor: "divider",

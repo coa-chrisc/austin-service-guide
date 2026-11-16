@@ -48,19 +48,19 @@ export default function Login() {
         </Typography>
       </Box>
 
-      <Card sx={{ borderRadius: 3 }}>
+      <Card>
         <CardContent sx={{ p: { xs: 3, md: 4 } }}>
           <form onSubmit={handleResidentLogin}>
             <Typography variant="subtitle1" fontWeight={600} gutterBottom>
               Resident Sign In
             </Typography>
 
-            <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+            <Alert severity="info" sx={{ mb: 3 }}>
               This is a demo &mdash; enter any email address to continue.
             </Alert>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
@@ -83,7 +83,7 @@ export default function Login() {
               variant="contained"
               fullWidth
               size="large"
-              sx={{ mb: 2, borderRadius: "24px", py: 1.5 }}
+              sx={{ mb: 2, py: 1.5 }}
             >
               Sign In
             </Button>
@@ -101,7 +101,7 @@ export default function Login() {
             size="large"
             startIcon={<AdminPanelSettingsIcon />}
             onClick={handleStaffLogin}
-            sx={{ borderRadius: "24px", py: 1.5 }}
+            sx={{ py: 1.5 }}
           >
             Staff Login (Demo)
           </Button>

@@ -24,6 +24,7 @@ import AccessibleIcon from "@mui/icons-material/Accessible";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { openStatusLabel } from "@/lib/hours";
 import type { Service } from "@/types";
+import { categoryLabel } from "@/lib/categoryLabel";
 
 interface ServiceDetailCardProps {
   service: Service;
@@ -54,7 +55,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
   };
 
   return (
-    <Card sx={{ borderRadius: 3, overflow: "visible" }}>
+    <Card sx={{ overflow: "visible" }}>
       <CardContent sx={{ p: { xs: 2.5, md: 4 } }}>
         {/* Header */}
         <Box sx={{ mb: 3 }}>
@@ -62,7 +63,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
             {service.categories.map((cat) => (
               <Chip
                 key={cat}
-                label={cat}
+                label={categoryLabel(cat)}
                 size="small"
                 sx={{
                   bgcolor: "primary.main",
@@ -82,7 +83,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
           <Typography variant="h4" fontWeight={700} gutterBottom>
             {service.name}
           </Typography>
-          {service.provider_name && (
+          {service.provider_name && service.provider_name !== service.name && (
             <Typography variant="h6" color="text.secondary" fontWeight={400}>
               {service.provider_name}
             </Typography>
@@ -160,7 +161,7 @@ export default function ServiceDetailCard({ service }: ServiceDetailCardProps) {
           <Grid size={{ xs: 12, md: 5 }}>
             <Card
               variant="outlined"
-              sx={{ borderRadius: 2, bgcolor: "brand.subtle", mb: 3 }}
+              sx={{ bgcolor: "brand.subtle", mb: 3 }}
             >
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} gutterBottom>
