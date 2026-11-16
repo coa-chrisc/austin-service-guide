@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/*  The two "How it works" diagrams, as data for FlowDiagram.          */
+/*  The three "How it works" diagrams, as data for FlowDiagram.        */
 /*  Same rule as content.ts: keep them true to the code.               */
 /* ------------------------------------------------------------------ */
 
@@ -96,8 +96,57 @@ export const WHO_HOLDS_WHAT: DiagramSpec = {
   ],
 };
 
+/** Diagram C: one catalog research job, from a county and topic to an export. */
+export const RESEARCH_JOB: DiagramSpec = {
+  caption: "Diagram C. One catalog research job, from a county and a topic to a reviewed export.",
+  arrows: true,
+  lanes: [
+    {
+      label: "Staff start a job",
+      nodes: [
+        { title: "A county and a topic", detail: "With caps on cost, pages and drafts.", tone: "success" },
+      ],
+    },
+    {
+      label: "The job worker plans",
+      boundaryBefore: "A signed request goes to the separate job worker",
+      nodes: [
+        { title: "Plan", detail: "The model proposes searches and the likely official websites.", tone: "primary" },
+      ],
+    },
+    {
+      label: "Staff approve the plan",
+      boundaryBefore: "The plan comes back to staff",
+      nodes: [
+        { title: "Approve or trim", detail: "Staff keep or drop each planned search before any runs.", tone: "success" },
+      ],
+    },
+    {
+      label: "The job worker researches",
+      boundaryBefore: "The approved plan goes back to the worker",
+      nodes: [
+        { title: "Search", detail: "Private SearXNG or OpenAI web search, as the operator chose.", tone: "primary" },
+        { title: "Fetch", detail: "Public addresses only, checked on every redirect. 2 MB cap. robots.txt respected.", tone: "primary" },
+        { title: "Extract", detail: "The model lists the on-topic services on each page, with quotes. It has no tools.", tone: "primary" },
+        { title: "Evidence check", detail: "Each quote must be on the page. A field without one is left blank.", tone: "primary" },
+        { title: "Duplicate check", detail: "Against the catalog and the job's other drafts.", tone: "primary" },
+      ],
+    },
+    {
+      label: "Staff review and export",
+      boundaryBefore: "Drafts come back for review",
+      nodes: [
+        { title: "Review", detail: "Staff accept, edit or reject each draft, with its sources beside it.", tone: "success" },
+        { title: "Export", detail: "A zip laid out like a data pack. Entries stay unverified.", tone: "success" },
+        { title: "Merge by hand", detail: "Staff copy the files into the data pack. Nothing goes live on its own.", tone: "success" },
+      ],
+    },
+  ],
+};
+
 /** Which diagram sits in which section. */
 export const DIAGRAMS_BY_SECTION: Record<string, DiagramSpec> = {
   architecture: CHAT_TURN,
   stateless: WHO_HOLDS_WHAT,
+  research: RESEARCH_JOB,
 };

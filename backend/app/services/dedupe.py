@@ -1,9 +1,16 @@
 """Likely-duplicate detection for service records (research drafts against
 the loaded pack and against each other).
 
-Signals, strongest first: the same phone digits, the same street address +
-ZIP, the same website registrable domain, then name-token overlap. No
-place-specific stopwords. A match is a prompt for a reviewer, not a merge.
+A possible duplicate needs BOTH a similar service name and the same place or
+organisation: the same phone digits, street address + ZIP, website
+(registrable domain; on a government domain the same page), or
+organisation. A shared phone or address alone is not enough (one community
+center runs a food pantry, a clothing closet and job search), a similar name
+alone is not enough (every county center has a "Food Pantry"), and two
+records at known, different addresses are never duplicates. Names are
+compared on the words that name the service: the organisation's and the
+site's words are set aside, unless that leaves nothing. No place-specific
+stopwords. A match is a prompt for a reviewer, not a merge.
 """
 
 from __future__ import annotations
@@ -80,11 +87,45 @@ def _addresses(svc: dict) -> set[str]:
     return {k for k in keys if k}
 
 
+def _service_tokens(svc: dict) -> set[str]:
+    """Name words minus the organisation's and the site's words, so
+    "Central Community Center Food Pantry" compares as "food pantry"."""
+    name = str(svc.get("name") or "")
+    words = name_tokens(name) - name_tokens(svc.get("provider_name"))
+    for loc in svc.get("locations") or []:
+        site = str(loc.get("name") or "") if isinstance(loc, dict) else ""
+        if site.casefold() != name.casefold():  # a location named after the service names no site
+            words -= name_tokens(site)
+    return words
+
+
+def _same_organisation(a: dict, b: dict) -> bool:
+    ta, tb = name_tokens(a.get("provider_name")), name_tokens(b.get("provider_name"))
+    if not ta or not tb:
+        return False
+    small, large = sorted((ta, tb), key=len)
+    return small == large or (len(small) >= 2 and small <= large)
+
+
+def _name_overlap(a: dict, b: dict) -> float:
+    sa, sb = _service_tokens(a), _service_tokens(b)
+    if not sa or not sb:  # the name is just the organisation's or site's: compare whole names
+        sa, sb = name_tokens(a.get("name")), name_tokens(b.get("name"))
+    return len(sa & sb) / len(sa | sb) if sa and sb else 0.0
+
+
 def duplicate_reasons(a: dict, b: dict) -> list[str]:
+    """Why ``a`` may duplicate ``b``; empty when it does not (see the module doc)."""
+    overlap = _name_overlap(a, b)
+    if overlap < 0.6:
+        return []
+    addr_a, addr_b = _addresses(a), _addresses(b)
+    if addr_a and addr_b and not addr_a & addr_b:
+        return []  # the same kind of service at two different places
     reasons = []
     if _phones(a) & _phones(b):
         reasons.append("same phone number")
-    if _addresses(a) & _addresses(b):
+    if addr_a & addr_b:
         reasons.append("same street address and ZIP")
     da, db = registrable_domain(a.get("website_url")), registrable_domain(b.get("website_url"))
     if da and da == db:
@@ -93,12 +134,11 @@ def duplicate_reasons(a: dict, b: dict) -> list[str]:
         elif _page_key(a.get("website_url")) == _page_key(b.get("website_url")):
             # One government domain hosts many services: only the same page counts.
             reasons.append("same website page")
-    ta, tb = name_tokens(a.get("name")), name_tokens(b.get("name"))
-    if ta and tb:
-        overlap = len(ta & tb) / len(ta | tb)
-        if overlap >= 0.6:
-            reasons.append(f"similar name ({round(overlap * 100)}% word overlap)")
-    return reasons
+    if _same_organisation(a, b):
+        reasons.append("same organisation")
+    if not reasons:
+        return []  # a similar name alone says nothing
+    return [*reasons, f"similar name ({round(overlap * 100)}% word overlap)"]
 
 
 def find_duplicates(candidate: dict, existing: Iterable[dict], *, source: str) -> list[dict]:

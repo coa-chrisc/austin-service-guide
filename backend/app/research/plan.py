@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.research.llm import Usage, obj, structured_call
+from app.research.search import normalize_query
 
 LEVELS = ["city", "county", "state", "federal", "nonprofit"]
 
@@ -35,7 +36,9 @@ INSTRUCTIONS = (
     "published automatically. Propose specific web search queries that find official pages of services "
     "residents of the place can use: government agencies and established nonprofits that state who they "
     "serve, where, when and how to contact them. Prefer queries that name the place. Do not include personal "
-    "names. official_domains lists bare domains (example.gov) you expect for the place's city and county "
+    "names. To limit a query to one website, start it with the operator site:<domain> written with a colon "
+    "(for example site:example.gov food pantry), at most one per query; never write site.<domain>. "
+    "official_domains lists bare domains (example.gov) you expect for the place's city and county "
     "governments; expected_sources lists organisations or agencies you expect to find. Keep rationales short."
 )
 
@@ -66,6 +69,8 @@ async def make_plan(client: Any, settings: Any, params: dict, categories: dict[s
         for q in data.get("queries", [])
         if isinstance(q, dict) and q.get("query") and q.get("category") in chosen and q.get("level") in levels
     ][:max_queries]
+    for q in queries:
+        q["query"] = normalize_query(q["query"])
     domains = [str(d).lower().strip().removeprefix("www.")[:100] for d in data.get("official_domains", []) if d][:20]
     sources = [str(s)[:200] for s in data.get("expected_sources", [])][:40]
     return {"queries": queries, "official_domains": domains, "expected_sources": sources}, usage
