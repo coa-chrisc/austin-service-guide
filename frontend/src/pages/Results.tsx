@@ -47,6 +47,7 @@ import PlanList from "@/components/results/PlanList";
 import {
   buildIntakePlan,
   getIntakeResults,
+  getPersonas,
   shareIntakeResults,
   ApiError,
   type ApplicationOrderItem,
@@ -55,11 +56,13 @@ import {
 import { makeResultsT } from "@/lib/resultsI18n";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import {
+  demoPersonaId,
   ensureIntakePlan,
   hasCompletedPlan,
   loadIntakeState,
   withIntakeState,
 } from "@/lib/session";
+import DemoScenarioBanner from "@/components/demo/DemoScenarioBanner";
 import { canNativeShare, nativeShare } from "@/lib/share";
 import type {
   Service,
@@ -139,7 +142,7 @@ function toResultsData(res: IntakeResults): ResultsData {
 }
 
 export default function Results() {
-  const { appName } = useBrandConfig();
+  const { appName, serviceGuide } = useBrandConfig();
   const navigate = useNavigate();
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
@@ -159,6 +162,9 @@ export default function Results() {
   const [shareRecipient, setShareRecipient] = useState("");
   const [shareSending, setShareSending] = useState(false);
   const [snackbar, setSnackbar] = useState<string | null>(null);
+  // Set when this plan came from the demo scenario launcher.
+  const [personaId] = useState(() => demoPersonaId());
+  const [personaLabel, setPersonaLabel] = useState<string | undefined>();
   const [view, setView] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "simple";
     return window.sessionStorage.getItem(VIEW_KEY) === "all" ? "all" : "simple";
@@ -234,6 +240,19 @@ export default function Results() {
       setShareSending(false);
     }
   };
+
+  useEffect(() => {
+    if (!personaId) return;
+    let cancelled = false;
+    getPersonas()
+      .then((res) => {
+        if (!cancelled) setPersonaLabel(res.personas.find((p) => p.id === personaId)?.label);
+      })
+      .catch(() => undefined); // the banner reads "Sample scenario." without a name
+    return () => {
+      cancelled = true;
+    };
+  }, [personaId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -343,8 +362,11 @@ export default function Results() {
   }
 
   const benefits = data.benefits_estimate;
+  // Estimates are rough rule-of-thumb figures: shown only when the city
+  // config opts in (serviceGuide.showBenefitEstimates).
   const hasBenefits =
-    benefits.total_monthly_value > 0 || benefits.breakdown.length > 0;
+    serviceGuide.showBenefitEstimates &&
+    (benefits.total_monthly_value > 0 || benefits.breakdown.length > 0);
 
   // Find rank-1 service from sequencing — used by hero + sticky bar
   const topItem = data.application_order[0];
@@ -371,6 +393,15 @@ export default function Results() {
           .results-root [class*="MuiCardContent-root"] { color: ${theme.palette.common.black} !important; /* theme-exempt: print output is black on white paper */ }
         }
       `}</style>
+      {personaId && (
+        <Box className="no-print">
+          <DemoScenarioBanner
+            dense
+            label={personaLabel}
+            message="This plan was built from a scripted profile."
+          />
+        </Box>
+      )}
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
         {/* Page title (simple view; the all-matches card has its own) + view toggle */}
         <Box
@@ -462,7 +493,7 @@ export default function Results() {
                   />
                   <Box>
                     <Typography variant="subtitle2" fontWeight={700}>
-                      {criticalRiskFlag.risk_type}
+                      {criticalRiskFlag.label ?? criticalRiskFlag.risk_type}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -544,6 +575,16 @@ export default function Results() {
                   </Box>{" "}
                   {t("see_all_matches_suffix")}
                 </Typography>
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }} className="no-print">
+                  <Button
+                    variant="outlined"
+                    startIcon={<MapIcon />}
+                    onClick={() => navigate("/map?plan=1")}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    {t("see_plan_on_map")}
+                  </Button>
+                </Box>
               </>
             ) : (
               <Box sx={{ textAlign: "center", py: 4 }}>
@@ -681,7 +722,7 @@ export default function Results() {
                   <Button
                     variant="contained"
                     startIcon={<MapIcon />}
-                    onClick={() => navigate("/map")}
+                    onClick={() => navigate("/map?plan=1")}
                     sx={{
                       bgcolor: (theme) =>
                         alpha(theme.palette.primary.contrastText, 0.2),
@@ -853,7 +894,7 @@ export default function Results() {
                                   variant="subtitle2"
                                   fontWeight={700}
                                 >
-                                  {flag.risk_type}
+                                  {flag.label ?? flag.risk_type}
                                 </Typography>
                                 <Typography
                                   variant="body2"
