@@ -52,8 +52,24 @@ const browserEnv: ReloadEnv = {
       return false;
     }
   },
-  reload: () => window.location.reload(),
+  reload: () => void reloadFresh(),
 };
+
+/**
+ * Reload past a stale service worker. After a deploy the worker still serves
+ * the previous index.html, whose chunk names no longer exist on the server, so
+ * a plain reload fails the same way. Unregistering first sends the reload to
+ * the network; the new build registers a fresh worker on load.
+ */
+export async function reloadFresh(): Promise<void> {
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations()) ?? [];
+    await Promise.all(regs.map((r) => r.unregister()));
+  } catch {
+    /* no service worker support or access: a plain reload is all we can do */
+  }
+  window.location.reload();
+}
 
 export function importWithReload<T>(
   factory: () => Promise<T>,

@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Container from "@mui/material/Container";
 import CrisisLinesBlock from "@/components/common/CrisisLinesBlock";
-import { ChunkLoadError } from "@/lib/chunkReload";
+import { ChunkLoadError, reloadFresh } from "@/lib/chunkReload";
 
 /** Light placeholder while a lazy page downloads. */
 function RouteLoading() {
@@ -35,7 +35,7 @@ function ChunkLoadFailed() {
           <Button
             color="inherit"
             size="small"
-            onClick={() => window.location.reload()}
+            onClick={() => void reloadFresh()}
             sx={{ textTransform: "none", fontWeight: 600 }}
           >
             Try again
