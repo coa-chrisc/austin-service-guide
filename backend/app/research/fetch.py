@@ -10,8 +10,14 @@ re-checked on every redirect hop:
   ``*.internal`` / ``localhost`` names are refused outright;
 - the connection goes to the resolved address (pinned), with the original
   name as ``Host`` and TLS SNI, so a second DNS answer cannot swap the target;
-- at most 3 redirects, 2 MB body cap enforced while streaming, connect
-  timeout 5 s, total 15 s, no cookies, no auth headers;
+- NAT64 (``64:ff9b::/96``, ``64:ff9b:1::/48``), Teredo/ORCHID
+  (``2001::/23``) and 6to4 to a non-global IPv4 are refused too;
+- at most 3 redirects, connect timeout 5 s, total 15 s, no cookies, no auth
+  headers;
+- 2 MB cap on the bytes received AND on the decoded body: we ask for
+  ``identity`` encoding, read raw bytes, and decompress gzip/deflate with a
+  bounded ``zlib`` decompressor (any other encoding is refused), so a
+  compression bomb cannot expand past the cap;
 - only text/html, text/plain and application/xhtml+xml.
 
 ``SEARXNG_URL`` never passes through here (see ``providers/searxng.py``).
@@ -23,6 +29,7 @@ import asyncio
 import ipaddress
 import socket
 import time
+import zlib
 import urllib.robotparser
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
@@ -38,6 +45,10 @@ TOTAL_TIMEOUT = 15.0
 MIN_HOST_INTERVAL = 2.0
 MAX_TEXT_CHARS = 200_000
 ALLOWED_TYPES = ("text/html", "text/plain", "application/xhtml+xml")
+# Ranges whose ``is_global`` answer is not enough on its own: NAT64 maps
+# arbitrary IPv4 (including private) into IPv6; 2001::/23 holds Teredo and
+# other special-purpose blocks.
+_BLOCKED_V6 = tuple(ipaddress.ip_network(n) for n in ("64:ff9b::/96", "64:ff9b:1::/48", "2001::/23"))
 _BLOCKED_SUFFIXES = (".internal", ".local", ".localhost", ".localdomain", ".home.arpa", ".onion")
 
 Resolver = Callable[[str, int], Awaitable[list[str]]]
@@ -75,6 +86,8 @@ def address_allowed(addr: str) -> bool:
     except ValueError:
         return False
     if isinstance(ip, ipaddress.IPv6Address):
+        if any(ip in net for net in _BLOCKED_V6):
+            return False
         mapped = ip.ipv4_mapped or ip.sixtofour
         if mapped is not None:
             ip = mapped
@@ -195,7 +208,8 @@ class SafeFetcher:
             follow_redirects=False,
             trust_env=False,  # never route through an env-configured proxy
             timeout=httpx.Timeout(TOTAL_TIMEOUT, connect=CONNECT_TIMEOUT),
-            headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml,text/plain;q=0.8"},
+            headers={"User-Agent": user_agent, "Accept": "text/html,application/xhtml+xml,text/plain;q=0.8",
+                     "Accept-Encoding": "identity"},
         )
 
     async def aclose(self) -> None:
@@ -259,14 +273,7 @@ class SafeFetcher:
                 ctype = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
                 if ctype not in ALLOWED_TYPES:
                     raise FetchError("content_type", ctype or "none")
-                body = bytearray()
-                truncated = False
-                async for chunk in response.aiter_bytes():
-                    body.extend(chunk)
-                    if len(body) > self.max_bytes:
-                        del body[self.max_bytes:]
-                        truncated = True
-                        break
+                body, truncated = await self._read_capped(response)
                 charset = response.charset_encoding or "utf-8"
                 try:
                     raw = body.decode(charset, errors="replace")
@@ -281,6 +288,39 @@ class SafeFetcher:
             finally:
                 await response.aclose()
         raise FetchError("too_many_redirects")
+
+    async def _read_capped(self, response: httpx.Response) -> tuple[bytearray, bool]:
+        """Read at most ``max_bytes`` from the wire and at most ``max_bytes``
+        after decoding. Returns (body, truncated)."""
+        encoding = response.headers.get("content-encoding", "").strip().lower()
+        if encoding in ("", "identity"):
+            decoder = None
+        elif encoding in ("gzip", "x-gzip"):
+            decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        elif encoding == "deflate":
+            decoder = zlib.decompressobj()
+        else:
+            raise FetchError("content_encoding", encoding[:40])
+        body = bytearray()
+        received = 0
+        async for chunk in response.aiter_raw():
+            room = self.max_bytes - received
+            wire_capped = len(chunk) > room
+            chunk = chunk[:room]  # never take more than the cap off the wire
+            received += len(chunk)
+            if decoder is None:
+                body.extend(chunk)
+            else:
+                try:
+                    # Never inflate more than one byte past the cap.
+                    body.extend(decoder.decompress(chunk, self.max_bytes - len(body) + 1))
+                except zlib.error as exc:
+                    raise FetchError("decode_error", encoding) from exc
+                if decoder.unconsumed_tail:
+                    return body[: self.max_bytes], True
+            if len(body) > self.max_bytes or wire_capped:
+                return body[: self.max_bytes], True
+        return body, False
 
     async def fetch(self, url: str) -> FetchedPage:
         try:
