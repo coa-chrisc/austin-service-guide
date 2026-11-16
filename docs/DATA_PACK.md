@@ -201,7 +201,7 @@ A mapping of service slug to language code to `{description: ...}`. Shown in pla
 
 ## personas.yaml and admin_demo.yaml (optional)
 
-Synthetic demo data. `personas.yaml` maps a persona id to `id` (equal to the key), `label`, `language`, `seed_profile`, `opening_message`, `persona_note` and an optional `script`; the schema is `config/schemas/personas.schema.json`. `admin_demo.yaml` feeds the admin console's demo views; its schema is deliberately loose. Never put real resident data in either.
+Synthetic demo data. `personas.yaml` maps a persona id to `id` (equal to the key), `label`, `language`, `seed_profile`, `opening_message`, `persona_note`, an optional `script`, and optional launcher-card fields `summary` (one sentence) and `shows` (2-3 tags). A translated variant uses the base id plus `-<language>` and appears as a language chip on the base card; the schema is `config/schemas/personas.schema.json`. `admin_demo.yaml` feeds the admin console's demo views; its schema is deliberately loose. Never put real resident data in either.
 
 ## Running the validator
 

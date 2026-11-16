@@ -15,6 +15,8 @@
       "properties": {
         "id": {"type": "string", "description": "Must equal the mapping key (the launcher lists id; load-persona looks up the key)."},
         "label": {"type": "string", "minLength": 1, "description": "Launcher button text."},
+        "summary": {"type": "string", "description": "One sentence about the person, shown on the launcher card."},
+        "shows": {"type": "array", "items": {"type": "string", "minLength": 1}, "maxItems": 4, "description": "2-3 short tags naming what the scenario demonstrates."},
         "language": {"$ref": "#/$defs/language", "description": "Conversation language code."},
         "seed_profile": {"$ref": "#/$defs/profile"},
         "opening_message": {"type": "string", "minLength": 1, "description": "The resident's first message."},
