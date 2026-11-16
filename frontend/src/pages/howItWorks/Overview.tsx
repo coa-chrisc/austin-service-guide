@@ -39,7 +39,7 @@ export function OverviewCards({ onJump }: { onJump: JumpHandler }) {
                 {item.text}
               </Typography>
               <Typography variant="body2">
-                <SectionLink id={item.section} onJump={onJump} label={`More on ${item.label.toLowerCase()}`} />
+                <SectionLink id={item.section} onJump={onJump} label={`More on ${item.label.replace(/^(?!Phase )[A-Z]/, (c) => c.toLowerCase())}`} />
               </Typography>
             </Paper>
           );
