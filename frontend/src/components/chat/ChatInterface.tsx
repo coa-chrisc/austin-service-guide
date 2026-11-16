@@ -9,6 +9,7 @@ import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Avatar from "@mui/material/Avatar";
+import Chip from "@mui/material/Chip";
 import SendIcon from "@mui/icons-material/Send";
 import PhoneIcon from "@mui/icons-material/Phone";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
@@ -358,10 +359,21 @@ export default function ChatInterface({
     >
       {/* Progress bar */}
       <Box sx={{ px: 2, pt: 2, pb: 1, "& > *": COLUMN }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
-          <Typography variant="caption" color="text.secondary" fontWeight={500}>
-            Intake Progress
-          </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 1, mb: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="caption" color="text.secondary" fontWeight={500}>
+              Intake Progress
+            </Typography>
+            {voice.liveAi !== null && (
+              <Chip
+                size="small"
+                variant="outlined"
+                color={voice.liveAi ? "primary" : "default"}
+                label={voice.liveAi ? "Live AI" : "Guided questions (AI off)"}
+                sx={{ height: 20, fontSize: 11, fontWeight: 600 }}
+              />
+            )}
+          </Box>
           <Typography variant="caption" color="text.secondary" fontWeight={600}>
             {progress}%
           </Typography>
@@ -462,9 +474,8 @@ export default function ChatInterface({
               textAlign="center"
               maxWidth={400}
             >
-              I'll ask you a few questions to find city services you may be
-              eligible for. This guide uses AI (OpenAI), so please don't share
-              names, Social Security numbers, or account numbers.
+              I'll ask you a few questions to find city services that may fit
+              your situation.
             </Typography>
           </Box>
         )}

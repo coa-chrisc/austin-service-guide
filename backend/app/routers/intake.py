@@ -32,6 +32,7 @@ from app.services.ai import process_message, start_persona_session, start_sessio
 from app.services.grounding import ground_service_ids
 from app.services.i18n import (
     PLAN_SUMMARY_I18N,
+    risk_flag_label,
     translate_match_reasoning,
     translate_risk_flag,
     translate_sequence_reason,
@@ -260,12 +261,15 @@ async def get_results(body: StateRequest):
 
         for rf in risk_flags_payload:
             translated_rf = translate_risk_flag(rf.get("risk_type", ""), lang)
-            if translated_rf:
+            if translated_rf and translated_rf.get("description"):
                 rf["description"] = translated_rf["description"]
-                rf["label"] = translated_rf["label"]
 
         if plan is not None and not plan_synthesis:
             plan_synthesis = PLAN_SUMMARY_I18N.get(lang, "")
+
+    # Every flag gets a display label (English too), never the raw enum.
+    for rf in risk_flags_payload:
+        rf["label"] = risk_flag_label(rf.get("risk_type", ""), lang)
 
     return {
         "state": _state(session),

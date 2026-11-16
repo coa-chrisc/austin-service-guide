@@ -202,11 +202,21 @@ export default function MapView() {
               primary={pin.name}
               slotProps={{ secondary: { component: "div" } }}
               secondary={
-                <Chip
-                  label={getCategoryDisplayName(pin.category)}
-                  size="small"
-                  sx={{ mt: 0.5, fontSize: 11, height: 20 }}
-                />
+                <>
+                  {/* Which location: a service can have several pins. */}
+                  {(pin.location_name || pin.address) && (
+                    <Box component="span" sx={{ display: "block" }}>
+                      {pin.location_name && pin.location_name !== pin.name
+                        ? pin.location_name
+                        : pin.address || pin.location_name}
+                    </Box>
+                  )}
+                  <Chip
+                    label={getCategoryDisplayName(pin.category)}
+                    size="small"
+                    sx={{ mt: 0.5, fontSize: 11, height: 20 }}
+                  />
+                </>
               }
             />
           </ListItemButton>
@@ -239,7 +249,8 @@ export default function MapView() {
       )}
 
       {/* Map */}
-      <Box sx={{ flex: 1, position: "relative" }}>
+      {/* minWidth 0: the category chip row must not widen the map past the screen. */}
+      <Box sx={{ flex: 1, minWidth: 0, position: "relative" }}>
         <ServiceMap
           pins={filteredPins}
           categories={categories}

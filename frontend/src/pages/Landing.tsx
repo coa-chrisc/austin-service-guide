@@ -38,38 +38,18 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import AccessibleIcon from "@mui/icons-material/Accessible";
 import ShieldIcon from "@mui/icons-material/Shield";
 import {
+  getCategories,
   getLifeEvents,
   getPersonas,
-  loadPersona,
+  getServices,
   type PersonaSummary,
 } from "@/lib/api";
-import { startNewIntakeState } from "@/lib/session";
 import { alpha, type Theme } from "@mui/material/styles";
 import { brandConfig, useBrandConfig } from "@/hooks/useBrandConfig";
 import NeedNavigator from "@/components/landing/NeedNavigator";
+import DemoLauncher from "@/components/landing/DemoLauncher";
+import StaffConsoleBand from "@/components/landing/StaffConsoleBand";
 import type { LifeEvent } from "@/types";
-
-// Keyed by the persona id's theme prefix (the part before the first "-"),
-// so ids stay free to name the place, e.g. "equity-<neighborhood>-zh".
-const PERSONA_ICONS: Record<string, React.ReactNode> = {
-  heat: <PsychologyIcon sx={{ fontSize: 28 }} />,
-  schools: <SchoolIcon sx={{ fontSize: 28 }} />,
-  equity: <HomeWorkIcon sx={{ fontSize: 28 }} />,
-  refugee: <PublicIcon sx={{ fontSize: 28 }} />,
-};
-
-function iconForPersonaId(id: string): React.ReactNode {
-  const theme = id.split("-")[0];
-  return PERSONA_ICONS[theme] ?? <PublicIcon sx={{ fontSize: 28 }} />;
-}
-
-const LANGUAGE_LABELS: Record<string, string> = {
-  en: "English",
-  es: "Español",
-  vi: "Tiếng Việt",
-  zh: "中文",
-  ar: "العربية",
-};
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   family: <FamilyRestroomIcon sx={{ fontSize: 36 }} />,
@@ -221,7 +201,8 @@ const FALLBACK_EVENTS: LifeEvent[] = [
   },
 ];
 
-const STEPS = [
+// serviceCount is null until the catalog total loads.
+const steps = (serviceCount: number | null) => [
   {
     icon: <ChatIcon sx={{ fontSize: 48, color: "primary.main" }} />,
     title: "Tell Us Your Situation",
@@ -231,8 +212,7 @@ const STEPS = [
   {
     icon: <SearchIcon sx={{ fontSize: 48, color: "primary.main" }} />,
     title: "We Find Matching Services",
-    description:
-      "Our system searches 87 local services to find ones you're likely eligible for.",
+    description: `Our system searches ${serviceCount ?? "the"} local services to find ones that may fit your situation.`,
   },
   {
     icon: <MapIcon sx={{ fontSize: 48, color: "primary.main" }} />,
@@ -257,13 +237,21 @@ export default function Landing() {
   const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [personas, setPersonas] = useState<PersonaSummary[]>([]);
-  const [launchingId, setLaunchingId] = useState<string | null>(null);
+  const [serviceCount, setServiceCount] = useState<number | null>(null);
+  const [categoryCount, setCategoryCount] = useState<number | null>(null);
 
   useEffect(() => {
     getLifeEvents()
       .then(setLifeEvents)
       .catch(() => setLifeEvents(FALLBACK_EVENTS))
       .finally(() => setLoading(false));
+    // Live counts for the stats band; it shows a dash if a request fails.
+    getServices({ page_size: 1 })
+      .then((res) => setServiceCount(res.total))
+      .catch(() => undefined);
+    getCategories()
+      .then((cats) => setCategoryCount(cats.length))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -275,34 +263,17 @@ export default function Landing() {
 
   // When the Demo nav button drops the user on /?demo=1, scroll the
   // launcher into view so they don't have to hunt for it past the hero.
+  // It renders once the personas load, so wait for them.
+  const launcherReady = demoMode && personas.length > 0;
   useEffect(() => {
-    if (!demoMode) return;
+    if (!launcherReady) return;
     const t = setTimeout(() => {
       document
         .getElementById("demo-launcher")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
     return () => clearTimeout(t);
-  }, [demoMode]);
-
-  const handleLaunchPersona = async (id: string) => {
-    setLaunchingId(id);
-    try {
-      const res = await loadPersona(id);
-      const personaLabel = personas.find((p) => p.id === id)?.label;
-      startNewIntakeState(res.state);
-      navigate("/demo", {
-        state: {
-          openingMessage: res.opening_message,
-          script: res.script,
-          personaLabel,
-        },
-      });
-    } catch (err) {
-      console.error("Failed to load persona", err);
-      setLaunchingId(null);
-    }
-  };
+  }, [launcherReady]);
 
   const displayEvents = lifeEvents.length > 0 ? lifeEvents : FALLBACK_EVENTS;
 
@@ -387,87 +358,10 @@ export default function Landing() {
         </Container>
       </Box>
 
-      <NeedNavigator />
+      {/* Demo scenario launcher (?demo=1); hidden when the data pack has no personas */}
+      {launcherReady && <DemoLauncher personas={personas} />}
 
-      {/* Demo persona launcher (?demo=1); hidden when the data pack has no personas */}
-      {demoMode && personas.length > 0 && (
-        <Box
-          id="demo-launcher"
-          sx={(theme) => ({
-            bgcolor: alpha(theme.palette.warning.main, 0.12),
-            borderBottom: "1px solid",
-            borderColor: alpha(theme.palette.warning.main, 0.4),
-          })}
-        >
-          <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="overline" sx={{ color: "warning.dark" }}>
-                Demo mode
-              </Typography>
-              <Typography variant="h6" fontWeight={700}>
-                Launch a scripted resident scenario
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Each persona seeds a baseline profile and a realistic opening
-                message — the live AI takes over from there. Click one to jump
-                straight to the matched-services result.
-              </Typography>
-            </Box>
-            <Grid container spacing={2}>
-              {personas.map((p) => (
-                <Grid key={p.id} size={{ xs: 12, sm: 6, md: 3 }}>
-                  <Card>
-                    <CardActionArea
-                      onClick={() => handleLaunchPersona(p.id)}
-                      disabled={launchingId !== null}
-                      sx={{ p: 2.25, height: "100%" }}
-                    >
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.25,
-                          mb: 1,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: "50%",
-                            bgcolor: "warning.light",
-                            color: "warning.dark",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {iconForPersonaId(p.id) ?? (
-                            <ChatIcon sx={{ fontSize: 24 }} />
-                          )}
-                        </Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {LANGUAGE_LABELS[p.language] ?? p.language}
-                        </Typography>
-                      </Box>
-                      <Typography variant="subtitle2" fontWeight={700}>
-                        {p.label}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mt: 0.5 }}
-                      >
-                        {launchingId === p.id ? "Launching…" : "Click to load"}
-                      </Typography>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Container>
-        </Box>
-      )}
+      <NeedNavigator />
 
       {/* How It Works */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
@@ -502,7 +396,7 @@ export default function Landing() {
               zIndex: 0,
             }}
           />
-          {STEPS.map((step, idx) => (
+          {steps(serviceCount).map((step, idx) => (
             <Grid key={idx} size={{ xs: 12, md: 4 }}>
               <Box
                 sx={{
@@ -676,10 +570,10 @@ export default function Landing() {
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             {[
-              { value: "87", label: "Services Available" },
-              { value: "21", label: "Service Categories" },
+              { value: serviceCount ?? "–", label: "Services Available" },
+              { value: categoryCount ?? "–", label: "Service Categories" },
               { value: "Free", label: "No Account Needed" },
-              { value: "8", label: "Languages Supported" },
+              { value: brand.serviceGuide.languages.length, label: "Languages Supported" },
             ].map((stat) => (
               <Grid key={stat.label} size={{ xs: 6, md: 3 }}>
                 <Typography
@@ -697,6 +591,8 @@ export default function Landing() {
           </Grid>
         </Container>
       </Box>
+
+      <StaffConsoleBand />
 
       {/* Footer */}
       <Box
@@ -806,6 +702,9 @@ export default function Landing() {
             >
               <Typography variant="caption" sx={{ opacity: 0.7 }}>
                 {brand.serviceGuide.copy.footerDisclaimer}
+              </Typography>
+              <Typography variant="caption" sx={{ display: "block", opacity: 0.7, mt: 0.5 }}>
+                Demonstration data. Confirm details with the provider.
               </Typography>
               <Box
                 sx={{

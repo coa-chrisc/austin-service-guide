@@ -560,25 +560,30 @@ _SEQUENCE_PRIORITY: dict[str, int] = {
     "education": 10,
 }
 
+# Generic per-category reasons for the rules plan. They describe the kind of
+# service, never the resident: a reason also shows when the category was
+# inferred (children in the household, a heat ZIP) rather than asked for.
 _SEQUENCE_REASONS: dict[str, str] = {
-    "emergency": "Address immediate safety first — these resources answer 24/7.",
-    "cooling": "Heat illness escalates fast — cooling and AC help come before everything else during a heat advisory.",
-    "food": "Food assistance often qualifies you for other programs automatically.",
-    "housing": "Keeping a stable place to live comes before longer-term goals.",
-    "refugee": "Resettlement coordination can unlock food, healthcare, and school support in a single intake.",
-    "utilities": "Keeping the lights on prevents eviction and protects your deposits.",
-    "healthcare": "Get covered before any out-of-pocket bills pile up.",
-    "childcare": "Childcare unblocks job search, school, and medical appointments.",
-    "schools": "School-based mental-health support is the fastest way to reach a struggling student.",
-    "employment": "Job placement is faster once basic needs are stable.",
-    "veterans": "VA benefits stack with most state and local programs.",
-    "senior": "Age-based programs are usually fastest to qualify for.",
-    "disability": "Disability documentation unlocks several other benefits.",
-    "transportation": "Reliable transit makes appointments and work feasible.",
-    "legal": "Legal aid can stop adverse actions already in motion.",
-    "immigration": "Legal status work goes alongside everything else.",
-    "education": "Plan after immediate needs are handled.",
+    "emergency": "Listed first because it deals with safety.",
+    "cooling": "Listed early because heat illness can come on quickly during a heat advisory.",
+    "food": "Food help is often a quick first step.",
+    "housing": "Listed early because a stable place to live supports everything else.",
+    "refugee": "Resettlement partners may be able to help with several needs at once.",
+    "utilities": "Utility bill help is worth asking about early.",
+    "healthcare": "A place to get care. Ask about cost and eligibility when you call.",
+    "childcare": "Childcare help can make work, school and appointments easier to manage.",
+    "schools": "School-based support can reach a student where they already are.",
+    "employment": "Job services may be easier to take on once urgent needs are covered.",
+    "veterans": "Veteran services may be available alongside other programs.",
+    "senior": "Programs for older adults that may be worth checking.",
+    "disability": "Disability services may help you connect with other support.",
+    "transportation": "Transportation help can make it easier to get to appointments and work.",
+    "legal": "Legal help is worth asking about, especially if you have a notice or deadline.",
+    "immigration": "Immigration help can go alongside your other steps.",
+    "education": "Something to plan for once urgent needs are handled.",
 }
+
+_DEFAULT_SEQUENCE_REASON = "Worth a look when you have time."
 
 
 def _rank_category(service: Service, target_cats: set[str]) -> str | None:
@@ -651,7 +656,6 @@ def recommend_application_order(
             "service_slug": m.service.slug,
             "service_name": m.service.name,
             "category": primary_cat,
-            "reason": _SEQUENCE_REASONS.get(cat or "")
-            or "Apply when you have the time — this one is supportive rather than urgent.",
+            "reason": _SEQUENCE_REASONS.get(cat or "") or _DEFAULT_SEQUENCE_REASON,
         })
     return out

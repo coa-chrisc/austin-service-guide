@@ -188,6 +188,16 @@ describe("serviceGuide defaults and categories", () => {
     expect(schemaErrors(cfg)).toEqual([]);
   });
 
+  it("hides benefit estimates unless the config turns them on", () => {
+    const cfg = readJson(path.join(CONFIG_DIR, "city.config.json"));
+    expect(resolveServiceGuide(cfg).showBenefitEstimates).toBe(false);
+    cfg.serviceGuide.showBenefitEstimates = true;
+    expect(schemaErrors(cfg)).toEqual([]);
+    expect(resolveServiceGuide(cfg).showBenefitEstimates).toBe(true);
+    cfg.serviceGuide.showBenefitEstimates = "yes";
+    expect(schemaErrors(cfg).length).toBeGreaterThan(0);
+  });
+
   it("colors categories by override, else series cycled in category order", () => {
     const slugs = ["a", "b", "c", "d"];
     const series = ["#000001", "#000002", "#000003"];

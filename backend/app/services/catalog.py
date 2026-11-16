@@ -262,6 +262,8 @@ def get_map_pins(
                 category=primary_cat,
                 latitude=loc.latitude,
                 longitude=loc.longitude,
+                location_name=loc.name,
+                address=loc.address,
                 open_now=open_state,
                 next_open=next_open_label(loc) if open_state is False else None,
             ))

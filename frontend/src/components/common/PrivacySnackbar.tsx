@@ -16,7 +16,10 @@ export default function PrivacySnackbar({
       open={open}
       autoHideDuration={8000}
       onClose={onClose}
-      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      // Top centre, below the sticky header (56px phones, 64px from sm):
+      // at the bottom it covered the chat input it is about.
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      sx={{ top: { xs: 64, sm: 80 } }}
     >
       <Alert severity="info" variant="filled" onClose={onClose}>
         {PII_REMOVED_MESSAGE}
