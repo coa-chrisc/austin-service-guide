@@ -75,6 +75,17 @@ class Settings(BaseSettings):
     app_name: str = ""  # default: "<city config appName> API"
     app_version: str = "1.0.0"
 
+    # ── Partner-list import (admin, issue #19) ─────────────────────
+    # Off unless IMPORT_ENABLED=true AND JOB_BACKEND is not "off" AND
+    # ADMIN_API_TOKEN is set; otherwise the routes return 404. "inline"
+    # runs the import inside the request (no worker or database yet).
+    import_enabled: bool = False
+    job_backend: Literal["off", "inline"] = "off"
+    # Send the filtered rows to the model for hours, address, category and
+    # eligibility suggestions. Needs live AI too.
+    import_use_model: bool = False
+    import_max_rows: int = 2000  # capped at 5000 (the parser limit)
+    import_max_cost_usd: float = 5.0
     # ── Abuse defense and cost guardrails (app/defense/) ──────────
     # false restores the pre-defense behaviour: no principal, no limits,
     # no metering, no budgets. KILL_SWITCH_* still apply (explicit "off").
