@@ -133,6 +133,21 @@ export function withIntakeState<T extends { state: IntakeState }>(
 }
 
 /**
+ * Run a read-only intake request (results hydration) on the latest saved
+ * state without joining the request queue and without saving the response.
+ * A plan build already in the queue can take many seconds; reads must not
+ * wait behind it, and skipping the save means a read can never overwrite
+ * the plan that build stores.
+ */
+export function readWithIntakeState<T>(
+  request: (state: IntakeState) => Promise<T>,
+): Promise<T> {
+  const state = loadIntakeState();
+  if (!state) return Promise.reject(new Error("No intake in progress."));
+  return request(state);
+}
+
+/**
  * Make sure the completed intake has a plan, building it at most once per
  * intake. Resolves with the state that holds the plan.
  */

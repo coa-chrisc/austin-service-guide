@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -44,6 +44,17 @@ import EmailIcon from "@mui/icons-material/Email";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import ServiceCard from "@/components/services/ServiceCard";
 import PlanList from "@/components/results/PlanList";
+import PlanItemRow from "@/components/results/PlanItemRow";
+import PlanStatus, {
+  PlanAnnouncer,
+  type PlanStatusKind,
+} from "@/components/results/PlanStatus";
+import {
+  fallbackOrder,
+  groupByCategory,
+  otherMatches,
+  planSteps,
+} from "@/lib/planSteps";
 import {
   buildIntakePlan,
   getIntakeResults,
@@ -60,7 +71,7 @@ import {
   ensureIntakePlan,
   hasCompletedPlan,
   loadIntakeState,
-  withIntakeState,
+  readWithIntakeState,
 } from "@/lib/session";
 import DemoScenarioBanner from "@/components/demo/DemoScenarioBanner";
 import { canNativeShare, nativeShare } from "@/lib/share";
@@ -165,6 +176,10 @@ export default function Results() {
   // Set when this plan came from the demo scenario launcher.
   const [personaId] = useState(() => demoPersonaId());
   const [personaLabel, setPersonaLabel] = useState<string | undefined>();
+  const [planStatus, setPlanStatus] = useState<PlanStatusKind>("ready");
+  // Announce "plan ready" only after a build the resident waited for.
+  const [announceReady, setAnnounceReady] = useState(false);
+  const mountedRef = useRef(true);
   const [view, setView] = useState<ViewMode>(() => {
     if (typeof window === "undefined") return "simple";
     return window.sessionStorage.getItem(VIEW_KEY) === "all" ? "all" : "simple";
@@ -254,6 +269,32 @@ export default function Results() {
     };
   }, [personaId]);
 
+  // Build the plan once (shared with a build the intake page already
+  // started), then re-hydrate so its reasons come back translated.
+  const buildPlan = (isCancelled: () => boolean) => {
+    setPlanStatus("building");
+    setAnnounceReady(true);
+    ensureIntakePlan(buildIntakePlan)
+      .then(() => readWithIntakeState(getIntakeResults))
+      .then((planned) => {
+        if (isCancelled()) return;
+        setData(toResultsData(planned));
+        setPlanStatus("ready");
+      })
+      .catch(() => {
+        // Matches stay usable; the plan area shows a best-fit fallback.
+        if (!isCancelled()) setPlanStatus("failed");
+      });
+  };
+  const retryPlan = () => buildPlan(() => !mountedRef.current);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     if (!hasCompletedPlan(loadIntakeState())) {
@@ -262,19 +303,15 @@ export default function Results() {
       return;
     }
     // Hydrate from this tab's intake state (catalog data, no model call),
-    // then build the plan once if it hasn't been built yet.
-    withIntakeState(getIntakeResults)
+    // then build the plan once if it hasn't been built yet. The read skips
+    // the request queue so matches show at once, even while a plan build
+    // started on the intake page is still running.
+    readWithIntakeState(getIntakeResults)
       .then((res) => {
         if (cancelled) return;
         setData(toResultsData(res));
         setLoading(false);
-        if (!res.plan_pending) return;
-        return ensureIntakePlan(buildIntakePlan)
-          .then(() => withIntakeState(getIntakeResults))
-          .then((planned) => {
-            if (!cancelled) setData(toResultsData(planned));
-          })
-          .catch(() => undefined); // keep showing matches without an order
+        if (res.plan_pending) buildPlan(() => cancelled);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -353,14 +390,6 @@ export default function Results() {
     );
   }
 
-  // Group by category
-  const grouped: Record<string, ServiceMatch[]> = {};
-  for (const m of filteredMatches) {
-    const cat = m.service.categories[0] || "Other";
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(m);
-  }
-
   const benefits = data.benefits_estimate;
   // Estimates are rough rule-of-thumb figures: shown only when the city
   // config opts in (serviceGuide.showBenefitEstimates).
@@ -368,8 +397,23 @@ export default function Results() {
     serviceGuide.showBenefitEstimates &&
     (benefits.total_monthly_value > 0 || benefits.breakdown.length > 0);
 
-  // Find rank-1 service from sequencing — used by hero + sticky bar
-  const topItem = data.application_order[0];
+  // The ordered steps shown first: the plan, or a best-fit order when the
+  // plan request itself failed. Everything else sits under "More services".
+  const shownOrder =
+    data.application_order.length > 0
+      ? data.application_order
+      : planStatus === "failed"
+        ? fallbackOrder(matches)
+        : [];
+  const steps = planSteps(shownOrder);
+  const topItem = steps[0]; // used by the hero and the sticky bar
+  // All-matches view: the matches beyond the steps, collapsed by category.
+  // A filter searches every match, steps included, and opens its results.
+  const filtersActive = !!filterCategory || !!filterConfidence;
+  const browseList = filtersActive
+    ? filteredMatches
+    : otherMatches(filteredMatches, steps);
+  const browseGroups = groupByCategory(browseList);
   const topMatch = topItem
     ? matches.find((m) => m.service.id === topItem.service_id)
     : undefined;
@@ -386,6 +430,7 @@ export default function Results() {
           body { background: ${theme.palette.common.white} !important; /* theme-exempt: print output is black on white paper */ }
           header, nav, .no-print, .MuiDrawer-root, .MuiDialog-root,
           .MuiSnackbar-root, .MuiFab-root { display: none !important; }
+          .results-root .MuiCollapse-root { height: auto !important; visibility: visible !important; }
           .results-root .MuiAccordion-root { break-inside: avoid; box-shadow: none !important; border: 1px solid ${printLine} !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root { display: block !important; }
           .results-root .MuiAccordionDetails-root .MuiGrid-root > .MuiGrid-root { max-width: 100% !important; flex-basis: 100% !important; padding: 4px 0 !important; break-inside: avoid; }
@@ -393,6 +438,11 @@ export default function Results() {
           .results-root [class*="MuiCardContent-root"] { color: ${theme.palette.common.black} !important; /* theme-exempt: print output is black on white paper */ }
         }
       `}</style>
+      <PlanAnnouncer
+        status={planStatus}
+        announceReady={announceReady}
+        language={data.language}
+      />
       {personaId && (
         <Box className="no-print">
           <DemoScenarioBanner
@@ -507,8 +557,18 @@ export default function Results() {
               </Card>
             )}
 
-            {topItem ? (
+            {planStatus === "building" ? (
+              <PlanStatus
+                status="building"
+                language={data.language}
+                onRetry={retryPlan}
+                onShowAll={() => setView("all")}
+              />
+            ) : topItem ? (
               <>
+                {planStatus === "failed" && (
+                  <PlanStatus status="failed" language={data.language} onRetry={retryPlan} />
+                )}
                 {data.plan_synthesis && (
                   <Box
                     sx={{
@@ -540,10 +600,9 @@ export default function Results() {
                   </Box>
                 )}
                 <PlanList
-                  items={data.application_order}
+                  items={shownOrder}
                   matches={matches}
                   fromPlan
-                  onShowAll={() => setView("all")}
                   language={data.language}
                 />
                 <Typography
@@ -771,8 +830,16 @@ export default function Results() {
               </CardContent>
             </Card>
 
-            {/* Start here — sequencing */}
-            {data.application_order.length > 0 && (
+            {/* Start here — the plan steps (or its build status) */}
+            {planStatus !== "ready" && (
+              <PlanStatus
+                status={planStatus}
+                compact
+                language={data.language}
+                onRetry={retryPlan}
+              />
+            )}
+            {steps.length > 0 && (
               <Card
                 sx={{
                   mb: 4,
@@ -790,61 +857,18 @@ export default function Results() {
                     }}
                   >
                     <RocketLaunchIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>
+                    <Typography variant="h6" component="h2" fontWeight={700}>
                       {t("start_here")}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       {t("suggested_order_caption")}
                     </Typography>
                   </Box>
-                  <Stack spacing={1.25}>
-                    {data.application_order.slice(0, 3).map((item) => (
-                      <Box
-                        key={item.service_id}
-                        sx={{
-                          display: "flex",
-                          gap: 1.5,
-                          alignItems: "flex-start",
-                          p: 1.5,
-                          borderRadius: (theme) => theme.shape.radius.control,
-                          bgcolor: "brand.primarySoft",
-                          cursor: "pointer",
-                          transition: "background 0.15s",
-                          "&:hover": { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.16) },
-                        }}
-                        onClick={() =>
-                          navigate(`/services/${item.service_slug}`)
-                        }
-                      >
-                        <Box
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            bgcolor: "primary.main",
-                            color: "primary.contrastText",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: 700,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {item.rank}
-                        </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="subtitle2" fontWeight={700}>
-                            {item.service_name}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ mt: 0.25 }}
-                          >
-                            {item.reason}
-                          </Typography>
-                        </Box>
-                      </Box>
+                  <Stack component="ol" spacing={1} sx={{ listStyle: "none", m: 0, p: 0 }}>
+                    {steps.map((item, idx) => (
+                      <li key={item.service_id}>
+                        <PlanItemRow item={item} rank={idx + 1} fromPlan />
+                      </li>
                     ))}
                   </Stack>
                 </CardContent>
@@ -1016,18 +1040,26 @@ export default function Results() {
               </Box>
             </Box>
 
-            {/* Grouped service results */}
-            {Object.entries(grouped).map(([category, catMatches]) => (
+            {/* Grouped service results: the matches beyond the steps */}
+            {browseList.length > 0 && (
+              <Typography variant="h5" component="h2" fontWeight={600} sx={{ mb: 2 }}>
+                {steps.length > 0 && !filtersActive
+                  ? t("more_services", { n: browseList.length })
+                  : t("your_matches", { n: browseList.length })}
+              </Typography>
+            )}
+            {browseGroups.map(([category, catMatches]) => (
               <Accordion
-                key={category}
-                defaultExpanded
+                // Collapsed to keep the page short; a filter opens its results.
+                key={`${category}-${filterCategory ?? ""}-${filterConfidence ?? ""}`}
+                defaultExpanded={filtersActive}
                 sx={{
                   mb: 2,
                   boxShadow: (theme) => `0 1px 3px ${alpha(theme.palette.brand.ink, 0.08)}`,
                 }}
               >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="h6" fontWeight={600}>
+                  <Typography variant="h6" component="span" fontWeight={600}>
                     {categoryLabel(category)}
                   </Typography>
                   <Chip

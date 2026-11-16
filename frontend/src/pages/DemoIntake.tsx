@@ -14,7 +14,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ChatBubble from "@/components/chat/ChatBubble";
 import DemoScenarioBanner from "@/components/demo/DemoScenarioBanner";
 import type { IntakeMessage } from "@/types";
-import type { PersonaScriptTurn } from "@/lib/api";
+import { buildIntakePlan, type PersonaScriptTurn } from "@/lib/api";
+import { ensureIntakePlan, hasCompletedPlan } from "@/lib/session";
 
 /** Router state the scenario launcher passes to /demo. */
 export interface DemoState {
@@ -148,6 +149,13 @@ function DemoReplay({ demo }: { demo: DemoState }) {
     );
     return () => window.clearTimeout(timer);
   }, [paused, next, shownCount, sequence]);
+
+  // The persona state is already complete: build its plan (the rules order,
+  // no model call) during the replay so the plan page has it at once. The
+  // results page reuses this request, or retries if it failed.
+  useEffect(() => {
+    if (hasCompletedPlan()) void ensureIntakePlan(buildIntakePlan).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
