@@ -75,6 +75,60 @@ class Settings(BaseSettings):
     app_name: str = ""  # default: "<city config appName> API"
     app_version: str = "1.0.0"
 
+    # ── Abuse defense and cost guardrails (app/defense/) ──────────
+    # false restores the pre-defense behaviour: no principal, no limits,
+    # no metering, no budgets. KILL_SWITCH_* still apply (explicit "off").
+    defense_enabled: bool = True
+    # "memory" only in this build (per process; on Vercel per instance).
+    # "postgres" is planned (defense-01 PR b) and fails startup for now.
+    defense_store: Literal["memory", "postgres"] = "memory"
+    # HMAC key for principal, network and recipient hashes. Empty: a random
+    # per-process key (fine for the memory store, which is per process too).
+    defense_hash_key: str = ""
+    # Signs device tokens and proof-of-work challenges. Required (32+ chars)
+    # on Vercel/Railway when the proof-of-work challenge is active.
+    defense_token_secret: str = ""
+    defense_device_token_ttl_seconds: int = 86_400
+    defense_new_token_warmup_seconds: int = 120
+    # How many trusted proxies append to X-Forwarded-For (Vercel: 1).
+    # 0 = use the socket peer and ignore the header.
+    defense_trusted_proxy_hops: int = 0
+    # Per-principal limits and budgets for access-code labels are multiplied
+    # by this: one label is often shared by a group behind one office NAT.
+    defense_access_multiplier: float = 10.0
+    # "auto": none when ACCESS_CODES is set (gated users never see it),
+    # proof of work when it is not.
+    challenge_provider: Literal["auto", "none", "pow"] = "auto"
+    defense_pow_bits: int = 13
+    defense_pow_surge_bits: int = 4
+
+    # Force a breaker open, regardless of the store or DEFENSE_ENABLED.
+    kill_switch_voice: bool = False
+    kill_switch_live_ai: bool = False
+    kill_switch_share: bool = False
+
+    # Budgets; 0 = no limit. Dollars are estimates from config/model_prices.json.
+    budget_tokens_principal_hour: int = 400_000
+    budget_tokens_principal_day: int = 1_500_000
+    budget_tokens_global_hour: int = 20_000_000
+    budget_tokens_global_day: int = 100_000_000
+    budget_voice_seconds_principal_hour: int = 900
+    budget_voice_seconds_principal_day: int = 1_800
+    budget_voice_seconds_global_hour: int = 18_000
+    budget_voice_seconds_global_day: int = 72_000
+    budget_usd_principal_hour: float = 2.0
+    budget_usd_principal_day: float = 4.0
+    budget_usd_global_hour: float = 0.0
+    budget_usd_global_day: float = 15.0
+    budget_usd_global_month: float = 18.0
+    # Stop the agent loop once one resident turn has used this many tokens.
+    openai_max_tokens_per_turn: int = 120_000
+    # JSON that replaces config/model_prices.json (same shape).
+    openai_price_table_json: str = ""
+    # Voice time reserved against the budgets for each realtime mint.
+    realtime_max_session_seconds: int = 600
+    realtime_idle_seconds: int = 90
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

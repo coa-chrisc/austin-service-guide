@@ -71,12 +71,14 @@ def test_unknown_voice_mode_fails_at_startup(monkeypatch):
 
 # ── 2. GET /voice-config ────────────────────────────────────────────────
 
+@pytest.mark.usefixtures("defense_off")  # exact pre-defense body; defense fields: test_defense_*
 def test_voice_config_defaults_to_intercepted_text(client):
     res = client.get("/api/v1/intake/voice-config")
     assert res.status_code == 200
     assert res.json() == {"mode": "intercepted_text", "raw_audio_allowed": False, "live_ai": False}
 
 
+@pytest.mark.usefixtures("defense_off")  # exact pre-defense body; defense fields: test_defense_*
 @pytest.mark.parametrize(
     ("mode", "allow", "live", "expected"),
     [

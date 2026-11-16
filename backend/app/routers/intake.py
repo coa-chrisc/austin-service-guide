@@ -18,6 +18,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.config import get_settings
+from app.defense.breakers import voice_config_overrides
+from app.defense.budget import voice_reservation
+from app.defense.context import degraded as defense_degraded
+from app.defense.limits import limit, limit_recipient
 from app.models import (
     MAX_MATCHED_IDS,
     IntakeMessageRequest,
@@ -172,7 +176,7 @@ async def get_personas():
     return {"personas": list_personas()}
 
 
-@router.post("/load-persona")
+@router.post("/load-persona", dependencies=[Depends(limit("intake_start"))])
 async def load_persona(body: LoadPersonaRequest):
     """Return a completed intake state pre-seeded by a demo persona."""
     session = await start_persona_session(body.persona_id)
@@ -195,7 +199,7 @@ async def load_persona(body: LoadPersonaRequest):
     }
 
 
-@router.post("/start")
+@router.post("/start", dependencies=[Depends(limit("intake_start"))])
 async def start_intake(body: IntakeStartRequest | None = None):
     """Start an intake and return its initial state and greeting."""
     body = body or IntakeStartRequest()
@@ -209,13 +213,17 @@ async def start_intake(body: IntakeStartRequest | None = None):
     }
 
 
-@router.post("/message")
+@router.post("/message", dependencies=[Depends(limit("intake_message"))])
 async def send_message(body: IntakeMessageRequest):
-    """Send a resident message; returns the reply and the updated state."""
+    """Send a resident message; returns the reply and the updated state.
+
+    A spent AI budget never errors: the scripted flow answers and
+    ``degraded`` says why ("ai_budget" or "disabled").
+    """
     session = session_from_state(body.state)
     _require_in_progress(session)
     reply, user_message = await process_message(session, body.message, body.language)
-    return {
+    payload = {
         "state": _state(session),
         "response": reply.model_dump(),
         # The stored (PII-redacted) copy of the resident's message, so the
@@ -223,11 +231,14 @@ async def send_message(body: IntakeMessageRequest):
         "user_message": user_message.model_dump(),
         "status": session.status.value,
     }
+    if degraded := defense_degraded():
+        payload["degraded"] = degraded
+    return payload
 
 
 # ── Results / plan / share ───────────────────────────────────────────
 
-@router.post("/results")
+@router.post("/results", dependencies=[Depends(limit("intake_read"))])
 async def get_results(body: StateRequest):
     """Hydrate results for a client-held intake state. No model calls.
 
@@ -289,7 +300,7 @@ async def get_results(body: StateRequest):
     }
 
 
-@router.post("/plan")
+@router.post("/plan", dependencies=[Depends(limit("intake_plan"))])
 async def build_plan(body: StateRequest):
     """Build the ordered plan for a completed intake and return it in the state.
 
@@ -334,7 +345,7 @@ def _share_html(services: list, origin: str, extra: int) -> str:
     return f"<h2>Your {html.escape(get_city().app_name)} matches</h2><ol>{items}</ol>{more}"
 
 
-@router.post("/share")
+@router.post("/share", dependencies=[Depends(limit("share"))])
 async def share_results(body: ShareRequest):
     """Send a list of catalog services to the resident via SMS or email.
 
@@ -346,6 +357,7 @@ async def share_results(body: ShareRequest):
     services = [svc for svc in (catalog.get_service_by_id(sid) for sid in ids) if svc]
     if not services:
         raise HTTPException(status_code=400, detail="No matching services to share.")
+    await limit_recipient(body.channel, body.recipient)
 
     origin = get_settings().public_origin.rstrip("/")
     shown = services[:_MAX_SHARED_SERVICES]
@@ -392,6 +404,9 @@ async def get_voice_config():
         "mode": "realtime_audio" if settings.realtime_audio_enabled else "intercepted_text",
         "raw_audio_allowed": settings.allow_raw_audio_stream,
         "live_ai": settings.use_live_ai,
+        # Breakers and budgets: may force "intercepted_text" and add
+        # degraded / max_session_seconds / idle_seconds.
+        **await voice_config_overrides(),
     }
 
 
@@ -411,7 +426,9 @@ def _require_realtime_debug_enabled() -> None:
         raise HTTPException(status_code=404, detail="Not found")
 
 
-@router.post("/realtime/client-secret", dependencies=[Depends(_require_raw_audio_voice)])
+@router.post("/realtime/client-secret", dependencies=[
+    Depends(_require_raw_audio_voice), Depends(limit("voice_mint")), Depends(voice_reservation),
+])
 async def create_realtime_client_secret(body: RealtimeSecretRequest):
     """Create an ephemeral Realtime client secret for browser voice intake.
 
@@ -497,7 +514,9 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
     }
 
 
-@router.post("/realtime/tool", dependencies=[Depends(_require_raw_audio_voice)])
+@router.post("/realtime/tool", dependencies=[
+    Depends(_require_raw_audio_voice), Depends(limit("voice_tool")),
+])
 async def run_realtime_tool(body: RealtimeToolRequest):
     """Execute a Realtime tool call against the client-sent state."""
     session = session_from_state(body.state)
@@ -507,7 +526,9 @@ async def run_realtime_tool(body: RealtimeToolRequest):
     return {"state": _state(session), "call_id": body.call_id, **result}
 
 
-@router.post("/realtime/transcript", dependencies=[Depends(_require_raw_audio_voice)])
+@router.post("/realtime/transcript", dependencies=[
+    Depends(_require_raw_audio_voice), Depends(limit("voice_tool")),
+])
 async def sync_realtime_transcript(body: RealtimeTranscriptRequest):
     """Add a committed Realtime transcript turn to the client-sent state."""
     session = session_from_state(body.state)
