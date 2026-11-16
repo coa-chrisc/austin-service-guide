@@ -226,7 +226,7 @@ Important limitations:
 - The bundled service data is seeded demo data for the Austin reference deployment, not an authoritative live catalog.
 - The server keeps no intake sessions; the browser tab holds the intake state, so there is nothing to recover if the tab is closed or "Start over" is used.
 - The service catalog (87 services) is demo data and **unverified**: no service records a verifier or verification date yet (`npm run validate:catalog` reports this).
-- No rate limiting or WAF. Default voice keeps audio on the device, but on-device recognition needs a recent Chromium browser with the language pack (other browsers get text only). The opt-in `realtime_audio` mode sends raw audio straight to OpenAI, where it cannot be redacted first. No OpenAI zero-data-retention agreement is in place.
+- No WAF, and the in-app rate limits and budgets count per server instance (SECURITY.md, section 10). Default voice keeps audio on the device, but on-device recognition needs a recent Chromium browser with the language pack (other browsers get text only). The opt-in `realtime_audio` mode sends raw audio straight to OpenAI, where it cannot be redacted first. No OpenAI zero-data-retention agreement is in place.
 - Admin authentication is simulated for demonstration.
 - Analytics and reports use demo/generated data.
 - SMS and email send paths stub successfully unless credentials are configured.

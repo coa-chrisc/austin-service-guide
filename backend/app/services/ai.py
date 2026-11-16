@@ -22,6 +22,9 @@ from copy import deepcopy
 from typing import Any
 
 from app.config import get_settings
+from app.defense.budget import ai_allowed
+from app.defense.messages import add_degraded_notice
+from app.defense.usage import metered, turn_may_continue
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
 from app.services.city import get_city
 from app.services.i18n import AI_NOTICE_I18N, ai_notice, redaction_notice
@@ -31,7 +34,7 @@ from app.services.matching import assess_risks, match_services
 from app.services.pii import redact
 from app.services.prompts import build_instructions
 from app.services.scenarios import check_crisis, crisis_response, scenario_first_followup
-from app.services.scripted import DEMO_STEPS, demo_flow, welcome_message
+from app.services.scripted import DEMO_STEPS, demo_flow, resume_scripted, welcome_message
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
 
@@ -70,7 +73,7 @@ async def start_session(
         if cleaned:
             session.extracted_profile.immediate_needs = cleaned[:20]
 
-    if get_settings().use_live_ai:
+    if await ai_allowed():
         greeting = IntakeMessage(
             role=MessageRole.assistant,
             content=await _live_greeting(session),
@@ -81,10 +84,16 @@ async def start_session(
         step = DEMO_STEPS[0]
         greeting = IntakeMessage(
             role=MessageRole.assistant,
-            content=step["message"],
+            # Live AI is configured but paused (budget or breaker): later
+            # turns may use it again, so keep the AI notice.
+            content=(
+                welcome_message(get_city(), ai_notice(session.language) or AI_NOTICE_I18N["en"])
+                if get_settings().use_live_ai else step["message"]
+            ),
             suggested_buttons=step["buttons"],
             progress_percent=step["progress"],
         )
+        add_degraded_notice(session, greeting)
     session.conversation.append(greeting)
     return session
 
@@ -125,7 +134,7 @@ async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMess
         session.scripted_turns_skipped += 1
         return scenario_followup
 
-    if get_settings().use_live_ai:
+    if await ai_allowed():
         try:
             return await _responses_flow(session)
         except Exception as exc:  # noqa: BLE001 — fall back on any SDK failure
@@ -143,7 +152,14 @@ async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMess
                 progress_percent=0,
             ))
 
-    return await demo_flow(session, user_text, _scripted_step_num(session))
+    if get_settings().use_live_ai:
+        # Live AI is configured but paused (budget, breaker) or failing: the
+        # earlier turns were with the model, so the user-turn count says
+        # nothing about which scripted question comes next.
+        reply = await resume_scripted(session, user_text)
+    else:
+        reply = await demo_flow(session, user_text, _scripted_step_num(session))
+    return add_degraded_notice(session, reply)
 
 
 def _scripted_step_num(session: IntakeSession) -> int:
@@ -214,7 +230,7 @@ def _openai_client():
     """
     from openai import AsyncOpenAI
 
-    return AsyncOpenAI(api_key=get_settings().openai_api_key)
+    return metered(AsyncOpenAI(api_key=get_settings().openai_api_key), "intake")
 
 
 async def _live_greeting(session: IntakeSession) -> str:
@@ -258,7 +274,7 @@ async def _live_greeting(session: IntakeSession) -> str:
         # The model dropped the AI disclosure; never send a greeting without it.
         text = f"{text}\n\n{notice or AI_NOTICE_I18N['en']}"
     # Live AI is on here, so the fallback greeting keeps the AI notice.
-    return text or welcome_message(get_city(), AI_NOTICE_I18N["en"])
+    return text or welcome_message(get_city(), notice or AI_NOTICE_I18N["en"])
 
 
 def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:
@@ -299,7 +315,8 @@ async def _responses_flow(session: IntakeSession) -> IntakeMessage:
     iterations = 0
     final_text = ""
 
-    while iterations < settings.openai_max_tool_iterations:
+    # turn_may_continue: OPENAI_MAX_TOKENS_PER_TURN and the budgets.
+    while iterations < settings.openai_max_tool_iterations and turn_may_continue(client):
         response = await client.responses.create(
             model=settings.openai_model,
             instructions=build_instructions(session),

@@ -3,6 +3,7 @@
 /* ------------------------------------------------------------------ */
 
 import { getAdminToken } from "./adminToken";
+import { ensureDeviceToken } from "./defense";
 import type {
   EligibilityOverrides,
   EligibilityPayload,
@@ -39,6 +40,16 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 /* ---- generic request helper ---- */
 
+/** Machine-readable fields of a defense refusal (backend/app/defense/limits.py). */
+export interface ApiErrorInfo {
+  /** e.g. "rate_limited", "challenge_required", "voice_unavailable". */
+  code?: string;
+  /** Seconds until the limit resets (429). */
+  retryAfter?: number;
+  /** The rate-limit policy that refused, e.g. "intake_message". */
+  policy?: string;
+}
+
 /** One validation problem from a 409/422 response: `loc` is the field path. */
 export interface FieldIssue {
   type: string;
@@ -47,14 +58,30 @@ export interface FieldIssue {
 }
 
 export class ApiError extends Error {
+  public code?: string;
+  public retryAfter?: number;
+  public policy?: string;
+
   constructor(
     public status: number,
     message: string,
     /** Field-level problems when the server sent a list detail (422/409). */
     public issues: FieldIssue[] = [],
+    info: ApiErrorInfo = {},
   ) {
     super(message);
     this.name = "ApiError";
+    this.code = info.code;
+    this.retryAfter = info.retryAfter;
+    this.policy = info.policy;
+  }
+}
+
+/** 429 from a rate limit: `message` is resident-ready copy, `retryAfter` is set. */
+export class RateLimitedError extends ApiError {
+  constructor(status: number, message: string, info: ApiErrorInfo) {
+    super(status, message, [], info);
+    this.name = "RateLimitedError";
   }
 }
 
@@ -66,14 +93,25 @@ function isIssue(value: unknown): value is FieldIssue {
 // FastAPI errors arrive as {"detail": ...}. Surface a string detail as the
 // message so pages never render raw JSON; a list detail (validation) becomes
 // field issues plus its first message; anything else gets a generic line.
+// Defense refusals add {"code", "policy", "retry_after"}.
 function errorDetail(
   body: string,
   status: number,
-): { message: string; issues: FieldIssue[] } {
+): { message: string; issues: FieldIssue[]; info: ApiErrorInfo } {
   try {
-    const parsed = JSON.parse(body) as { detail?: unknown };
+    const parsed = JSON.parse(body) as {
+      detail?: unknown;
+      code?: unknown;
+      policy?: unknown;
+      retry_after?: unknown;
+    };
+    const info: ApiErrorInfo = {
+      code: typeof parsed?.code === "string" ? parsed.code : undefined,
+      policy: typeof parsed?.policy === "string" ? parsed.policy : undefined,
+      retryAfter: typeof parsed?.retry_after === "number" ? parsed.retry_after : undefined,
+    };
     if (typeof parsed?.detail === "string") {
-      return { message: parsed.detail, issues: [] };
+      return { message: parsed.detail, issues: [], info };
     }
     if (Array.isArray(parsed?.detail)) {
       const issues = parsed.detail.filter(isIssue).map((i) => ({
@@ -81,12 +119,18 @@ function errorDetail(
         loc: i.loc,
         msg: i.msg,
       }));
-      if (issues.length) return { message: issues[0].msg, issues };
+      if (issues.length) return { message: issues[0].msg, issues, info };
     }
+    return { message: `Request failed (${status}).`, issues: [], info };
   } catch {
     // non-JSON body
   }
-  return { message: `Request failed (${status}).`, issues: [] };
+  return { message: `Request failed (${status}).`, issues: [], info: {} };
+}
+
+function retryAfterHeader(res: Response): number | undefined {
+  const seconds = Number(res.headers.get("Retry-After"));
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
 }
 
 async function apiRequest<T>(
@@ -114,14 +158,18 @@ async function apiRequest<T>(
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      const { message, issues } = errorDetail(text, res.status);
+      const { message, issues, info } = errorDetail(text, res.status);
       // Optional access-code gate (private demo deployments): the cookie
       // expired or was revoked, so send the visitor back to the code form.
       if (res.status === 401 && message === "Access code required.") {
         const here = window.location.pathname + window.location.search;
         window.location.assign(`/access?next=${encodeURIComponent(here)}`);
       }
-      throw new ApiError(res.status, message, issues);
+      info.retryAfter ??= retryAfterHeader(res);
+      if (res.status === 429 && info.code === "rate_limited") {
+        throw new RateLimitedError(res.status, message, info);
+      }
+      throw new ApiError(res.status, message, issues, info);
     }
     if (res.status === 204) return undefined as unknown as T;
     return res.json() as Promise<T>;
@@ -132,6 +180,29 @@ async function apiRequest<T>(
     throw err;
   } finally {
     if (timeoutId) window.clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * AI-backed requests (chat, voice, plan, share): make sure the browser has
+ * a device token first (a no-op behind the access gate), and retry once if
+ * the server still asks for the challenge (expired or rotated token).
+ */
+async function aiRequest<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+  options: { timeoutMs?: number; headers?: Record<string, string> } = {},
+): Promise<T> {
+  await ensureDeviceToken();
+  try {
+    return await apiRequest<T>(method, path, body, options);
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 403 && err.code === "challenge_required") {
+      await ensureDeviceToken(true);
+      return apiRequest<T>(method, path, body, options);
+    }
+    throw err;
   }
 }
 
@@ -163,7 +234,7 @@ export interface PersonaScriptTurn {
 }
 
 export function loadPersona(personaId: string) {
-  return apiRequest<{
+  return aiRequest<{
     state: IntakeState;
     language: string;
     entry_source: string;
@@ -189,7 +260,7 @@ export function startIntake(
   if (lifeEvent) body.life_event = lifeEvent;
   if (focus && focus.length > 0) body.focus = focus;
   body.mode = mode;
-  return apiRequest<{
+  return aiRequest<{
     state: IntakeState;
     language: string;
     greeting: IntakeMessage | null;
@@ -201,12 +272,14 @@ export function sendIntakeMessage(
   message: string,
   language = "en",
 ) {
-  return apiRequest<{
+  return aiRequest<{
     state: IntakeState;
     response: IntakeMessage;
     /** Stored, PII-redacted copy of what the resident typed. */
     user_message: IntakeMessage;
     status: string;
+    /** Set when the AI is paused for this request and the guided flow answered. */
+    degraded?: "ai_budget" | "disabled";
   }>("POST", "/api/v1/intake/message", { state, message, language });
 }
 
@@ -222,6 +295,11 @@ export interface VoiceConfig {
   mode: VoicePipelineMode;
   raw_audio_allowed: boolean;
   live_ai: boolean;
+  /** Why voice is limited right now (budget, breaker or kill switch); null when healthy. */
+  degraded?: "disabled" | "ai_budget" | "voice_budget" | null;
+  /** Realtime voice session caps, for the session timers. */
+  max_session_seconds?: number;
+  idle_seconds?: number;
 }
 
 /** Deployment voice settings. No body and no resident data. */
@@ -278,7 +356,7 @@ export function createRealtimeClientSecret(
   language = "en",
   traceId = "",
 ) {
-  return apiRequest<RealtimeClientSecretResponse>(
+  return aiRequest<RealtimeClientSecretResponse>(
     "POST",
     "/api/v1/intake/realtime/client-secret",
     { state, language, trace_id: traceId },
@@ -442,7 +520,7 @@ export function getIntakeResults(state: IntakeState) {
 
 /** Build the ordered plan for a completed intake; returns it inside the state. */
 export function buildIntakePlan(state: IntakeState) {
-  return apiRequest<{ state: IntakeState; plan: IntakePlan }>(
+  return aiRequest<{ state: IntakeState; plan: IntakePlan }>(
     "POST",
     "/api/v1/intake/plan",
     { state },
@@ -460,7 +538,7 @@ export function shareIntakeResults(body: {
   service_ids: string[];
   language?: string;
 }) {
-  return apiRequest<{
+  return aiRequest<{
     ok: boolean;
     demo: boolean;
     channel: string;

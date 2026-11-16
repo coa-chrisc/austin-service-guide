@@ -11,8 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
+from app.defense.keys import check_defense_config
+from app.defense.limits import DefenseRefusal, refusal_handler
 from app.middleware import IntakeBodyLimitMiddleware
-from app.routers import about, admin, intake, partner_import, services
+from app.routers import about, admin, defense, intake, partner_import, services
 from app.security_headers import SecurityHeadersMiddleware
 from app.services.catalog import load_seed_data
 from app.services.city import check_env_file, get_city
@@ -28,6 +30,7 @@ async def lifespan(app: FastAPI):
 
 check_env_file()
 settings = get_settings()
+check_defense_config()
 city = get_city()
 api_title = settings.app_name or f"{city.app_name} API"
 
@@ -69,7 +72,11 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────
 
+# Rate-limit, budget and breaker refusals: {"detail", "code", ...} + Retry-After.
+app.add_exception_handler(DefenseRefusal, refusal_handler)
+
 app.include_router(intake.router)
+app.include_router(defense.router)
 app.include_router(services.router)
 app.include_router(admin.router)
 app.include_router(partner_import.router)
