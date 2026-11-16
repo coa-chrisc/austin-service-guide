@@ -17,6 +17,7 @@ import { buildIntakePlan, getVoiceConfig, startIntake, type VoicePipelineMode } 
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import {
   clearIntakeState,
+  demoPersonaId,
   ensureIntakePlan,
   hasCompletedPlan,
   loadIntakeState,
@@ -25,6 +26,12 @@ import {
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import type { IntakeMessage } from "@/types";
 import { BELOW_HEADER } from "@/components/layout/viewport";
+import {
+  onDeviceVoiceBlocked,
+  probeOnDeviceVoice,
+  type OnDeviceAvailability,
+} from "@/hooks/useOnDeviceVoiceIntake";
+import { toBcp47 } from "@/lib/speech";
 
 type IntakeMode = "text" | "voice";
 type Phase = "checking" | "choosing" | "recovering" | "starting" | "ready";
@@ -158,6 +165,8 @@ export default function Intake() {
   // Deployment voice mode, for the voice card's privacy note. Null until known;
   // a failed fetch falls back to the private default, as useIntakeVoice does.
   const [voiceMode, setVoiceMode] = useState<VoicePipelineMode | null>(null);
+  // On-device speech support (intercepted_text mode only). Null until known.
+  const [onDeviceVoice, setOnDeviceVoice] = useState<OnDeviceAvailability | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,10 +177,17 @@ export default function Intake() {
       .catch(() => {
         if (!cancelled) setVoiceMode("intercepted_text");
       });
+    probeOnDeviceVoice(toBcp47(getStoredLanguage())).then((a) => {
+      if (!cancelled) setOnDeviceVoice(a);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
+  // Voice leads unless this browser can't do on-device speech; raw-audio
+  // voice runs in the cloud, so it always can.
+  const voiceUnavailable =
+    voiceMode === "intercepted_text" && onDeviceVoice !== null && onDeviceVoiceBlocked(onDeviceVoice);
   const isStartingRef = useRef(false);
   const intakeRequestIdRef = useRef(0);
 
@@ -201,6 +217,12 @@ export default function Intake() {
     // The intake lives in this tab's sessionStorage: offer the finished
     // plan, or pick an unfinished conversation back up.
     const existing = loadIntakeState();
+    // A demo scenario's plan is not the visitor's own: start them fresh.
+    if (existing && demoPersonaId(existing)) {
+      clearIntakeState();
+      setPhase("choosing");
+      return;
+    }
     if (existing && hasCompletedPlan(existing)) {
       setPlanSummary(existing.plan?.summary || null);
       setPhase("recovering");
@@ -374,6 +396,98 @@ export default function Intake() {
   }
 
   if (phase === "choosing") {
+    const voiceTile = (
+      <Button
+        variant={voiceUnavailable ? "outlined" : "contained"}
+        size="large"
+        fullWidth
+        disableElevation
+        onClick={() => beginNewIntake("voice")}
+        sx={{
+          minHeight: 96,
+          // Choice tiles, not pill CTAs: card radius.
+          borderRadius: (theme) => theme.shape.radius.card,
+          justifyContent: "flex-start",
+          px: 3,
+          py: 2.25,
+          textAlign: "left",
+          alignItems: "flex-start",
+          flexDirection: "column",
+          gap: 0.5,
+          ...(voiceUnavailable ? { bgcolor: "background.paper" } : {}),
+          textTransform: "none",
+          fontWeight: 600,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <MicIcon />
+          <Typography component="span" variant="h6" fontWeight={800}>
+            Voice conversation
+          </Typography>
+        </Box>
+        <Typography
+          component="span"
+          variant="body2"
+          sx={{ opacity: 0.9 }}
+        >
+          Talk naturally with the guide.
+        </Typography>
+        {voiceUnavailable ? (
+          <Typography component="span" variant="caption" color="text.secondary">
+            Private on-device voice isn't available in this browser
+            {onDeviceVoice === "unavailable" ? " for this language" : ""}. Text chat works everywhere.
+          </Typography>
+        ) : voiceMode && (
+          <Typography
+            component="span"
+            variant="caption"
+            sx={{ opacity: 0.85 }}
+          >
+            {voiceMode === "realtime_audio"
+              ? "Your voice is sent to OpenAI to understand you."
+              : "Your speech becomes text on this device. Only the text is sent."}
+          </Typography>
+        )}
+      </Button>
+    );
+    const textTile = (
+      <Button
+        variant={voiceUnavailable ? "contained" : "outlined"}
+        size="large"
+        fullWidth
+        disableElevation
+        onClick={() => beginNewIntake("text")}
+        sx={{
+          minHeight: 96,
+          // Choice tiles, not pill CTAs: card radius.
+          borderRadius: (theme) => theme.shape.radius.card,
+          justifyContent: "flex-start",
+          px: 3,
+          py: 2.25,
+          textAlign: "left",
+          alignItems: "flex-start",
+          flexDirection: "column",
+          gap: 0.5,
+          ...(voiceUnavailable ? {} : { bgcolor: "background.paper" }),
+          textTransform: "none",
+          fontWeight: 600,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <ChatBubbleOutlineIcon />
+          <Typography component="span" variant="h6" fontWeight={800}>
+            Text chat
+          </Typography>
+        </Box>
+        <Typography
+          component="span"
+          variant="body2"
+          sx={voiceUnavailable ? { opacity: 0.9 } : { color: "text.secondary" }}
+        >
+          Type messages at your pace.
+        </Typography>
+      </Button>
+    );
     return (
       <Box
         sx={{
@@ -416,88 +530,18 @@ export default function Intake() {
             Would you like to talk by voice or type messages?
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <Button
-              variant="contained"
-              size="large"
-              fullWidth
-              disableElevation
-              onClick={() => beginNewIntake("voice")}
-              sx={{
-                minHeight: 96,
-                // Choice tiles, not pill CTAs: card radius.
-                borderRadius: (theme) => theme.shape.radius.card,
-                justifyContent: "flex-start",
-                px: 3,
-                py: 2.25,
-                textAlign: "left",
-                alignItems: "flex-start",
-                flexDirection: "column",
-                gap: 0.5,
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <MicIcon />
-                <Typography component="span" variant="h6" fontWeight={800}>
-                  Voice conversation
-                </Typography>
-              </Box>
-              <Typography
-                component="span"
-                variant="body2"
-                sx={{ opacity: 0.9 }}
-              >
-                Talk naturally with the guide.
-              </Typography>
-              {voiceMode && (
-                <Typography
-                  component="span"
-                  variant="caption"
-                  sx={{ opacity: 0.85 }}
-                >
-                  {voiceMode === "realtime_audio"
-                    ? "Your voice is sent to OpenAI to understand you."
-                    : "Your speech becomes text on this device. Only the text is sent."}
-                </Typography>
-              )}
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              fullWidth
-              disableElevation
-              onClick={() => beginNewIntake("text")}
-              sx={{
-                minHeight: 96,
-                // Choice tiles, not pill CTAs: card radius.
-                borderRadius: (theme) => theme.shape.radius.card,
-                justifyContent: "flex-start",
-                px: 3,
-                py: 2.25,
-                textAlign: "left",
-                alignItems: "flex-start",
-                flexDirection: "column",
-                gap: 0.5,
-                bgcolor: "background.paper",
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <ChatBubbleOutlineIcon />
-                <Typography component="span" variant="h6" fontWeight={800}>
-                  Text chat
-                </Typography>
-              </Box>
-              <Typography
-                component="span"
-                variant="body2"
-                color="text.secondary"
-              >
-                Type messages at your pace.
-              </Typography>
-            </Button>
+            {/* The primary tile comes first, in reading and tab order. */}
+            {voiceUnavailable ? (
+              <>
+                {textTile}
+                {voiceTile}
+              </>
+            ) : (
+              <>
+                {voiceTile}
+                {textTile}
+              </>
+            )}
           </Stack>
         </Box>
       </Box>

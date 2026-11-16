@@ -119,6 +119,8 @@ export interface ResidentProfile {
 
 export interface RiskFlag {
   risk_type: string;
+  /** Display label from /results; older payloads may lack it. */
+  label?: string;
   severity: RiskSeverity;
   description: string;
   contributing_factors: string[];
@@ -183,6 +185,9 @@ export interface MapPin {
   category: string;
   latitude: number;
   longitude: number;
+  /** Location's own name and street address; may be empty. */
+  location_name?: string;
+  address?: string;
   open_now?: boolean | null;
   next_open?: string | null;
 }

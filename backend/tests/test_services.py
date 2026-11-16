@@ -73,3 +73,11 @@ def test_search_maps_everyday_words_to_categories(client):
     assert all("housing" in s["categories"] or "rent" in s["description"].lower() for s in items("rent"))
     assert any("housing" in s["categories"] for s in items("rent help"))
     assert any("healthcare" in s["categories"] for s in items("i need a doctor"))
+
+
+def test_map_pins_name_their_location(client):
+    """The map list tells a service's locations apart by place, not name."""
+    pins = client.get("/api/v1/map/services").json()
+    assert pins
+    for pin in pins:
+        assert pin["location_name"] or pin["address"], pin["id"]

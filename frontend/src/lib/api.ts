@@ -108,6 +108,10 @@ export interface PersonaSummary {
   id: string;
   label: string;
   language: string;
+  /** One sentence about the resident, for the launcher card. */
+  summary: string;
+  /** Two or three short tags naming what the scenario shows. */
+  shows: string[];
 }
 
 export function getPersonas() {

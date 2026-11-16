@@ -9,8 +9,7 @@ import Skeleton from "@mui/material/Skeleton";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
+import Tooltip from "@mui/material/Tooltip";
 import RuleIcon from "@mui/icons-material/Rule";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
@@ -25,7 +24,6 @@ export default function AdminEligibility() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [snackbar, setSnackbar] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,16 +42,6 @@ export default function AdminEligibility() {
       cancelled = true;
     };
   }, []);
-
-  const handleToggle = (id: string) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, is_active: !r.is_active } : r)),
-    );
-    const rule = rules.find((r) => r.id === id);
-    setSnackbar(
-      `Rule "${rule?.name}" ${rule?.is_active ? "paused" : "reactivated"}`,
-    );
-  };
 
   const categories = useMemo(
     () => Array.from(new Set(rules.map((r) => r.category))).sort(),
@@ -155,11 +143,20 @@ export default function AdminEligibility() {
       align: "center",
       headerAlign: "center",
       renderCell: (params) => (
-        <Switch
-          checked={params.value}
-          onChange={() => handleToggle(params.row.id)}
-          size="small"
-        />
+        <Tooltip title="Editing rules here is on the roadmap">
+          <span>
+            <Switch
+              checked={params.value}
+              disabled
+              size="small"
+              slotProps={{
+                input: {
+                  "aria-label": `${params.row.name}: ${params.value ? "active" : "paused"}`,
+                },
+              }}
+            />
+          </span>
+        </Tooltip>
       ),
       sortable: false,
     },
@@ -174,8 +171,8 @@ export default function AdminEligibility() {
         </Typography>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Rules the matching engine evaluates against the resident profile.
-        Toggling a rule pauses it from future matches.
+        Illustrative rule view (sample data). Editing rules here is on the
+        roadmap.
       </Typography>
 
       {/* -- summary chips ----------------------------------------- */}
@@ -267,29 +264,19 @@ export default function AdminEligibility() {
             <DataGrid
               rows={filtered}
               columns={columns}
-              getRowHeight={() => 70}
+              getRowHeight={() => "auto"}
+              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
               pageSizeOptions={[10, 25]}
               disableRowSelectionOnClick
-              sx={{ border: "none" }}
+              sx={{
+                border: "none",
+                "& .MuiDataGrid-cell": { py: 1, display: "flex", alignItems: "center" },
+              }}
               autoHeight
             />
           )}
         </CardContent>
       </Card>
-
-      <Snackbar
-        open={!!snackbar}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(null)}
-      >
-        <Alert
-          onClose={() => setSnackbar(null)}
-          severity="info"
-          variant="filled"
-        >
-          {snackbar}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

@@ -23,11 +23,15 @@ import AdminEligibility from "@/pages/admin/AdminEligibility";
 import AdminDemandMap from "@/pages/admin/AdminDemandMap";
 import AdminReports from "@/pages/admin/AdminReports";
 import AdminPartnerGaps from "@/pages/admin/AdminPartnerGaps";
+import ReportView from "@/pages/admin/reports/ReportView";
 import Box from "@mui/material/Box";
 
 export default function App() {
   return (
     <Routes>
+      {/* Printable report: outside the admin shell so only the report prints. */}
+      <Route path="/admin/reports/:id" element={<ReportView />} />
+
       {/* Admin routes */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />

@@ -106,6 +106,12 @@ export function hasCompletedPlan(state = loadIntakeState()): boolean {
   );
 }
 
+/** The demo persona id when the intake came from the scenario launcher. */
+export function demoPersonaId(state = loadIntakeState()): string | null {
+  const source = state?.entry_source ?? "";
+  return source.startsWith("persona:") ? source.slice("persona:".length) : null;
+}
+
 /**
  * Run one state-changing intake request. Requests are serialized so each
  * one sends the latest saved state; the returned state is saved unless the

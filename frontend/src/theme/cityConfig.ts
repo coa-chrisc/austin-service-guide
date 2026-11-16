@@ -74,6 +74,8 @@ export interface ServiceGuideSettings {
   timezone?: string;
   /** Selector languages in display order; must include "en". Default: all supported. */
   languages?: string[];
+  /** Results page: show the benefit-estimate banner and all-matches hero. Default: false. */
+  showBenefitEstimates?: boolean;
   shortName?: string;
   description?: string;
   copy?: { tagline?: string; footerDisclaimer?: string; privacyNotice?: string };
@@ -100,6 +102,7 @@ export interface CityConfig {
 export interface ResolvedServiceGuide {
   timezone: string;
   languages: string[];
+  showBenefitEstimates: boolean;
   shortName: string;
   description: string;
   copy: { tagline: string; footerDisclaimer: string; privacyNotice: string };
@@ -144,6 +147,7 @@ export function resolveServiceGuide(config: CityConfig): ResolvedServiceGuide {
   return {
     timezone: sg.timezone ?? "UTC",
     languages: sg.languages ?? [...SUPPORTED_LANGUAGES],
+    showBenefitEstimates: sg.showBenefitEstimates ?? false,
     shortName: sg.shortName ?? agency.shortName,
     description:
       sg.description ??

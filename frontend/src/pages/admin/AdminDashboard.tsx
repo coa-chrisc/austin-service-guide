@@ -1,80 +1,41 @@
 import { useEffect, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Skeleton from "@mui/material/Skeleton";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
-import PeopleIcon from "@mui/icons-material/People";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import ForumIcon from "@mui/icons-material/Forum";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import SupportIcon from "@mui/icons-material/Support";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { BarChart } from "@mui/x-charts/BarChart";
-import { PieChart } from "@mui/x-charts/PieChart";
 
 import { getAdminAnalytics, getAdminLanguages } from "../../lib/api";
-import type { AnalyticsOverview } from "../../types";
-
-/* ---------- mock recent activity ---------------------------------- */
-const RECENT_ACTIVITY = [
-  {
-    id: 1,
-    text: "New resident signed up",
-    time: "5 min ago",
-    color: "success.main",
-  },
-  {
-    id: 2,
-    text: "Intake session completed — 4 services matched",
-    time: "12 min ago",
-    color: "info.main",
-  },
-  {
-    id: 3,
-    text: 'Service "SNAP Benefits" updated by admin',
-    time: "28 min ago",
-    color: "warning.main",
-  },
-  {
-    id: 4,
-    text: "Language switch detected: EN -> ES",
-    time: "45 min ago",
-    color: "secondary.main",
-  },
-  {
-    id: 5,
-    text: "Crisis keyword flagged in session #4812", // theme-exempt: not a color (session id)
-    time: "1 hr ago",
-    color: "error.main",
-  },
-  {
-    id: 6,
-    text: "CSV export requested by staff user",
-    time: "2 hr ago",
-    color: "text.secondary",
-  },
-];
+import { categoryLabel } from "../../lib/categoryLabel";
+import { countCell, isSmallCell, pct, shareCell, shortDay } from "./reports/format";
+import type { LanguageRow, Overview } from "./reports/reportData";
 
 /* ---------- metric card component --------------------------------- */
 interface MetricCardProps {
   title: string;
-  value: string | number;
-  change?: number;
+  value: string;
+  detail?: string;
   icon: React.ReactNode;
   loading?: boolean;
 }
 
-function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
-  const positive = (change ?? 0) >= 0;
+function MetricCard({ title, value, detail, icon, loading }: MetricCardProps) {
   return (
     <Card sx={{ height: "100%" }}>
       <CardContent sx={{ p: 3 }}>
@@ -93,45 +54,18 @@ function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
                 mb: 1,
               }}
             >
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                fontWeight={500}
-              >
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 {title}
               </Typography>
               <Box sx={{ color: "text.secondary", opacity: 0.5 }}>{icon}</Box>
             </Box>
             <Typography variant="h4" fontWeight={700} sx={{ mb: 0.5 }}>
-              {typeof value === "number" ? value.toLocaleString() : value}
+              {value}
             </Typography>
-            {change !== undefined && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                {positive ? (
-                  <TrendingUpIcon
-                    sx={{ fontSize: 16, color: "success.main" }}
-                  />
-                ) : (
-                  <TrendingDownIcon
-                    sx={{ fontSize: 16, color: "error.main" }}
-                  />
-                )}
-                <Typography
-                  variant="caption"
-                  color={positive ? "success.main" : "error.main"}
-                  fontWeight={600}
-                >
-                  {positive ? "+" : ""}
-                  {change}%
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ ml: 0.5 }}
-                >
-                  vs last period
-                </Typography>
-              </Box>
+            {detail && (
+              <Typography variant="caption" color="text.secondary">
+                {detail}
+              </Typography>
             )}
           </>
         )}
@@ -143,88 +77,44 @@ function MetricCard({ title, value, change, icon, loading }: MetricCardProps) {
 /* ---------- main component ---------------------------------------- */
 export default function AdminDashboard() {
   const theme = useTheme();
-  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
-  const [languageData, setLanguageData] = useState<
-    Array<{ language: string; sessions: number; percentage: number }>
-  >([]);
+  const [analytics, setAnalytics] = useState<Overview | null>(null);
+  const [languages, setLanguages] = useState<LanguageRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
+    (async () => {
       try {
         const [analyticsRes, langRes] = await Promise.all([
           getAdminAnalytics(),
           getAdminLanguages(),
         ]);
         if (cancelled) return;
-        setAnalytics(analyticsRes);
-        // langRes could be an array (LanguageUsageItem[]) per existing api
-        if (Array.isArray(langRes)) {
-          setLanguageData(
-            (
-              langRes as Array<{
-                language_name?: string;
-                language?: string;
-                session_count?: number;
-                sessions?: number;
-                percentage: number;
-              }>
-            ).map((l) => ({
-              language: l.language_name ?? l.language ?? "",
-              sessions: l.session_count ?? l.sessions ?? 0,
-              percentage: l.percentage,
-            })),
-          );
-        } else {
-          const usage =
-            (
-              langRes as {
-                usage: Array<{
-                  language: string;
-                  sessions: number;
-                  percentage: number;
-                }>;
-              }
-            ).usage ?? [];
-          setLanguageData(usage);
-        }
+        setAnalytics(analyticsRes as Overview);
+        setLanguages(langRes as LanguageRow[]);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
+        if (!cancelled) setLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    load();
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  /* -- chart data ---------------------------------------------------- */
+  /* -- figures ------------------------------------------------------- */
+  const total = analytics?.total_sessions ?? 0;
+  const previous = analytics?.monthly_trend?.find((t) => t.months_ago === 1);
   const dailySessions = analytics?.daily_sessions ?? [];
-  const sessionDates = dailySessions.map((d) => d.date);
-  const sessionCounts = dailySessions.map((d) => d.count);
-
-  const topCategories = (analytics?.top_categories ?? []).slice(0, 8) as Array<{
+  const topCategories = ((analytics?.top_categories ?? []) as Array<{
     name?: string;
-    category?: string;
     count?: number;
-    match_count?: number;
-    color?: string;
-  }>;
-  const catNames = topCategories.map((c) => c.name ?? c.category ?? "");
-  const catCounts = topCategories.map((c) => c.count ?? c.match_count ?? 0);
-  const catColors = topCategories.map(
-    (c) => c.color ?? theme.palette.primary.main,
-  );
-
-  const pieData = languageData.map((l, i) => ({
-    id: i,
-    color: theme.palette.brand.seriesAt(i),
-    value: l.sessions,
-    label: l.language,
-  }));
+  }>).slice(0, 8);
+  const unmetNeeds = (analytics?.unmet_needs ?? []).slice(0, 6);
+  const shownLanguages = languages.filter((l) => !isSmallCell(l.session_count));
 
   return (
     <Box>
@@ -232,45 +122,51 @@ export default function AdminDashboard() {
         Dashboard
       </Typography>
 
+      {loadError && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          Dashboard data could not be loaded. Refresh the page to try again.
+        </Alert>
+      )}
+
       {/* -- metric cards -------------------------------------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
-            title="Total Residents"
-            value={analytics?.total_residents ?? 0}
-            change={12}
-            icon={<PeopleIcon />}
+            title="Sessions (30 days)"
+            value={countCell(total)}
+            detail={previous ? `${countCell(previous.sessions)} in the previous 30 days` : undefined}
+            icon={<ForumIcon />}
             loading={loading}
           />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <MetricCard
-            title="New Signups (7d)"
-            value={analytics ? Math.round(analytics.total_residents * 0.04) : 0}
-            change={8}
-            icon={<PersonAddIcon />}
-            loading={loading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Active Users (7d)"
-            value={analytics ? Math.round(analytics.total_residents * 0.35) : 0}
-            change={5}
-            icon={<AccessTimeIcon />}
-            loading={loading}
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <MetricCard
-            title="Completion Rate"
-            value={
-              analytics
-                ? `${(analytics.completion_rate * 100).toFixed(1)}%`
-                : "0%"
+            title="Completion rate"
+            value={analytics ? pct(analytics.completion_rate * 100) : "—"}
+            detail={
+              previous && previous.sessions > 0
+                ? `${pct((100 * previous.completed) / previous.sessions)} in the previous 30 days`
+                : "Sessions that reached results"
             }
-            change={3}
             icon={<CheckCircleIcon />}
+            loading={loading}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MetricCard
+            title="Crisis resources shown"
+            value={countCell(analytics?.crisis_resources_shown ?? 0)}
+            detail="Citywide count only, last 30 days"
+            icon={<SupportIcon />}
+            loading={loading}
+          />
+        </Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <MetricCard
+            title="Services in catalog"
+            value={countCell(analytics?.total_services ?? 0)}
+            detail="Live catalog, not yet staff-verified"
+            icon={<MenuBookIcon />}
             loading={loading}
           />
         </Grid>
@@ -278,12 +174,11 @@ export default function AdminDashboard() {
 
       {/* -- charts row ---------------------------------------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Sessions over time */}
         <Grid size={{ xs: 12, md: 8 }}>
-          <Card>
+          <Card sx={{ height: "100%" }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Sessions Over Time
+                Sessions per day
               </Typography>
               {loading ? (
                 <Skeleton variant="rectangular" height={300} />
@@ -292,51 +187,57 @@ export default function AdminDashboard() {
                   height={300}
                   series={[
                     {
-                      data: sessionCounts,
+                      data: dailySessions.map((d) => d.count),
                       label: "Sessions",
                       color: theme.palette.primary.main,
+                      showMark: false,
                     },
                   ]}
-                  xAxis={[{ data: sessionDates, scaleType: "band" }]}
+                  xAxis={[
+                    {
+                      data: dailySessions.map((d) => d.date),
+                      scaleType: "point",
+                      valueFormatter: (v: string) => shortDay(v),
+                      tickLabelInterval: (_v: unknown, i: number) => i % 4 === 0,
+                    },
+                  ]}
+                  slotProps={{ legend: { hidden: true } }}
                 />
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Language distribution */}
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ height: "100%" }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Language Distribution
+              <Typography variant="h6" fontWeight={600}>
+                Sessions by language
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Languages with fewer than 11 sessions are not charted.
               </Typography>
               {loading ? (
-                <Skeleton
-                  variant="circular"
-                  width={200}
-                  height={200}
-                  sx={{ mx: "auto" }}
-                />
+                <Skeleton variant="rectangular" height={280} sx={{ mt: 2 }} />
               ) : (
-                <PieChart
+                <BarChart
+                  layout="horizontal"
+                  height={300}
                   series={[
                     {
-                      data: pieData,
-                      innerRadius: 50,
-                      paddingAngle: 2,
-                      cornerRadius: 4,
+                      data: shownLanguages.map((l) => l.session_count),
+                      label: "Sessions",
+                      color: theme.palette.primary.main,
                     },
                   ]}
-                  height={320}
-                  margin={{ top: 10, right: 10, bottom: 110, left: 10 }}
-                  slotProps={{
-                    legend: {
-                      direction: "row",
-                      position: { vertical: "bottom", horizontal: "middle" },
-                      padding: 0,
+                  yAxis={[
+                    {
+                      data: shownLanguages.map((l) => l.language_name),
+                      scaleType: "band",
                     },
-                  }}
+                  ]}
+                  margin={{ left: 130, right: 16 }}
+                  slotProps={{ legend: { hidden: true } }}
                 />
               )}
             </CardContent>
@@ -346,12 +247,11 @@ export default function AdminDashboard() {
 
       {/* -- bottom row ---------------------------------------------- */}
       <Grid container spacing={3}>
-        {/* Top service categories */}
-        <Grid size={{ xs: 12, md: 7 }}>
-          <Card>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Card sx={{ height: "100%" }}>
             <CardContent sx={{ p: 3 }}>
               <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-                Top Service Categories
+                Top need categories
               </Typography>
               {loading ? (
                 <Skeleton variant="rectangular" height={300} />
@@ -361,44 +261,67 @@ export default function AdminDashboard() {
                   height={300}
                   series={[
                     {
-                      data: catCounts,
-                      label: "Matches",
-                      color: catColors[0] ?? theme.palette.primary.main,
+                      data: topCategories.map((c) => c.count ?? 0),
+                      label: "Sessions",
+                      color: theme.palette.primary.main,
                     },
                   ]}
-                  yAxis={[{ data: catNames, scaleType: "band" }]}
-                  xAxis={[{ label: "Matches" }]}
-                  margin={{ left: 170 }}
+                  yAxis={[
+                    {
+                      data: topCategories.map((c) => c.name ?? ""),
+                      scaleType: "band",
+                    },
+                  ]}
+                  margin={{ left: 150, right: 16 }}
+                  slotProps={{ legend: { hidden: true } }}
                 />
               )}
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Recent activity */}
-        <Grid size={{ xs: 12, md: 5 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <Card sx={{ height: "100%" }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
-                Recent Activity
+              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mb: 1 }}>
+                <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
+                  Top unmet needs
+                </Typography>
+                <Button
+                  size="small"
+                  component={RouterLink}
+                  to="/admin/reports/unmet-need-partner-gaps"
+                >
+                  Open the report
+                </Button>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                Needs residents named that had no open matching service.
               </Typography>
-              <List dense disablePadding>
-                {RECENT_ACTIVITY.map((item) => (
-                  <ListItem key={item.id} disableGutters sx={{ py: 1 }}>
-                    <ListItemIcon sx={{ minWidth: 28 }}>
-                      <FiberManualRecordIcon
-                        sx={{ fontSize: 10, color: item.color }}
-                      />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.text}
-                      secondary={item.time}
-                      primaryTypographyProps={{ variant: "body2" }}
-                      secondaryTypographyProps={{ variant: "caption" }}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              {loading ? (
+                <Skeleton variant="rectangular" height={260} sx={{ mt: 1 }} />
+              ) : (
+                <Table size="small" sx={{ mt: 1 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Need</TableCell>
+                      <TableCell>Category</TableCell>
+                      <TableCell align="right">Sessions</TableCell>
+                      <TableCell align="right">Share</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {unmetNeeds.map((n) => (
+                      <TableRow key={n.need}>
+                        <TableCell>{n.need}</TableCell>
+                        <TableCell>{categoryLabel(n.category)}</TableCell>
+                        <TableCell align="right">{countCell(n.sessions)}</TableCell>
+                        <TableCell align="right">{shareCell(n.sessions, total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </Grid>

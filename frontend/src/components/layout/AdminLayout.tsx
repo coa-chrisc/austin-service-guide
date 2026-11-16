@@ -19,6 +19,11 @@ import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
 import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
+import Link from "@mui/material/Link";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ButtonBase from "@mui/material/ButtonBase";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -34,9 +39,14 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import HistoryIcon from "@mui/icons-material/History";
 import BadgeIcon from "@mui/icons-material/Badge";
 import HomeIcon from "@mui/icons-material/Home";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useAuth } from "@/hooks/useAuth";
 
 const DRAWER_WIDTH = 260;
+
+const PRIVACY_DOC_URL =
+  "https://github.com/coa-chrisc/austin-service-guide/blob/main/docs/PRIVACY.md";
 
 interface NavItem {
   label: string;
@@ -52,7 +62,7 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
   {
     heading: "RESIDENTS",
     items: [
-      { label: "Residents", path: "/admin/residents", icon: <PeopleIcon /> },
+      { label: "Sample cases", path: "/admin/residents", icon: <PeopleIcon /> },
     ],
   },
   {
@@ -77,6 +87,11 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
       { label: "Equity", path: "/admin/equity", icon: <BalanceIcon /> },
       { label: "Demand Map", path: "/admin/demand-map", icon: <MapIcon /> },
       { label: "Languages", path: "/admin/languages", icon: <TranslateIcon /> },
+      {
+        label: "Partner Gaps",
+        path: "/admin/partner-gaps",
+        icon: <LinkOffIcon />,
+      },
     ],
   },
   {
@@ -95,7 +110,17 @@ export default function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { residentName, staffRole } = useAuth();
+  const { residentName, staffRole, logout } = useAuth();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  // Without a staff sign-in the console is the demo: a generic admin persona.
+  const displayName = (staffRole && residentName) || "Demo Staff";
+  const roleLabel = (staffRole ?? "admin").replace("_", " ").toUpperCase();
+
+  const closeMenuAndGo = (signOut: boolean) => {
+    setMenuAnchor(null);
+    if (signOut) logout();
+    navigate("/");
+  };
 
   const drawerContent = (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -149,7 +174,10 @@ export default function AdminLayout() {
             }
           >
             {section.items.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive =
+                item.path === "/admin"
+                  ? location.pathname === "/admin"
+                  : location.pathname.startsWith(item.path);
               return (
                 <ListItemButton
                   key={item.label}
@@ -255,18 +283,29 @@ export default function AdminLayout() {
               </IconButton>
             )}
             <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
-              Admin Console
+              Staff Console (demo)
             </Typography>
-            {staffRole && (
-              <Chip
-                label={staffRole.replace("_", " ").toUpperCase()}
-                size="small"
-                color="primary"
-                variant="outlined"
-                sx={{ mr: 2, fontWeight: 600, fontSize: 11 }}
-              />
-            )}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Chip
+              label={roleLabel}
+              size="small"
+              color="primary"
+              variant="outlined"
+              sx={{ mr: 2, fontWeight: 600, fontSize: 11 }}
+            />
+            <ButtonBase
+              onClick={(e) => setMenuAnchor(e.currentTarget)}
+              aria-label="Account menu"
+              aria-haspopup="menu"
+              aria-expanded={menuAnchor ? "true" : undefined}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                borderRadius: 2,
+                px: 1,
+                py: 0.5,
+              }}
+            >
               <Avatar
                 sx={{
                   width: 32,
@@ -275,16 +314,36 @@ export default function AdminLayout() {
                   fontSize: 14,
                 }}
               >
-                {residentName?.charAt(0).toUpperCase() ?? "A"}
+                {displayName.charAt(0).toUpperCase()}
               </Avatar>
               <Typography
                 variant="body2"
                 fontWeight={500}
                 sx={{ display: { xs: "none", sm: "block" } }}
               >
-                {residentName ?? "Admin"}
+                {displayName}
               </Typography>
-            </Box>
+            </ButtonBase>
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={() => setMenuAnchor(null)}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem onClick={() => closeMenuAndGo(false)}>
+                <ListItemIcon>
+                  <HomeIcon fontSize="small" />
+                </ListItemIcon>
+                Back to resident site
+              </MenuItem>
+              <MenuItem onClick={() => closeMenuAndGo(true)}>
+                <ListItemIcon>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                Sign out
+              </MenuItem>
+            </Menu>
           </Toolbar>
         </AppBar>
 
@@ -292,6 +351,20 @@ export default function AdminLayout() {
         <Box
           sx={{ flex: 1, p: { xs: 2, md: 3 }, bgcolor: "background.default" }}
         >
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Demo console. Residents, analytics, staff and audit entries here are
+            synthetic sample data. The Service Directory is the live catalog.
+            The resident intake stores nothing on the server.{" "}
+            <Link
+              href={PRIVACY_DOC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              color="inherit"
+              fontWeight={600}
+            >
+              How privacy works
+            </Link>
+          </Alert>
           <Outlet />
         </Box>
       </Box>

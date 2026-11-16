@@ -77,9 +77,9 @@
   "serviceGuide": {
     "timezone": "America/Chicago",
     "shortName": "ASG",
-    "description": "Find services you're eligible for in Austin — built by Austin Public Health.",
+    "description": "Find local services in Austin that may fit your situation, built by Austin Public Health.",
     "copy": {
-      "tagline": "Find services you're eligible for — in minutes",
+      "tagline": "Find local services that may fit your situation, in minutes.",
       "footerDisclaimer": "Austin Public Health | City of Austin & Travis County",
       "privacyNotice": "Privacy protection: do not enter your name, street address, phone number, or Social Security number. Pick a category or describe your needs in general terms."
     },

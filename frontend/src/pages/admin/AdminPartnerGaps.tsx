@@ -12,7 +12,7 @@ import Chip from "@mui/material/Chip";
 import Grid from "@mui/material/Grid";
 import LinearProgress from "@mui/material/LinearProgress";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import DescriptionIcon from "@mui/icons-material/Description";
 import { SparkLineChart } from "@mui/x-charts/SparkLineChart";
 
 import { getAdminPartnerGaps, type PartnerGapsResponse } from "../../lib/api";
@@ -43,24 +43,32 @@ export default function AdminPartnerGaps() {
 
   return (
     <Box>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate("/admin/reports")}
-        sx={{ mb: 2 }}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          mb: 1,
+          flexWrap: "wrap",
+        }}
       >
-        Back to reports
-      </Button>
-
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
         <LinkOffIcon color="error" />
-        <Typography variant="h5" fontWeight={700}>
+        <Typography variant="h5" fontWeight={700} sx={{ flex: 1 }}>
           Partner Coordination Gaps
         </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<DescriptionIcon />}
+          onClick={() => navigate("/admin/reports/unmet-need-partner-gaps")}
+        >
+          Open the report
+        </Button>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Residents we referred to a partner who never connected. Each partner
-        shows the trailing-8-week trend and the top resident-side reasons
-        coordinators logged on closeout.
+        Referrals to each partner that did not lead to a connection, from
+        totals the partners report (sample data). Each partner shows the
+        trailing 8-week trend and the most common reasons its coordinators
+        gave.
       </Typography>
 
       {/* -- summary --------------------------------------------------- */}

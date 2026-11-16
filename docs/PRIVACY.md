@@ -177,7 +177,7 @@ The voice debug trace (`REALTIME_DEBUG_LOG_ENABLED`) is **off by default**. When
 
 Admin read endpoints (`GET /api/v1/admin/...`) are open. They return synthetic demo residents, generated analytics, and the public service catalog. They expose no real resident data.
 
-Admin write endpoints (`POST`, `PATCH`, `DELETE` under `/api/v1/admin/services`) change the catalog that residents are matched against. They require an `X-Admin-Token` header that matches the server's `ADMIN_API_TOKEN` setting, compared in constant time. If `ADMIN_API_TOKEN` is empty (the default), every write returns 403 with a message explaining how to enable it. This is a shared-secret stopgap, not staff authentication.
+Admin write endpoints (`POST`, `PATCH`, `DELETE` under `/api/v1/admin/services`) change the catalog that residents are matched against. They require an `X-Admin-Token` header that matches the server's `ADMIN_API_TOKEN` setting, compared in constant time. If `ADMIN_API_TOKEN` is empty (the default), every write returns 403 with a message explaining how to enable it. This is a shared-secret stopgap, not staff authentication. Catalog edits live only in the memory of the server instance that received them: they are lost on restart, and on serverless or multi-instance hosting (Vercel, for example) other instances never see them, so they are not durable.
 
 ## What a real deployment still needs
 

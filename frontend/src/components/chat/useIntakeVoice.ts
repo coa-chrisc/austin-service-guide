@@ -66,6 +66,8 @@ export function useIntakeVoice({
   realtime: realtimeOptions,
 }: Options) {
   const [mode, setMode] = useState<VoicePipelineMode | null>(null);
+  // Whether the server runs the live model (false: scripted questions). Null until known.
+  const [liveAi, setLiveAi] = useState<boolean | null>(null);
   const [welcomeVisible, setWelcomeVisible] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const [welcomePlaying, setWelcomePlaying] = useState(false);
@@ -91,6 +93,7 @@ export function useIntakeVoice({
         setMode(
           config.mode === "realtime_audio" ? "realtime_audio" : "intercepted_text",
         );
+        setLiveAi(config.live_ai);
       })
       .catch(() => {
         // Fail closed to the private default.
@@ -290,6 +293,7 @@ export function useIntakeVoice({
 
   return {
     mode,
+    liveAi,
     isRealtime,
     realtime,
     local,
