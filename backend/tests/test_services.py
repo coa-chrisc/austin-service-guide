@@ -32,7 +32,8 @@ def test_admin_writes_reject_non_http_website_url(client, monkeypatch):
     monkeypatch.setattr(get_settings(), "admin_api_token", "test-token")
     auth = {"X-Admin-Token": "test-token"}
     url = "/api/v1/admin/services"
-    base = {"id": "svc-test-url-scheme", "name": "URL Test", "slug": "url-test"}
+    base = {"id": "svc-test-url-scheme", "name": "URL Test", "slug": "url-test", "provider_name": "Test",
+            "categories": ["food"], "eligibility_summary": "Open to all.", "phone": "512-555-0100"}
     for bad in ("javascript:alert(document.cookie)", " JavaScript:alert(1)",
                 "data:text/html,<script>alert(1)</script>", "//evil.example", "ftp://x.example"):
         assert client.post(url, json={**base, "website_url": bad}, headers=auth).status_code == 422, bad
