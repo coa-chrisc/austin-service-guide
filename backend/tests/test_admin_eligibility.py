@@ -210,3 +210,13 @@ def test_admin_bodies_are_size_limited(client, token):
     huge = {"profile": {"immediate_needs": ["x" * 300_000]}}
     assert client.post(f"{BASE}/eligibility/evaluate", json=huge).status_code == 413
 
+
+
+def test_token_free_preview_rejects_oversized_rule_overrides(client):
+    # evaluate needs no token; a huge crisis_services list must be refused, not run.
+    slugs = [f"s{i}" for i in range(3000)]
+    resp = client.post(f"{BASE}/eligibility/evaluate", json={
+        "profile": {"crisis_indicators": ["immediate_danger"]},
+        "overrides": {"matching_rules": {"crisis_services": {"immediate_danger": slugs}}},
+    })
+    assert resp.status_code == 422

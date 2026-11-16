@@ -26,7 +26,7 @@ from typing import Any
 
 import yaml
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models import EligibilityGate, ResidentProfile, SchoolAgeChild, Service, ServiceMatch
 from app.routers.admin_auth import edit_mode, require_admin_token, require_in_memory_edits
@@ -75,6 +75,9 @@ class ProfileIn(ResidentProfile):
     school_age_children: list[ChildIn] = Field(default_factory=list, max_length=10)
 
 
+_MAX_RULE_ENTRIES = 2000
+
+
 class GateOverride(_Strict):
     eligibility_requires: list[EligibilityGate] = Field(max_length=9)
 
@@ -82,8 +85,23 @@ class GateOverride(_Strict):
 class Overrides(_Strict):
     """Unapplied edits: gate lists by service slug, and/or replacement rules."""
 
-    services: dict[str, GateOverride] = Field(default_factory=dict)
+    services: dict[str, GateOverride] = Field(default_factory=dict, max_length=2000)
     matching_rules: MatchingRules | None = None
+
+    @model_validator(mode="after")
+    def _bounded_rules(self) -> "Overrides":
+        # These routes need no token, so cap the work one request can cause.
+        r = self.matching_rules
+        if r is not None:
+            entries = (
+                len(r.high_heat_zips)
+                + sum(len(v) for v in r.crisis_services.values())
+                + sum(len(v) for v in r.prevention_services.values())
+                + len(r.benefit_estimates)
+            )
+            if entries > _MAX_RULE_ENTRIES:
+                raise ValueError(f"matching_rules has more than {_MAX_RULE_ENTRIES} entries")
+        return self
 
 
 class EvaluateRequest(_Strict):
@@ -186,7 +204,7 @@ async def eligibility(x_staff_role: str | None = Header(None)):
 
 
 @router.post("/eligibility/evaluate")
-async def evaluate(body: EvaluateRequest, x_staff_role: str | None = Header(None)):
+def evaluate(body: EvaluateRequest, x_staff_role: str | None = Header(None)):
     """The engine's verdict on every service for a synthetic profile, from the
     same code path as resident matching. ``overrides`` preview unapplied
     edits; nothing is written, stored or logged."""
@@ -216,7 +234,7 @@ def _matches_from(rows: list[dict], services: list[Service]) -> list[ServiceMatc
 
 
 @router.post("/eligibility/impact")
-async def impact(body: ImpactRequest, x_staff_role: str | None = Header(None)):
+def impact(body: ImpactRequest, x_staff_role: str | None = Header(None)):
     """For each pack persona: services gained, lost, or moved between
     "matched" and "check eligibility" if the overrides were applied."""
     before_services, before_rules = _apply(None)
