@@ -12,17 +12,28 @@ from typing import Any
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole, ResidentProfile
 from app.services.catalog_loader import load_zip_centroids
 from app.services.city import CityIdentity, get_city
-from app.services.i18n import AI_NOTICE_I18N
 from app.services.life_events import canonical_life_event_slug, session_life_event_slug
 from app.services.matching import assess_risks, calculate_benefits, match_services
 
-def welcome_message(city: CityIdentity) -> str:
-    """Scripted greeting; the app name comes from the city config."""
+# The scripted flow makes no model call, so its greeting must not say it
+# uses AI. Same privacy ask as the AI notice.
+SCRIPTED_NOTICE = (
+    "Live AI is off, so I'll ask a few set questions instead. Please don't "
+    "share names, Social Security numbers, or account numbers — we don't need them."
+)
+
+
+def welcome_message(city: CityIdentity, notice: str = SCRIPTED_NOTICE) -> str:
+    """Scripted greeting; the app name comes from the city config.
+
+    ``notice`` defaults to the no-AI notice; the live greeting's fallback
+    passes the AI notice instead.
+    """
     return (
         f"Welcome to the {city.app_name}! I'm here to help you find "
         "city and community services that fit your needs. It takes about "
         "3-5 minutes.\n\n"
-        f"{AI_NOTICE_I18N['en']}\n\n"
+        f"{notice}\n\n"
         "What brings you here today? Are you looking for help with something "
         "specific, or would you like me to walk you through a few questions?"
     )

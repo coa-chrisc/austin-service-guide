@@ -323,14 +323,16 @@ def test_scripted_flow_still_asks_unknown_fields_in_order(client):
 # ── Honest greeting (no "confidential" promise) ─────────────────────────
 
 
-def test_scripted_greeting_discloses_ai_and_never_says_confidential(client):
+def test_scripted_greeting_says_ai_is_off_and_never_says_confidential(client):
     from app.services.scripted import DEMO_STEPS
 
     sid = _start(client)
     greeting = sid.state["conversation"][0]["content"]
     assert greeting == DEMO_STEPS[0]["message"]
     assert "confidential" not in greeting.lower()
-    assert "OpenAI" in greeting and "Social Security" in greeting
+    # The scripted flow makes no model call, so it must not claim to use OpenAI.
+    assert "OpenAI" not in greeting
+    assert "Live AI is off" in greeting and "Social Security" in greeting
 
 
 def test_ai_notice_translations_are_honest():

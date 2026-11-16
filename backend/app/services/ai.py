@@ -23,6 +23,7 @@ from typing import Any
 
 from app.config import get_settings
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
+from app.services.city import get_city
 from app.services.i18n import AI_NOTICE_I18N, ai_notice, redaction_notice
 from app.services.intake_state import normalize_language, persona_note_for
 from app.services.life_events import needs_from_life_event, normalize_life_event
@@ -30,7 +31,7 @@ from app.services.matching import assess_risks, match_services
 from app.services.pii import redact
 from app.services.prompts import build_instructions
 from app.services.scenarios import check_crisis, crisis_response, scenario_first_followup
-from app.services.scripted import DEMO_STEPS, demo_flow
+from app.services.scripted import DEMO_STEPS, demo_flow, welcome_message
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
 
@@ -236,7 +237,8 @@ async def _live_greeting(session: IntakeSession) -> str:
     if text and "OpenAI" not in text:
         # The model dropped the AI disclosure; never send a greeting without it.
         text = f"{text}\n\n{notice or AI_NOTICE_I18N['en']}"
-    return text or DEMO_STEPS[0]["message"]
+    # Live AI is on here, so the fallback greeting keeps the AI notice.
+    return text or welcome_message(get_city(), AI_NOTICE_I18N["en"])
 
 
 def _conversation_input(session: IntakeSession) -> list[dict[str, Any]]:
