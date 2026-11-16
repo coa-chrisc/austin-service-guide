@@ -98,6 +98,7 @@ def _completed_session(client):
     return sid
 
 
+@pytest.mark.usefixtures("defense_off")  # many sends to one number: past the share limits
 def test_share_validates_recipient(client):
     ids = _completed_session(client).state["matched_service_ids"]
     url = "/api/v1/intake/share"
@@ -114,6 +115,7 @@ def test_share_validates_recipient(client):
     assert share(channel="email", recipient="a@b.org").status_code == 200
 
 
+@pytest.mark.usefixtures("defense_off")  # many sends to one number: past the share limits
 def test_share_sms_is_limited_to_us_numbers(client, monkeypatch):
     """No international SMS: an open relay to premium-rate numbers is toll fraud."""
     from app.routers import intake
@@ -142,6 +144,7 @@ def test_share_sms_is_limited_to_us_numbers(client, monkeypatch):
     assert sent == ["+15125551234"] * 4
 
 
+@pytest.mark.usefixtures("defense_off")  # many sends to one number: past the share limits
 def test_share_sms_extra_countries_are_opt_in(client, monkeypatch):
     from app.config import Settings
     from app.routers import intake
@@ -343,7 +346,11 @@ def test_realtime_instructions_cover_unclear_audio_and_accents(client):
 
 # ── Admin write gate ────────────────────────────────────────────────────
 
-_NEW_SERVICE = {"id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test"}
+_NEW_SERVICE = {
+    "id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test",
+    "provider_name": "Test", "categories": ["food"], "eligibility_summary": "Open to all.",
+    "phone": "512-555-0100",
+}
 
 
 def test_admin_writes_refused_when_token_unset(client):

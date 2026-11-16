@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from app.jobs.proxy import WorkerClient, WorkerResponse, WorkerUnavailable
 from app.jobs.schemas import ID_PATTERN, ApprovePlan, DraftEdit, DraftState, JobCreate, Reject, ResearchRequest
 from app.jobs.settings import check_app_config, get_job_settings
-from app.routers.admin import require_admin_token
+from app.routers.admin_auth import require_admin_token
 
 MAX_BODY = 128 * 1024
 ROLES = {"super_admin", "admin", "manager", "viewer"}

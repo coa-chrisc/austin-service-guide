@@ -81,6 +81,8 @@ Every intake request follows the same steps (`backend/app/routers/intake.py`):
 
 Endpoints under `/api/v1/intake`: `personas`, `load-persona`, `start`, `message`, `results`, `plan`, `share`, `voice-config` (no body, no resident data; returns the effective voice `mode`, `raw_audio_allowed` and `live_ai`), `realtime/client-secret`, `realtime/tool`, `realtime/transcript`, and `realtime/debug*`. `realtime/client-secret`, `realtime/tool` and `realtime/transcript` return 403 unless raw-audio voice is enabled. The debug endpoints return 404 unless `REALTIME_DEBUG_LOG_ENABLED` is set. `/results` makes no model call. `/plan` uses the model when live AI is on, otherwise the rules sequencer.
 
+`GET /api/v1/about` (public, behind the access gate when it is on) returns configuration only, for the "How it works" page: app name, whether live AI is on, the text model and both reasoning efforts (agent and plan ordering), the tool-round cap, the names of every tool passed to the text model (`TOOL_SCHEMAS`, including the voice-oriented `wait_for_user`), the effective voice mode, the redaction kinds (`pii.PLACEHOLDERS`), the intake size caps (request body, stored messages, stored and new message length), and catalog counts (services, services with `last_verified_date` and `verified_by` recorded, categories, local crisis lines). No keys, hostnames or environment values, and no model call.
+
 Because the backend holds no per-resident state, replicas need no session affinity and a restart loses nothing a resident needs.
 
 ## Backend module map
@@ -97,6 +99,7 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `routers/intake.py` | Stateless intake, results, plan, share, realtime voice endpoints |
 | `routers/services.py` | Catalog list, search and detail |
 | `routers/admin.py` | Demo analytics and audit data; catalog writes behind `X-Admin-Token` |
+| `routers/about.py` | `GET /api/v1/about`: deployment facts for the How it works page (configuration only) |
 | `routers/admin_jobs.py` | Staff research-job routes (mounted only when `JOB_BACKEND` is not `off`), proxied to the worker |
 | `jobs/` | Job settings, signed app-to-worker tokens (`auth.py`), request schemas, the SQLAlchemy store, the worker client (`proxy.py`) and the in-process `inline` worker |
 | `worker/` | The job worker app (`main.py`) and its runner loop |
@@ -136,8 +139,8 @@ Because the backend holds no per-resident state, replicas need no session affini
 
 `frontend/src/`
 
-- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`; and `pages/admin/` for the staff console (demo data).
-- `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`).
+- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; lazy-loaded; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data).
+- `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`, `FlowDiagram`).
 - `lib/`: `api.ts` (API client), `session.ts` (client-held intake state), `piiGuard.ts` (client PII pre-flight), `share.ts`, plus helpers.
 - `hooks/`: `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice), `useAuth` (stub).
 - `theme/`: MUI theme built from the city config, plus the contrast gate and the theme guard test.
@@ -178,4 +181,4 @@ Both modes run the same image (`Dockerfile`), which needs no database or volume.
 
 Implemented in this repository: stateless intake with a client-held state, structured need navigation, a deterministic PII guard on both client and server, catalog grounding, white-label city config, a container image and IaC starters, and a logging policy. Details and limits are in [SECURITY.md](SECURITY.md#implemented-hardening-in-this-repository).
 
-Not implemented (roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, rate limiting and WAF, vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#engineering-roadmap).
+Not implemented (roadmap): an AI onboarding and ingestion agent, a human-in-the-loop verification portal, and VPC-isolated multilingual NER guardrails. Also not implemented: staff authentication, a shared rate-limit store and WAF (the in-app limits are per instance), vendor agreements and OpenAI zero data retention, and catalog verification. See [SECURITY.md](SECURITY.md#known-gaps-before-production) and [SECURITY.md](SECURITY.md#engineering-roadmap).

@@ -1,4 +1,6 @@
+import { Link as RouterLink } from "react-router-dom";
 import Alert from "@mui/material/Alert";
+import Link from "@mui/material/Link";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 
@@ -11,7 +13,10 @@ export default function PrivacyNotice({ sx }: { sx?: SxProps<Theme> }) {
       role="note"
       sx={[{ py: 0, "& .MuiAlert-message": { py: 0.75 }, fontSize: 13 }, ...(Array.isArray(sx) ? sx : [sx])]}
     >
-      {copy.privacyNotice}
+      {copy.privacyNotice}{" "}
+      <Link component={RouterLink} to="/how-it-works#pii" color="inherit" sx={{ fontWeight: 600 }}>
+        How this works
+      </Link>
     </Alert>
   );
 }

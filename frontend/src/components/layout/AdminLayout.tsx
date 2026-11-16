@@ -41,6 +41,7 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import HomeIcon from "@mui/icons-material/Home";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import LogoutIcon from "@mui/icons-material/Logout";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import { useAuth } from "@/hooks/useAuth";
 import { useJobsConfig } from "@/hooks/useJobsConfig";
@@ -107,6 +108,12 @@ const SECTIONS: Array<{ heading: string; items: NavItem[] }> = [
       { label: "Reports", path: "/admin/reports", icon: <AssessmentIcon /> },
       { label: "Audit Log", path: "/admin/audit", icon: <HistoryIcon /> },
       { label: "Staff", path: "/admin/staff", icon: <BadgeIcon /> },
+    ],
+  },
+  {
+    heading: "ABOUT",
+    items: [
+      { label: "How it works", path: "/admin/how-it-works", icon: <InfoOutlinedIcon /> },
     ],
   },
 ];
@@ -271,6 +278,8 @@ export default function AdminLayout() {
           display: "flex",
           flexDirection: "column",
           ml: isMobile ? 0 : `${DRAWER_WIDTH}px`,
+          // The drawer is hidden in print (How it works page), so drop its gutter.
+          "@media print": { ml: 0 },
         }}
       >
         {/* Top bar */}

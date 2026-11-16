@@ -227,6 +227,7 @@ const FOOTER_LINKS = [
   { label: "Services", path: "/services" },
   { label: "Map", path: "/map" },
   { label: "Get Started", path: "/intake" },
+  { label: "How it works", path: "/how-it-works" },
 ];
 
 export default function Landing() {

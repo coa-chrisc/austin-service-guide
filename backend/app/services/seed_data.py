@@ -190,10 +190,6 @@ def generate_audit_log() -> list[AuditLogEntry]:
     return entries
 
 
-def generate_eligibility_rules() -> list[dict]:
-    return [_with_date(r, "updated_days_ago", "last_updated") for r in _items("eligibility_rules")]
-
-
 def generate_demand_map() -> list[dict]:
     # heat_intensity / heat_vulnerable_sessions are the pack's simplified
     # heat-vulnerability picture per ZIP.
