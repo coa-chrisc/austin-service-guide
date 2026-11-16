@@ -456,8 +456,7 @@ async def create_realtime_client_secret(body: RealtimeSecretRequest):
             "detail": {"error": type(exc).__name__},
         })
         raise HTTPException(
-            status_code=502,
-            detail=f"OpenAI Realtime client secret failed: {type(exc).__name__}",
+            status_code=502, detail="Realtime voice is temporarily unavailable."
         ) from exc
 
     data = res.json()

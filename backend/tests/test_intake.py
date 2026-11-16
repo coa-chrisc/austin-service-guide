@@ -138,6 +138,33 @@ def test_realtime_secret_unavailable_without_key(client, monkeypatch):
     assert "sk-" not in res.text
 
 
+def test_realtime_secret_network_error_detail_is_generic(client, monkeypatch):
+    """Upstream failures return one fixed message, not exception class names."""
+    import httpx
+
+    from app.routers import intake
+
+    class _Unreachable:
+        def __init__(self, *_, **__):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            return False
+
+        async def post(self, *_, **__):
+            raise httpx.ConnectError("connect failed to api.openai.com:443")
+
+    sid = _start(client)
+    _enable_raw_audio_voice(monkeypatch)
+    monkeypatch.setattr(intake.httpx, "AsyncClient", _Unreachable)
+    res = sid.post("realtime/client-secret")
+    assert res.status_code == 502
+    assert res.json() == {"detail": "Realtime voice is temporarily unavailable."}
+
+
 # ── PII redaction at the intake boundaries ──────────────────────────────
 
 SSN = "123-45-6789"
