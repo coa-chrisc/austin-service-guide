@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     # /api/v1/admin), sent as the X-Admin-Token header. Empty = writes off.
     admin_api_token: str = ""
 
+    # Country calling codes the SMS share may text, comma-separated
+    # ("1" = US/NANP, the default; e.g. "1,44" adds the UK). Each added code
+    # widens SMS-pumping exposure: also enable Twilio Geo Permissions for it.
+    sms_allowed_country_codes: str = "1"
+
     # CORS origins allowed by the API. Keep in sync with backend/.env.example.
     cors_origins: str = (
         "http://localhost:5173,http://localhost:5174,http://localhost:3000,"
@@ -70,6 +75,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def sms_country_codes(self) -> list[str]:
+        return [c.strip().lstrip("+") for c in self.sms_allowed_country_codes.split(",") if c.strip()]
 
     @property
     def has_openai(self) -> bool:
