@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
+from app.jobs.settings import jobs_enabled
 from app.middleware import IntakeBodyLimitMiddleware
 from app.routers import admin, intake, services
 from app.security_headers import SecurityHeadersMiddleware
@@ -72,6 +73,10 @@ app.add_middleware(
 app.include_router(intake.router)
 app.include_router(services.router)
 app.include_router(admin.router)
+if jobs_enabled():  # JOB_BACKEND inline|remote; a bad job config fails startup
+    from app.routers import admin_jobs
+
+    app.include_router(admin_jobs.router)
 
 
 # ── Root & health ─────────────────────────────────────────────────────
