@@ -114,6 +114,34 @@ def test_share_validates_recipient(client):
     assert share(channel="email", recipient="a@b.org").status_code == 200
 
 
+def test_share_sms_is_limited_to_us_numbers(client, monkeypatch):
+    """No international SMS: an open relay to premium-rate numbers is toll fraud."""
+    from app.routers import intake
+
+    sent: list[str] = []
+
+    async def fake_send_sms(*, to, body):
+        sent.append(to)
+        return {"ok": True, "demo": True, "channel": "sms", "to": to}
+
+    monkeypatch.setattr(intake, "send_sms", fake_send_sms)
+    ids = _completed_session(client).state["matched_service_ids"]
+
+    def share(recipient):
+        return client.post("/api/v1/intake/share", json={
+            "channel": "sms", "recipient": recipient, "service_ids": ids,
+        })
+
+    for bad in ("+447911123456", "+2348012345678", "+881612345678", "0123456789",
+                "+1 012 555 1234", "512555123", "+15125551234567"):
+        assert share(bad).status_code == 422, bad
+    assert sent == []
+    for good in ("(512) 555-1234", "512.555.1234", "1-512-555-1234", "+1 512 555 1234"):
+        assert share(good).status_code == 200, good
+    # Normalized to E.164 before it reaches Twilio.
+    assert sent == ["+15125551234"] * 4
+
+
 def _enable_raw_audio_voice(monkeypatch, live_ai=True):
     """Opt this test into the Realtime (raw-audio) endpoints.
 
