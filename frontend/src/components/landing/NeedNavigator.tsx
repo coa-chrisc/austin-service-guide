@@ -69,7 +69,7 @@ export default function NeedNavigator() {
                   }),
                 )
               }
-              sx={{ fontWeight: 600, fontSize: "0.95rem", height: 40 }}
+              sx={{ fontWeight: 600, fontSize: "0.95rem", minHeight: 40 }}
             />
           ))}
         </Box>
@@ -83,7 +83,7 @@ export default function NeedNavigator() {
           }}
         >
           {zips.length > 0 && (
-            <FormControl size="small" sx={{ minWidth: 200 }}>
+            <FormControl size="small" sx={{ minWidth: "min(200px, 100%)" }}>
               <InputLabel id="need-nav-zip-label">ZIP code (optional)</InputLabel>
               <Select
                 labelId="need-nav-zip-label"

@@ -17,7 +17,7 @@ export default function SafetyLayers({ onJump }: { onJump: JumpHandler }) {
         display: "grid",
         columnGap: 3,
         rowGap: 2.5,
-        gridTemplateColumns: "repeat(auto-fit, minmax(16rem, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 16rem), 1fr))",
       }}
     >
       {SAFETY_LAYERS.map((layer) => {

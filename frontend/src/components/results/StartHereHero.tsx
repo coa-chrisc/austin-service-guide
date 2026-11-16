@@ -189,7 +189,7 @@ export default function StartHereHero({
                   variant={status.open ? "filled" : "outlined"}
                   sx={{
                     mb: 2.5,
-                    height: 24,
+                    minHeight: 24,
                     fontSize: 12,
                     fontWeight: 600,
                     bgcolor: status.open ? (theme) => alpha(theme.palette.success.main, 0.12) : "transparent",
@@ -256,7 +256,7 @@ export default function StartHereHero({
                             label={t("optional")}
                             size="small"
                             variant="outlined"
-                            sx={{ height: 18, fontSize: 10 }}
+                            sx={{ minHeight: 18, fontSize: "0.75rem" }}
                           />
                         )}
                       </Box>

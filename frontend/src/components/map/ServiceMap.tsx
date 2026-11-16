@@ -451,7 +451,7 @@ export default function ServiceMap({
                           getCategoryColor(pin.category, theme),
                         ),
                         fontSize: 12,
-                        height: 24,
+                        minHeight: 24,
                         fontWeight: 600,
                         mb: distanceMi != null ? 0.5 : 1.5,
                       }}
@@ -481,8 +481,8 @@ export default function ServiceMap({
                         variant={pin.open_now ? "filled" : "outlined"}
                         sx={{
                           mb: 1.5,
-                          height: 22,
-                          fontSize: 11,
+                          minHeight: 22,
+                          fontSize: "0.75rem",
                           fontWeight: 600,
                           bgcolor: pin.open_now
                             ? (theme) => alpha(theme.palette.success.main, 0.12)

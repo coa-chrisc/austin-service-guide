@@ -155,6 +155,8 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
         styleOverrides: {
           // Root size from the config, as a percentage so visitor font settings still apply.
           html: { fontSize: `${(cityTheme.typography.baseSize / ROOT_PX) * 100}%` },
+          // A long word (or URL) breaks rather than widening a phone screen.
+          body: { overflowWrap: "break-word" },
           ".leaflet-container": {
             fontFamily: "inherit",
           },
@@ -240,9 +242,24 @@ function buildTheme(mode: "light" | "dark", colors: ThemeColors): Theme {
       },
       MuiChip: {
         styleOverrides: {
+          // Labels wrap instead of truncating, so long labels and large
+          // text settings stay readable on a phone; the minimum heights keep
+          // MUI's default sizes for one-line labels.
           root: {
             borderRadius: radius.chip,
             fontWeight: 500,
+            maxWidth: "100%",
+            height: "auto",
+            minHeight: 32,
+          },
+          sizeSmall: {
+            minHeight: 24,
+          },
+          label: {
+            whiteSpace: "normal",
+            overflowWrap: "break-word",
+            paddingTop: 2,
+            paddingBottom: 2,
           },
           // Static chips are tags (chip radius); clickable chips are
           // choices and filters, shaped like pills so they read as controls.
