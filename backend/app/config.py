@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-5.5-2026-04-23"
     openai_reasoning_effort: str = "medium"  # minimal | low | medium | high
+    # Plan ordering (POST /intake/plan) only ranks 3-5 matches, and the
+    # resident waits on it, so it runs at its own, lower effort.
+    openai_plan_reasoning_effort: str = "low"  # minimal | low | medium | high
     openai_max_tool_iterations: int = 6
     openai_realtime_model: str = "gpt-realtime-2.1"
     openai_realtime_reasoning_effort: str = "low"  # minimal | low | medium | high | xhigh

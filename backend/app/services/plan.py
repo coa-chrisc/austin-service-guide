@@ -33,7 +33,9 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
     The model picks 3–5, ranks them, and writes a per-item reason that
     cites the resident's actual words. Falls back to the deterministic
     rules sequencer if live AI is off, the call fails, or the output
-    cannot be parsed.
+    cannot be parsed. Demo personas always get the rules sequencer: their
+    conversation is a scripted replay, so the plan is deterministic and
+    instant (the results banner says it was built from a scripted profile).
 
     Service ids the model returns are grounded against the catalog and
     restricted to the candidate list; names and slugs come from the catalog.
@@ -47,7 +49,7 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
     def fallback() -> IntakePlan:
         return rules_plan(session)
 
-    if not settings.use_live_ai:
+    if not settings.use_live_ai or session.entry_source.startswith("persona:"):
         return fallback()
 
     profile = session.extracted_profile
@@ -119,7 +121,7 @@ async def build_application_order(session: IntakeSession) -> IntakePlan:
         response = await client.responses.create(
             model=settings.openai_model,
             input=[{"role": "user", "content": prompt}],
-            reasoning={"effort": settings.openai_reasoning_effort},
+            reasoning={"effort": settings.openai_plan_reasoning_effort},
             text={"format": {"type": "json_object"}},
             max_output_tokens=2000,
             store=False,
