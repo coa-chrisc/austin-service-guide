@@ -266,6 +266,11 @@ export interface RealtimeToolResult {
    * the refreshed "Currently known" snapshot before its next response.
    */
   refreshed_instructions?: string;
+  /**
+   * Set when a crisis was detected: a `response.create` body that has the
+   * voice model read only the crisis lines (no tools, no free reply).
+   */
+  crisis_response?: Record<string, unknown>;
 }
 
 export function executeRealtimeTool(
@@ -302,6 +307,11 @@ export interface RealtimeTranscriptResult {
   progress_percent: number;
   is_complete: boolean;
   crisis_detected: boolean;
+  /**
+   * Set when a crisis was detected: a `response.create` body that has the
+   * voice model read only the crisis lines (no tools, no free reply).
+   */
+  crisis_response?: Record<string, unknown>;
 }
 
 export function syncRealtimeTranscript(
