@@ -1,0 +1,13 @@
+# The smallest useful data pack: one category, two services, empty lists.
+# Imaginary place and phone numbers. Contract: docs/DATA_PACK.md.
+schema_version: 1
+id: example-minimal
+name: Example Town (minimal example pack)
+region:
+  city: Example Town
+  state: NE
+  country: US
+bbox: [-100.2, 39.9, -99.8, 40.2]
+generated_by: human
+generated_at: "2026-11-15"
+notes: Fictional data for tests and documentation.

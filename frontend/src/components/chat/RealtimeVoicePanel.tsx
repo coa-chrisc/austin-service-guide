@@ -8,7 +8,9 @@ import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import type { useRealtimeVoiceSession } from "@/hooks/useRealtimeVoiceSession";
+import { useStoredLanguage } from "@/components/common/LanguageSelector";
 import { ClearVoiceSessionButton } from "./VoiceControls";
+import { makeVoiceT } from "./voiceI18n";
 
 interface RealtimeVoicePanelProps {
   voice: ReturnType<typeof useRealtimeVoiceSession>;
@@ -24,6 +26,8 @@ export default function RealtimeVoicePanel({
   retryDisabled,
   onClear,
 }: RealtimeVoicePanelProps) {
+  // Re-renders when the voice model switches the UI language.
+  const t = makeVoiceT(useStoredLanguage());
   const voiceLabel = (() => {
     switch (voice.status) {
       case "connecting":
@@ -259,6 +263,16 @@ export default function RealtimeVoicePanel({
         >
           {voiceDetail}
         </Typography>
+        {voice.status !== "error" && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            dir="auto"
+            sx={{ display: "block", mt: 0.25, fontWeight: 600 }}
+          >
+            {t("any_language_hint")}
+          </Typography>
+        )}
       </Box>
       {voice.isActive ? (
         <>

@@ -1,0 +1,31 @@
+id: svc-example-town-pantry
+slug: example-town-pantry
+name: Example Town Pantry
+provider_name: Example Town Food Network
+description: Free groceries once a week for anyone in Example Town.
+eligibility_summary: Open to all residents. No ID required.
+status: active
+cost: Free
+cost_type: free
+website_url: https://example.org/pantry
+phone: 555-010-0100
+languages_offered: [en, es]
+categories: [food]
+locations:
+- id: loc-example-town-pantry-1
+  service_id: svc-example-town-pantry
+  name: Main Hall
+  address: 1 River Rd
+  city: Example Town
+  state: NE
+  zip_code: "00001"
+  latitude: 40.01
+  longitude: -100.01
+  is_primary: true
+  hours:
+    tuesday: 9:00 AM – 12:00 PM
+    saturday: 9:00 AM – 12:00 PM
+sources:
+- url: https://example.org/pantry
+  retrieved_at: "2026-11-15"
+  fields: [name, phone, hours]

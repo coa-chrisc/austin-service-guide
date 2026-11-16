@@ -1,0 +1,13 @@
+id: svc-example-snap-help
+slug: example-snap-help
+name: SNAP Application Help Line
+provider_name: Example County Benefits Office
+description: Phone help applying for SNAP food benefits.
+eligibility_summary: Households with low income. Call to check eligibility.
+status: active
+cost: Free
+cost_type: free
+website_url: https://example.org/snap
+phone: 555-010-0101
+categories: [food]
+provider_type: county

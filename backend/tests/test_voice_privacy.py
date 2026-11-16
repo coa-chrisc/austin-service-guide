@@ -329,13 +329,137 @@ def test_realtime_session_config_is_tuned_for_speakers(client):
     }
 
 
-def test_realtime_transcription_language_follows_session(client):
+@pytest.mark.parametrize("language", ["en", "es", "vi"])
+def test_realtime_transcription_language_is_never_pinned(client, language):
+    """The resident may answer in any language, so the transcriber detects it.
+
+    A pinned language would force a Spanish-UI resident who speaks English
+    (or the reverse) into the wrong transcript, and the echo check and the
+    chat would both see it.
+    """
     from app.services.realtime import build_realtime_session_config
 
     session = _realtime_session(client)
-    session.language = "es"
+    session.language = language
     transcription = build_realtime_session_config(session)["audio"]["input"]["transcription"]
-    assert transcription == {"model": "gpt-4o-transcribe", "language": "es"}
+    assert transcription == {"model": "gpt-4o-transcribe"}
+
+
+def test_realtime_instructions_switch_on_spoken_language_not_accent(client):
+    from app.services.realtime import build_realtime_instructions
+
+    text = build_realtime_instructions(_realtime_session(client))
+    assert "speaks to you in a different language" in text
+    assert "call set_language" in text
+    assert "so the screen and the plan follow" in text
+    # Accent alone must never switch the language.
+    assert "Accent alone is never a reason to switch" in text
+    # The model greeted already (startup response); it must not greet again.
+    assert "Do not greet again" in text
+
+
+# ── 6b. Startup greeting: spoken by the voice model, never on the device ─
+
+def test_realtime_startup_response_matches_openai_schema(client):
+    """The greeting's response.create body is one the OpenAI SDK knows."""
+    from openai.types.realtime import RealtimeResponseCreateParams
+
+    from app.services.realtime import build_realtime_startup_response
+
+    body = build_realtime_startup_response(_realtime_session(client))
+    model = RealtimeResponseCreateParams.model_validate(body)
+    assert _sdk_extras(model, "response") == []
+    assert body["output_modalities"] == ["audio"]
+    assert body["tool_choice"] == "none"
+    assert body["metadata"] == {"purpose": "startup_greeting"}
+
+
+def test_realtime_startup_greeting_invites_any_language(client):
+    from app.services.realtime import build_realtime_startup_response
+
+    instructions = build_realtime_startup_response(_realtime_session(client))["instructions"]
+    assert "in English" in instructions
+    assert "English, Spanish, or any other language" in instructions
+    assert "just start talking in yours" in instructions
+    assert "How can I help you today?" in instructions
+    # Short and on its own: no privacy notice or tools in the greeting turn.
+    assert "eight seconds" in instructions
+    assert "no privacy notice" in instructions
+
+
+def test_realtime_startup_greeting_uses_the_session_language(client):
+    from app.services.realtime import build_realtime_startup_response
+
+    session = _realtime_session(client)
+    session.language = "es"
+    instructions = build_realtime_startup_response(session)["instructions"]
+    assert "in Spanish" in instructions
+    assert "translated naturally" in instructions
+
+
+def test_realtime_startup_greeting_without_named_languages(client, monkeypatch):
+    """A city configured for one language still offers any language."""
+    import dataclasses
+
+    from app.services import realtime
+    from app.services.city import get_city
+
+    monkeypatch.setattr(
+        realtime, "get_city", lambda: dataclasses.replace(get_city(), languages=("en",))
+    )
+    instructions = realtime.build_realtime_startup_response(
+        _realtime_session(client)
+    )["instructions"]
+    assert "You can talk with me in any language" in instructions
+
+
+class _SecretMinted:
+    """httpx.AsyncClient stand-in that returns a minted client secret."""
+
+    sent: list[dict] = []
+
+    def __init__(self, *_, **__):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_):
+        return False
+
+    async def post(self, url, *, json=None, **__):
+        import httpx
+
+        _SecretMinted.sent.append(json)
+        request = httpx.Request("POST", url)
+        return httpx.Response(
+            200,
+            json={"value": "ek_test", "expires_at": 0, "session": {"id": "sess_test"}},
+            request=request,
+        )
+
+
+def test_client_secret_returns_the_startup_greeting(client, monkeypatch):
+    from app.routers import intake
+
+    state = _start_state(client)
+    _set_live_ai(monkeypatch)
+    _set_voice(monkeypatch, "realtime_audio", True)
+    _SecretMinted.sent = []
+    monkeypatch.setattr(intake.httpx, "AsyncClient", _SecretMinted)
+
+    res = client.post(
+        "/api/v1/intake/realtime/client-secret",
+        json={"state": state, "language": "es"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    # The browser's language is the starting language for the greeting.
+    assert "in Spanish" in body["startup_response"]["instructions"]
+    assert body["startup_response"]["metadata"] == {"purpose": "startup_greeting"}
+    # The transcriber is not pinned to the starting language.
+    sent = _SecretMinted.sent[0]["session"]
+    assert "language" not in sent["audio"]["input"]["transcription"]
 
 
 # ── 7. Transcripts that aren't resident speech are dropped ──────────────
