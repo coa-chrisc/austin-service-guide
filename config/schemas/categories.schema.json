@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/categories.schema.json",
+  "title": "Service categories (categories.yaml)",
+  "description": "Required. A list of categories; services, life events and the city config's serviceGuide.categoryColors refer to them by slug. Read by catalog_loader.load_categories into app.models.ServiceCategory, and by the frontend build (frontend/plugins/cityConfigPlugin.ts) for category colour order, which reads each slug from a plain 'slug: value' line.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "name", "slug"],
+    "properties": {
+      "id": {"type": "string", "minLength": 1, "description": "Unique id, by convention cat-<slug>."},
+      "name": {"type": "string", "minLength": 1, "description": "Display name."},
+      "slug": {"type": "string", "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$", "description": "Unique machine name: lowercase words joined by underscores (mental_health). Reuse the slugs the engine knows where they fit (docs/DATA_PACK.md)."},
+      "description": {"type": "string", "description": "One-line description."},
+      "icon": {"type": "string", "description": "Material icon name, for example LocalHospital. Informational."},
+      "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$", "description": "Hex colour. Informational: the UI colours categories from the city config (serviceGuide.categoryColors) and the theme."},
+      "service_count": {"type": "integer", "minimum": 0, "description": "Ignored: recomputed at startup. Omit or set 0."}
+    }
+  }
+}

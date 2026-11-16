@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/matching_rules.schema.json",
+  "title": "Local matching rules (matching_rules.yaml)",
+  "description": "Optional; every key is optional and a missing key skips its rule. Read by catalog_loader.load_matching_rules into MatchingRules (extra keys fail startup). Service references are catalog slugs; the validator checks that each exists (at run time an unknown slug is silently ignored).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "high_heat_zips": {
+      "type": "array", "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[0-9]{5}$"},
+      "description": "ZIPs with elevated heat vulnerability. A resident with a chronic condition in one gets the cooling and utilities categories; the ZIP also counts as one factor toward the heat_vulnerable risk flag (two factors raise it)."
+    },
+    "crisis_services": {
+      "type": "object", "additionalProperties": false,
+      "description": "Crisis indicator -> service slugs, most local first. When the indicator is on the profile these services skip the relevance filter, eligibility gates and match cap, and lead the plan. They must be status active.",
+      "properties": {
+        "domestic_violence": {"$ref": "#/$defs/slugs"},
+        "immediate_danger": {"$ref": "#/$defs/slugs"},
+        "suicidal_ideation": {"$ref": "#/$defs/slugs"},
+        "homelessness": {"$ref": "#/$defs/slugs"}
+      }
+    },
+    "prevention_services": {
+      "type": "object",
+      "description": "Risk type -> lines listed on that risk flag. For domestic_violence and mental_health_crisis these follow the built-in and local crisis lines.",
+      "propertyNames": {"enum": ["homelessness", "housing_instability", "food_insecurity", "uninsured", "domestic_violence", "mental_health_crisis", "social_isolation", "child_mental_health_risk", "heat_vulnerable"]},
+      "additionalProperties": {"type": "array", "items": {"$ref": "#/$defs/prevention"}}
+    },
+    "benefit_estimates": {
+      "type": "array",
+      "description": "Estimated monthly value of matched programs (results page). For each matched service the first estimate listing its slug wins (skipping only_if_uninsured ones when the resident is insured). A matched free service with no estimate counts $25.",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["services", "label", "monthly_value"],
+        "properties": {
+          "services": {"$ref": "#/$defs/slugs", "minItems": 1},
+          "label": {"type": "string", "minLength": 1, "maxLength": 80, "description": "Line label on the results page."},
+          "monthly_value": {"type": "number", "minimum": 0, "maximum": 5000, "description": "US dollars per month."},
+          "per_household_member": {"type": "boolean", "description": "Multiply by household size. Default false."},
+          "only_if_uninsured": {"type": "boolean", "description": "Apply only when insurance_status is uninsured. Default false."}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+    "slugs": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/slug"}},
+    "prevention": {
+      "type": "object", "additionalProperties": false,
+      "oneOf": [{"required": ["service"]}, {"required": ["text"]}],
+      "x-message": "set exactly one of 'service' or 'text'",
+      "properties": {
+        "service": {"$ref": "#/$defs/slug", "description": "Catalog slug; rendered as that service's name."},
+        "text": {"type": "string", "minLength": 1, "maxLength": 120, "description": "Display text for an organization that is not in the catalog."}
+      }
+    }
+  }
+}

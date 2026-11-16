@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/crisis_resources.schema.json",
+  "title": "Crisis lines (crisis_resources.yaml)",
+  "description": "Required file; may be an empty list. Read by catalog_loader.load_crisis_resources into app.models.CrisisResource. Listed by the agent's get_crisis_resources tool; lines with crisis_topic are this place's local crisis lines, named in the crisis interrupt and on the matching risk flags next to the built-in national lines (911, 988, 1-800-799-7233).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "description", "phone"],
+    "properties": {
+      "name": {"type": "string", "minLength": 1, "description": "Line name."},
+      "description": {"type": "string", "description": "Who it serves."},
+      "phone": {"type": "string", "minLength": 1, "description": "Number as displayed, quoted (for example '911', 512-472-4357). A line whose phone is a built-in national number is not repeated as a local line."},
+      "available_24_7": {"type": "boolean", "description": "Defaults to true."},
+      "languages": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$"}, "description": "Language codes. Defaults to [en, es]."},
+      "crisis_topic": {"enum": ["mental_health", "domestic_violence", null], "description": "Marks a local crisis line for that topic. Omit for general lines."}
+    }
+  }
+}

@@ -2,31 +2,32 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/schemas/services.schema.json",
   "title": "Service catalog entry",
-  "description": "One service in the resident service catalog. One YAML file per service under backend/app/data/services/. Cross-file rules (unique id/slug, category references, location service_id) are enforced by backend/scripts/validate_catalog.py, not by this schema.",
+  "description": "One service in the resident service catalog: one YAML file per service, services/<slug>.yaml in the data pack. Read by catalog_loader.load_services into app.models.Service. Cross-file rules (unique id/slug, category references, location service_id, ...) are enforced by app/services/pack_validator.py, not by this schema. Contract index: config/schemas/index.json; field reference: docs/DATA_PACK.md.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["id", "slug", "name", "provider_name", "categories", "eligibility_summary", "status"],
   "properties": {
-    "id": {"type": "string", "minLength": 1, "description": "Stable unique identifier for the service (for example svc-age). Never reuse or change once published."},
+    "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$", "description": "Stable unique identifier for the service, by convention svc-<slug> (for example svc-age). Never reuse or change once published."},
     "slug": {"type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "URL-safe unique name, lowercase words joined by hyphens. Must match the file name."},
     "name": {"type": "string", "minLength": 1, "description": "Public name of the service or program."},
     "provider_name": {"type": "string", "minLength": 1, "description": "Organization that delivers the service."},
-    "description": {"type": "string", "description": "Plain-language summary of what the service provides."},
-    "eligibility_summary": {"type": "string", "minLength": 1, "description": "Plain-language statement of who qualifies. Required so residents are never shown a service without knowing who it is for."},
+    "description": {"type": "string", "description": "Plain-language summary of what the service provides. Plain text, no HTML or Markdown."},
+    "eligibility_summary": {"type": "string", "minLength": 1, "description": "Plain-language statement of who qualifies. Required so residents are never shown a service without knowing who it is for. Its first sentence is quoted in the 'Check eligibility' note."},
     "eligibility_requires": {
       "type": "array",
       "uniqueItems": true,
-      "description": "Hard eligibility gates the matching engine checks against the resident profile. All listed gates must be satisfied.",
+      "description": "Hard eligibility gates the matching engine checks against the resident profile (app/services/eligibility.py). All listed gates must be satisfied.",
       "items": {"enum": ["veteran", "homeless_or_unstable_housing", "refugee_or_immigrant", "disability", "older_adult", "older_adult_or_disability", "has_children", "youth", "other_criteria"]}
     },
     "how_to_apply": {"type": "string", "description": "Steps a resident takes to get the service."},
     "cost": {"type": "string", "description": "Plain-language description of cost to the resident."},
-    "cost_type": {"enum": ["free", "sliding_scale", "flat_fee", "insurance", "varies"], "description": "Machine-readable cost category."},
+    "cost_type": {"enum": ["free", "sliding_scale", "flat_fee", "insurance", "varies"], "description": "Machine-readable cost category. Defaults to free when absent."},
     "website_url": {"type": "string", "pattern": "^(https?://.+)?$", "description": "Public web page for the service, an http(s):// URL. May be empty if none exists (validator warns)."},
     "phone": {"type": "string", "description": "Main contact phone. A service must have this or at least one location phone."},
-    "email": {"type": "string", "description": "Public contact email, if any."},
-    "languages_offered": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Language codes the service can be delivered in (for example en, es)."},
+    "email": {"type": "string", "pattern": "^([^@\\s]+@[^@\\s]+\\.[^@\\s]+)?$", "description": "Public contact email, or empty."},
+    "languages_offered": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$"}, "description": "Language codes (ISO 639-1, or a BCP 47 tag such as zh-Hant) the service can be delivered in. Defaults to [en] when absent."},
     "accessibility_features": {"type": "array", "items": {"type": "string"}, "description": "Accessibility features, for example Wheelchair accessible."},
-    "status": {"enum": ["active", "inactive", "seasonal"], "description": "Whether the service is currently offered."},
+    "status": {"enum": ["active", "inactive", "seasonal"], "description": "Whether the service is currently offered. inactive services are never listed or matched."},
     "categories": {
       "type": "array", "minItems": 1, "uniqueItems": true,
       "items": {"type": "string", "minLength": 1},
@@ -34,45 +35,63 @@
     },
     "locations": {"type": "array", "items": {"$ref": "#/$defs/location"}, "description": "Physical sites. May be empty for phone-only or online-only services."},
     "documents": {"type": "array", "items": {"$ref": "#/$defs/document"}, "description": "Documents a resident should bring or submit."},
-    "last_verified_date": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) a person last confirmed this entry against the provider. Optional; absent means unverified."},
-    "verified_by": {"type": "string", "minLength": 1, "description": "Name or role of the person who last verified this entry. Optional; absent means unverified."}
+    "last_verified_date": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) a person last confirmed this entry against the provider. Optional; absent means unverified. Not read by the server yet (the loader drops it). Never set by a tool or AI agent."},
+    "verified_by": {"type": "string", "minLength": 1, "description": "Role or team (not a personal name) that last verified this entry. Optional; absent means unverified. Not read by the server yet (the loader drops it). Never set by a tool or AI agent."},
+    "provider_type": {"enum": ["city", "county", "state", "federal", "nonprofit", "other"], "description": "Jurisdiction level of the provider. Optional. Not read by the server yet (the loader drops it)."},
+    "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}, "description": "Where the facts in this entry came from. Optional. Not read by the server yet (the loader drops it)."}
   },
   "anyOf": [
     {"required": ["phone"], "properties": {"phone": {"type": "string", "minLength": 1}}},
     {"required": ["locations"], "properties": {"locations": {"contains": {"required": ["phone"], "properties": {"phone": {"type": "string", "minLength": 1}}}}}}
   ],
+  "x-message": "no contact phone: set top-level phone or a phone on at least one location",
   "$defs": {
     "document": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["name"],
       "properties": {
         "name": {"type": "string", "minLength": 1, "description": "Document name."},
         "description": {"type": "string", "description": "Details about the document."},
-        "is_required": {"type": "boolean", "description": "True if the document is mandatory."}
+        "is_required": {"type": "boolean", "description": "True if the document is mandatory. Defaults to true."}
       }
     },
     "location": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["name", "address", "city", "state", "zip_code", "latitude", "longitude"],
       "properties": {
-        "id": {"type": "string", "minLength": 1, "description": "Unique location identifier."},
+        "id": {"type": "string", "minLength": 1, "description": "Location identifier, unique across the pack, by convention loc-<slug>-<n>. A missing id gets a random one at each start, so always set it."},
         "service_id": {"type": "string", "description": "Must equal the parent service id (checked by the validator)."},
         "name": {"type": "string", "minLength": 1, "description": "Site name, for example Main Campus."},
         "address": {"type": "string", "minLength": 1, "description": "Street address."},
         "city": {"type": "string", "minLength": 1, "description": "City."},
         "state": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "Two-letter state code."},
         "zip_code": {"type": "string", "pattern": "^[0-9]{5}(-[0-9]{4})?$", "description": "ZIP code as a quoted string."},
-        "latitude": {"type": "number", "minimum": -90, "maximum": 90, "description": "Latitude in decimal degrees."},
-        "longitude": {"type": "number", "minimum": -180, "maximum": 180, "description": "Longitude in decimal degrees."},
+        "latitude": {"type": "number", "minimum": -90, "maximum": 90, "description": "Latitude in decimal degrees (WGS84). Must not be 0: the map and radius search skip a location with a zero coordinate."},
+        "longitude": {"type": "number", "minimum": -180, "maximum": 180, "description": "Longitude in decimal degrees (WGS84). Must not be 0."},
         "phone": {"type": "string", "description": "Phone for this site."},
-        "is_primary": {"type": "boolean", "description": "True for the main site."},
+        "is_primary": {"type": "boolean", "description": "True for the main site. At most one per service."},
         "hours": {
           "type": "object",
-          "description": "Opening hours keyed by lowercase day name; values are display strings such as 8:00 AM - 5:00 PM or Closed.",
+          "description": "Opening hours keyed by lowercase day name. Values app/services/hours.py understands: 'H:MM AM - H:MM PM' (hyphen, en dash or em dash; minutes optional), 'Closed', or text containing '24' and 'hour' (24 hours). A missing day means closed. Anything else reads as closed (validator warns).",
           "propertyNames": {"enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]},
           "additionalProperties": {"type": "string"}
         },
-        "hours_verified": {"type": "boolean", "description": "True only if a person confirmed these hours with the provider."}
+        "hours_verified": {"type": "boolean", "description": "True only if a person confirmed these hours with the provider. Never set true by a tool or AI agent."}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": {"type": "string", "pattern": "^https?://.+", "description": "Page the facts came from, an http(s):// URL."},
+        "title": {"type": "string", "description": "Page title."},
+        "retrieved_at": {"type": "string", "format": "date", "description": "Date (YYYY-MM-DD) the page was read."},
+        "fields": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "Service fields this source supports, for example [phone, hours]."},
+        "quote": {"type": "string", "maxLength": 1000, "description": "Short excerpt supporting the fields."},
+        "note": {"type": "string", "description": "Free-text note."}
       }
     }
   }
