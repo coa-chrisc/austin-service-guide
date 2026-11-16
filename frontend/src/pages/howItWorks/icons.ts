@@ -7,6 +7,7 @@ import MenuBookOutlined from "@mui/icons-material/MenuBookOutlined";
 import PhoneInTalkOutlined from "@mui/icons-material/PhoneInTalkOutlined";
 import PolicyOutlined from "@mui/icons-material/PolicyOutlined";
 import RateReviewOutlined from "@mui/icons-material/RateReviewOutlined";
+import RouteOutlined from "@mui/icons-material/RouteOutlined";
 import RuleOutlined from "@mui/icons-material/RuleOutlined";
 import ShieldOutlined from "@mui/icons-material/ShieldOutlined";
 import SpeedOutlined from "@mui/icons-material/SpeedOutlined";
@@ -29,4 +30,5 @@ export const ICONS: Record<IconKey, SvgIconComponent> = {
   policy: PolicyOutlined,
   limits: SpeedOutlined,
   review: RateReviewOutlined,
+  roadmap: RouteOutlined,
 };

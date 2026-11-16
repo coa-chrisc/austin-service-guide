@@ -15,10 +15,10 @@ const ORDER: ProtectionStatus[] = ["in_place", "in_progress", "not_planned"];
 const STYLE: Record<ProtectionStatus, { color: "success" | "warning" | "default"; Icon: SvgIconComponent; note?: string }> = {
   in_place: { color: "success", Icon: CheckCircleOutline },
   in_progress: { color: "warning", Icon: ScheduleOutlined, note: "Not yet active in this deployment" },
-  not_planned: { color: "default", Icon: RemoveCircleOutline },
+  not_planned: { color: "default", Icon: RemoveCircleOutline, note: "Planned next steps. None of them is built yet." },
 };
 
-/** The "In place and pending" status list, one card per status. The status of each item lives in content.ts. */
+/** The status list (in place, in progress, Phase 2 roadmap), one card per status. Each item's status lives in content.ts. */
 export default function ProtectionList({ repoUrl }: { repoUrl: string }) {
   return (
     <Box sx={{ my: 2, display: "grid", gap: 2 }}>
@@ -35,7 +35,8 @@ export default function ProtectionList({ repoUrl }: { repoUrl: string }) {
                   label={`${STATUS_LABELS[status]} (${items.length})`}
                   color={color}
                   variant="outlined"
-                  sx={{ fontWeight: 700, fontSize: "inherit" }}
+                  // A long status label wraps inside the chip instead of being cut off on a narrow screen.
+                  sx={{ fontWeight: 700, fontSize: "inherit", height: "auto", minHeight: 32, "& .MuiChip-label": { whiteSpace: "normal" } }}
                 />
               </Typography>
               {note && (

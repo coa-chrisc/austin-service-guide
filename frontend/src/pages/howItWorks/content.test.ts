@@ -25,10 +25,10 @@ function allCopy(): string[] {
   ]);
   return [
     ...OVERVIEW.flatMap((o) => [o.label, o.text]),
-    ...KEY_NUMBERS.flatMap((n) => [n.value, n.label]),
+    ...KEY_NUMBERS.flatMap((n) => [n.value, n.label, n.why]),
     KEY_NUMBERS_NOTE,
     ...SAFETY_LAYERS.flatMap((l) => [l.title, l.text]),
-    ...SECTIONS.flatMap((s) => [s.title, s.summary, ...s.points, ...s.limits]),
+    ...SECTIONS.flatMap((s) => [s.title, s.detailsLabel, s.limitsLabel, s.roadmap ?? "", s.summary, ...s.points, ...s.limits]),
     ...PROTECTIONS.map((p) => p.label),
     ...Object.values(STATUS_LABELS),
     ...diagramText,
@@ -69,7 +69,14 @@ describe("How it works content", () => {
 
   it("opens with one-minute overview cards, each linking to a section", () => {
     const ids = new Set(SECTIONS.map((s) => s.id));
-    expect(OVERVIEW.map((o) => o.label)).toEqual(["What it does", "Architecture", "Safety", "Scale", "Status"]);
+    expect(OVERVIEW.map((o) => o.label)).toEqual([
+      "What it does",
+      "Architecture",
+      "Safety",
+      "Scale",
+      "Status",
+      "Phase 2 roadmap",
+    ]);
     for (const o of OVERVIEW) {
       expect(o.text, o.label).not.toBe("");
       expect(o.text.split(/(?<=\.) /).length, o.label).toBeLessThanOrEqual(2);
@@ -147,6 +154,41 @@ describe("How it works content", () => {
       expect(s.limits.length, s.id).toBeGreaterThan(0);
       expect(s.sources.length, s.id).toBeGreaterThan(0);
     }
+  });
+
+  it("gives every section its own heading and specific panel labels, never a bare Details or Limits", () => {
+    const titles = SECTIONS.map((s) => s.title);
+    expect(new Set(titles).size).toBe(titles.length);
+    for (const key of ["detailsLabel", "limitsLabel"] as const) {
+      const labels = SECTIONS.map((s) => s[key]);
+      for (const [i, label] of labels.entries()) {
+        const id = SECTIONS[i].id;
+        expect(label?.trim(), `${id} ${key}`).toBeTruthy();
+        expect(label, `${id} ${key}`).not.toMatch(/^\s*(details|limits)\s*(\(\d+\))?\s*$/i);
+        expect(label.split(/\s+/).length, `${id} ${key}`).toBeGreaterThanOrEqual(3);
+      }
+      expect(new Set(labels).size, key).toBe(labels.length);
+    }
+  });
+
+  it("explains under every key number why it matters, in one short sentence", () => {
+    for (const n of KEY_NUMBERS) {
+      expect(n.why?.trim(), n.label).toBeTruthy();
+      expect(n.why, n.label).toMatch(/^[A-Z].*\.$/);
+      expect(n.why.split(/(?<=\.) /).length, n.label).toBe(1);
+      expect(n.why.length, n.label).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("labels every planned capability as a plan, never as something that runs today", () => {
+    const planned = SECTIONS.filter((s) => s.roadmap != null);
+    expect(planned.length).toBeGreaterThan(0);
+    for (const s of planned) expect(s.roadmap, s.id).toMatch(/^(Phase 2|Planned|The goal): \S/);
+    expect(STATUS_LABELS.not_planned).toMatch(/^Phase 2 roadmap\b/);
+    const roadmapCard = OVERVIEW.find((o) => o.label === "Phase 2 roadmap");
+    expect(roadmapCard?.text).toMatch(/^With the grant: /);
+    expect(roadmapCard?.text).toMatch(/None of it is built yet\.$/);
+    expect(SECTIONS.find((s) => s.id === "status")?.summary).toMatch(/None of the roadmap is built yet\./);
   });
 
   it("cites only files that exist in the repository", () => {

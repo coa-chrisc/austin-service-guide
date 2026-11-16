@@ -123,11 +123,12 @@ export default function HowItWorks() {
         }}
       />
       <Typography component="h1" variant="h4" sx={{ fontWeight: 700, mb: 1.5 }}>
-        How this guide works
+        How the guide finds services and protects residents
       </Typography>
       <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
-        What the guide does, how it is built, what happens to resident data, how it uses AI, and what is still
-        pending. Each section opens with a short summary; its details and limits are one click below.
+        For reviewers, city technology leaders and residents: what the guide does today, how it is built, what
+        happens to resident data, how it uses AI, and where it goes next. Each section opens with a short summary;
+        its details and known limits are one click below, and planned work is marked as planned.
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         This page is in English only.

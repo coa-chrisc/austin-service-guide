@@ -17,7 +17,7 @@ export function OverviewCards({ onJump }: { onJump: JumpHandler }) {
       <Typography component="h2" variant="h6" id="overview" sx={{ fontWeight: 700, mb: 1.5 }}>
         In one minute
       </Typography>
-      {/* Wrapping flex row, not a grid: five cards share one row on a wide screen, and a short last
+      {/* Wrapping flex row, not a grid: the cards share one row on a wide screen, and a short last
           row stretches instead of leaving one card alone in a column. */}
       <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0, display: "flex", flexWrap: "wrap", gap: 2 }}>
         {OVERVIEW.map((item) => {
@@ -53,7 +53,7 @@ export function KeyNumbers({ onJump }: { onJump: JumpHandler }) {
   return (
     <Box component="section" aria-labelledby="key-numbers" sx={{ mb: 4 }}>
       <Typography component="h2" variant="h6" id="key-numbers" sx={{ fontWeight: 700, mb: 1.5 }}>
-        Key numbers
+        Key numbers, and why they matter to residents
       </Typography>
       <Box
         component="ul"
@@ -73,6 +73,9 @@ export function KeyNumbers({ onJump }: { onJump: JumpHandler }) {
             </Typography>
             <Typography variant="body2" sx={{ mt: 0.5 }}>
               <SectionLink id={n.section} onJump={onJump} label={n.label} />
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+              {n.why}
             </Typography>
           </Paper>
         ))}
