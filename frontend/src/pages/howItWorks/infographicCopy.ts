@@ -176,4 +176,4 @@ export const CTA = {
   secondaryNote: "(20+ Documentation Files)",
 };
 
-export const TECHNICAL_TITLE = "Technical detail for IT and security reviewers";
+export const TECHNICAL_TITLE = "Architecture, privacy, and safety reference";

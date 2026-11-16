@@ -56,7 +56,7 @@ function Contents({ onJump }: { onJump: JumpHandler }) {
       }}
     >
       <Typography component="h3" id="contents" variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-        On this page
+        Jump to section
       </Typography>
       <Box
         component="ol"
@@ -164,23 +164,22 @@ export default function HowItWorks() {
             {TECHNICAL_TITLE}
           </Typography>
           <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
-            How the guide is built, what happens to resident data, how it uses AI, and what runs today. Each section
-            opens with a short summary; its details and known limits are one click below, and planned work is marked
-            as planned.
+            A technical overview for municipal IT, security reviewers, and coalition partners. Each section summarizes
+            what runs in production today, with implementation details and current operational limits one click below.
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            This page is in English only.
+            Technical reference is published in English.
           </Typography>
 
           {state.status === "failed" && (
             <Alert severity="warning" sx={{ mb: 3 }}>
-              This deployment's live settings could not be loaded, so the specific values (model, voice mode, catalog
-              counts) are missing. The explanations below still apply.
+              Live runtime telemetry could not be reached, so live configuration values (active model, voice mode,
+              catalog counts) are hidden. Architectural specifications below still apply.
             </Alert>
           )}
           {state.status === "loading" && (
             <Typography variant="body2" color="text.secondary" role="status" sx={{ mb: 2 }}>
-              Loading this deployment's settings…
+              Reading live deployment configuration...
             </Typography>
           )}
           {about && <LiveFacts sectionId="summary" about={about} headingLevel="h3" />}
@@ -200,11 +199,11 @@ export default function HowItWorks() {
                   sx={{ pt: 4, mb: 4, borderTop: 1, borderColor: "divider" }}
                 >
                   <Typography component="h3" variant="h5" id="full-documents" sx={{ fontWeight: 700, mb: 1.5 }}>
-                    Read the full documents
+                    Primary engineering and security docs
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 1, maxWidth: READING_WIDTH }}>
-                    This page is a plain-language summary of these files. Where they differ, the files and the code
-                    are correct and this page is out of date.
+                    This page summarizes the repository documentation below. If any detail diverges, the source code
+                    and underlying policy files govern.
                   </Typography>
                   <Box component="ul" sx={{ m: 0, pl: 3 }}>
                     {DOCUMENTS.map((doc) => (

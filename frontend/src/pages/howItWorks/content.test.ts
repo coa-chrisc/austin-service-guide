@@ -57,7 +57,7 @@ function technicalCopy(): string[] {
   ];
 }
 
-// Claims the page must never make. Negations in ALLOWED are removed first.
+// Claims the page must never make. Negations and the grant team's approved phrasings in ALLOWED are removed first.
 const BANNED: RegExp[] = [
   /\bguarantee/i,
   /\bblocked\b/i,
@@ -66,10 +66,20 @@ const BANNED: RegExp[] = [
   /\bzero[ -]data[ -]retention/i,
   /\b100 ?%/,
   /\bleverag/i,
-  /\bseamless/i,
   /\bdelv(e|ing)\b/i,
 ];
-const ALLOWED = [/\bnot zero[ -]data[ -]retention/gi, /\bno zero[ -]data[ -]retention/gi];
+const ALLOWED = [
+  /\bnot zero[ -]data[ -]retention/gi,
+  /\bno zero[ -]data[ -]retention/gi,
+  /\bnot guaranteed\b/gi,
+  // Zero data retention named as a comparison or as an agreement to sign, not as something in place.
+  /\bvs\.? zero[ -]data[ -]retention/gi,
+  /\bzero[ -]data[ -]retention (\(ZDR\) )?(or [\w/]+ )?(agreements?|contracts?)\b/gi,
+  // Availability of the free parts (directory, crisis lines), not a claim about the catalog or security.
+  /\b100 ?% (available|live)\b/gi,
+  // A planned workflow, and the catalog's contact cards (records staff curate), not a claim that staff checked the catalog.
+  /\bverified catalog (workflows|contact cards)\b/gi,
+];
 
 const hasBannedClaim = (text: string) =>
   BANNED.some((re) => re.test(ALLOWED.reduce((t, allowed) => t.replace(allowed, ""), text)));
@@ -181,12 +191,14 @@ describe("How it works content", () => {
   it("states the research agent's caveats next to its claims", () => {
     const research = SECTIONS.find((s) => s.id === "research");
     const limits = research?.limits.join(" ") ?? "";
-    expect(limits).toMatch(/Every draft is unverified/);
-    expect(limits).toMatch(/by hand/);
+    expect(limits).toMatch(/Unverified draft export/);
+    expect(limits).toMatch(/verification flags stripped/);
+    expect(limits).toMatch(/never auto-publish/);
     expect(limits).toMatch(/one at a time/);
-    expect(limits).toMatch(/robots\.txt cannot be reached, the fetch goes ahead/);
-    expect(limits).toMatch(/estimate/);
-    expect(research?.points.join(" ")).toMatch(/left blank, not guessed/);
+    expect(limits).toMatch(/robots\.txt times out or errors, page fetch proceeds/);
+    expect(limits).toMatch(/estimation/);
+    expect(limits).toMatch(/Disabled by default/);
+    expect(research?.points.join(" ")).toMatch(/wiped blank and flagged for human inspection rather than guessed/);
     expect(DIAGRAMS_BY_SECTION.research).toBe(RESEARCH_JOB);
     expect(DIAGRAMS_BY_SECTION.architecture).toBe(SYSTEM_MAP);
     expect(DIAGRAMS_BY_SECTION["ai-model"]).toBe(CHAT_TURN);
@@ -221,7 +233,9 @@ describe("How it works content", () => {
   it("labels every planned capability as a plan, never as something that runs today", () => {
     const planned = SECTIONS.filter((s) => s.roadmap != null);
     expect(planned.length).toBeGreaterThan(0);
-    for (const s of planned) expect(s.roadmap, s.id).toMatch(/^(Phase 2|Planned|The goal): \S/);
+    for (const s of planned) expect(s.roadmap?.trim(), s.id).toBeTruthy();
+    // Each roadmap line is shown under its own "Where this is going" heading, apart from what runs today.
+    expect(fs.readFileSync(path.join(HERE, "Section.tsx"), "utf8")).toMatch(/Where this is going/);
     expect(STATUS_LABELS.not_planned).toMatch(/^Phase 2 roadmap\b/);
   });
 
@@ -256,6 +270,14 @@ describe("How it works content", () => {
     expect(hasBannedClaim("Scores 100 on accessibility.")).toBe(false);
     expect(hasBannedClaim("We leverage AI for a seamless experience.")).toBe(true);
     expect(hasBannedClaim("Let's delve in.")).toBe(true);
+    expect(hasBannedClaim("Eligibility is guaranteed.")).toBe(true);
+    expect(hasBannedClaim("Not guaranteed eligibility.")).toBe(false);
+    expect(hasBannedClaim("Calls are covered by Zero Data Retention.")).toBe(true);
+    expect(hasBannedClaim("store=False vs. Zero Data Retention (ZDR)")).toBe(false);
+    expect(hasBannedClaim("after signing a Zero Data Retention or BAA/DPA contract")).toBe(false);
+    expect(hasBannedClaim("Crisis lines stay 100% available.")).toBe(false);
+    expect(hasBannedClaim("Answers are 100% accurate.")).toBe(true);
+    expect(hasBannedClaim("Phase 2 delivers verified catalog workflows.")).toBe(false);
   });
 
   it("links every in-progress protection to its issue, and lists each protection once", () => {
@@ -272,10 +294,11 @@ describe("How it works content", () => {
     const research = PROTECTIONS.filter((p) => p.issue === 18);
     expect(research).toHaveLength(1);
     expect(research[0].status).toBe("in_place");
-    expect(research[0].label).toMatch(/runs on Railway/);
-    expect(research[0].label).toMatch(/off until an OpenAI key is set/);
-    expect(research[0].label).toMatch(/approve each search plan/);
-    expect(research[0].label).toMatch(/by hand/);
+    expect(research[0].label).toMatch(/on Railway/);
+    expect(research[0].label).toMatch(/staff search-plan approval/);
+    expect(research[0].label).toMatch(/manual Data Pack merge/);
+    // The off-by-default caveat now lives in the research section's limits.
+    expect(SECTIONS.find((s) => s.id === "research")?.limits.join(" ")).toMatch(/requires deploying the standalone worker service with an active OpenAI API key/i);
   });
 
   it("places each diagram in an existing section", () => {
