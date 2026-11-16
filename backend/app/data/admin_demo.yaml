@@ -6,11 +6,74 @@
 # Top-level keys: analytics, demographics, service_demand, languages, equity,
 # demand_map, eligibility_rules, partner_gaps, reports, audit_log, staff,
 # residents, council_districts.
+#
+# The figures agree with each other: total_sessions (the last 30 days) equals
+# the sum of demand_map sessions, of languages session_count, of each
+# demographics breakdown, and of the daily_sessions series the backend builds;
+# equity.geographic and council_districts census shares match demand_map.
+# backend/tests/test_admin_demo.py checks this.
 analytics:
   total_sessions: 1247
   avg_matches_per_session: 6.8
   completion_rate: 0.74
-  crisis_detections: 23
+  # Times the crisis-resource panel was shown (keyword interrupt or the model's
+  # get_crisis_resources call), last 30 days. A count, not a diagnosis.
+  crisis_resources_shown: 96
+  # Same measure per week, oldest first; the last entry is the week ending
+  # yesterday. Citywide only.
+  crisis_weekly: [17, 19, 16, 9, 18, 22, 20, 19, 23, 21, 24, 22]
+  # Previous 30-day periods, oldest first; months_ago 0 is the current period
+  # (sessions = total_sessions, completed / sessions = completion_rate).
+  monthly_trend:
+  - months_ago: 5
+    sessions: 802
+    completed: 554
+  - months_ago: 4
+    sessions: 905
+    completed: 633
+  - months_ago: 3
+    sessions: 978
+    completed: 695
+  - months_ago: 2
+    sessions: 1063
+    completed: 762
+  - months_ago: 1
+    sessions: 1151
+    completed: 830
+  - months_ago: 0
+    sessions: 1247
+    completed: 923
+  highlights:
+  - Sessions rose to 1,247 from 1,151 in the previous 30 days (+8%).
+  - Completion improved to 74.0% from 72.1%; Vietnamese-language completion (66%) still trails the citywide rate.
+  - Rental deposit help was the most common need with no open matching service (64 sessions).
+  # Needs residents named that had no open matching service in the catalog
+  # (counted per session, last 30 days).
+  unmet_needs:
+  - need: Rental deposit or first-month rent
+    category: housing
+    sessions: 64
+    note: Emergency rental programs in the catalog are closed to new applicants.
+  - need: Evening or weekend child care
+    category: childcare
+    sessions: 41
+    note: No catalog provider lists hours after 6 pm.
+  - need: Adult dental care without insurance
+    category: healthcare
+    sessions: 38
+    note: One sliding-scale clinic, waitlisted.
+  - need: Eviction legal help in Vietnamese or Arabic
+    category: legal
+    sessions: 22
+    note: Legal aid lists interpreters on request only.
+  - need: Rides to medical appointments outside bus routes
+    category: transportation
+    sessions: 19
+    note: Paratransit eligibility excludes most callers.
+  - need: Halal or culturally specific food pantry
+    category: food
+    sessions: 7
+    note: Count under 11; shown suppressed in reports.
   top_categories:
   - name: Food Assistance
     count: 412
@@ -61,37 +124,50 @@ demographics:
   - label: 5+ people
     count: 199
     percentage: 16.0
+  # Same counts as demand_map, largest first.
   zip_codes:
   - label: '78741'
-    count: 198
-    percentage: 15.9
-  - label: '78753'
+    count: 178
+    percentage: 14.3
+  - label: '78744'
     count: 162
     percentage: 13.0
   - label: '78758'
-    count: 148
-    percentage: 11.9
+    count: 138
+    percentage: 11.1
+  - label: '78753'
+    count: 127
+    percentage: 10.2
   - label: '78745'
-    count: 137
-    percentage: 11.0
-  - label: '78702'
-    count: 124
-    percentage: 9.9
-  - label: '78721'
-    count: 112
-    percentage: 9.0
-  - label: '78723'
-    count: 98
-    percentage: 7.9
+    count: 114
+    percentage: 9.1
   - label: '78704'
-    count: 89
+    count: 95
+    percentage: 7.6
+  - label: '78702'
+    count: 88
     percentage: 7.1
-  - label: '78748'
-    count: 87
-    percentage: 7.0
-  - label: '78757'
-    count: 92
-    percentage: 7.4
+  - label: '78724'
+    count: 64
+    percentage: 5.1
+  - label: '78721'
+    count: 62
+    percentage: 5.0
+  - label: '78754'
+    count: 58
+    percentage: 4.7
+  - label: '78617'
+    count: 47
+    percentage: 3.8
+  - label: '78722'
+    count: 41
+    percentage: 3.3
+  - label: '78701'
+    count: 38
+    percentage: 3.0
+  - label: '78723'
+    count: 35
+    percentage: 2.8
   employment_statuses:
   - label: Unemployed
     count: 374
@@ -207,39 +283,58 @@ service_demand:
   category: Immigration
   match_count: 45
   trend: up
+# completed: sessions that reached results. census_lep_percentage: share of
+# residents age 5+ who speak the language at home and speak English less than
+# "very well" (synthetic stand-in for ACS table C16001); null for English.
 languages:
 - language_code: en
   language_name: English
   session_count: 749
-  percentage: 60.0
+  percentage: 60.1
+  completed: 572
+  census_lep_percentage: null
 - language_code: es
   language_name: Spanish
   session_count: 324
   percentage: 26.0
+  completed: 233
+  census_lep_percentage: 11.8
 - language_code: vi
   language_name: Vietnamese
   session_count: 62
   percentage: 5.0
+  completed: 41
+  census_lep_percentage: 0.9
 - language_code: zh
   language_name: Chinese (Mandarin)
   session_count: 50
   percentage: 4.0
+  completed: 35
+  census_lep_percentage: 0.8
 - language_code: ar
   language_name: Arabic
   session_count: 25
   percentage: 2.0
+  completed: 15
+  census_lep_percentage: 0.3
 - language_code: hi
   language_name: Hindi
   session_count: 19
   percentage: 1.5
+  completed: 14
+  census_lep_percentage: 0.2
 - language_code: ko
   language_name: Korean
   session_count: 10
   percentage: 0.8
+  completed: 7
+  census_lep_percentage: 0.2
 - language_code: fr
   language_name: French
   session_count: 8
-  percentage: 0.7
+  percentage: 0.6
+  completed: 6
+  census_lep_percentage: 0.1
 equity:
   race_ethnicity:
   - label: Hispanic/Latino
@@ -279,32 +374,34 @@ equity:
     portal_percentage: 8.0
     census_percentage: 46.0
     gap: -38.0
+  # Portal share = demand_map sessions in the district's ZIPs / total_sessions;
+  # census share = council_districts census_percentage.
   geographic:
-  - label: East Austin (78702, 78721, 78722, 78723)
-    portal_percentage: 32.0
-    census_percentage: 18.0
-    gap: 14.0
-  - label: North Austin (78753, 78758)
-    portal_percentage: 25.0
-    census_percentage: 15.0
-    gap: 10.0
-  - label: South Austin (78741, 78744, 78745)
-    portal_percentage: 28.0
-    census_percentage: 20.0
-    gap: 8.0
-  - label: Central/West Austin
-    portal_percentage: 8.0
-    census_percentage: 25.0
-    gap: -17.0
-  - label: Other Travis County
-    portal_percentage: 7.0
-    census_percentage: 22.0
-    gap: -15.0
+  - label: District 1 (East)
+    portal_percentage: 23.3
+    census_percentage: 9.5
+    gap: 13.8
+  - label: District 2 (Southeast)
+    portal_percentage: 22.1
+    census_percentage: 10.0
+    gap: 12.1
+  - label: District 3 (Southside)
+    portal_percentage: 21.9
+    census_percentage: 9.0
+    gap: 12.9
+  - label: District 4 (North)
+    portal_percentage: 21.3
+    census_percentage: 11.5
+    gap: 9.8
+  - label: Rest of Travis County
+    portal_percentage: 11.5
+    census_percentage: 60.0
+    gap: -48.5
   language_access:
   - label: English only
-    portal_percentage: 60.0
+    portal_percentage: 60.1
     census_percentage: 62.0
-    gap: -2.0
+    gap: -1.9
   - label: Spanish
     portal_percentage: 26.0
     census_percentage: 28.0
@@ -390,11 +487,13 @@ equity:
     - 55
     - 54
     - 53
+# census_percentage: the ZIP's share of the Travis County population (synthetic).
 demand_map:
 - zip: '78741'
   lat: 30.2161
   lng: -97.7222
-  sessions: 184
+  sessions: 178
+  census_percentage: 4.8
   top_categories:
   - housing
   - food
@@ -405,7 +504,8 @@ demand_map:
 - zip: '78744'
   lat: 30.1797
   lng: -97.751
-  sessions: 168
+  sessions: 162
+  census_percentage: 5.1
   top_categories:
   - food
   - childcare
@@ -416,7 +516,8 @@ demand_map:
 - zip: '78758'
   lat: 30.3835
   lng: -97.7
-  sessions: 142
+  sessions: 138
+  census_percentage: 5.9
   top_categories:
   - healthcare
   - immigration
@@ -427,7 +528,8 @@ demand_map:
 - zip: '78753'
   lat: 30.368
   lng: -97.677
-  sessions: 131
+  sessions: 127
+  census_percentage: 5.6
   top_categories:
   - food
   - childcare
@@ -438,7 +540,8 @@ demand_map:
 - zip: '78745'
   lat: 30.208
   lng: -97.8
-  sessions: 118
+  sessions: 114
+  census_percentage: 4.9
   top_categories:
   - healthcare
   - utilities
@@ -450,6 +553,7 @@ demand_map:
   lat: 30.2455
   lng: -97.7642
   sessions: 95
+  census_percentage: 4.2
   top_categories:
   - housing
   - healthcare
@@ -461,6 +565,7 @@ demand_map:
   lat: 30.2638
   lng: -97.7186
   sessions: 88
+  census_percentage: 2.4
   top_categories:
   - housing
   - food
@@ -468,21 +573,11 @@ demand_map:
   intensity: medium
   heat_intensity: medium
   heat_vulnerable_sessions: 22
-- zip: '78751'
-  lat: 30.3097
-  lng: -97.7224
-  sessions: 71
-  top_categories:
-  - healthcare
-  - housing
-  - education
-  intensity: medium
-  heat_intensity: low
-  heat_vulnerable_sessions: 4
 - zip: '78724'
   lat: 30.309
   lng: -97.645
   sessions: 64
+  census_percentage: 2.0
   top_categories:
   - food
   - transportation
@@ -490,10 +585,23 @@ demand_map:
   intensity: medium
   heat_intensity: medium
   heat_vulnerable_sessions: 19
+- zip: '78721'
+  lat: 30.2712
+  lng: -97.6823
+  sessions: 62
+  census_percentage: 1.6
+  top_categories:
+  - housing
+  - food
+  - healthcare
+  intensity: medium
+  heat_intensity: medium
+  heat_vulnerable_sessions: 14
 - zip: '78754'
   lat: 30.347
   lng: -97.658
   sessions: 58
+  census_percentage: 2.2
   top_categories:
   - childcare
   - food
@@ -505,6 +613,7 @@ demand_map:
   lat: 30.183
   lng: -97.632
   sessions: 47
+  census_percentage: 2.0
   top_categories:
   - transportation
   - food
@@ -516,6 +625,7 @@ demand_map:
   lat: 30.2876
   lng: -97.705
   sessions: 41
+  census_percentage: 0.9
   top_categories:
   - healthcare
   - education
@@ -527,6 +637,7 @@ demand_map:
   lat: 30.27
   lng: -97.74
   sessions: 38
+  census_percentage: 0.9
   top_categories:
   - emergency
   - legal
@@ -538,6 +649,7 @@ demand_map:
   lat: 30.312
   lng: -97.678
   sessions: 35
+  census_percentage: 2.6
   top_categories:
   - food
   - healthcare
@@ -748,125 +860,112 @@ partner_gaps:
   - 15
   - 14
   - 14
+# Report catalog for the admin Reports page. Each report renders at
+# /admin/reports/<id> from the admin endpoints; PDF reports also ship as
+# pre-rendered files under frontend/public/reports/<city config id>/<id>.pdf
+# (frontend/scripts/render-reports.mjs). cadence (monthly | quarterly | weekly
+# | on_demand) sets last_run: the latest scheduled run before today, at
+# run_time in the city's local time.
 reports:
-- id: rpt-monthly-overview
-  title: Monthly Service Overview
-  description: Sessions, completions, top services, and crisis flags for the past 30 days.
-  category: Operations
+- id: monthly-summary
+  title: Monthly Service Navigation Summary
+  audience: Director, council offices, funders
+  description: Sessions and completion trend, top categories and matched services, language mix, crisis-resource displays (count only), catalog size, and what changed.
+  category: Leadership
   format: PDF
-  row_count: 1
-  schedule: Monthly (1st of month, 7am)
+  cadence: monthly
+  schedule: Monthly, 1st at 7:00 AM
+  run_time: '07:00'
   owner: data@example.gov
-  last_run_days_ago: 1
-  last_run_time: 07:00:00Z
-- id: rpt-equity-quarterly
-  title: Quarterly Equity Report
-  description: Portal demographics vs. Census; access gaps by ZIP, language, and income.
+- id: unmet-need-partner-gaps
+  title: Unmet Need and Partner Gap Report
+  audience: Program managers, partner coordinators
+  description: Needs residents named that had no open matching service, and referrals by partner that did not lead to a connection (partner-reported totals).
+  category: Programs
+  format: PDF + CSV
+  cadence: monthly
+  schedule: Monthly, 1st at 7:00 AM
+  run_time: '07:00'
+  owner: programs@example.gov
+- id: language-access
+  title: Language Access Report
+  audience: Title VI / language-access office
+  description: Sessions by language against the census share of residents with limited English, and completion by language.
   category: Equity
   format: PDF + CSV
-  row_count: 412
-  schedule: Quarterly
+  cadence: quarterly
+  schedule: Quarterly, first day at 7:00 AM
+  run_time: '07:00'
   owner: equity@example.gov
-  last_run_days_ago: 7
-  last_run_time: 07:00:00Z
-- id: rpt-service-demand
+- id: equity-zip-district
+  title: Equity by ZIP and Council District
+  audience: Equity office, epidemiologists
+  description: Portal share against census share by district and ZIP, with disparity alerts. Counts under 11 are shown as "<11".
+  category: Equity
+  format: PDF + CSV
+  cadence: quarterly
+  schedule: Quarterly, first day at 7:00 AM
+  run_time: '07:00'
+  owner: equity@example.gov
+- id: crisis-summary
+  title: Crisis Resource Summary
+  audience: Behavioral-health lead
+  description: Weekly citywide counts of crisis-resource displays. No ZIP breakdown and no per-session rows.
+  category: Programs
+  format: PDF
+  cadence: weekly
+  schedule: Weekly, Mondays at 7:00 AM
+  run_time: '07:00'
+  owner: behavioral-health@example.gov
+- id: service-demand-zip
   title: Service Demand by ZIP
-  description: Session counts and top requested categories per ZIP code, ranked.
+  audience: Analysts
+  description: Sessions, top requested categories and heat-flagged sessions per ZIP, ranked.
   category: Analytics
   format: CSV
-  row_count: 187
-  schedule: Daily (7am)
+  cadence: weekly
+  schedule: Weekly, Mondays at 7:00 AM
+  run_time: '07:00'
   owner: data@example.gov
-  last_run_days_ago: 0
-  last_run_time: 07:00:00Z
-- id: rpt-language-access
-  title: Language Access Summary
-  description: Sessions by language, language switches, and untranslated query log.
-  category: Equity
-  format: CSV
-  row_count: 92
-  schedule: Weekly (Mondays)
-  owner: equity@example.gov
-  last_run_days_ago: 2
-  last_run_time: 07:00:00Z
-- id: rpt-crisis-flags
-  title: Crisis Flag Audit
-  description: All sessions where crisis protocol was triggered, with resolution status.
-  category: Operations
-  format: CSV
-  row_count: 23
-  schedule: Daily (7am)
-  owner: supervisor@example.gov
-  last_run_days_ago: 0
-  last_run_time: 07:00:00Z
-- id: rpt-eligibility-hits
-  title: Eligibility Rule Hit Counts
-  description: Which eligibility rules fire most often, and which never fire (candidates for review).
+- id: catalog-export
+  title: Catalog Export
+  audience: Anyone
+  description: Every service in the live catalog with its categories and verification status. Built from the catalog when you download it.
   category: Catalog
   format: CSV
-  row_count: 11
-  schedule: Weekly (Wednesdays)
+  cadence: on_demand
+  schedule: On demand (live catalog)
   owner: data@example.gov
-  last_run_days_ago: 3
-  last_run_time: 07:00:00Z
-- id: rpt-staff-activity
-  title: Staff Activity Log
-  description: Edits, reviews, and exports by staff member and department.
-  category: System
-  format: CSV
-  row_count: 248
-  schedule: Weekly (Mondays)
-  owner: admin@example.gov
-  last_run_days_ago: 1
-  last_run_time: 07:00:00Z
-- id: rpt-partner-gaps
-  title: Partner Coordination Gaps
-  description: Referrals that did not result in a connection, grouped by partner — surfaces handoff failures across refugee,
-    food, and schools partners.
-  category: Equity
-  format: PDF + CSV
-  row_count: 4
-  schedule: Weekly (Mondays)
-  owner: equity@example.gov
-  last_run_days_ago: 0
-  last_run_time: 07:00:00Z
-- id: rpt-incomplete-sessions
-  title: Incomplete Sessions
-  description: Sessions abandoned mid-intake, with last question reached.
-  category: Operations
-  format: CSV
-  row_count: 76
-  schedule: Daily (7am)
-  owner: supervisor@example.gov
-  last_run_days_ago: 0
-  last_run_time: 07:00:00Z
+# days_ago >= 1 so no entry is ever later than the moment it is viewed.
+# Actions are catalog, report and access events only: staff never open
+# individual resident records (the live intake keeps none).
 audit_log:
 - id: aud-01
-  actor: admin@example.gov
+  actor: s.chen@example.gov
   action: update
   resource_type: service
   resource_id: svc-commcare
   details: Updated hours for East Austin Health Center
-  days_ago: 0
+  days_ago: 1
   time: 14:32:00Z
 - id: aud-02
-  actor: admin@example.gov
+  actor: s.chen@example.gov
   action: create
   resource_type: service
   resource_id: svc-new-01
   details: 'Added new service: COVID-19 Vaccination Clinic'
   days_ago: 1
-  time: 10:15:00Z
+  time: 15:15:00Z
 - id: aud-03
-  actor: supervisor@example.gov
-  action: review
-  resource_type: resident
-  resource_id: res-02
-  details: Reviewed high-risk case — referred to housing coordinator
+  actor: m.johnson@example.gov
+  action: export
+  resource_type: report
+  resource_id: unmet-need-partner-gaps
+  details: Downloaded the Unmet Need and Partner Gap Report (CSV)
   days_ago: 2
-  time: 09:45:00Z
+  time: 15:45:00Z
 - id: aud-04
-  actor: admin@example.gov
+  actor: s.chen@example.gov
   action: update
   resource_type: service
   resource_id: svc-ctfb
@@ -874,63 +973,63 @@ audit_log:
   days_ago: 3
   time: 16:20:00Z
 - id: aud-05
-  actor: data@example.gov
+  actor: d.park@example.gov
   action: export
-  resource_type: analytics
-  resource_id: ''
-  details: Exported monthly equity report
+  resource_type: report
+  resource_id: equity-zip-district
+  details: Downloaded the Equity by ZIP and Council District report (PDF)
   days_ago: 4
-  time: 11:00:00Z
+  time: 16:00:00Z
 - id: aud-06
-  actor: supervisor@example.gov
-  action: flag
-  resource_type: session
-  resource_id: sess-128
-  details: Flagged session for quality review — crisis protocol triggered
+  actor: e.rodriguez@example.gov
+  action: review
+  resource_type: service
+  resource_id: svc-integral
+  details: Marked Integral Care crisis line details for re-verification
   days_ago: 5
-  time: 13:10:00Z
+  time: 18:10:00Z
 - id: aud-07
-  actor: admin@example.gov
+  actor: m.johnson@example.gov
   action: deactivate
   resource_type: service
   resource_id: svc-seasonal-01
   details: Deactivated seasonal cooling center (end of summer)
   days_ago: 6
-  time: 08:30:00Z
+  time: 13:30:00Z
 - id: aud-08
-  actor: staff@example.gov
+  actor: m.johnson@example.gov
   action: update
   resource_type: service
   resource_id: svc-safe
   details: Updated SAFE Alliance contact information
   days_ago: 7
-  time: 15:45:00Z
+  time: 20:45:00Z
 staff:
 - id: staff-01
   name: Sarah Chen
   email: s.chen@example.gov
-  role: admin
+  role: super_admin
   department: Health & Human Services
   is_active: true
   last_login_days_ago: 0
 - id: staff-02
   name: Marcus Johnson
   email: m.johnson@example.gov
-  role: supervisor
+  role: admin
   department: Health & Human Services
   is_active: true
   last_login_days_ago: 0
 - id: staff-03
   name: Elena Rodriguez
   email: e.rodriguez@example.gov
-  role: staff
+  role: manager
   department: Community Services
   is_active: true
   last_login_days_ago: 1
 - id: staff-04
   name: David Park
   email: d.park@example.gov
-  role: data_analyst
+  role: manager
   department: Innovation Office
   is_active: true
   last_login_days_ago: 0
@@ -944,7 +1043,7 @@ staff:
 - id: staff-06
   name: Robert Garcia
   email: r.garcia@example.gov
-  role: staff
+  role: viewer
   department: Equity Office
   is_active: true
   last_login_days_ago: 2
@@ -1772,6 +1871,7 @@ residents:
 council_districts:
 - id: '1'
   label: District 1 (East)
+  census_percentage: 9.5
   zips:
   - '78702'
   - '78721'
@@ -1780,16 +1880,19 @@ council_districts:
   - '78724'
 - id: '2'
   label: District 2 (Southeast)
+  census_percentage: 10.0
   zips:
   - '78744'
   - '78745'
 - id: '3'
   label: District 3 (Southside)
+  census_percentage: 9.0
   zips:
   - '78741'
   - '78704'
 - id: '4'
   label: District 4 (North)
+  census_percentage: 11.5
   zips:
   - '78753'
   - '78758'

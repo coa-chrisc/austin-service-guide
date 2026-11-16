@@ -93,36 +93,50 @@ def get_demo_staff() -> list[StaffMember]:
 
 # ── Simulated Analytics ──────────────────────────────────────────────
 
-def _generate_daily_sessions(days: int = 30) -> list[DailySessionCount]:
-    """Generate realistic-looking daily session counts."""
+def _generate_daily_sessions(total: int, days: int = 30) -> list[DailySessionCount]:
+    """Daily session counts for the ``days`` days before today, summing to ``total``.
+
+    A fixed-seed shape (weekend dip, slight upward trend) scaled so the series
+    agrees with the pack's ``total_sessions`` (largest-remainder rounding).
+    """
     rng = random.Random(20240601)  # fixed seed: stable demo charts across reloads
-    result = []
-    base = 35
+    dates: list[date] = []
+    weights: list[int] = []
     for i in range(days, 0, -1):
-        d = (_TODAY - timedelta(days=i)).isoformat()
-        dow = (_TODAY - timedelta(days=i)).weekday()
-        # Weekend dip
+        d = _TODAY - timedelta(days=i)
         noise = rng.randint(-8, 12)
-        weekend_mod = -15 if dow >= 5 else 0
-        # Slight upward trend
-        trend = int(i * -0.3)
-        count = max(5, base + noise + weekend_mod - trend)
-        result.append(DailySessionCount(date=d, count=count))
-    return result
+        weekend_mod = -15 if d.weekday() >= 5 else 0
+        trend = int(i * -0.3)  # slight upward trend
+        dates.append(d)
+        weights.append(max(5, 35 + noise + weekend_mod - trend))
+    scale = total / sum(weights)
+    raw = [w * scale for w in weights]
+    counts = [int(r) for r in raw]
+    by_remainder = sorted(range(days), key=lambda k: raw[k] - counts[k], reverse=True)
+    for k in by_remainder[: total - sum(counts)]:
+        counts[k] += 1
+    return [DailySessionCount(date=d.isoformat(), count=c) for d, c in zip(dates, counts)]
 
 
 def generate_analytics_overview() -> dict:
     analytics = _demo().get("analytics") or {}
+    total = analytics.get("total_sessions", 0)
+    crisis_shown = analytics.get("crisis_resources_shown", 0)
     return {
-        "total_sessions": analytics.get("total_sessions", 0),
+        "total_sessions": total,
         "total_residents": len(get_demo_residents()),
         "total_services": len(SERVICES),
         "avg_matches_per_session": analytics.get("avg_matches_per_session", 0),
         "completion_rate": analytics.get("completion_rate", 0),
-        "crisis_detections": analytics.get("crisis_detections", 0),
+        "crisis_resources_shown": crisis_shown,
+        "crisis_detections": crisis_shown,  # legacy name for the same count
+        "crisis_weekly": analytics.get("crisis_weekly", []),
+        "monthly_trend": analytics.get("monthly_trend", []),
+        "highlights": analytics.get("highlights", []),
+        "unmet_needs": analytics.get("unmet_needs", []),
         "top_categories": analytics.get("top_categories", []),
         "daily_sessions": (
-            [s.model_dump() for s in _generate_daily_sessions()] if analytics else []
+            [s.model_dump() for s in _generate_daily_sessions(total)] if analytics else []
         ),
         # Geographic filter chips on the analytics page (id, label, zips).
         "council_districts": _items("council_districts"),
@@ -209,10 +223,25 @@ def generate_partner_gaps() -> dict:
     }
 
 
+def _last_scheduled_run(cadence: str) -> date | None:
+    """The latest scheduled run strictly before today (never in the future)."""
+    yesterday = _TODAY - timedelta(days=1)
+    if cadence == "weekly":  # Mondays
+        return yesterday - timedelta(days=yesterday.weekday())
+    if cadence == "monthly":  # 1st of the month
+        return yesterday.replace(day=1)
+    if cadence == "quarterly":  # first day of the quarter
+        return yesterday.replace(month=(yesterday.month - 1) // 3 * 3 + 1, day=1)
+    return None  # on_demand: built when downloaded
+
+
 def generate_reports() -> list[dict]:
+    """Report catalog; ``last_run`` is a local wall time (no zone) or ""."""
     reports = []
     for r in _items("reports"):
         r = dict(r)
-        time = r.pop("last_run_time")
-        reports.append(_with_date(r, "last_run_days_ago", "last_run", time))
+        run = _last_scheduled_run(r.get("cadence", "on_demand"))
+        time = r.pop("run_time", "07:00")
+        r["last_run"] = f"{run.isoformat()}T{time}:00" if run else ""
+        reports.append(r)
     return reports
