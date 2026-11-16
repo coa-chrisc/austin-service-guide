@@ -257,7 +257,7 @@ Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data
 2. **Logo.** Put it under `config/brand/<id>/` and set `brand.logoUrl`, or leave it `null` for the generated tile.
 3. **Data pack.** Copy `backend/app/data` to `config/data/<id>/` and replace the files.
 4. **Map tiles.** Set `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` for production (see [Map](#8-map)).
-5. **Environment variables.** `CITY_CONFIG=presets/<id>.json` and `CITY_DATA_DIR=data/<id>` for the build and the runtime; then the usual `OPENAI_API_KEY`, `PUBLIC_ORIGIN`, `CORS_ORIGINS`, `ADMIN_API_TOKEN` (see [deploy/README.md](../deploy/README.md)).
+5. **Environment variables.** `CITY_CONFIG=presets/<id>.json` and `CITY_DATA_DIR=data/<id>` for the build and the runtime; then the usual `OPENAI_API_KEY`, `PUBLIC_ORIGIN`, `CORS_ORIGINS`, `ADMIN_API_TOKEN` (see [deploy/README.md](../deploy/README.md); on Vercel these are project env vars, see [deploy/vercel/README.md](../deploy/vercel/README.md)).
 6. **Verify.** Run the build, tests and catalog check in [Check your work](#11-check-your-work) with your variables set.
 
 The admin console has no real authentication, and the privacy, security and legal reviews in [SECURITY.md](../SECURITY.md) still apply.

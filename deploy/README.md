@@ -44,26 +44,14 @@ terraform -chdir=deploy/aws init && terraform -chdir=deploy/aws apply \
 az deployment group create -g <rg> -f deploy/azure/container-app.bicep \
   -p image=<registry>/service-guide:<tag> citySlug=<city> openAiKeySecretUri=<kv-secret-uri> publicOrigin=https://...
 gcloud run services replace deploy/gcp/cloud-run.yaml --region <region>   # after editing placeholders
+vercel deploy --prod   # no image needed; Vercel builds from source (see deploy/vercel/README.md)
 ```
 
 Create the OpenAI key secret first (Secrets Manager, Key Vault, or Secret Manager) and grant only the workload identity read access to it. The AWS and Azure templates need pre-existing network (AWS) or vault (Azure) resources, as described in their headers.
 
-## Vercel (private demo)
+## Vercel
 
-The repo root deploys to Vercel as one Python function: `vercel_app.py` imports the same FastAPI app the container runs and serves the built SPA from `frontend/dist`, just as the image does with `STATIC_DIR`. `vercel.json` sets the build command (`npm ci && npm run build` in `frontend/`), a 300 s function timeout for long agent turns, and the files to leave out of the bundle. `pyproject.toml` exists only for Vercel. Its dependency list mirrors `backend/requirements.txt`, so keep the two in sync.
-
-```bash
-vercel link                       # once, from the repo root
-vercel env add OPENAI_API_KEY production
-vercel env add ACCESS_CODES production        # label:code,label:code (codes ≥ 8 chars)
-vercel env add ACCESS_GATE_SECRET production  # ≥ 32 chars; python -c "import secrets; print(secrets.token_urlsafe(32))"
-vercel env add PUBLIC_ORIGIN production       # https://<your-domain>
-vercel deploy --prod
-```
-
-**Access gate.** When `ACCESS_CODES` is set, `backend/app/access_gate.py` requires an access cookie for every path except `/access` (the code form), `/api/v1/health` and the PWA manifest. Pages redirect to the form, and API calls get a 401, so nobody without a code can run the model. Give each person or group its own `label:code` pair. To revoke one, delete or change that pair and redeploy; cookies issued for it stop working. Rotating `ACCESS_GATE_SECRET` signs everyone out. The gate is a demo control, not user authentication: codes are shared secrets, and failed attempts are slowed by one second but not counted. When `ACCESS_CODES` is unset (local dev, tests, the Docker image), the gate is off.
-
-**Voice.** The `realtime_audio` mode works on Vercel because the browser opens its WebRTC connection straight to OpenAI. The function only mints the client secret and runs tool calls. That mode still requires `VOICE_PIPELINE_MODE=realtime_audio`, `ALLOW_RAW_AUDIO_STREAM=true` and the zero-data-retention caveat on `ALLOW_RAW_AUDIO_STREAM` in the root `README.md`.
+Vercel runs the whole app as one Python function, with no container registry or network setup and an optional access-code gate for private demos. It is the quickest way to get a hosted, HTTPS demo. Full guide, env vars, access codes, smoke test and gotchas: [deploy/vercel/README.md](vercel/README.md).
 
 ## Configuration
 
@@ -106,11 +94,12 @@ Local run: `docker compose up --build` (override with `CITY_CONFIG=presets/<city
 
 ## Logging
 
-The app writes to stdout/stderr. Each platform collects it: CloudWatch Logs (`/ecs/<city>-service-guide`, 30-day retention), Log Analytics (Container Apps), Cloud Logging (Cloud Run). Resident text is PII-redacted before storage or any model call (see `docs/PRIVACY.md`), but keep log retention short and restrict log access. Do not enable `REALTIME_DEBUG_LOG_ENABLED` in production.
+The app writes to stdout/stderr. Each platform collects it: CloudWatch Logs (`/ecs/<city>-service-guide`, 30-day retention), Log Analytics (Container Apps), Cloud Logging (Cloud Run), the project's Logs tab or `vercel logs` (Vercel). Resident text is PII-redacted before storage or any model call (see `docs/PRIVACY.md`), but keep log retention short and restrict log access. Do not enable `REALTIME_DEBUG_LOG_ENABLED` in production.
 
 ## Known limitations
 
 - **AWS:** no WAF, no access logs on the ALB, no VPC or certificate creation; the task needs outbound HTTPS (NAT or endpoints). The security group allows egress to `0.0.0.0/0` on 443 because OpenAI has no fixed IP range. Image architecture defaults to `X86_64`.
 - **Azure:** the managed certificate requires the custom domain's CNAME and `asuid` TXT record to exist before deployment; otherwise leave `customDomain` empty, deploy, add DNS, then redeploy. Role assignments (Key Vault Secrets User, AcrPull) are not created by the template.
+- **Vercel:** no container; static files are served through the function, not the CDN, while the access gate is on; Hobby plan terms are non-commercial; Preview deployments only get Preview-scoped env vars (an ungated preview is possible). See [vercel/README.md](vercel/README.md#gotchas-we-hit).
 - **GCP:** the manifest does not create the service account, secret, or public-access binding; custom domains are configured outside it.
 - **All:** admin auth is the demo stub, so put admin routes behind the platform's own access control for anything beyond a demo.
