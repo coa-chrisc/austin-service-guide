@@ -244,6 +244,20 @@ def test_realtime_instructions_include_privacy_rules(client, monkeypatch):
     assert config["tracing"] is None
 
 
+def test_realtime_instructions_cover_unclear_audio_and_accents(client):
+    from app.models import IntakeState
+    from app.services.intake_state import session_from_state
+    from app.services.realtime import build_realtime_instructions
+
+    sid = _start(client)
+    text = build_realtime_instructions(
+        session_from_state(IntakeState.model_validate(sid.state))
+    )
+    assert "Only respond to clear speech" in text
+    assert "ask the resident to repeat" in text
+    assert "accent" in text
+
+
 # ── Admin write gate ────────────────────────────────────────────────────
 
 _NEW_SERVICE = {"id": "svc-test-admin-token", "name": "Token Test", "slug": "token-test"}
