@@ -44,6 +44,7 @@ npm run dev                                    # Vite dev server at http://local
 npm run build                                  # tsc -b && vite build (the required CI check)
 npm test                                       # vitest (client PII guard vs shared fixtures)
 npm run validate:catalog                       # catalog YAML vs config/services.schema.json (-- --strict fails on unverified entries)
+npm run validate:pack                          # whole data pack vs config/schemas/ + cross-file rules (-- --data-dir <dir> --json); contract in docs/DATA_PACK.md
 npm run preview                                # serve the production build locally
 ```
 
