@@ -14,6 +14,8 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import type { Theme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import PrivacyNotice from "@/components/common/PrivacyNotice";
 import PrivacySnackbar from "@/components/common/PrivacySnackbar";
@@ -62,6 +64,8 @@ export default function ServiceDirectory() {
   const [popular, setPopular] = useState<Service[]>([]);
   const popularFetchedRef = useRef(false);
   const pageSize = 12;
+  // Phones: no sibling pages, so the pager stays on one line.
+  const isPhone = useMediaQuery((theme: Theme) => theme.breakpoints.down("sm"));
 
   useEffect(() => {
     setPage(1);
@@ -168,7 +172,7 @@ export default function ServiceDirectory() {
             setSearch(text);
           }}
           size="small"
-          sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: 200 }}
+          sx={{ flex: { xs: "1 1 100%", sm: 1 }, minWidth: "min(200px, 100%)" }}
           slotProps={{
             input: {
               startAdornment: (
@@ -348,7 +352,12 @@ export default function ServiceDirectory() {
           <Pagination
             count={totalPages}
             page={page}
-            onChange={(_, p) => setPage(p)}
+            siblingCount={isPhone ? 0 : 1}
+            onChange={(_, p) => {
+              setPage(p);
+              // The pager sits under the list; start the new page at the top.
+              window.scrollTo(0, 0);
+            }}
             color="primary"
           />
         </Box>

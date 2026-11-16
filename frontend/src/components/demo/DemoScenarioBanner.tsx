@@ -18,7 +18,13 @@ interface DemoScenarioBannerProps {
   sticky?: boolean;
 }
 
-const buttonSx = { textTransform: "none", fontWeight: 600 } as const;
+const buttonSx = {
+  textTransform: "none",
+  fontWeight: 600,
+  // A 44 px tap target on phones and touch screens; compact on desktop.
+  minHeight: { xs: 44, md: 0 },
+  "@media (pointer: coarse)": { minHeight: 44 },
+} as const;
 
 /**
  * Full-width notice that the resident on screen is a pre-written sample,
@@ -70,7 +76,7 @@ export default function DemoScenarioBanner({ label, message, dense, sticky }: De
           </Box>{" "}
           {message}
         </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexShrink: 0 }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
           <Button size="small" variant="outlined" onClick={() => leave("/")} sx={buttonSx}>
             Exit demo
           </Button>

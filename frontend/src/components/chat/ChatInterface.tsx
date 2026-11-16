@@ -374,7 +374,7 @@ export default function ChatInterface({
                 variant="outlined"
                 color={voice.liveAi ? "primary" : "default"}
                 label={voice.liveAi ? "Live AI" : "Guided questions (AI off)"}
-                sx={{ height: 20, fontSize: 11, fontWeight: 600 }}
+                sx={{ minHeight: 20, fontSize: "0.75rem", fontWeight: 600 }}
               />
             )}
           </Box>
@@ -400,7 +400,9 @@ export default function ChatInterface({
 
       {/* Crisis lines: pinned once a crisis is detected; works offline. */}
       {crisisDetected && (
-        <Box sx={{ px: 2, pt: 1, "& > *": COLUMN }}>
+        // Capped so the conversation and the message box stay on a phone
+        // screen; the lines scroll inside it, the first ones always in view.
+        <Box sx={{ px: 2, pt: 1, maxHeight: "40%", overflowY: "auto", flexShrink: 0, "& > *": COLUMN }}>
           <CrisisLinesBlock />
         </Box>
       )}

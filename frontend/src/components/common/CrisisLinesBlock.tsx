@@ -33,6 +33,9 @@ const BUTTON_SX = {
   textTransform: "none",
   fontWeight: 600,
   borderRadius: (theme: Theme) => theme.shape.radius.pill,
+  // A 44 px call target on phones and touch screens; compact on desktop.
+  minHeight: { xs: 44, md: 32 },
+  "@media (pointer: coarse)": { minHeight: 44 },
 } as const;
 
 /**
