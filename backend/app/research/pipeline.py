@@ -22,8 +22,15 @@ from app.research.extract import extract_page
 from app.research.fetch import FetchError
 from app.research.llm import Usage, cost_usd
 from app.research.plan import make_plan
-from app.research.postprocess import build_service, confidence, slugify, unique_slug, validate_service
-from app.research.search import SearchHit, host_of, select_urls
+from app.research.postprocess import (
+    build_service,
+    confidence,
+    distinctive_name,
+    slugify,
+    unique_slug,
+    validate_service,
+)
+from app.research.search import SearchHit, host_of, select_urls, split_site
 from app.services.dedupe import find_duplicates
 
 logger = logging.getLogger(__name__)
@@ -161,7 +168,6 @@ class Run:
 
     async def search_phase(self) -> list[SearchHit]:
         hits: list[SearchHit] = []
-        site_filter = None
         for i, q in enumerate(self.job["plan"]["queries"]):
             key = f"search:{i}"
             done, result = self.store.get_step(self.id, key)
@@ -170,7 +176,9 @@ class Run:
                     raise CapReached("max_searches")
                 self.step()
                 try:
-                    res = await self.d.provider.search(q["query"], site=site_filter, limit=10)
+                    # site:<domain> goes to the provider as a filter (older plans may say site.<domain>).
+                    text, site = split_site(q["query"])
+                    res = await self.d.provider.search(text, site=site, limit=10)
                     self.charge(Usage(res.usage.input_tokens, res.usage.cached_tokens, res.usage.output_tokens,
                                       res.usage.search_calls))
                     result = {"hits": [h.__dict__ for h in res.hits]}
@@ -251,11 +259,15 @@ class Run:
                 raise CapReached("max_drafts")
             self.step()
             source = self.store.get_source(sid)
-            candidates, usage = await extract_page(
+            candidates, off_topic, usage = await extract_page(
                 self.d.client, self.d.settings, params=params, categories=self.d.pack.category_names,
                 url=source["final_url"], title=source["title"] or "", text=source["text"],
             )
             self.charge(usage)
+            if off_topic:  # never drafted, so never counted toward max_drafts
+                n = len(off_topic)
+                self.event("skipped", f"Skipped {n} listing{'s' if n != 1 else ''} outside the topic on "
+                                      f"{source['final_url'][:160]}: {', '.join(off_topic)[:300]}")
             # A crash after drafts were written but before the step commit would
             # repeat this page: drop that page's earlier drafts first.
             for old in self.store.list_drafts(self.id):
@@ -280,6 +292,11 @@ class Run:
         if not provenance["fields"]:
             self.event("skipped", f"No verifiable evidence for \"{name[:80]}\"; not drafted")
             return None
+        name, prefix = distinctive_name(checked)
+        if prefix:
+            checked["name"] = name
+            provenance["flags"].append({"field": "name", "message": f"the extracted name gave no site or "
+                                        f"organisation; \"{prefix[:80]}\" was added in front; check it"})
         existing = self.store.list_drafts(self.id)
         taken = {s.get("slug") for s in self.d.pack.services} | {d["candidate"].get("slug") for d in existing}
         slug = unique_slug(slugify(name), taken)

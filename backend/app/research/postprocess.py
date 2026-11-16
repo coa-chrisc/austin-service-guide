@@ -13,6 +13,7 @@ from typing import Any, Awaitable, Callable
 import httpx
 
 from app.research.extract import DAYS, GATES, COST_TYPES, PROVIDER_TYPES
+from app.services.dedupe import name_tokens
 
 Geocoder = Callable[[str], Awaitable["tuple[float, float, str] | None"]]
 
@@ -55,6 +56,23 @@ def unique_slug(base: str, taken: set[str]) -> str:
         slug = f"{base}-{n}"
         n += 1
     return slug
+
+
+def distinctive_name(cand: dict) -> tuple[str, str]:
+    """``(name, prefix added or "")``. A name that mentions neither its site
+    (first location name) nor its organisation, such as a bare "Food
+    Pantry", gets the site (else the organisation) in front, in the
+    catalog's "<organisation or site> <service>" style, so residents and the
+    duplicate check can tell look-alike services apart."""
+    name = plain(cand.get("name"), LIMITS["name"])
+    words = name_tokens(name)
+    site = next((plain(loc.get("name"), 200) for loc in cand.get("locations") or []
+                 if isinstance(loc, dict) and loc.get("name")), "")
+    provider = plain(cand.get("provider_name"), LIMITS["provider_name"])
+    prefix = site or provider
+    if not words or not prefix or any(name_tokens(p) & words for p in (site, provider)):
+        return name, ""
+    return f"{prefix} {name}"[:LIMITS["name"]].rstrip(), prefix
 
 
 def _fmt(h: str, m: str | None, ap: str) -> str:

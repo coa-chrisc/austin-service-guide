@@ -64,7 +64,7 @@ def test_extraction_caps_services_per_page():
 
                 return fake_response(payload)
 
-    services, _ = asyncio.run(extract_page(Many(), job_settings(), params=research_params(),
+    services, _, _ = asyncio.run(extract_page(Many(), job_settings(), params=research_params(),
                                            categories={"food": "Food"}, url="u", title="t", text="x"))
     assert len(services) == 10
     assert json.dumps(services)  # plain data

@@ -14,6 +14,7 @@ Either way the pipeline fetches the pages itself for evidence.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Protocol
 from urllib.parse import urlsplit
@@ -62,6 +63,35 @@ def make_provider(settings) -> SearchProvider:  # noqa: ANN001 — JobSettings
         api_key=settings.research_api_key,
         model=settings.openai_research_model,
     )
+
+
+# ── The site: operator ───────────────────────────────────────────
+
+_DOMAIN = r"((?:[a-z0-9-]{1,63}\.)+[a-z]{2,63})"
+# Planner output seen in real runs: "site.example.gov food pantry".
+_LEADING_SITE_DOT = re.compile(r"^site\." + _DOMAIN + r"(?=\s|$)", re.I)
+_SITE = re.compile(r"(?:^|\s)site:" + _DOMAIN + r"(?=\s|$)", re.I)
+
+
+def normalize_query(query: str) -> str:
+    """Collapse whitespace and turn a leading ``site.<domain>`` token into
+    ``site:<domain>``. Only a token naming a dotted domain is rewritten."""
+    query = " ".join(str(query or "").split())
+    return _LEADING_SITE_DOT.sub(lambda m: "site:" + m.group(1).lower(), query, count=1)
+
+
+def split_site(query: str) -> tuple[str, str | None]:
+    """``(query without its site: operator, domain or None)``.
+
+    The domain goes to the provider as a filter (SearXNG re-adds the
+    operator; OpenAI web search uses ``filters.allowed_domains``). Only the
+    first operator is taken; one that is not a bare domain stays as text."""
+    query = normalize_query(query)
+    match = _SITE.search(query)
+    if not match:
+        return query, None
+    rest = " ".join((query[:match.start()] + " " + query[match.end():]).split())
+    return rest, match.group(1).lower().removeprefix("www.")
 
 
 # ── Ranking ──────────────────────────────────────────────────────────
@@ -143,3 +173,4 @@ def select_urls(
         per[host] = per.get(host, 0) + 1
         chosen.append(url)
     return chosen, skipped
+
