@@ -80,3 +80,8 @@ images/
 
 # Dedupe script output (advisory; regenerate with backend/scripts/dedupe_catalog.py)
 backend/dedupe_review.csv
+.vercel
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+.playwright-mcp/
