@@ -13,8 +13,9 @@ from typing import Any
 from app.config import get_settings
 from app.models import IntakeMessage, IntakeSession, IntakeStatus, MessageRole
 from app.services import catalog
+from app.services.city import get_city
 from app.services.pii import ASSISTANT_KINDS, redact
-from app.services.prompts import build_instructions
+from app.services.prompts import LANGUAGE_NAMES, build_instructions
 from app.services.realtime_debug import record_realtime_debug_event, summarize_tool_output
 from app.services.scenarios import check_crisis, crisis_response
 from app.services.tool_schemas import TOOL_SCHEMAS
@@ -68,12 +69,19 @@ def build_realtime_instructions(session: IntakeSession) -> str:
         "as a stall, but as part of the same breath.\n\n"
         "Language behavior:\n"
         "  - Start in the resident's selected language from the session. "
-        "If they naturally speak another language, briefly acknowledge the "
-        "switch, call set_language with the ISO code, and continue in that "
+        "Your greeting told the resident they can simply speak in their own "
         "language.\n"
-        "  - Do not change the response language because of the "
-        "resident's accent. Change it only when they choose a language "
-        "or speak to you in another language.\n"
+        "  - When the resident speaks to you in a different language than "
+        "the current one, switch: call set_language with that language's "
+        "ISO code first (tool-first, before you speak), so the screen and "
+        "the plan follow, then reply in that language and keep using it. A "
+        "few words of acknowledgement are enough; do not explain the "
+        "switch.\n"
+        "  - Switch only on the language of the words, or when the resident "
+        "asks for a language. Accent alone is never a reason to switch: "
+        "English spoken with a Spanish or Vietnamese accent is still "
+        "English. A single borrowed word, name, or place (\"gracias\", a "
+        "street name, a program name) is not a switch either.\n"
         "  - Search the service catalog in English, but translate any spoken "
         "summary back into the resident's current language.\n\n"
         "Realtime tool behavior:\n"
@@ -136,10 +144,84 @@ def build_realtime_instructions(session: IntakeSession) -> str:
         "you don't need it and move to the next intake question. Ask for zip "
         "code only, never a street address.\n\n"
         "Startup:\n"
-        "  - If an assistant greeting is already in the conversation "
-        "history, do not greet again. Continue with the next missing intake "
-        "question."
+        "  - When voice starts on a new intake you have already greeted the "
+        "resident aloud and invited them to speak in any language. Do not "
+        "greet again or repeat that invitation. Answer what the resident "
+        "says and continue with the next missing intake question."
     )
+
+
+# Short enough to speak in under about eight seconds.
+_GREETING_WITH_LANGUAGES = (
+    "Hi! I can help in {first}, {second}, or any other language, so just "
+    "start talking in yours. How can I help you today?"
+)
+_GREETING_ANY_LANGUAGE = (
+    "Hi! You can talk with me in any language, so just start talking in "
+    "yours. How can I help you today?"
+)
+
+
+def _language_name(code: str) -> str:
+    base = (code or "en").split("-")[0].lower()
+    return LANGUAGE_NAMES.get(base, code or "English")
+
+
+def _startup_greeting_script() -> str:
+    """English greeting text; names two of the city's configured languages."""
+    named = [LANGUAGE_NAMES[c] for c in get_city().languages if c in LANGUAGE_NAMES]
+    if len(named) >= 2:
+        return _GREETING_WITH_LANGUAGES.format(first=named[0], second=named[1])
+    return _GREETING_ANY_LANGUAGE
+
+
+def build_realtime_startup_response(session: IntakeSession) -> dict[str, Any]:
+    """The ``response.create`` body for the greeting the voice model speaks first.
+
+    The browser sends it once, when voice starts on an intake the resident
+    hasn't spoken in yet. Nothing is spoken on the device before it. The
+    greeting is in the session's language (the browser's UI language at
+    start), says the resident can speak in any language, and asks how the
+    guide can help.
+
+    ``input`` gives the turn its own context, so the long text greeting in
+    the conversation history doesn't leak into it; the spoken reply is still
+    added to the conversation. ``metadata.purpose`` is how the browser tells
+    this response apart from resident turns.
+    """
+    lang_name = _language_name(session.language)
+    script = _startup_greeting_script()
+    if lang_name == "English":
+        how = "in English, word for word"
+    else:
+        how = f"in {lang_name}, translated naturally"
+    instructions = (
+        f"You are the voice guide for the {get_city().app_name}. Voice mode "
+        "just connected and the resident is waiting for you to speak first.\n"
+        f"Say this greeting aloud exactly once, {how}:\n"
+        f'"{script}"\n'
+        "Speak warmly at a natural pace and keep it under eight seconds. Say "
+        "nothing else: no privacy notice, no other questions, and no tool "
+        "calls. Then stop and wait for the resident."
+    )
+    return {
+        "output_modalities": ["audio"],
+        "instructions": instructions,
+        "tool_choice": "none",
+        "metadata": {"purpose": "startup_greeting"},
+        "input": [
+            {
+                "type": "message",
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": "Voice mode connected. Greet the resident now.",
+                    }
+                ],
+            }
+        ],
+    }
 
 
 def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
@@ -158,18 +240,19 @@ def build_realtime_session_config(session: IntakeSession) -> dict[str, Any]:
       before ending one so a resident who pauses mid-answer isn't split into
       two turns.
 
+    - No transcription ``language``. The resident may answer in any
+      language (the greeting invites it), so the transcription model detects
+      it; a pinned language would mis-transcribe a resident who switches.
+
     The browser also mutes the mic while the assistant's audio plays (see
     ``useRealtimeVoiceSession.ts``), and ``record_realtime_transcript`` drops
     transcripts that are echoes of the assistant.
     """
     settings = get_settings()
     instructions = build_realtime_instructions(session)
-    lang = (session.language or "en").split("-")[0].lower()
     transcription: dict[str, Any] = {
         "model": settings.openai_realtime_transcription_model,
     }
-    if lang and lang != "en":
-        transcription["language"] = lang
 
     return {
         "type": "realtime",

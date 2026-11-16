@@ -203,6 +203,8 @@ export interface RealtimeClientSecretResponse {
   state: IntakeState;
   model: string;
   session_config: Record<string, unknown>;
+  /** `response.create` body for the greeting the voice model speaks first. */
+  startup_response?: Record<string, unknown>;
   client_secret: {
     value: string;
     expires_at: number;

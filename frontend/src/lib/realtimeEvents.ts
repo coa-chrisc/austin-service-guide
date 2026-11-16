@@ -75,3 +75,26 @@ export function sessionUpdatePayload(
   delete payload.model;
   return payload;
 }
+
+/** `metadata.purpose` that marks the voice model's opening greeting. */
+export const STARTUP_GREETING_PURPOSE = "startup_greeting";
+
+/**
+ * The greeting `response.create` body from the client-secret call, tagged so
+ * the session can tell the greeting apart from resident turns. Null when the
+ * server sent none: then no greeting is spoken, and nothing plays on the
+ * device either.
+ */
+export function startupGreetingResponse(
+  serverResponse: Record<string, unknown> | null | undefined,
+): Record<string, unknown> | null {
+  if (!serverResponse || typeof serverResponse !== "object") return null;
+  const metadata =
+    serverResponse.metadata && typeof serverResponse.metadata === "object"
+      ? (serverResponse.metadata as Record<string, unknown>)
+      : {};
+  return {
+    ...serverResponse,
+    metadata: { ...metadata, purpose: STARTUP_GREETING_PURPOSE },
+  };
+}
