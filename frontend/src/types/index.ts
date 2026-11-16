@@ -313,6 +313,8 @@ export interface CrisisResource {
   phone: string;
   available_24_7: boolean;
   languages: string[];
+  /** Set on the data pack's local crisis lines (mental_health | domestic_violence). */
+  crisis_topic?: string | null;
 }
 
 export interface BenefitsBreakdownItem {

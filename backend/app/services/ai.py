@@ -33,7 +33,8 @@ from app.services.life_events import needs_from_life_event, normalize_life_event
 from app.services.matching import assess_risks, match_services
 from app.services.pii import redact
 from app.services.prompts import build_instructions
-from app.services.scenarios import check_crisis, crisis_response, scenario_first_followup
+from app.services.crisis import crisis_turn, ensure_crisis_lines
+from app.services.scenarios import scenario_first_followup
 from app.services.scripted import DEMO_STEPS, demo_flow, resume_scripted, welcome_message
 from app.services.tool_schemas import TOOL_SCHEMAS
 from app.services.tools import dispatch_tool, estimate_progress
@@ -123,11 +124,10 @@ async def process_message(
 async def _route_user_turn(session: IntakeSession, user_text: str) -> IntakeMessage:
     """Crisis check, scenario follow-up, then live or scripted flow."""
     # Backend-side crisis check (cheap safety net independent of the model)
-    crisis_kind = check_crisis(user_text)
-    if crisis_kind:
-        session.extracted_profile.crisis_indicators.append(crisis_kind)
+    crisis_reply = crisis_turn(session, user_text)
+    if crisis_reply is not None:
         session.scripted_turns_skipped += 1
-        return crisis_response(session)
+        return crisis_reply
 
     scenario_followup = scenario_first_followup(session, user_text)
     if scenario_followup is not None:
@@ -367,6 +367,8 @@ async def _responses_flow(session: IntakeSession) -> IntakeMessage:
 
     if not final_text:
         final_text = "Could you tell me a bit more about what you're looking for?"
+    if crisis_seen:
+        final_text = ensure_crisis_lines(session, final_text)
 
     msg = IntakeMessage(
         role=MessageRole.assistant,

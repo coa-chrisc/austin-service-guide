@@ -38,9 +38,10 @@ from app.services.catalog_loader import (
     ServiceTranslation,
     ZipCentroid,
 )
+from app.services.crisis import detect_crisis
+from app.services.crisis_phrases import ACUTE_KINDS
 from app.services.pack_validator import schema_dir
 from app.services.personas import Persona, ScriptedTurn
-from app.services.scenarios import check_crisis
 
 BACKEND = Path(__file__).resolve().parents[1]
 
@@ -141,7 +142,10 @@ def test_risk_types_match_the_engine():
 
 
 def test_crisis_indicators_cover_what_the_intake_sets():
-    detected = {check_crisis(t) for t in ("I want to die", "he hurts me", "I am in danger")}
+    detected = {k for t in ("I want to die", "he hurts me", "I am in danger") for k in detect_crisis(t)}
     indicators = set(RULES["properties"]["crisis_services"]["properties"])
-    assert detected <= indicators
+    assert detected == set(ACUTE_KINDS)
+    # crisis_reported (a crisis the model could not classify) is not a pack
+    # key: matching expands it to every acute kind's services.
+    assert set(ACUTE_KINDS) <= indicators
     assert indicators == set(PERSONAS["$defs"]["profile"]["properties"]["crisis_indicators"]["items"]["enum"])

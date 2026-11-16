@@ -65,6 +65,8 @@ import {
   type IntakeResults,
 } from "@/lib/api";
 import { makeResultsT } from "@/lib/resultsI18n";
+import { hasSafetyCrisis } from "@/lib/crisisLines";
+import CrisisLinesBlock from "@/components/common/CrisisLinesBlock";
 import { useBrandConfig } from "@/hooks/useBrandConfig";
 import {
   demoPersonaId,
@@ -92,6 +94,8 @@ interface ResultsData {
   plan_synthesis: string;
   plan_ai_generated: boolean;
   language: string;
+  /** A crisis came up in the intake: the crisis lines lead the page. */
+  crisis: boolean;
 }
 
 const formatCurrency = (n: number) =>
@@ -149,6 +153,9 @@ function toResultsData(res: IntakeResults): ResultsData {
     plan_synthesis: res.plan_synthesis ?? "",
     plan_ai_generated: res.plan_ai_generated ?? false,
     language: res.language ?? "en",
+    crisis:
+      hasSafetyCrisis(res.profile) ||
+      (res.state?.conversation ?? []).some((m) => m.crisis_detected),
   };
 }
 
@@ -453,6 +460,17 @@ export default function Results() {
         </Box>
       )}
       <Container maxWidth="lg" sx={{ py: { xs: 2.5, sm: 4 } }}>
+        {/* Crisis lines lead both views when a crisis came up. */}
+        {data.crisis && (
+          <CrisisLinesBlock
+            sx={{ mb: { xs: 2, sm: 3 } }}
+            labels={{
+              heading: t("crisis_heading"),
+              intro: t("crisis_intro"),
+              text988: t("crisis_text_988"),
+            }}
+          />
+        )}
         {/* Page title (simple view; the all-matches card has its own) + view toggle */}
         <Box
           sx={{

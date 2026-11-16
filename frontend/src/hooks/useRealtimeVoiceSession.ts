@@ -245,6 +245,15 @@ export function useRealtimeVoiceSession({
   const traceIdRef = useRef("");
   const stoppedRef = useRef(false);
   const transcriptItemIdsRef = useRef<Set<string>>(new Set());
+  // Crisis reply the server built for the last resident transcript; the
+  // turn is answered with it instead of a free model reply.
+  const pendingCrisisReplyRef = useRef<Record<string, unknown> | null>(
+    null,
+  );
+  // Responses that read the crisis lines for a resident transcript. The
+  // server already stored that crisis message, so their transcripts are
+  // not synced again.
+  const crisisReplyIdsRef = useRef<Set<string>>(new Set());
   const stopAfterNextAssistantRef = useRef(false);
   const pendingCompletionResultRef = useRef<RealtimeTranscriptResult | null>(
     null,
@@ -1015,6 +1024,9 @@ export function useRealtimeVoiceSession({
           }
           return "ignored";
         }
+        if (role === "user" && result.crisis_response) {
+          pendingCrisisReplyRef.current = result.crisis_response;
+        }
         recordDebug("transcript_sync_completed", {
           role,
           message_count: result.messages.length,
@@ -1094,6 +1106,7 @@ export function useRealtimeVoiceSession({
   const handleFunctionCalls = useCallback(
     async (calls: RealtimeFunctionCall[]) => {
       let shouldCreateResponse = false;
+      let crisisReply: Record<string, unknown> | null = null;
       const generation = startGenerationRef.current;
       recordDebug("function_calls_detected", {
         count: calls.length,
@@ -1201,6 +1214,7 @@ export function useRealtimeVoiceSession({
               output: result.output,
             },
           });
+          if (result.crisis_response) crisisReply = result.crisis_response;
           if (call.name !== "wait_for_user") {
             shouldCreateResponse = true;
           }
@@ -1235,7 +1249,11 @@ export function useRealtimeVoiceSession({
       }
       if (shouldCreateResponse) {
         window.setTimeout(() => {
-          if (!stoppedRef.current) {
+          if (stoppedRef.current) return;
+          // A crisis tool result is answered with the crisis lines only.
+          if (crisisReply) {
+            requestModelResponse("crisis_tool_response", crisisReply);
+          } else {
             requestModelResponse("post_tool", { output_modalities: ["audio"] });
           }
         }, 150);
@@ -1363,6 +1381,12 @@ export function useRealtimeVoiceSession({
         const isStartupCreated =
           response?.metadata?.purpose === "startup_greeting" ||
           startupResponsePendingRef.current;
+        if (
+          response?.id &&
+          response.metadata?.purpose === "crisis_response"
+        ) {
+          crisisReplyIdsRef.current.add(response.id);
+        }
         if (isStartupCreated && response?.id) {
           initialResponseIdRef.current = response.id;
           startupResponsePendingRef.current = false;
@@ -1475,8 +1499,12 @@ export function useRealtimeVoiceSession({
         }
         void (async () => {
           const outcome = await syncTranscript("user", transcript);
+          const crisisReply = pendingCrisisReplyRef.current;
+          pendingCrisisReplyRef.current = null;
           if (stoppedRef.current || completionFlowRef.current) return;
-          if (outcome === "synced") {
+          if (outcome === "synced" && crisisReply) {
+            requestModelResponse("crisis_response", crisisReply);
+          } else if (outcome === "synced") {
             requestModelResponse("user_transcript_completed", {
               output_modalities: ["audio"],
             });
@@ -1525,6 +1553,10 @@ export function useRealtimeVoiceSession({
         });
         if (itemId && transcript.trim())
           transcriptItemIdsRef.current.add(itemId);
+        if (crisisReplyIdsRef.current.has(responseId)) {
+          clearLiveTranscriptIfCurrent("assistant", transcript);
+          return;
+        }
         void syncTranscript("assistant", transcript);
         return;
       }
@@ -1614,7 +1646,8 @@ export function useRealtimeVoiceSession({
           if (
             message.type === "message" &&
             message.id &&
-            !transcriptItemIdsRef.current.has(message.id)
+            !transcriptItemIdsRef.current.has(message.id) &&
+            !crisisReplyIdsRef.current.has(doneResponseId)
           ) {
             const text = (message.content || [])
               .map((part) => part.transcript || part.text || "")
@@ -1684,6 +1717,7 @@ export function useRealtimeVoiceSession({
       }
     },
     [
+      clearLiveTranscriptIfCurrent,
       endSessionOnFailure,
       handleFunctionCalls,
       muteMicForAssistantAudio,
@@ -1750,6 +1784,8 @@ export function useRealtimeVoiceSession({
       teardownTransport();
       stoppedRef.current = false;
       transcriptItemIdsRef.current.clear();
+      crisisReplyIdsRef.current.clear();
+      pendingCrisisReplyRef.current = null;
       resetSessionState();
       onStartupGreetingRef.current = options.onStartupGreeting ?? null;
       setError("");

@@ -22,7 +22,7 @@ from app.services.matching import (
     crisis_services,
     match_services,
 )
-from app.services.scenarios import crisis_response
+from app.services.crisis import crisis_response
 from app.services.scripted import zip_buttons
 
 LOCAL_LINE = "Riverbend Crisis Line"

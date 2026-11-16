@@ -98,7 +98,7 @@ def test_refusal_body_and_headers_over_http(client, monkeypatch):
 @pytest.mark.parametrize(("path", "method"), [
     ("/api/v1/services?page_size=1", "GET"),
     ("/api/v1/services/categories", "GET"),
-    ("/api/v1/services/crisis-resources", "GET"),
+    ("/api/v1/crisis-resources", "GET"),
     ("/api/v1/services/map-pins", "GET"),
 ])
 def test_directory_and_crisis_routes_are_never_limited(client, monkeypatch, path, method):

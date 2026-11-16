@@ -352,12 +352,13 @@ _CRISIS_TOOL = "get_crisis_resources"
 async def _is_crisis(request: Request) -> bool:
     """Is this a crisis request that must never be refused?
 
-    ``/message``: the resident's ``message`` trips the scripted crisis check.
+    ``/message``: the resident's ``message`` is a crisis turn (``crisis.is_crisis_turn``,
+    the same check that answers it with the crisis reply).
     ``/realtime/transcript``: a resident (``role: user``) turn trips it.
     ``/realtime/tool``: the voice model asked for the crisis resources.
     """
     from app.services.pii import redact
-    from app.services.scenarios import check_crisis
+    from app.services.crisis import is_crisis_turn
 
     try:
         body = await request.json()
@@ -378,7 +379,7 @@ async def _is_crisis(request: Request) -> bool:
         return False
     if not isinstance(text, str) or len(text) > 5_000:
         return False
-    return bool(check_crisis(redact(text).text))
+    return is_crisis_turn(redact(text).text)
 
 
 _GMAIL_DOMAINS = frozenset({"gmail.com", "googlemail.com"})

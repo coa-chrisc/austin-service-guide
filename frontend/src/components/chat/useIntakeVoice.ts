@@ -18,6 +18,7 @@ import {
   type VoicePipelineMode,
 } from "@/lib/api";
 import { withIntakeState } from "@/lib/session";
+import { NATIONAL_CRISIS_LINES, crisisLinesToSpeak } from "@/lib/crisisLines";
 import type { PiiKind } from "@/lib/piiGuard";
 import {
   VOICE_WELCOME_TEXT,
@@ -142,13 +143,16 @@ export function useIntakeVoice({
       // statements are removed; contact details come from catalog records.
       const speech: SpokenSegment[] = [{ text: speakable(reply.content), lang }];
       if (reply.crisis_detected) {
+        // Every crisis line is read, never cut to SPOKEN_CONTACTS. The
+        // national lines are built in, so a failed fetch still reads them.
+        let lines = NATIONAL_CRISIS_LINES;
         try {
-          const resources = await getCrisisResources();
-          for (const r of resources.slice(0, SPOKEN_CONTACTS)) {
-            speech.push({ text: catalogSpeech(r), lang });
-          }
+          lines = crisisLinesToSpeak(await getCrisisResources());
         } catch {
-          /* the crisis banner still shows the catalog numbers */
+          /* the built-in national lines are read */
+        }
+        for (const r of lines) {
+          speech.push({ text: catalogSpeech(r), lang });
         }
       }
       if (reply.is_complete) {

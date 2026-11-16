@@ -28,6 +28,7 @@ from app.services.catalog_loader import (
     load_matching_rules,
     local_crisis_lines,
 )
+from app.services.crisis_phrases import ACUTE_KINDS, CRISIS_REPORTED
 from app.services.eligibility import eligibility_note, gate_states, unconfirmed_gates
 
 
@@ -251,14 +252,20 @@ def crisis_services(rules: MatchingRules | None = None) -> dict[str, list[str]]:
     return _rules(rules).crisis_services
 
 
-def _crisis_slugs(profile: ResidentProfile, rules: MatchingRules | None = None) -> list[str]:
-    """Crisis-direct service slugs for the profile, in indicator order."""
+def crisis_slugs(profile: ResidentProfile, rules: MatchingRules | None = None) -> list[str]:
+    """Crisis-direct service slugs for the profile, in indicator order.
+
+    A crisis the model reported without a kind (``crisis_reported``) gets
+    the services of every acute kind: over-offering beats missing one.
+    """
     out: list[str] = []
     by_indicator = crisis_services(rules)
     for indicator in profile.crisis_indicators:
-        for slug in by_indicator.get(indicator, []):
-            if slug not in out:
-                out.append(slug)
+        keys = ACUTE_KINDS if indicator == CRISIS_REPORTED else (indicator,)
+        for key in keys:
+            for slug in by_indicator.get(key, []):
+                if slug not in out:
+                    out.append(slug)
     return out
 
 
@@ -326,7 +333,7 @@ def _rank(
     if not target_cats:
         return [], [], {svc.slug: ("not_relevant", None) for svc in all_services}
 
-    crisis = _crisis_slugs(profile, rules)
+    crisis = crisis_slugs(profile, rules)
     by_slug = {svc.slug: svc for svc in all_services}
     scored: list[tuple[Service, float, list[str]]] = []
     dropped: dict[str, tuple[str, float | None]] = {}
@@ -705,6 +712,8 @@ _SEQUENCE_REASONS: dict[str, str] = {
 }
 
 _DEFAULT_SEQUENCE_REASON = "Worth a look when you have time."
+#: Plan reason on a crisis-direct service.
+SAFETY_SEQUENCE_REASON = _SEQUENCE_REASONS["emergency"]
 
 
 def _rank_category(service: Service, target_cats: set[str]) -> str | None:
@@ -750,7 +759,7 @@ def recommend_application_order(
         remaining.remove(m)
         picks.append((m, cat))
 
-    for slug in _crisis_slugs(profile):
+    for slug in crisis_slugs(profile):
         m = next((m for m in remaining if m.service.slug == slug), None)
         if m:
             take(m, "emergency")
