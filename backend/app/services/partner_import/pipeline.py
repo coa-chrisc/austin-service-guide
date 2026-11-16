@@ -102,7 +102,7 @@ def _preview(table: ParsedTable, header_row: int, columns: list[dict[str, Any]])
 
 
 def _check_header_row(table: ParsedTable, header_row: Any) -> int:
-    if not isinstance(header_row, int) or isinstance(header_row, bool) or not 1 <= header_row <= min(len(table.rows), L.HEADER_SCAN_ROWS * 2):
+    if not isinstance(header_row, int) or isinstance(header_row, bool) or not 1 <= header_row <= min(len(table.rows), L.HEADER_PICK_ROWS):
         raise L.ImportRefused(L.BAD_REQUEST, "The header row must be one of the first rows of the table.")
     return header_row
 
@@ -113,6 +113,8 @@ def inspect(parsed: ParsedFile, table_id: str | None = None, header_row: int | N
     for table in parsed.tables:
         chosen = header_row if table.id == table_id and header_row is not None else guess_header_row(table)
         chosen = _check_header_row(table, chosen)
+        # A client header row never gets a preview, whoever chose it.
+        check_header_row(headers_for(table, chosen))
         columns = _columns(table, chosen)
         tables.append({
             "id": table.id,

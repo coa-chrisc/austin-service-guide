@@ -82,7 +82,9 @@ async def inspect_upload(request: Request) -> Any:
     try:
         form = await upload.read_form(request)
         parsed = await run_in_threadpool(pipeline.parse_upload, form.file, form.file_name)
-        result = pipeline.inspect(parsed, form.fields.get("table") or None, _int_field(form.fields.get("header_row")))
+        result = await run_in_threadpool(
+            pipeline.inspect, parsed, form.fields.get("table") or None, _int_field(form.fields.get("header_row"))
+        )
     except L.ImportRefused as exc:
         return _refused(exc)
     except MissingDependency as exc:

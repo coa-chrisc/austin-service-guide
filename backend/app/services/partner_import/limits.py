@@ -22,6 +22,8 @@ MAX_CELL_CHARS = 2_000
 MAX_WORD_TABLES = 50
 PREVIEW_ROWS = 5
 HEADER_SCAN_ROWS = 10
+# Rows a user may choose as the header row; the client-record guard checks all of them.
+HEADER_PICK_ROWS = HEADER_SCAN_ROWS * 2
 
 # Error codes a refused file can carry (422 {code, message}).
 UNSUPPORTED_TYPE = "unsupported_type"
