@@ -18,7 +18,7 @@ from app.defense.principal import Principal
 @dataclass
 class DefenseContext:
     principal: Principal | None = None
-    #: None | "ai_budget" | "disabled": why this request skipped live AI.
+    #: None | "ai_budget" | "ai_credits" | "disabled": why this request skipped live AI.
     degraded: str | None = None
     #: Which resident-facing sentence explains it (see messages.py).
     notice: str | None = None

@@ -22,6 +22,7 @@ import VoiceWelcome from "./VoiceWelcome";
 import { VoiceMicButton, VoiceNotices } from "./VoiceControls";
 import { useIntakeVoice } from "./useIntakeVoice";
 import { sendIntakeMessage } from "@/lib/api";
+import { creditsNotice } from "@/lib/creditsNotice";
 import { loadIntakeState, withIntakeState } from "@/lib/session";
 import { hasSafetyCrisis } from "@/lib/crisisLines";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
@@ -50,6 +51,8 @@ interface ChatInterfaceProps {
   initialConversation: IntakeMessage[];
   onComplete?: () => void;
   initialMode?: "text" | "voice";
+  /** A reply (typed or on-device voice) reported the AI out of credits. */
+  onCreditsNotice?: (text: string) => void;
 }
 
 export default function ChatInterface({
@@ -57,6 +60,7 @@ export default function ChatInterface({
   initialConversation,
   onComplete,
   initialMode = "text",
+  onCreditsNotice,
 }: ChatInterfaceProps) {
   const initialMessages = initialConversation ?? [];
   const [messages, setMessages] = useState<IntakeMessage[]>(initialMessages);
@@ -276,10 +280,13 @@ export default function ChatInterface({
 
     try {
       const language = getStoredLanguage();
-      const { response, user_message: userMessage } = await withIntakeState(
-        (state) => sendIntakeMessage(state, text.trim(), language),
+      const result = await withIntakeState((state) =>
+        sendIntakeMessage(state, text.trim(), language),
       );
+      const { response, user_message: userMessage } = result;
       if (intakeKeyRef.current !== activeKey) return null;
+      const credits = creditsNotice(result);
+      if (credits) onCreditsNotice?.(credits);
       // Swap the optimistic raw copy for the stored, redacted one: this state
       // is later replayed into voice sessions. Without a stored copy, drop it.
       setMessages((prev) => [

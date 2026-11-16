@@ -264,6 +264,10 @@ export function startIntake(
     state: IntakeState;
     language: string;
     greeting: IntakeMessage | null;
+    /** Set when the AI is paused and the guided flow greeted instead. */
+    degraded?: "ai_budget" | "ai_credits" | "disabled";
+    /** With "ai_credits": the deployment's out-of-credits text, shown as written. */
+    degraded_notice?: string;
   }>("POST", "/api/v1/intake/start", body);
 }
 
@@ -279,7 +283,9 @@ export function sendIntakeMessage(
     user_message: IntakeMessage;
     status: string;
     /** Set when the AI is paused for this request and the guided flow answered. */
-    degraded?: "ai_budget" | "disabled";
+    degraded?: "ai_budget" | "ai_credits" | "disabled";
+    /** With "ai_credits": the deployment's out-of-credits text, shown as written. */
+    degraded_notice?: string;
   }>("POST", "/api/v1/intake/message", { state, message, language });
 }
 
@@ -296,7 +302,9 @@ export interface VoiceConfig {
   raw_audio_allowed: boolean;
   live_ai: boolean;
   /** Why voice is limited right now (budget, breaker or kill switch); null when healthy. */
-  degraded?: "disabled" | "ai_budget" | "voice_budget" | null;
+  degraded?: "disabled" | "ai_budget" | "ai_credits" | "voice_budget" | null;
+  /** With "ai_credits": the deployment's out-of-credits text, shown as written. */
+  degraded_notice?: string;
   /** Realtime voice session caps, for the session timers. */
   max_session_seconds?: number;
   idle_seconds?: number;

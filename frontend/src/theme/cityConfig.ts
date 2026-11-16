@@ -76,6 +76,8 @@ export interface ServiceGuideSettings {
   languages?: string[];
   /** Results page: show the benefit-estimate banner and all-matches hero. Default: false. */
   showBenefitEstimates?: boolean;
+  /** Out-of-credits notice (backend reads it; shown as written). Default: a generic message. */
+  creditsExhaustedMessage?: string;
   shortName?: string;
   description?: string;
   copy?: { tagline?: string; footerDisclaimer?: string; privacyNotice?: string };

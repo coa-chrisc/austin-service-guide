@@ -442,6 +442,12 @@
             "const": "en"
           }
         },
+        "creditsExhaustedMessage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600,
+          "description": "Shown as-is (not translated) in the chat, the intake page banner and voice when the OpenAI account is out of credits (insufficient_quota or project_spend_limit_exceeded). Say who to contact. Default: a generic message asking the resident to tell the site's operator."
+        },
         "showBenefitEstimates": {
           "type": "boolean",
           "description": "Show the estimated-benefits banner and the all-matches hero band on the results page. The estimates are rough rule-of-thumb figures, not eligibility decisions. Default: false."

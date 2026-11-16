@@ -12,7 +12,9 @@ A breaker opens when:
 - a global budget for the surface reaches 100% (closes by itself at the
   next window, because the state is derived from the counters);
 - OpenAI answers with ``insufficient_quota`` or
-  ``project_spend_limit_exceeded`` (opens on the first one, for 5 minutes);
+  ``project_spend_limit_exceeded`` (opens on the first one, for 5 minutes;
+  reported as ``degraded: "ai_credits"`` with the city config's
+  out-of-credits notice, see ``credits_exhausted``);
 - more than half of at least 20 calls in a 5-minute window failed.
 
 ``voice`` is also open whenever ``live_ai`` is.
@@ -45,6 +47,7 @@ ERROR_MIN_CALLS = 20
 ERROR_RATE = 0.5
 WARN_RATIO = 0.8
 SPEND_LIMIT_CODES = frozenset({"insufficient_quota", "project_spend_limit_exceeded"})
+_CREDIT_REASONS = frozenset(f"upstream:{code}" for code in SPEND_LIMIT_CODES)
 _BUDGET_METRICS = {"live_ai": ("tok", "usd"), "voice": ("voice",), "share": ()}
 
 State = Literal["closed", "warn", "open", "half_open"]
@@ -160,6 +163,16 @@ def _error_code(exc: BaseException) -> str | None:
     return None
 
 
+def spend_limit_error(exc: BaseException) -> bool:
+    """True when ``exc`` is OpenAI saying the account is out of credits or over its spend limit."""
+    return _error_code(exc) in SPEND_LIMIT_CODES
+
+
+def credits_exhausted(reason: str | None) -> bool:
+    """True when a breaker ``reason`` (own, or ``live_ai:``-prefixed on voice) is a spend-limit trip."""
+    return (reason or "").removeprefix("live_ai:") in _CREDIT_REASONS
+
+
 async def record_result(name: str, exc: BaseException | None) -> None:
     """Feed one upstream call's outcome to ``name``'s breaker. Never raises."""
     if not defense_enabled():
@@ -210,6 +223,8 @@ def _degraded_reason(current: BreakerState) -> str | None:
     reason = current.reason or ""
     if reason in ("kill_switch", "manual", "live_ai:kill_switch", "live_ai:manual"):
         return "disabled"
+    if credits_exhausted(reason):
+        return "ai_credits"
     return "ai_budget" if reason.startswith("live_ai:") else "voice_budget"
 
 
@@ -230,4 +245,8 @@ async def voice_config_overrides() -> dict[str, Any]:
     }
     if degraded:
         out["mode"] = "intercepted_text"
+    if degraded == "ai_credits":
+        from app.defense.messages import notice_text
+
+        out["degraded_notice"] = notice_text("ai_credits")
     return out

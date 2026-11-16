@@ -109,6 +109,17 @@ def exhausted_by(totals: dict[str, int], principal: Principal | None) -> bool:
     return False
 
 
+def _paused(reason: str | None) -> tuple[str, str]:
+    """(degraded value, notice key) while the ``live_ai`` breaker is open or probing."""
+    from app.defense.breakers import credits_exhausted
+
+    if reason in ("manual", "kill_switch"):
+        return "disabled", "ai_paused"
+    if credits_exhausted(reason):
+        return "ai_credits", "ai_credits"
+    return "ai_budget", "ai_paused"
+
+
 async def ai_allowed() -> bool:
     """May this request call the text model? Sets ``context.degraded`` when not."""
     from app.defense import breakers
@@ -125,10 +136,10 @@ async def ai_allowed() -> bool:
     try:
         state = await breakers.state("live_ai")
         if state.state == "open":
-            ctx.degrade("disabled" if state.reason in ("manual", "kill_switch") else "ai_budget", "ai_paused")
+            ctx.degrade(*_paused(state.reason))
             return False
         if state.state == "half_open" and not await breakers.take_probe("live_ai", state):
-            ctx.degrade("ai_budget", "ai_paused")
+            ctx.degrade(*_paused(state.reason))
             return False
         if ctx.principal is not None:
             usage = await usage_against(ctx.principal, ("tok", "usd"), "p")

@@ -2,8 +2,8 @@
 
 The backend uses it for the app and agency names (scripted greeting, system
 prompt identity sentence, email sender default, share text, OpenAPI title),
-the optional timezone for open-now hours,
-and the place names the PII name rule skips. Place-specific data (catalog,
+the optional timezone for open-now hours, the out-of-credits notice
+(``serviceGuide.creditsExhaustedMessage``, shown as-is), and the place names the PII name rule skips. Place-specific data (catalog,
 crisis lines, personas, ...) comes from the data pack (data_pack.py), not from
 here. The system prompt names no place.
 
@@ -35,6 +35,13 @@ _HERE = Path(__file__).resolve()
 _PREFIX = "[city-config]"
 
 
+#: Out-of-credits notice when ``serviceGuide.creditsExhaustedMessage`` is not set.
+DEFAULT_CREDITS_MESSAGE = (
+    "The AI assistant is paused because its usage credits have run out. Please let the "
+    "site's operator know. You can keep going with guided questions or browse the directory."
+)
+
+
 class CityConfigError(RuntimeError):
     """The city config could not be found or is not usable."""
 
@@ -51,6 +58,7 @@ class CityIdentity:
     phone311: str
     timezone: str = "UTC"
     languages: tuple[str, ...] = ("en", "es", "zh", "hi", "ar", "vi", "fr", "ko")
+    credits_exhausted_message: str = DEFAULT_CREDITS_MESSAGE
 
 
 def config_dir(env: Mapping[str, str]) -> Path:
@@ -105,6 +113,7 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         raise CityConfigError(f"{_PREFIX} serviceGuide.timezone {tz!r} is not a known IANA time zone.") from exc
     languages = sg.get("languages")
     phone = contact.get("phone311") if isinstance(contact, dict) else None
+    credits = sg.get("creditsExhaustedMessage")
     return CityIdentity(
         app_name=_text(data, "appName"),
         agency_name=_text(data, "agency", "name"),
@@ -115,6 +124,9 @@ def load_city(env: Mapping[str, str] | None = None) -> CityIdentity:
         state=_text(data, "region", "state"),
         phone311=phone if isinstance(phone, str) and phone.strip() else "311",
         timezone=tz,
+        credits_exhausted_message=(
+            credits.strip() if isinstance(credits, str) and credits.strip() else DEFAULT_CREDITS_MESSAGE
+        ),
         **({"languages": tuple(languages)} if isinstance(languages, list) and languages else {}),
     )
 
