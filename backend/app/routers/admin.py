@@ -4,39 +4,34 @@ Read routes (GET) are open: they serve synthetic demo data (fake residents,
 generated analytics) plus the public service catalog, and expose no real
 resident information. The X-Staff-Role header is read but not enforced.
 
-Write routes (POST/PATCH/DELETE on /services) change the live catalog that
+Write routes (POST/PATCH/DELETE on /services, and the matching-rules and
+eligibility routes in ``admin_pack``) change the live catalog that
 residents are matched against, so they require an ``X-Admin-Token`` header
 equal to the ``ADMIN_API_TOKEN`` setting. With no token configured, writes
 are refused. This is a shared-secret stopgap for the demo, not staff
 authentication; production needs real identity (Entra ID) and RBAC.
+
+Writes are validated against the data-pack contract (``catalog_write``) and
+held in this process's memory only: they are lost on restart and, on a
+multi-instance host, seen only by the instance that took them.
 """
 
 from __future__ import annotations
 
-import hmac
 import math
-from typing import Any, Optional
-from uuid import uuid4
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 
-from app.config import get_settings
-from app.models import Service
-from app.services.catalog import (
-    create_service,
-    delete_service,
-    get_all_services,
-    get_service_by_id,
-    update_service,
-)
+from app.routers import admin_pack
+from app.routers.admin_auth import require_admin_token, require_in_memory_edits
+from app.services import catalog_write
+from app.services.catalog import get_all_services, get_service_by_id, service_record
 from app.services.seed_data import (
     generate_analytics_overview,
     generate_audit_log,
     generate_demand_map,
     generate_demographics_data,
-    generate_eligibility_rules,
     generate_equity_data,
     generate_language_usage,
     generate_partner_gaps,
@@ -57,19 +52,12 @@ def _check_staff_role(x_staff_role: str | None) -> str:
     return x_staff_role or "viewer"
 
 
-def require_admin_token(x_admin_token: str | None = Header(None)) -> None:
-    """Gate catalog writes on the shared ADMIN_API_TOKEN (constant-time compare)."""
-    expected = get_settings().admin_api_token
-    if not expected:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "Admin writes are disabled on this server. Set ADMIN_API_TOKEN "
-                "and send it in the X-Admin-Token header."
-            ),
-        )
-    if not hmac.compare_digest((x_admin_token or "").encode(), expected.encode()):
-        raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Token.")
+_WRITE_GUARDS = [Depends(require_admin_token), Depends(require_in_memory_edits)]
+
+
+def _rejected(exc: catalog_write.WriteRejected) -> HTTPException:
+    """409 (id/slug conflict) or 422, detail shaped like FastAPI's: [{type, loc, msg}]."""
+    return HTTPException(status_code=exc.status, detail=exc.errors)
 
 
 # ── Residents ─────────────────────────────────────────────────────────
@@ -167,47 +155,59 @@ async def admin_list_services(
     }
 
 
-@router.post("/services", status_code=201, dependencies=[Depends(require_admin_token)])
+@router.get("/services/{service_id}")
+async def admin_get_service(service_id: str, x_staff_role: Optional[str] = Header(None)):
+    """One service with every field, including ``sources`` (any status)."""
+    _check_staff_role(x_staff_role)
+    svc = get_service_by_id(service_id)
+    if not svc:
+        raise HTTPException(status_code=404, detail="Service not found")
+    return service_record(svc)
+
+
+@router.post("/services", status_code=201, dependencies=_WRITE_GUARDS)
 async def admin_create_service(
-    body: dict[str, Any],
+    body: catalog_write.ServiceCreate,  # type: ignore[valid-type]
     x_staff_role: Optional[str] = Header(None),
 ):
-    """Create a new service."""
+    """Create a service. 409 when the id or slug is taken; 422 when the record
+    breaks the data-pack contract (unknown category, zero coordinates ...)."""
     _check_staff_role(x_staff_role)
-    body.setdefault("id", str(uuid4()))
     try:
-        svc = Service(**body)
-    except ValidationError as exc:
-        raise RequestValidationError(exc.errors()) from exc
-    created = create_service(svc)
-    return created.model_dump()
+        created = catalog_write.create(body)
+    except catalog_write.WriteRejected as exc:
+        raise _rejected(exc) from exc
+    return service_record(created)
 
 
-@router.patch("/services/{service_id}", dependencies=[Depends(require_admin_token)])
+@router.patch("/services/{service_id}", dependencies=_WRITE_GUARDS)
 async def admin_update_service(
     service_id: str,
-    body: dict[str, Any],
+    body: catalog_write.ServiceUpdate,  # type: ignore[valid-type]
     x_staff_role: Optional[str] = Header(None),
 ):
-    """Partial update a service."""
+    """Partial update. The id cannot change; unknown keys are a 422."""
     _check_staff_role(x_staff_role)
     try:
-        updated = update_service(service_id, body)
-    except ValidationError as exc:
-        raise RequestValidationError(exc.errors()) from exc
+        updated = catalog_write.update(service_id, body)
+    except catalog_write.WriteRejected as exc:
+        raise _rejected(exc) from exc
     if not updated:
         raise HTTPException(status_code=404, detail="Service not found")
-    return updated.model_dump()
+    return service_record(updated)
 
 
-@router.delete("/services/{service_id}", dependencies=[Depends(require_admin_token)])
+@router.delete("/services/{service_id}", dependencies=_WRITE_GUARDS)
 async def admin_delete_service(
     service_id: str,
     x_staff_role: Optional[str] = Header(None),
 ):
     """Soft-delete a service (set status to inactive)."""
     _check_staff_role(x_staff_role)
-    ok = delete_service(service_id)
+    try:
+        ok = catalog_write.deactivate(service_id)
+    except catalog_write.WriteRejected as exc:
+        raise _rejected(exc) from exc
     if not ok:
         raise HTTPException(status_code=404, detail="Service not found")
     return {"status": "deleted", "service_id": service_id}
@@ -249,14 +249,6 @@ async def analytics_equity(x_staff_role: Optional[str] = Header(None)):
 async def analytics_demand_map(x_staff_role: Optional[str] = Header(None)):
     _check_staff_role(x_staff_role)
     return generate_demand_map()
-
-
-# ── Eligibility Rules ─────────────────────────────────────────────────
-
-@router.get("/eligibility-rules")
-async def eligibility_rules(x_staff_role: Optional[str] = Header(None)):
-    _check_staff_role(x_staff_role)
-    return generate_eligibility_rules()
 
 
 # ── Reports ───────────────────────────────────────────────────────────
@@ -302,3 +294,7 @@ async def audit_log(
 async def staff_list(x_staff_role: Optional[str] = Header(None)):
     _check_staff_role(x_staff_role)
     return [s.model_dump() for s in get_demo_staff()]
+
+
+# Eligibility, matching rules, pack schemas and export (admin_pack.py).
+router.include_router(admin_pack.router)

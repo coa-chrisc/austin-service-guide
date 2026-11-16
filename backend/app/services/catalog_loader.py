@@ -153,9 +153,27 @@ def load_zip_centroids() -> dict[str, ZipCentroid]:
 
 
 @lru_cache(maxsize=1)
-def load_matching_rules() -> MatchingRules:
+def load_pack_matching_rules() -> MatchingRules:
+    """The rules as the pack's matching_rules.yaml has them on disk."""
     raw = read_yaml("matching_rules.yaml", required=False) or {}
     return MatchingRules.model_validate(raw)
+
+
+# Rules an admin replaced in memory (PUT /api/v1/admin/matching-rules).
+# None means "use the pack file". Per process and lost on restart, like
+# every other admin catalog write; ``reload_all`` drops it.
+_rules_override: MatchingRules | None = None
+
+
+def load_matching_rules() -> MatchingRules:
+    """The matching rules the engine uses now: an in-memory admin edit, else the pack's."""
+    return _rules_override if _rules_override is not None else load_pack_matching_rules()
+
+
+def set_matching_rules(rules: MatchingRules | None) -> None:
+    """Replace the live rules in memory (None restores the pack file's)."""
+    global _rules_override
+    _rules_override = rules
 
 
 @lru_cache(maxsize=1)
@@ -186,7 +204,8 @@ def reload_all() -> None:
     load_life_events.cache_clear()
     load_crisis_resources.cache_clear()
     load_zip_centroids.cache_clear()
-    load_matching_rules.cache_clear()
+    load_pack_matching_rules.cache_clear()
+    set_matching_rules(None)
     load_service_translations.cache_clear()
 
 

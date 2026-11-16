@@ -4,7 +4,7 @@
 # without this file serves empty admin demo views. *_days_ago fields are
 # relative to the day the server starts so the demo always looks current.
 # Top-level keys: analytics, demographics, service_demand, languages, equity,
-# demand_map, eligibility_rules, partner_gaps, reports, audit_log, staff,
+# demand_map, partner_gaps, reports, audit_log, staff,
 # residents, council_districts.
 #
 # The figures agree with each other: total_sessions (the last 30 days) equals
@@ -657,117 +657,6 @@ demand_map:
   intensity: low
   heat_intensity: medium
   heat_vulnerable_sessions: 8
-eligibility_rules:
-- id: rule-snap-income
-  name: SNAP Income Limit (130% FPL)
-  category: food
-  criteria: Household monthly gross income ≤ 130% of Federal Poverty Level
-  services:
-  - SNAP Benefits
-  - WIC
-  - Central Texas Food Bank
-  hits_30d: 412
-  is_active: true
-  updated_days_ago: 7
-- id: rule-medicaid-adult
-  name: Texas Medicaid — Adult
-  category: healthcare
-  criteria: Pregnant, parent of minor, or disabled; income ≤ 138% FPL
-  services:
-  - Texas Medicaid
-  - CommUnityCare Sliding Scale
-  hits_30d: 287
-  is_active: true
-  updated_days_ago: 14
-- id: rule-childcare-ccs
-  name: Child Care Subsidy (Workforce Solutions)
-  category: childcare
-  criteria: Working/in school + child < 13 + income ≤ 85% State Median
-  services:
-  - Workforce Solutions Child Care
-  hits_30d: 156
-  is_active: true
-  updated_days_ago: 21
-- id: rule-rental-erap
-  name: Emergency Rental Assistance
-  category: housing
-  criteria: At risk of homelessness + income ≤ 80% AMI + COVID/economic hardship
-  services:
-  - Travis County ERAP
-  - City of Austin RENT
-  hits_30d: 198
-  is_active: true
-  updated_days_ago: 3
-- id: rule-veteran-vha
-  name: VA Healthcare Enrollment
-  category: veterans
-  criteria: Honorable discharge + minimum service requirement
-  services:
-  - Austin VA Outpatient Clinic
-  - Veterans Crisis Line
-  hits_30d: 64
-  is_active: true
-  updated_days_ago: 45
-- id: rule-utility-liheap
-  name: LIHEAP Utility Assistance
-  category: utilities
-  criteria: Income ≤ 150% FPL + responsible for utility bill
-  services:
-  - Travis County LIHEAP
-  - Austin Energy Plus 1
-  hits_30d: 142
-  is_active: true
-  updated_days_ago: 10
-- id: rule-senior-65
-  name: Senior Services (65+)
-  category: senior
-  criteria: Age ≥ 65 + Travis County resident
-  services:
-  - Meals on Wheels Central Texas
-  - AGE of Central Texas
-  hits_30d: 89
-  is_active: true
-  updated_days_ago: 30
-- id: rule-disability-ssdi
-  name: Disability Support Services
-  category: disability
-  criteria: Documented disability per SSA criteria
-  services:
-  - VR Services
-  - Easter Seals Central Texas
-  hits_30d: 51
-  is_active: true
-  updated_days_ago: 60
-- id: rule-immigration-eligible
-  name: Immigration-Eligible Programs
-  category: immigration
-  criteria: Lawful Permanent Resident OR qualifying status (refugee/asylee/VAWA)
-  services:
-  - Catholic Charities Immigration Legal
-  - American Gateways
-  hits_30d: 73
-  is_active: true
-  updated_days_ago: 18
-- id: rule-crisis-override
-  name: Crisis Override (No Eligibility Check)
-  category: emergency
-  criteria: Crisis indicators detected — bypass normal eligibility checks
-  services:
-  - 988 Lifeline
-  - SAFE Alliance
-  - Front Steps Shelter
-  hits_30d: 23
-  is_active: true
-  updated_days_ago: 2
-- id: rule-cap-funding-ymca
-  name: YMCA Financial Assistance (capped)
-  category: childcare
-  criteria: Sliding fee + capacity available (currently full Q2)
-  services:
-  - YMCA of Austin
-  hits_30d: 12
-  is_active: false
-  updated_days_ago: 5
 partner_gaps:
 - partner: Refugee Services of Texas
   category: refugee

@@ -1,9 +1,10 @@
-"""Request body size limit for the intake API.
+"""Request body size limit for the intake and admin APIs.
 
-Intake requests carry the browser-held intake state, so they are the only
-endpoints where a client can send an arbitrarily large JSON body. Bodies
-over ``MAX_INTAKE_BODY_BYTES`` are rejected with 413 before FastAPI parses
-them, whether or not the client sent a Content-Length header.
+Intake requests carry the browser-held intake state, and admin requests
+carry service records, matching rules and synthetic test profiles, so they
+are the endpoints where a client can send a large JSON body. Bodies over
+``MAX_INTAKE_BODY_BYTES`` are rejected with 413 before FastAPI parses them,
+whether or not the client sent a Content-Length header.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 MAX_INTAKE_BODY_BYTES = 256 * 1024
 INTAKE_PATH_PREFIX = "/api/v1/intake/"
+ADMIN_PATH_PREFIX = "/api/v1/admin/"
 
 
 class IntakeBodyLimitMiddleware:
@@ -20,7 +22,7 @@ class IntakeBodyLimitMiddleware:
         self,
         app: ASGIApp,
         max_bytes: int = MAX_INTAKE_BODY_BYTES,
-        path_prefix: str = INTAKE_PATH_PREFIX,
+        path_prefix: str | tuple[str, ...] = (INTAKE_PATH_PREFIX, ADMIN_PATH_PREFIX),
     ) -> None:
         self.app = app
         self.max_bytes = max_bytes

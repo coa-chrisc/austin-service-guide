@@ -44,9 +44,9 @@ from app.services.scenarios import check_crisis
 
 BACKEND = Path(__file__).resolve().parents[1]
 
-# In the schema, not yet on Service: the loader drops them. Remove an entry
+# In the schema, not yet on a model: the loader drops them. Remove an entry
 # here when the field lands on the model (the last test enforces that).
-SCHEMA_ONLY = {Service: {"last_verified_date", "verified_by", "provider_type", "sources"}}
+SCHEMA_ONLY: dict[type, set[str]] = {}
 
 
 def _schema(name: str) -> dict:

@@ -257,7 +257,6 @@ The report (and `--json` output):
 | `unknown_service_slug` | error | matching rules or translations name a slug no service has |
 | `crisis_service_not_active` | error | a crisis-direct service is not `active` |
 | `persona_id_mismatch` | error | a persona's `id` differs from its key |
-| `match_cap` | error | more than 200 non-inactive services: the engine only reads the first 200 |
 | `bbox_order` | error | `pack.yaml` bbox is not `[west, south, east, north]` |
 | `unverified` | warning (error with `--strict`) | `last_verified_date` or `verified_by` is missing |
 | `hours_unverified` | warning | a location's hours are not `hours_verified: true` |
@@ -315,7 +314,6 @@ Every service starts unverified. `last_verified_date`, `verified_by` and `hours_
 
 - No income, residency, numeric-age or household-size gates (use `other_criteria` and `eligibility_summary`).
 - No field for the area a service covers. Radius search uses its locations only, so a phone-only or online service with no locations drops out of a search by a listed ZIP.
-- The engine reads at most 200 non-inactive services (`match_cap`).
-- `provider_type`, `sources`, `last_verified_date` and `verified_by` are not read by the server.
+- `provider_type`, `sources`, `last_verified_date` and `verified_by` are loaded and shown in the staff console, but the matching engine does not use them.
 - Hours support one range per day.
 - The schemas are not served by the API; read them from `config/schemas/`.
