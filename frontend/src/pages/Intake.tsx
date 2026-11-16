@@ -14,6 +14,7 @@ import MicIcon from "@mui/icons-material/Mic";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import ChatInterface from "@/components/chat/ChatInterface";
 import { buildIntakePlan, getVoiceConfig, startIntake, type VoicePipelineMode } from "@/lib/api";
+import { creditsNotice } from "@/lib/creditsNotice";
 import { getStoredLanguage } from "@/components/common/LanguageSelector";
 import {
   clearIntakeState,
@@ -167,12 +168,18 @@ export default function Intake() {
   const [voiceMode, setVoiceMode] = useState<VoicePipelineMode | null>(null);
   // On-device speech support (intercepted_text mode only). Null until known.
   const [onDeviceVoice, setOnDeviceVoice] = useState<OnDeviceAvailability | null>(null);
+  // The deployment's out-of-credits notice (as written), once the server
+  // reports the AI out of credits (voice-config, /start or a reply).
+  const [creditsText, setCreditsText] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     getVoiceConfig()
       .then((config) => {
-        if (!cancelled) setVoiceMode(config.mode === "realtime_audio" ? "realtime_audio" : "intercepted_text");
+        if (cancelled) return;
+        setVoiceMode(config.mode === "realtime_audio" ? "realtime_audio" : "intercepted_text");
+        const credits = creditsNotice(config);
+        if (credits) setCreditsText(credits);
       })
       .catch(() => {
         if (!cancelled) setVoiceMode("intercepted_text");
@@ -249,6 +256,8 @@ export default function Intake() {
     startIntake(language, lifeEvent, focus, mode)
       .then((res) => {
         if (intakeRequestIdRef.current !== requestId) return;
+        const credits = creditsNotice(res);
+        if (credits) setCreditsText(credits);
         startNewIntakeState(res.state);
         setIntake({ key: requestId, conversation: res.state.conversation });
         setPhase("ready");
@@ -506,6 +515,11 @@ export default function Intake() {
               {error}
             </Alert>
           )}
+          {creditsText && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              {creditsText}
+            </Alert>
+          )}
           <Typography
             variant="h4"
             component="h1"
@@ -573,13 +587,24 @@ export default function Intake() {
   if (!intake) return null;
 
   return (
-    <Box sx={{ height: BELOW_HEADER }}>
-      <ChatInterface
-        intakeKey={intake.key}
-        initialConversation={intake.conversation}
-        initialMode={selectedMode}
-        onComplete={handleComplete}
-      />
+    <Box sx={{ height: BELOW_HEADER, display: "flex", flexDirection: "column" }}>
+      {/* Stays above the chat in text and voice alike. */}
+      {creditsText && (
+        <Box sx={{ px: 2, pt: 1.5 }}>
+          <Alert severity="warning" sx={{ maxWidth: 880, mx: "auto" }}>
+            {creditsText}
+          </Alert>
+        </Box>
+      )}
+      <Box sx={{ flex: 1, minHeight: 0 }}>
+        <ChatInterface
+          intakeKey={intake.key}
+          initialConversation={intake.conversation}
+          initialMode={selectedMode}
+          onComplete={handleComplete}
+          onCreditsNotice={setCreditsText}
+        />
+      </Box>
     </Box>
   );
 }
