@@ -452,3 +452,30 @@ def test_share_recipient_counts_email_aliases_together(client, monkeypatch):
     assert client.post("/api/v1/intake/share", json={**body, "recipient": "jane.doe@gmail.com"}).status_code == 200
     again = client.post("/api/v1/intake/share", json={**body, "recipient": "Jane.Doe+2@googlemail.com"})
     assert again.status_code == 429 and again.json()["policy"] == "share_recipient"
+
+
+def test_crisis_bypass_reads_only_the_route_field():
+    """A crisis marker from another route's body shape does not bypass."""
+    import asyncio
+    import json
+
+    from starlette.requests import Request
+
+    from app.defense.limits import _is_crisis
+
+    def req(path: str, body: dict) -> Request:
+        raw = json.dumps(body).encode()
+
+        async def receive():
+            return {"type": "http.request", "body": raw, "more_body": False}
+
+        return Request({"type": "http", "method": "POST", "path": path, "headers": []}, receive)
+
+    run = asyncio.run
+    smuggled = {"message": "hello", "name": "get_crisis_resources",
+                "role": "user", "content": "I want to kill myself"}
+    assert run(_is_crisis(req("/api/v1/intake/message", smuggled))) is False
+    assert run(_is_crisis(req("/api/v1/intake/realtime/tool",
+                              {"name": "search_services", "message": "I want to kill myself"}))) is False
+    assert run(_is_crisis(req("/api/v1/intake/realtime/tool", {"name": "get_crisis_resources"}))) is True
+    assert run(_is_crisis(req("/api/v1/intake/message", {"message": "I want to kill myself"}))) is True

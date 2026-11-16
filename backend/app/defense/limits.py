@@ -365,11 +365,17 @@ async def _is_crisis(request: Request) -> bool:
         return False
     if not isinstance(body, dict):
         return False
-    if body.get("name") == _CRISIS_TOOL:
-        return True
-    text = body.get("message")
-    if text is None and body.get("role") == "user":
-        text = body.get("content")
+    # Read only the field the route's handler reads, so a body cannot smuggle
+    # a crisis marker from one route's shape into another route.
+    path = request.url.path
+    if path.endswith("/realtime/tool"):
+        return body.get("name") == _CRISIS_TOOL
+    if path.endswith("/realtime/transcript"):
+        text = body.get("content") if body.get("role") == "user" else None
+    elif path.endswith("/message"):
+        text = body.get("message")
+    else:
+        return False
     if not isinstance(text, str) or len(text) > 5_000:
         return False
     return bool(check_crisis(redact(text).text))
