@@ -33,7 +33,7 @@ function MatchRow({ match }: { match: ServiceMatch }) {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={700} noWrap>
+            <Typography variant="subtitle2" component="p" fontWeight={700} noWrap>
               {service.name}
             </Typography>
             {match.match_reasoning && (

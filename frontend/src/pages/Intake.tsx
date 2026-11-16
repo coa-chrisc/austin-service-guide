@@ -329,7 +329,7 @@ export default function Intake() {
               }}
             >
               <AssignmentTurnedInIcon fontSize="large" />
-              <Typography variant="h6" fontWeight={700}>
+              <Typography variant="h6" component="h1" fontWeight={700}>
                 You already have a plan in progress
               </Typography>
             </Box>
@@ -538,6 +538,7 @@ export default function Intake() {
           </Typography>
           <Typography
             variant="subtitle1"
+            component="h2"
             fontWeight={800}
             sx={{ mb: 1.5, color: "text.primary" }}
           >

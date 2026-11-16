@@ -446,7 +446,7 @@ export default function ChatInterface({
             >
               <HealthAndSafetyIcon sx={{ fontSize: 40 }} />
             </Avatar>
-            <Typography variant="h5" fontWeight={600} textAlign="center">
+            <Typography variant="h5" component="h1" fontWeight={600} textAlign="center">
               Welcome to {appName}
             </Typography>
             <Typography
@@ -587,7 +587,7 @@ export default function ChatInterface({
             }}
           >
             <CheckCircleIcon sx={{ fontSize: 22 }} />
-            <Typography variant="subtitle1" fontWeight={700}>
+            <Typography variant="subtitle1" component="h2" fontWeight={700}>
               Your plan is ready
             </Typography>
           </Box>
