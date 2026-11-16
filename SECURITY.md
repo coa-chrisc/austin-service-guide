@@ -151,7 +151,21 @@ Limits:
 - Without `DEFENSE_HASH_KEY` and `DEFENSE_TOKEN_SECRET`, each process generates its own; device cookies then stop working after a restart. A public deployment that uses the challenge must set `DEFENSE_TOKEN_SECRET` (startup fails on Vercel or Railway without it).
 - Refusals from limited routes are not yet alerted on; the admin view and alerts are planned.
 
-### 11. Research job worker (#18)
+### 11. Partner-list import uploads
+
+The admin partner-list import (`backend/app/routers/partner_import.py`, `backend/app/services/partner_import/`) is off by default: all its routes return 404 unless `IMPORT_ENABLED=true`, `JOB_BACKEND` is not `off` (`inline` or `remote`; the import always runs in the request) and `ADMIN_API_TOKEN` are set, and the upload, validate and export routes require `X-Admin-Token`. Controls on the upload:
+
+- **Type by content, not just name.** Only `.xlsx`, `.csv` and `.docx` are accepted. The bytes must match the name: an Office file must be a zip with the expected main part, a CSV must decode as text with no NUL bytes, and legacy binary formats (`.xls`, `.doc`) are refused even when renamed. Macro formats (`.xlsm`, `.docm`, ...) and any archive containing a `vbaProject.bin` or a macro-enabled content type are refused.
+- **Sizes.** 4 MB per file, checked from `Content-Length` and again while streaming the body (the 256 KiB body limit in `middleware.py` covers only intake routes, so these routes enforce their own); 4 MB for the JSON validate and export bodies; at most 2,000 zip entries, 50 MB uncompressed and a 100:1 compression ratio per part; 20 sheets, 50 Word tables, 60 columns (the rest are ignored with a note), 2,000 characters per cell, and 5,000 rows (lower with `IMPORT_MAX_ROWS`, default 2,000). Parsing stops after 20 seconds.
+- **Nothing executes.** Formulas are never evaluated: openpyxl reads the value Excel stored at save time (`data_only=True`), and a formula with no stored value reads as empty. Macros, embedded objects, external links and comments are never opened. XML is parsed through `defusedxml`, so entity-expansion payloads are refused.
+- **Hidden content.** Hidden sheets and hidden rows are skipped and counted; deleted tracked-change text and hidden runs in Word are skipped.
+- **Client-record guard.** A file is refused before mapping when any of the first 20 rows (all the rows a user may pick as the header) names resident identifiers (DOB, SSN, Case #, Diagnosis, ...), or when SSN or date-of-birth values appear in more than 5% of rows. Outside the first row and the guessed header row, a row counts only with an exact header phrase or two matches, and cells over five words are treated as prose. A header row the user picks at inspect or confirm gets the full rule before any preview. The refusal message names rule labels, never cell text, and the log records counts only.
+- **Model step cost and load.** The step is skipped when its worst-case cost (every call at its `max_output_tokens`, input at one token per character) is over `IMPORT_MAX_COST_USD`, and model calls share one limit of 4 in flight per server process.
+- **Output.** Export builds the zip in memory. Drafts sent back with the wrong JSON types (a list as `merge_into` or a slug, a non-list `provenance.rows`) get a 422 problem entry, not a server error. Every cell of `review-issues.csv` that starts with `=`, `+`, `-`, `@`, a tab or a carriage return is prefixed with `'`, so a spreadsheet does not run it as a formula. Drafts carry no verification fields, and each YAML file opens with an "Unverified" comment.
+
+Limit: the value filters work on patterns. Content inside mapped free-text cells, such as a person's name written into a description, is not caught, so every draft needs human review before it reaches the catalog (see [docs/PRIVACY.md](docs/PRIVACY.md#partner-list-import-admin)). The import never writes to the catalog itself.
+
+### 12. Research job worker (#18)
 
 Off unless `JOB_BACKEND` is set. In the reference deployment the worker runs on Railway and the Vercel app proxies staff calls to it (`deploy/railway/README.md`, shape B).
 
@@ -193,7 +207,7 @@ Goal: let a new city turn the messy source material it already has (spreadsheets
 - Output: draft entries in the existing catalog format, one YAML file per service under `backend/app/data/services/`.
 - Hard requirement: every draft must pass `backend/scripts/validate_catalog.py` against `config/services.schema.json` (including the cross-reference rules the schema cannot express) before it is accepted into the review queue. Drafts that fail are returned with the validator's errors, not edited silently.
 - Drafts are marked unverified. They never publish on the strength of the agent alone (see item 2).
-- Partly started: the research agent (section 11 above) drafts entries from public web pages. Spreadsheets and PDFs are not covered by it.
+- Partly started: the research agent (section 12 above) drafts entries from public web pages, and the partner-list import (section 11 above) drafts them from spreadsheets and Word tables. PDFs are not covered yet.
 
 ### 2. Human-in-the-Loop SME Verification Portal
 

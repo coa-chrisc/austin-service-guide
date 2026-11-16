@@ -75,6 +75,20 @@ class Settings(BaseSettings):
     app_name: str = ""  # default: "<city config appName> API"
     app_version: str = "1.0.0"
 
+    # ── Partner-list import (admin, issue #19) ─────────────────────
+    # Off unless IMPORT_ENABLED=true AND JOB_BACKEND is not "off" AND
+    # ADMIN_API_TOKEN is set; otherwise the routes return 404. The import
+    # always runs inside the request; it does not use the job worker.
+    import_enabled: bool = False
+    # One setting with app/jobs/settings.py (research jobs, #18), which reads
+    # the same variable and validates it: "remote" proxies jobs to
+    # JOB_WORKER_URL, "inline" runs them in process (refused on Vercel).
+    job_backend: Literal["off", "inline", "remote"] = "off"
+    # Send the filtered rows to the model for hours, address, category and
+    # eligibility suggestions. Needs live AI too.
+    import_use_model: bool = False
+    import_max_rows: int = 2000  # capped at 5000 (the parser limit)
+    import_max_cost_usd: float = 5.0
     # ── Abuse defense and cost guardrails (app/defense/) ──────────
     # false restores the pre-defense behaviour: no principal, no limits,
     # no metering, no budgets. KILL_SWITCH_* still apply (explicit "off").

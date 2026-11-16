@@ -99,6 +99,7 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `routers/intake.py` | Stateless intake, results, plan, share, realtime voice endpoints |
 | `routers/services.py` | Catalog list, search and detail |
 | `routers/admin.py` | Demo analytics and audit data; catalog writes behind `X-Admin-Token` |
+| `routers/partner_import.py` | Admin partner-list import (`/api/v1/admin/import/*`): config, inspect, drafts, validate, export; off unless `IMPORT_ENABLED`, `JOB_BACKEND` and `ADMIN_API_TOKEN` are set |
 | `routers/about.py` | `GET /api/v1/about`: deployment facts for the How it works page (configuration only) |
 | `routers/admin_jobs.py` | Staff research-job routes (mounted only when `JOB_BACKEND` is not `off`), proxied to the worker |
 | `jobs/` | Job settings, signed app-to-worker tokens (`auth.py`), request schemas, the SQLAlchemy store, the worker client (`proxy.py`) and the in-process `inline` worker |
@@ -134,12 +135,13 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `hours.py` | Open-now and next-open calculation |
 | `notify.py` | Twilio and SendGrid senders with demo stubs and masked logging |
 | `dedupe.py` | Duplicate detection for research drafts against the pack and each other |
+| `partner_import/` | Partner-list import: content sniffing and limits, CSV/XLSX/DOCX parsers, column mapping, value filters, client-record guard, draft building and grouping, optional model step, zip export. Stateless; nothing is written |
 
 ## Frontend structure
 
 `frontend/src/`
 
-- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; lazy-loaded; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data).
+- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; lazy-loaded; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data), including `pages/admin/import/` (partner-list import).
 - `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`, `FlowDiagram`).
 - `lib/`: `api.ts` (API client), `session.ts` (client-held intake state), `piiGuard.ts` (client PII pre-flight), `share.ts`, plus helpers.
 - `hooks/`: `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice), `useAuth` (stub).

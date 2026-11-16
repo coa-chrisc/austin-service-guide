@@ -28,6 +28,7 @@ import ReportView from "@/pages/admin/reports/ReportView";
 import ResearchJobs from "@/pages/admin/research/ResearchJobs";
 import JobDetail from "@/pages/admin/research/JobDetail";
 import DraftReview from "@/pages/admin/research/DraftReview";
+import AdminPartnerImport from "@/pages/admin/import/AdminPartnerImport";
 import Box from "@mui/material/Box";
 
 // Reference page, rarely opened: kept out of the main bundle.
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="research" element={<ResearchJobs />} />
         <Route path="research/:id" element={<JobDetail />} />
         <Route path="research/drafts/:draftId" element={<DraftReview />} />
+        <Route path="import" element={<AdminPartnerImport />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="demand-map" element={<AdminDemandMap />} />
         <Route path="equity" element={<AdminEquity />} />

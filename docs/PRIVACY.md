@@ -207,6 +207,25 @@ The research agent (#18) is a staff tool that drafts catalog entries from public
 - **Pages fetched.** The worker identifies itself with `RESEARCH_USER_AGENT`, honours `robots.txt`, and reads public pages only (see SECURITY.md for the address rules).
 - **Personal contact details.** An email that looks like a person's (`first.last@`) is removed from a draft and flagged; drafts keep organisation contacts only.
 
+## Partner-list import (admin)
+
+Staff can upload an organisation's partner list (`.xlsx`, `.csv` or a Word `.docx` table) at `/admin/import` and download draft catalog YAML for review. The feature is **off by default**: every route under `/api/v1/admin/import` returns 404 unless `IMPORT_ENABLED=true`, `JOB_BACKEND` (`inline` or `remote`; the import always runs in the request) and `ADMIN_API_TOKEN` are all set, and the upload and export routes also need the `X-Admin-Token` header. The code is in `backend/app/services/partner_import/` and `backend/app/routers/partner_import.py`.
+
+**What a partner list may contain.** Organisation names, program names, main phone numbers, addresses and hours, which are catalog content. It often also holds staff contact names, cell and direct numbers, personal emails, notes and internal fields (MOU dates, budget codes). Those are about people or internal business and do not belong in the catalog.
+
+**What is dropped, and when.** All of this runs in code before any draft is built or any model call is made:
+
+- Columns whose headers name a person, a direct or mobile line, a personal email, a job title, notes or an internal field are dropped by default, and their preview cells are shown as `[hidden]`. Columns the matcher does not recognise are dropped by default too. Staff confirm the mapping before drafts are built; only mapped columns are read after that.
+- Inside mapped cells, value filters remove "contact: Name", "ask for Name" and "attn Name" phrases, phone numbers labelled cell, mobile, direct, personal or fax, extensions, emails whose local part is not a role (`info@`, `intake@`) or a program name, and resident identifiers (SSN, date of birth, card and ID numbers, using the rules in `pii.py`). Each removal adds a flag to the draft that names what kind of value was removed, never the value.
+- A file that looks like records about residents is refused whole: headers such as Client Name, DOB, SSN, Case # or Diagnosis in any of the first 20 rows (every row staff could pick as the header, so banner rows above a client header do not hide it), or SSN or date-of-birth values in more than 5% of rows. A header row staff choose, at inspect or at confirm, gets the same check before any preview. The refusal names the matching rule ("client name", "dob"), never text from the file.
+
+**What is kept.** Nothing, on the server. The import is stateless like the intake: the raw file is read in memory for one request and never written to disk, a database or the logs, and the browser sends the file again with the confirmed mapping. The drafts live in the admin's browser tab until they download the zip. Logs record counts and refusal codes, never file names or cell values (`backend/tests/test_import_no_retention.py`). The downloaded YAML and `review-issues.csv` carry the sanitised file name, sheet name and row numbers as provenance.
+
+**The optional model step.** Off unless `IMPORT_USE_MODEL=true` and live AI is on, and staff tick it for an import. It sends the filtered rows in batches to the Responses API with `store=False`, no tools and a strict JSON schema, to suggest hours, address parts, categories and eligibility gates. Per row it sends the service and provider names, description, eligibility, cost and category text, the hours text and an address the code could not split, all after the filters above and after `pii.py` redaction. It never sends phone numbers, emails, websites, the file name or any dropped column (`backend/tests/test_import_model_payload.py`). Lists over 200 rows, or whose worst-case cost (every call using its full output ceiling) is over `IMPORT_MAX_COST_USD`, skip it. At most 4 model calls run at once across all imports on a server process. Suggestions are marked on the draft for review.
+
+**The limit of the filters.** A person's name typed into a mapped free-text cell with no phrase around it ("Run by Jordan Smith since 2019") gets through, and so would other personal details written in prose. That is why nothing an import produces goes into the catalog without a person reviewing every draft, and why the drafts are downloads, not catalog writes. Do not describe the import as unable to carry personal data.
+
+## What a real deployment still needs
 
 This is a demo. Before it handles real residents, it needs at least:
 

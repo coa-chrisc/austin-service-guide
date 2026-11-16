@@ -179,3 +179,14 @@ def test_app_refuses_inline_on_vercel_and_remote_with_a_short_or_missing_secret(
         check_app_config(job_settings(job_backend="remote", job_worker_url=""), env={})
     assert check_app_config(job_settings(job_backend="off"), env={"VERCEL": "1"}) == "off"
     assert check_app_config(job_settings(job_backend="inline"), env={}) == "inline"
+
+
+@pytest.mark.parametrize("backend", ["off", "inline", "remote"])
+def test_app_settings_and_job_settings_accept_the_same_job_backend(monkeypatch, backend):
+    # JOB_BACKEND is read by app.config (partner import gate) and by
+    # app.jobs.settings (research jobs); every value one accepts the other must too.
+    from app.config import Settings
+    from app.jobs.settings import JobSettings
+
+    monkeypatch.setenv("JOB_BACKEND", backend)
+    assert Settings().job_backend == JobSettings().job_backend == backend

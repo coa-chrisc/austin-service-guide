@@ -15,7 +15,7 @@ from app.defense.keys import check_defense_config
 from app.defense.limits import DefenseRefusal, refusal_handler
 from app.jobs.settings import jobs_enabled
 from app.middleware import IntakeBodyLimitMiddleware
-from app.routers import about, admin, defense, intake, services
+from app.routers import about, admin, defense, intake, partner_import, services
 from app.security_headers import SecurityHeadersMiddleware
 from app.services.catalog import load_seed_data
 from app.services.city import check_env_file, get_city
@@ -80,6 +80,7 @@ app.include_router(intake.router)
 app.include_router(defense.router)
 app.include_router(services.router)
 app.include_router(admin.router)
+app.include_router(partner_import.router)
 app.include_router(about.router)
 if jobs_enabled():  # JOB_BACKEND inline|remote; a bad job config fails startup
     from app.routers import admin_jobs

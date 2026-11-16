@@ -247,6 +247,40 @@ Field-by-field schemas, validation rules and the validator are in [DATA_PACK.md]
 
 Your records are unverified until your staff check them. Run `CITY_DATA_DIR=data/my-city npm run validate:catalog` from `frontend/` to check the YAML against `config/services.schema.json` (it checks the pack `CITY_DATA_DIR` selects, like the backend; `-- --data-dir <dir>` overrides). It reports unverified entries, and `--strict` fails on them. Do not describe a catalog as verified until it is.
 
+## Import an existing partner list
+
+If your agency already keeps a list of partner organisations in a spreadsheet or a Word table, the admin import can turn it into draft service files for your data pack. It is off by default. To turn it on, set these for the backend and restart:
+
+```bash
+IMPORT_ENABLED=true
+JOB_BACKEND=inline
+ADMIN_API_TOKEN=<a long random secret>
+```
+
+`JOB_BACKEND` is the setting the research agent uses too, and the import works with any value other than `off`: on a deployment that already proxies research jobs to a worker (`JOB_BACKEND=remote`), keep that value. The import itself always runs inside the request and never uses the worker. `inline` also mounts the research job routes in-process; those need `requirements-worker.txt`, and `inline` is refused on Vercel.
+
+Then open **Import Partner List** in the admin console (`/admin/import`), unlock it with the token, and upload the file (`.xlsx`, `.csv` or `.docx`, up to 4 MB). The import proposes which column feeds which catalog field and drops contact names, cell numbers, personal emails and notes by default; confirm or change the mapping, review each draft, and download a zip of `services/<slug>.yaml` files plus `review-issues.csv`. Nothing is written to the catalog. Copy the files you accept into your pack's `services/` folder, check each entry with the provider, and run `npm run validate:pack`.
+
+The import reads most layouts, but this column layout needs the least fixing. A template with these headers is in [config/templates/partner-list-template.csv](../config/templates/partner-list-template.csv):
+
+| Column | Becomes | Notes |
+| --- | --- | --- |
+| Organization | `provider_name` | Rows with the same organisation and program are grouped into one service with several locations. |
+| Program | `name` | |
+| Description | `description` | |
+| Who We Serve | `eligibility_summary` | |
+| Category | `categories` | Your category names or slugs from `categories.yaml`. |
+| Main Phone | `phone` | One public number. Cell and direct lines are dropped. |
+| Email | `email` | A role address such as `info@`. Personal addresses are dropped. |
+| Website | `website_url` | |
+| Address, City, State, ZIP | the location | A combined address is split when it reads as street, city, state and ZIP. |
+| Hours | location `hours` | For example `Mon-Fri 9am-5pm`. Text the import cannot read is flagged. |
+| Cost | `cost` | |
+| Languages | `languages_offered` | |
+| How to Apply | `how_to_apply` | |
+
+Leave out staff names, direct lines and internal notes. With `IMPORT_USE_MODEL=true` and live AI on, staff can also ask the model to suggest hours, address parts, categories and eligibility for rows the code could not read; see [docs/PRIVACY.md](PRIVACY.md#partner-list-import-admin) for what it receives.
+
 ## What is still Austin-specific
 
 - **The bundled data pack's content.** It is the reference pack. Nothing in your deployment uses it once `CITY_DATA_DIR` points at your own.
