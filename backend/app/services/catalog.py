@@ -211,6 +211,20 @@ def get_service_by_id(service_id: str) -> Service | None:
     return _services.get(service_id)
 
 
+def iter_active_services() -> list[Service]:
+    """Every service that is not inactive, in catalog order, with no page cap.
+
+    The matching engine reads this (it used to read one 200-item page of
+    ``get_all_services``, so service 201 onward could never match).
+    """
+    return [s for s in _services.values() if s.status != "inactive"]
+
+
+def all_services() -> list[Service]:
+    """Every service including inactive ones (admin validation and export)."""
+    return list(_services.values())
+
+
 def get_service_emails() -> set[str]:
     """Every service's public contact email (kept when redacting assistant text)."""
     return {s.email for s in _services.values() if s.email}
@@ -282,48 +296,69 @@ def get_crisis_resources(language: str | None = None) -> list[CrisisResource]:
 
 # ── Admin CRUD ────────────────────────────────────────────────────────
 
-def create_service(service: Service) -> Service:
-    _services[service.id] = service
-    _services_by_slug[service.slug] = service
-    # Update category counts
+# Writes replace records, never mutate them: the loader's cached Service
+# objects are shared with these stores, and a reload must restore the pack.
+# Validation (schema, categories, cross-file rules) lives in catalog_write.
+
+class CatalogConflict(ValueError):
+    """The write would give two services the same id or slug."""
+
+
+def service_record(service: Service) -> dict[str, Any]:
+    """Every field of a service, including ``sources`` (excluded from model_dump)."""
+    return {**service.model_dump(), "sources": [s.model_dump() for s in service.sources]}
+
+
+def _recount() -> None:
     for cat in _categories.values():
         cat.service_count = sum(
             1 for s in _services.values()
             if cat.slug in s.categories and s.status != "inactive"
         )
+
+
+def create_service(service: Service) -> Service:
+    if service.id in _services:
+        raise CatalogConflict(f"a service with id {service.id!r} already exists")
+    if service.slug in _services_by_slug:
+        owner = _services_by_slug[service.slug]
+        raise CatalogConflict(f"slug {service.slug!r} is already used by {owner.name!r} ({owner.id})")
+    _services[service.id] = service
+    _services_by_slug[service.slug] = service
+    _recount()
+    return service
+
+
+def replace_service(service: Service) -> Service | None:
+    """Swap in a new version of an existing service (same id; slug may change)."""
+    current = _services.get(service.id)
+    if current is None:
+        return None
+    owner = _services_by_slug.get(service.slug)
+    if owner is not None and owner.id != service.id:
+        raise CatalogConflict(f"slug {service.slug!r} is already used by {owner.name!r} ({owner.id})")
+    _services[service.id] = service
+    if current.slug != service.slug:
+        _services_by_slug.pop(current.slug, None)
+    _services_by_slug[service.slug] = service
+    _recount()
     return service
 
 
 def update_service(service_id: str, updates: dict[str, Any]) -> Service | None:
+    """Apply a partial update. The id cannot change (ValueError)."""
     svc = _services.get(service_id)
     if not svc:
         return None
-    data = svc.model_dump()
-    old_slug = svc.slug
-    data.update(updates)
-    updated = Service(**data)
-    # Replace in stores
-    _services[service_id] = updated
-    if old_slug != updated.slug:
-        _services_by_slug.pop(old_slug, None)
-    _services_by_slug[updated.slug] = updated
-    for cat in _categories.values():
-        cat.service_count = sum(
-            1 for s in _services.values()
-            if cat.slug in s.categories and s.status != "inactive"
-        )
-    return updated
+    if "id" in updates and updates["id"] != service_id:
+        raise ValueError("a service id cannot be changed")
+    return replace_service(Service.model_validate({**service_record(svc), **updates}))
 
 
 def delete_service(service_id: str) -> bool:
-    """Soft-delete: set status to inactive."""
+    """Soft-delete: replace the record with an inactive copy."""
     svc = _services.get(service_id)
     if not svc:
         return False
-    svc.status = ServiceStatus.inactive
-    for cat in _categories.values():
-        cat.service_count = sum(
-            1 for s in _services.values()
-            if cat.slug in s.categories and s.status != "inactive"
-        )
+    replace_service(svc.model_copy(update={"status": ServiceStatus.inactive}))
     return True

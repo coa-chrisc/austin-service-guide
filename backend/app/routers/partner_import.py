@@ -23,7 +23,7 @@ from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 
 from app.config import get_settings
-from app.routers.admin import require_admin_token
+from app.routers.admin_auth import require_admin_token
 from app.services.partner_import import export, limits as L, pipeline, upload
 from app.services.partner_import.pack_context import get_context
 from app.services.partner_import.tables import MissingDependency

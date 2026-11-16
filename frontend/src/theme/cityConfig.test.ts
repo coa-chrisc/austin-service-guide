@@ -188,6 +188,16 @@ describe("serviceGuide defaults and categories", () => {
     expect(schemaErrors(cfg)).toEqual([]);
   });
 
+  it("defaults links.sourceRepoUrl to empty and accepts only an https URL", () => {
+    const cfg = readJson(path.join(CONFIG_DIR, "city.config.json"));
+    expect(resolveServiceGuide({ ...cfg, serviceGuide: undefined }).links.sourceRepoUrl).toBe("");
+    cfg.serviceGuide.links = { sourceRepoUrl: "https://example.org/repo/" };
+    expect(schemaErrors(cfg)).toEqual([]);
+    expect(resolveServiceGuide(cfg).links.sourceRepoUrl).toBe("https://example.org/repo");
+    cfg.serviceGuide.links = { sourceRepoUrl: "javascript:alert(1)" };
+    expect(schemaErrors(cfg).length).toBeGreaterThan(0);
+  });
+
   it("hides benefit estimates unless the config turns them on", () => {
     const cfg = readJson(path.join(CONFIG_DIR, "city.config.json"));
     expect(resolveServiceGuide(cfg).showBenefitEstimates).toBe(false);

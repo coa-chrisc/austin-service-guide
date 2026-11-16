@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.access_gate import AccessGateMiddleware, load_gate_config
 from app.config import get_settings
 from app.middleware import IntakeBodyLimitMiddleware
-from app.routers import admin, intake, partner_import, services
+from app.routers import about, admin, intake, partner_import, services
 from app.security_headers import SecurityHeadersMiddleware
 from app.services.catalog import load_seed_data
 from app.services.city import check_env_file, get_city
@@ -73,6 +73,7 @@ app.include_router(intake.router)
 app.include_router(services.router)
 app.include_router(admin.router)
 app.include_router(partner_import.router)
+app.include_router(about.router)
 
 
 # ── Root & health ─────────────────────────────────────────────────────

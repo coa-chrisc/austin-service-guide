@@ -1,282 +1,180 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
-import Switch from "@mui/material/Switch";
+import Button from "@mui/material/Button";
 import Skeleton from "@mui/material/Skeleton";
-import TextField from "@mui/material/TextField";
-import MenuItem from "@mui/material/MenuItem";
+import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
-import Tooltip from "@mui/material/Tooltip";
-import RuleIcon from "@mui/icons-material/Rule";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PauseCircleIcon from "@mui/icons-material/PauseCircle";
-import { useTheme } from "@mui/material/styles";
-import { DataGrid, type GridColDef } from "@mui/x-data-grid";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import Typography from "@mui/material/Typography";
+import DownloadIcon from "@mui/icons-material/Download";
 
-import { getAdminEligibilityRules, type EligibilityRule } from "../../lib/api";
+import { ApiError, exportPack, getAdminEligibility } from "../../lib/api";
+import type {
+  EligibilityOverrides,
+  EligibilityPayload,
+  GateId,
+  MatchingRules,
+} from "../../lib/adminEligibility";
+import AdminTokenButton from "./AdminTokenButton";
+import EngineTab from "./eligibility/EngineTab";
+import LocalRulesTab from "./eligibility/LocalRulesTab";
+import ProfileTester from "./eligibility/ProfileTester";
+import ServiceGatesTab from "./eligibility/ServiceGatesTab";
 
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * The rules the matching engine actually evaluates, in three layers:
+ * per-service gates (editable), the pack's local rules (editable), and the
+ * engine's built-in constants (read-only), plus a profile tester.
+ */
 export default function AdminEligibility() {
-  const theme = useTheme();
-  const [rules, setRules] = useState<EligibilityRule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [payload, setPayload] = useState<EligibilityPayload | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [tab, setTab] = useState(0);
+  const [snackbar, setSnackbar] = useState<{ msg: string; severity: "success" | "error" } | null>(null);
+  // Export-only mode: edits are staged here and only ever exported.
+  const [stagedGates, setStagedGates] = useState<Record<string, GateId[]>>({});
+  const [stagedRules, setStagedRules] = useState<MatchingRules | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await getAdminEligibilityRules();
-        if (cancelled) return;
-        setRules(res);
-      } catch (err) {
-        console.error("Failed to load eligibility rules", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    try {
+      setPayload(await getAdminEligibility());
+      setLoadError(null);
+    } catch (err) {
+      setLoadError(err instanceof ApiError ? err.message : "Could not load the eligibility rules.");
+    }
   }, []);
 
-  const categories = useMemo(
-    () => Array.from(new Set(rules.map((r) => r.category))).sort(),
-    [rules],
-  );
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  const filtered = useMemo(() => {
-    return rules.filter((r) => {
-      if (categoryFilter !== "all" && r.category !== categoryFilter)
-        return false;
-      if (
-        search &&
-        !`${r.name} ${r.criteria}`.toLowerCase().includes(search.toLowerCase())
-      )
-        return false;
-      return true;
-    });
-  }, [rules, search, categoryFilter]);
+  const staged: EligibilityOverrides | null = useMemo(() => {
+    const services = Object.fromEntries(
+      Object.entries(stagedGates).map(([slug, gates]) => [slug, { eligibility_requires: gates }]),
+    );
+    if (!Object.keys(services).length && !stagedRules) return null;
+    return { services, ...(stagedRules ? { matching_rules: stagedRules } : {}) };
+  }, [stagedGates, stagedRules]);
 
-  const totalActive = rules.filter((r) => r.is_active).length;
-  const totalHits = rules.reduce((sum, r) => sum + r.hits_30d, 0);
+  const applied = (msg: string) => {
+    setSnackbar({ msg, severity: "success" });
+    void load();
+  };
 
-  const columns: GridColDef<EligibilityRule>[] = [
-    {
-      field: "name",
-      headerName: "Rule",
-      flex: 1.2,
-      minWidth: 240,
-      renderCell: (params) => (
-        <Box>
-          <Typography variant="body2" fontWeight={600}>
-            {params.row.name}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {params.row.criteria}
-          </Typography>
-        </Box>
-      ),
-    },
-    {
-      field: "category",
-      headerName: "Category",
-      width: 130,
-      renderCell: (params) => (
-        <Chip
-          label={params.value}
-          size="small"
-          sx={{
-            bgcolor: theme.palette.brand.category(params.value),
-            color: theme.palette.brand.textOn(
-              theme.palette.brand.category(params.value),
-            ),
-            fontWeight: 600,
-            textTransform: "capitalize",
-          }}
-        />
-      ),
-    },
-    {
-      field: "services",
-      headerName: "Services Gated",
-      flex: 1,
-      minWidth: 220,
-      renderCell: (params) => (
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ py: 0.5 }}>
-          {params.value.slice(0, 2).map((s: string) => (
-            <Chip key={s} label={s} size="small" variant="outlined" />
-          ))}
-          {params.value.length > 2 && (
-            <Chip
-              label={`+${params.value.length - 2}`}
-              size="small"
-              variant="outlined"
-            />
-          )}
-        </Stack>
-      ),
-      sortable: false,
-    },
-    {
-      field: "hits_30d",
-      headerName: "Hits (30d)",
-      width: 110,
-      type: "number",
-      align: "right",
-      headerAlign: "right",
-    },
-    {
-      field: "last_updated",
-      headerName: "Last Updated",
-      width: 130,
-      valueFormatter: (value: string) =>
-        value ? new Date(value).toLocaleDateString() : "—",
-    },
-    {
-      field: "is_active",
-      headerName: "Active",
-      width: 100,
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) => (
-        <Tooltip title="Editing rules here is on the roadmap">
-          <span>
-            <Switch
-              checked={params.value}
-              disabled
-              size="small"
-              slotProps={{
-                input: {
-                  "aria-label": `${params.row.name}: ${params.value ? "active" : "paused"}`,
-                },
-              }}
-            />
-          </span>
-        </Tooltip>
-      ),
-      sortable: false,
-    },
-  ];
+  const runExport = async (changedOnly: boolean) => {
+    setExporting(true);
+    try {
+      download(await exportPack({ changedOnly, overrides: staged ?? undefined }), "data-pack-export.zip");
+    } catch (err) {
+      setSnackbar({ msg: err instanceof ApiError ? err.message : "Export failed.", severity: "error" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loadError) return <Alert severity="error">{loadError}</Alert>;
+  if (!payload) {
+    return (
+      <Box>
+        <Skeleton width={320} height={40} />
+        <Skeleton variant="rectangular" height={400} sx={{ mt: 2, borderRadius: 2 }} />
+      </Box>
+    );
+  }
+
+  const exportOnly = payload.edit_mode === "export_only";
+  const stagedCount = Object.keys(stagedGates).length + (stagedRules ? 1 : 0);
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-        <RuleIcon color="primary" />
-        <Typography variant="h5" fontWeight={700}>
-          Eligibility Rules
-        </Typography>
-      </Box>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Illustrative rule view (sample data). Editing rules here is on the
-        roadmap.
-      </Typography>
-
-      {/* -- summary chips ----------------------------------------- */}
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <Card sx={{ flex: 1, minWidth: 0 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Total Rules
-            </Typography>
-            <Typography variant="h4" fontWeight={700}>
-              {loading ? <Skeleton width={60} /> : rules.length}
-            </Typography>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 0 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Active
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <CheckCircleIcon color="success" fontSize="small" />
-              <Typography variant="h4" fontWeight={700}>
-                {loading ? <Skeleton width={60} /> : totalActive}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 0 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Paused
-            </Typography>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <PauseCircleIcon color="warning" fontSize="small" />
-              <Typography variant="h4" fontWeight={700}>
-                {loading ? <Skeleton width={60} /> : rules.length - totalActive}
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
-        <Card sx={{ flex: 1, minWidth: 0 }}>
-          <CardContent>
-            <Typography variant="overline" color="text.secondary">
-              Total Matches (30d)
-            </Typography>
-            <Typography variant="h4" fontWeight={700}>
-              {loading ? <Skeleton width={60} /> : totalHits.toLocaleString()}
-            </Typography>
-          </CardContent>
-        </Card>
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} sx={{ mb: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h5" fontWeight={700}>
+            Eligibility rules
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            The rules the matching engine evaluates, read from the loaded data pack and the engine code.
+          </Typography>
+        </Box>
+        <AdminTokenButton />
+        <Button variant="outlined" startIcon={<DownloadIcon />} disabled={exporting} onClick={() => runExport(true)}>
+          Export changed files
+        </Button>
+        <Button variant="outlined" disabled={exporting} onClick={() => runExport(false)}>
+          Export full pack
+        </Button>
       </Stack>
 
-      {/* -- filters --------------------------------------------------- */}
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <TextField
-          size="small"
-          placeholder="Search rules…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ flex: 1 }}
+      <Stack spacing={1} sx={{ mb: 2 }}>
+        {exportOnly ? (
+          <Alert severity="info">
+            This server runs in export-only mode. Edits are previewed and staged in this browser tab, then
+            exported as YAML; they never change what residents see here.
+            {stagedCount > 0 && ` ${stagedCount} change${stagedCount === 1 ? "" : "s"} staged.`}
+          </Alert>
+        ) : (
+          <Alert severity="info">
+            Changes apply to this server instance only and are lost on restart. Export the pack to keep them.
+            Where the app runs on several instances (serverless hosting, for example), other instances do not
+            see them. Editing needs the admin token.
+          </Alert>
+        )}
+        <Alert severity="info" variant="outlined">
+          The engine has no income, residency, citizenship or numeric-age rules. Those restrictions stay in each
+          service's eligibility summary (and the "other criteria" gate), which residents see as a "check
+          eligibility" note.
+        </Alert>
+      </Stack>
+
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }} variant="scrollable" allowScrollButtonsMobile>
+        <Tab label="Service gates" />
+        <Tab label="Local rules" />
+        <Tab label="Built into the engine" />
+        <Tab label="Profile tester" />
+      </Tabs>
+
+      {tab === 0 && (
+        <ServiceGatesTab
+          payload={payload}
+          staged={stagedGates}
+          onApplied={applied}
+          onStaged={(slug, gates) => {
+            setStagedGates((prev) => ({ ...prev, [slug]: gates }));
+            setSnackbar({ msg: "Staged for export.", severity: "success" });
+          }}
         />
-        <TextField
-          select
-          size="small"
-          label="Category"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          sx={{ minWidth: 180 }}
-        >
-          <MenuItem value="all">All categories</MenuItem>
-          {categories.map((c) => (
-            <MenuItem key={c} value={c} sx={{ textTransform: "capitalize" }}>
-              {c}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Stack>
+      )}
+      {tab === 1 && (
+        <LocalRulesTab
+          payload={payload}
+          stagedRules={stagedRules}
+          onApplied={applied}
+          onStaged={(rules) => {
+            setStagedRules(rules);
+            setSnackbar({ msg: "Staged for export.", severity: "success" });
+          }}
+        />
+      )}
+      {tab === 2 && <EngineTab engine={payload.engine} />}
+      {tab === 3 && <ProfileTester payload={payload} staged={staged} />}
 
-      {/* -- grid ------------------------------------------------------ */}
-      <Card>
-        <CardContent sx={{ p: 0 }}>
-          {loading ? (
-            <Box sx={{ p: 3 }}>
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} height={60} sx={{ mb: 1 }} />
-              ))}
-            </Box>
-          ) : (
-            <DataGrid
-              rows={filtered}
-              columns={columns}
-              getRowHeight={() => "auto"}
-              initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-              pageSizeOptions={[10, 25]}
-              disableRowSelectionOnClick
-              sx={{
-                border: "none",
-                "& .MuiDataGrid-cell": { py: 1, display: "flex", alignItems: "center" },
-              }}
-              autoHeight
-            />
-          )}
-        </CardContent>
-      </Card>
+      <Snackbar open={!!snackbar} autoHideDuration={4000} onClose={() => setSnackbar(null)}>
+        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity ?? "info"} variant="filled">
+          {snackbar?.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

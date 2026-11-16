@@ -16,6 +16,8 @@ This is a **demonstration application**, not a production system. The "Known gap
 
 ## Implemented hardening (in this repository)
 
+The in-app "How it works" page (`/how-it-works`, copy in `frontend/src/pages/howItWorks/content.ts`) is a plain-language version of this file. Where they disagree, this file and the code are correct and the page must be fixed.
+
 ### 1. Stateless execution
 
 The backend keeps no intake sessions. The browser holds the intake state and sends it with every intake request. The server rebuilds a working session from it, responds, and keeps nothing.

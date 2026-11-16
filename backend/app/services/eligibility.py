@@ -187,3 +187,73 @@ def eligibility_note(service: Service, unconfirmed: list[EligibilityGate]) -> st
     if not text:
         text = "serves " + " and ".join(GATE_LABELS[g] for g in unconfirmed)
     return f"Check eligibility: {text}"
+
+
+def gate_states(service: Service, profile: ResidentProfile) -> dict[str, bool | None]:
+    """Each of the service's gates and its tri-state for the profile."""
+    return {gate: _GATES[gate](profile) for gate in service.eligibility_requires}
+
+
+# When each gate holds or is contradicted, in staff-facing words, for the
+# admin Eligibility page. Kept next to the predicates above so the page
+# describes them rather than a copy elsewhere; update both together
+# (test_admin_eligibility checks every gate is described).
+_GATE_TERMS: dict[str, tuple[str, str]] = {
+    "veteran": (
+        "veteran_status is true, or a stated need is veteran, veterans, va or military",
+        "veteran_status is false",
+    ),
+    "homeless_or_unstable_housing": (
+        "housing_situation is homeless or unstable; a homelessness or domestic_violence crisis "
+        f"indicator; or a stated need is {', '.join(sorted(_HOMELESS_NEEDS))}",
+        "housing_situation is renting or own_home",
+    ),
+    "refugee_or_immigrant": (
+        "is_refugee_or_immigrant is true, or a stated need is refugee, immigration or citizenship",
+        "is_refugee_or_immigrant is false",
+    ),
+    "disability": (
+        "has_disability is true, employment_status is disabled, or a stated need is disability",
+        "has_disability is false",
+    ),
+    "older_adult": (
+        f"age_range overlaps {_OLDER_ADULT_FLOOR}+, or a stated need is senior, aging or elderly",
+        f"age_range is entirely under {_OLDER_ADULT_FLOOR}",
+    ),
+    "older_adult_or_disability": (
+        "either the older_adult or the disability gate holds",
+        "both the older_adult and the disability gates are contradicted",
+    ),
+    "has_children": (
+        "has_children is true, school-age children are listed, or a stated need is childcare, "
+        "daycare or preschool",
+        "has_children is false",
+    ),
+    "youth": (
+        f"age_range overlaps {_YOUTH_BAND[0]} to {_YOUTH_BAND[1]}",
+        f"age_range is entirely outside {_YOUTH_BAND[0]} to {_YOUTH_BAND[1]}",
+    ),
+    "other_criteria": (
+        "never: the restriction has no profile field, so the service always shows as "
+        '"check eligibility"',
+        "never",
+    ),
+}
+
+
+def describe_gates() -> list[dict[str, str]]:
+    """The closed gate vocabulary: label and when each gate holds or fails."""
+    return [
+        {
+            "id": gate,
+            "label": GATE_LABELS[gate],
+            "satisfied_when": _GATE_TERMS[gate][0],
+            "contradicted_when": _GATE_TERMS[gate][1],
+        }
+        for gate in _GATES
+    ]
+
+
+def age_bands() -> dict[str, list[int]]:
+    """Age bands the age gates accept, inclusive [low, high]."""
+    return {"older_adult": [_OLDER_ADULT_FLOOR, 200], "youth": list(_YOUTH_BAND)}

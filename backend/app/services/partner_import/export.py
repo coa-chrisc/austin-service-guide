@@ -22,7 +22,6 @@ from typing import Any
 
 import yaml
 
-from app.services.pack_validator import MAX_MATCHED_SERVICES
 from app.services.partner_import.finalize import validate_services
 from app.services.partner_import.pack_context import PackContext
 from app.services.partner_import.tables import sanitize_file_name
@@ -162,12 +161,6 @@ def check(items: list[dict[str, Any]], ctx: PackContext) -> tuple[list[dict[str,
             p["warnings"] = result["warnings"]
             if result["errors"]:
                 problems.append({"index": p["index"], "slug": result["slug"], "errors": result["errors"]})
-        merged = {p["merge_into"] for p in prepared if p.get("merge_into")}
-        listed = sum(1 for slug, s in ctx.services.items() if slug not in merged and s.get("status") != "inactive")
-        listed += sum(1 for p in prepared if p["record"].get("status") != "inactive")
-        if listed > MAX_MATCHED_SERVICES:
-            problems.append({"index": None, "slug": None, "errors": [{"path": "", "code": "match_cap", "message": (
-                f"The pack would list {listed} services; matching reads only the first {MAX_MATCHED_SERVICES}.")}]})
     return prepared, problems
 
 
