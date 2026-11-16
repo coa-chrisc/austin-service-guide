@@ -18,7 +18,8 @@ import SectionLink, { type JumpHandler } from "./SectionLink";
 /* ------------------------------------------------------------------ */
 /*  One section: title, short summary and its visual stay open, so the */
 /*  page scans quickly. The full points and the limits sit in two      */
-/*  collapsed panels (opened for print by HowItWorks' print styles).   */
+/*  collapsed panels (opened for print by HowItWorks' print styles),   */
+/*  then the section's planned next step, labelled as a plan.          */
 /* ------------------------------------------------------------------ */
 
 /** Space kept above a heading scrolled into view, so the sticky app bar does not cover it. */
@@ -44,6 +45,18 @@ function Panel({ id, title, children }: { id: string; title: string; children: R
       </AccordionSummary>
       <AccordionDetails id={`${id}-content`}>{children}</AccordionDetails>
     </Accordion>
+  );
+}
+
+/** The section's planned next step, set apart from what runs today. */
+function Roadmap({ text }: { text: string }) {
+  return (
+    <Box sx={{ mt: 2, maxWidth: READING_WIDTH, borderLeft: 4, borderColor: "primary.main", pl: 2, py: 0.5 }}>
+      <Typography component="h3" variant="subtitle2" sx={{ fontWeight: 700 }}>
+        Where this is going
+      </Typography>
+      <Typography variant="body2">{text}</Typography>
+    </Box>
   );
 }
 
@@ -114,14 +127,15 @@ export default function Section({
       {diagram && <FlowDiagram caption={diagram.caption} lanes={diagram.lanes} arrows={diagram.arrows} />}
       {section.id === "status" && <ProtectionList repoUrl={repoUrl} />}
       <Box sx={{ mt: 2 }}>
-        <Panel id={`${section.id}-details`} title={`Details (${section.points.length})`}>
+        <Panel id={`${section.id}-details`} title={`${section.detailsLabel} (${section.points.length})`}>
           <BulletList items={section.points} />
           <Sources paths={section.sources} repoUrl={repoUrl} />
         </Panel>
-        <Panel id={`${section.id}-limits`} title={`Limits (${section.limits.length})`}>
+        <Panel id={`${section.id}-limits`} title={`${section.limitsLabel} (${section.limits.length})`}>
           <BulletList items={section.limits} />
         </Panel>
       </Box>
+      {section.roadmap && <Roadmap text={section.roadmap} />}
       {section.related && section.related.length > 0 && (
         <Typography variant="body2" sx={{ mt: 1.5 }}>
           See also:{" "}

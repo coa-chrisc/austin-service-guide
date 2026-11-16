@@ -19,6 +19,15 @@ export interface HowItWorksSection {
   summary: string;
   points: string[];
   limits: string[];
+  /** Label of the collapsed panel holding `points`, specific to this section (the count is added). */
+  detailsLabel: string;
+  /** Label of the collapsed panel holding `limits` (the count is added). */
+  limitsLabel: string;
+  /**
+   * "Where this is going": the planned next step for this section. Planned, not built: write it as a plan
+   * ("Phase 2:", "Planned:"), never in the present tense as if it runs today.
+   */
+  roadmap?: string;
   /** Repo-relative paths, shown as "Where this is in the code". */
   sources: string[];
   /** Ids of other sections that say more, shown as links. */
@@ -39,7 +48,8 @@ export type IconKey =
   | "noStore"
   | "policy"
   | "limits"
-  | "review";
+  | "review"
+  | "roadmap";
 
 /** The one-minute summary cards at the top of the page. Each links to the section that owns the detail. */
 export interface OverviewItem {
@@ -80,7 +90,13 @@ export const OVERVIEW: OverviewItem[] = [
     icon: "status",
     label: "Status",
     section: "status",
-    text: "A demonstration. Staff sign-in, shared rate-limit counters, catalog checks and vendor agreements are still pending.",
+    text: "A working demonstration. Staff sign-in, shared rate-limit counters, catalog checks and vendor agreements are still pending.",
+  },
+  {
+    icon: "roadmap",
+    label: "Phase 2 roadmap",
+    section: "status",
+    text: "With the grant: a shared multi-city standard, a staff-checked catalog, partner and 211 data updates, and demand signals for health leaders. None of it is built yet.",
   },
 ];
 
@@ -88,22 +104,49 @@ export const OVERVIEW: OverviewItem[] = [
 export interface KeyNumber {
   value: string;
   label: string;
+  /** One plain line on why the number matters to residents. Measured facts only, never a target. */
+  why: string;
   /** Section id that explains the number. */
   section: string;
 }
 
 export const KEY_NUMBERS: KeyNumber[] = [
-  { value: "0", label: "resident conversations stored on the server", section: "stateless" },
-  { value: "8", label: "languages the crisis check reads", section: "crisis" },
-  { value: "~161 KB", label: "compressed JavaScript to open the site", section: "scaling" },
-  { value: "98–100", label: "Lighthouse mobile performance score", section: "scaling" },
-  { value: "100", label: "Lighthouse mobile accessibility score", section: "scaling" },
+  {
+    value: "0",
+    label: "resident conversations stored on the server",
+    section: "stateless",
+    why: "By default, the server keeps nothing from a resident's chat or voice intake.",
+  },
+  {
+    value: "8",
+    label: "languages the crisis check reads",
+    section: "crisis",
+    why: "A crisis phrase in any of them brings up crisis lines before any AI step.",
+  },
+  {
+    value: "~161 KB",
+    label: "compressed JavaScript to open the site",
+    section: "scaling",
+    why: "Less to download and run on older phones and slow or prepaid data plans.",
+  },
+  {
+    value: "98–100",
+    label: "Lighthouse mobile performance score",
+    section: "scaling",
+    why: "Pages load fast in tests that simulate a phone on a slow 4G connection.",
+  },
+  {
+    value: "100",
+    label: "Lighthouse mobile accessibility score",
+    section: "scaling",
+    why: "Passes Lighthouse's automated checks for screen-reader labels, color contrast and zoom.",
+  },
 ];
 
 export const KEY_NUMBERS_NOTE =
   "Lighthouse 13.6 mobile scores: home, directory and intake pages of the production demo, measured 16 November 2026 with simulated slow 4G. The first-load size is checked on every build.";
 
-/** The safeguards, one card each, shown in the "How it is kept safe" section. */
+/** The safeguards, one card each, shown in the safeguards section (id "safety"). */
 export interface SafetyLayer {
   icon: IconKey;
   title: string;
@@ -166,7 +209,9 @@ export const SAFETY_LAYERS: SafetyLayer[] = [
 export const SECTIONS: HowItWorksSection[] = [
   {
     id: "what-this-is",
-    title: "What the guide is",
+    title: "Points residents to services; providers decide eligibility",
+    detailsLabel: "What the guide does and does not do",
+    limitsLabel: "Known limits of its role",
     summary:
       "A demonstration guide that helps residents find local services. It suggests services. It does not make eligibility decisions, take applications or keep case records.",
     points: [
@@ -184,7 +229,9 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "journey",
-    title: "A resident's path",
+    title: "Residents browse or ask, then leave with services to contact",
+    detailsLabel: "Walk through the resident's steps",
+    limitsLabel: "Known limits of browsing and voice",
     summary:
       "Residents can browse on their own or answer a few questions. Either way they end with a list of services to contact.",
     points: [
@@ -209,7 +256,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "architecture",
-    title: "Architecture",
+    title: "One server and a closed catalog the city controls",
+    detailsLabel: "View the architecture and data flow",
+    limitsLabel: "A note on these diagrams",
+    roadmap:
+      "Phase 2: move the catalog into a database (PostgreSQL with pgvector), so staff edits are saved for good and search matches meaning, not only words.",
     summary:
       "A web page in the resident's browser talks to one server. The server holds the service catalog in memory, applies the matching rules, and makes every AI call for text.",
     points: [
@@ -237,7 +288,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "scaling",
-    title: "How it scales",
+    title: "One codebase any city can configure, host and scale",
+    detailsLabel: "See hosting, scale and page-weight details",
+    limitsLabel: "Known limits at scale",
+    roadmap:
+      "Phase 2: a shared multi-city standard for service data and city settings, built from this guide's data-pack format, plus tested cloud setups (landing zones) for AWS, Azure and Google Cloud. The approach: prove the guide outside city systems first, then move it inside city IT once it has earned trust.",
     summary:
       "The server keeps no resident sessions, so any copy of it can answer any request. Copies can be added or replaced as traffic changes, and a restart loses nothing a resident needs.",
     points: [
@@ -270,7 +325,9 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "stateless",
-    title: "Where resident data lives",
+    title: "The server keeps no resident conversations",
+    detailsLabel: "See what the browser holds and what the server checks",
+    limitsLabel: "Known limits of browser-held data",
     summary:
       "The resident's conversation and answers stay in their browser tab. Each request carries them to the server, which checks them, replies and keeps nothing.",
     points: [
@@ -300,7 +357,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "pii",
-    title: "Removing personal details",
+    title: "Fixed rules remove personal details before the AI sees text",
+    detailsLabel: "See the personal-details removal rules",
+    limitsLabel: "What the removal rules can miss",
+    roadmap:
+      "Planned: a second layer that finds names and addresses in many languages, running inside the deployment's own network, after the fixed rules and before any AI call.",
     summary:
       "Before a message reaches the AI, fixed pattern rules remove details such as phone numbers, Social Security numbers and street addresses. The rules run twice: in the browser, then again on the server. No AI is involved in this step.",
     points: [
@@ -316,6 +377,7 @@ export const SECTIONS: HowItWorksSection[] = [
       "Unusual ways of saying numbers out loud can be missed.",
       "Things described in plain words, such as a diagnosis or a family situation, are sent on purpose. They are usually why the resident is here.",
       "Directory search text is cleaned in the browser, but it travels in the page address, so it can appear in hosting request logs.",
+      "In the optional raw-audio voice mode, the audio reaches OpenAI before these rules can run. They clean the transcript afterwards (see the AI section).",
     ],
     sources: [
       "frontend/src/lib/piiGuard.ts",
@@ -328,7 +390,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "ai-model",
-    title: "How the guide uses AI",
+    title: "AI asks the questions; fixed rules decide the matches",
+    detailsLabel: "See how the AI, its tools and the matching rules work",
+    limitsLabel: "Known limits of the AI",
+    roadmap:
+      "Planned: an automated test set for answer quality in every offered language, reviewed by native speakers, run before each release.",
     summary:
       "The AI asks the questions, fills in a profile and explains the results. Fixed rules, not the AI, decide which services match, so the same profile always gives the same matches.",
     points: [
@@ -373,7 +439,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "safety",
-    title: "How it is kept safe",
+    title: "Layered safeguards, from crisis lines to staff review",
+    detailsLabel: "See the catalog-grounding checks",
+    limitsLabel: "Known limits: AI-written text and an unchecked catalog",
+    roadmap:
+      "Phase 2: named staff check each catalog record with its provider, and the site shows who checked it and when. Today no record in the bundled reference catalog has that check.",
     summary:
       "Several separate safeguards work together. Each card links to the section with its detail, and the status list near the end shows which are running.",
     points: [
@@ -400,7 +470,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "crisis",
-    title: "Crisis lines come first",
+    title: "Crisis lines come first, before any AI step",
+    detailsLabel: "See the crisis phrase checks and replies",
+    limitsLabel: "What the crisis check can miss",
+    roadmap:
+      "Phase 2: native speakers review every phrase list, and a published test measures how quickly and how reliably the check responds in each language. No speed has been measured yet.",
     summary:
       "If a message states a crisis, in any language the guide offers, the server replies at once with crisis lines, before any AI step. The lines then stay on screen for the rest of the intake.",
     points: [
@@ -435,7 +509,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "cost",
-    title: "Cost and abuse controls",
+    title: "Rate limits and spending caps that never hold back crisis lines",
+    detailsLabel: "See the rate limits, budgets and pauses",
+    limitsLabel: "Known limits of the cost controls",
+    roadmap:
+      "Planned: one shared store for the counters, so limits hold across every server copy (ASG-SEC-02), and a staff page with alerts (issue #30).",
     summary:
       "Features that cost money (AI calls, voice, and text or email sending) have rate limits, spending budgets and automatic pauses. When a limit is reached, chat carries on with the scripted questions instead of failing. The directory, the map and the crisis lines have no limits.",
     points: [
@@ -447,7 +525,7 @@ export const SECTIONS: HowItWorksSection[] = [
       "The counters hold no resident data. A network address is shortened and scrambled with a key that changes every day, and raw addresses and message text are never stored. A text or email recipient is counted by a scrambled form of the address, up to three messages a day.",
     ],
     limits: [
-      "The counters are kept in memory in each server copy. A restart resets them, and with several copies the real limits are higher (see How it scales).",
+      "The counters are kept in memory in each server copy. A restart resets them, and with several copies the real limits are higher (see the hosting and scale section).",
       "Dollar figures are estimates from a copied price list, not OpenAI's bill.",
       "Voice budgets are advisory until raw-audio sessions run through the server (issue #29). A session can run longer than it was charged for.",
       "Proof of work slows scripts. It does not stop a well-funded attacker.",
@@ -467,7 +545,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "staff-tools",
-    title: "Staff console and partner import",
+    title: "Staff console: partner lists become drafts that staff review",
+    detailsLabel: "See the console and import safeguards",
+    limitsLabel: "Known limits of the console and import",
+    roadmap:
+      "Phase 2: regular updates from 211 and partner lists arrive as drafts for staff review, and health leaders get demand signals: counts of needs by topic, language and ZIP code, with no conversation text, designed with a privacy office before any data is collected. Today the console's analytics are sample data.",
     summary:
       "The staff console shows the screens an agency would use to run the guide. Most of its data is made up for the demo. Its service directory is the live catalog.",
     points: [
@@ -499,7 +581,11 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "research",
-    title: "The catalog research agent",
+    title: "Research agent: drafts with sources, and staff decide what goes live",
+    detailsLabel: "See how a research job runs and is checked",
+    limitsLabel: "Known limits of the research agent",
+    roadmap:
+      "Phase 2: the agent rechecks provider websites on a schedule for changed hours and contact details, and stages each change for staff review. Today it drafts new entries only, when staff start a job.",
     summary:
       "Staff enter a county and a topic, such as food pantries, and get back draft catalog entries built from public web pages, with a source link and a quote for each value. Staff review every draft, and nothing reaches the live catalog on its own.",
     points: [
@@ -544,16 +630,18 @@ export const SECTIONS: HowItWorksSection[] = [
   },
   {
     id: "status",
-    title: "In place and pending",
+    title: "Running today, in progress, and the Phase 2 roadmap",
+    detailsLabel: "See how each status is defined and tracked",
+    limitsLabel: "Known limits before real resident use",
     summary:
-      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come.",
+      "Basic web protections and the safeguards described on this page are running. Staff sign-in, abuse detection and vendor agreements are still to come. The Phase 2 roadmap is the path the grant would fund: a multi-city standard, replication in more cities, a staff-checked catalog, and the agreements and reviews that real resident use needs. None of the roadmap is built yet.",
     points: [
-      "\"In place\" means it is in the code and running. \"In progress\" means work has started and an open issue tracks it; it is not active in this deployment yet. \"Not built\" means nothing in the code provides it.",
+      "\"In place\" means it is in the code and running. \"In progress\" means work has started and an open issue tracks it; it is not active in this deployment yet. \"Phase 2 roadmap\" lists planned next steps; nothing in the code provides them yet.",
       "The overall plan for abuse and cost protection is issue #25. The plan for the staff console is issue #14.",
       "A security assessment dated 16 November 2026 lists what must change before real residents use the guide. A remediation plan sets the order of work. Both files are listed under Where this is in the code.",
     ],
     limits: [
-      "This is a demonstration. It should not hold real resident records until the items in the status list marked In progress and Not built are in place.",
+      "This is a demonstration. It should not hold real resident records until the In progress items, and the vendor agreements, staff catalog checks and privacy-office review on the roadmap, are in place.",
       "Staff sign-in is a stub. It is simulated in the browser, the server does not check who reads the console's data, and edits are checked with one shared secret, not individual accounts.",
       "The access-code gate is for private demos. Codes are one per person or group. It is not a sign-in and keeps no record of visits.",
     ],
@@ -584,7 +672,7 @@ export interface Protection {
 export const STATUS_LABELS: Record<ProtectionStatus, string> = {
   in_place: "In place",
   in_progress: "In progress",
-  not_planned: "Not built",
+  not_planned: "Phase 2 roadmap: multi-city standard and replication",
 };
 
 export const PROTECTIONS: Protection[] = [
@@ -603,7 +691,16 @@ export const PROTECTIONS: Protection[] = [
   { status: "in_progress", issue: 14, label: "Staff sign-in with roles, saved catalog edits, real analytics, audit log and reports" },
   { status: "in_place", issue: 20, label: "Eligibility rule editing and service authoring in the console, checked against the data-pack contract (edits stay on one server copy until exported)" },
   { status: "in_place", issue: 18, label: "A catalog research agent for staff that drafts service records from public web pages, with a source link and quote for each field. Its worker runs on Railway and stays off until an OpenAI key is set there. Staff approve each search plan before it runs, review every draft, and merge exported drafts into the data pack by hand; nothing it drafts goes live on its own" },
+  // Phase 2 roadmap (status not_planned): planned next steps, none of them built. Write each as a plan.
+  { status: "not_planned", label: "A shared multi-city standard for service data and city settings, built from this guide's data-pack format, so any city or partner can publish and check records the same way" },
+  { status: "not_planned", label: "Replication: more cities run their own copy from the standard, each proved outside city systems first and then moved inside city IT" },
+  { status: "not_planned", label: "Tested cloud setups (landing zones) for AWS, Azure and Google Cloud, applied to live accounts; today's templates are starters" },
+  { status: "not_planned", label: "Staff checking each catalog record against the provider, with the site showing who checked it and when" },
+  { status: "not_planned", label: "Regular updates from 211 and partner lists, arriving as drafts for staff review" },
+  { status: "not_planned", label: "The research agent rechecking provider websites for changed hours and contact details, with each change staged for staff review" },
+  { status: "not_planned", label: "Demand signals for health leaders: counts of needs by topic, language and ZIP code, with no conversation text, designed with a privacy office first" },
+  { status: "not_planned", label: "Name and address detection in many languages, running inside the deployment's own network as a second layer after the fixed rules" },
+  { status: "not_planned", label: "A published measurement of crisis-check speed and accuracy in each language, with native-speaker review of the phrase lists" },
   { status: "not_planned", label: "Data processing and data retention agreements with OpenAI and the text and email vendors (contracts the operator signs; no code provides them)" },
-  { status: "not_planned", label: "Staff checking each catalog record against the provider" },
   { status: "not_planned", label: "Privacy-office review of the AI, privacy and voice notices" },
 ];
