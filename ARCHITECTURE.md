@@ -80,6 +80,8 @@ Every intake request follows the same steps (`backend/app/routers/intake.py`):
 
 Endpoints under `/api/v1/intake`: `personas`, `load-persona`, `start`, `message`, `results`, `plan`, `share`, `voice-config` (no body, no resident data; returns the effective voice `mode`, `raw_audio_allowed` and `live_ai`), `realtime/client-secret`, `realtime/tool`, `realtime/transcript`, and `realtime/debug*`. `realtime/client-secret`, `realtime/tool` and `realtime/transcript` return 403 unless raw-audio voice is enabled. The debug endpoints return 404 unless `REALTIME_DEBUG_LOG_ENABLED` is set. `/results` makes no model call. `/plan` uses the model when live AI is on, otherwise the rules sequencer.
 
+`GET /api/v1/about` (public, behind the access gate when it is on) returns configuration only, for the "How it works" page: app name, whether live AI is on, the text model and both reasoning efforts (agent and plan ordering), the tool-round cap, the text agent's tool names, the effective voice mode, the redaction kinds (`pii.PLACEHOLDERS`), the intake size caps, and catalog counts (services, services with `last_verified_date` and `verified_by` recorded, categories, local crisis lines). No keys, hostnames or environment values, and no model call.
+
 Because the backend holds no per-resident state, replicas need no session affinity and a restart loses nothing a resident needs.
 
 ## Backend module map
@@ -96,6 +98,7 @@ Because the backend holds no per-resident state, replicas need no session affini
 | `routers/intake.py` | Stateless intake, results, plan, share, realtime voice endpoints |
 | `routers/services.py` | Catalog list, search and detail |
 | `routers/admin.py` | Demo analytics and audit data; catalog writes behind `X-Admin-Token` |
+| `routers/about.py` | `GET /api/v1/about`: deployment facts for the How it works page (configuration only) |
 
 `backend/app/services/`
 
@@ -130,8 +133,8 @@ Because the backend holds no per-resident state, replicas need no session affini
 
 `frontend/src/`
 
-- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`; and `pages/admin/` for the staff console (demo data).
-- `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`).
+- `pages/` resident routes: `Landing`, `Intake`, `DemoIntake`, `Results`, `ServiceDirectory`, `ServiceDetail`, `MapView`, `Login`, `HowItWorks` (`/how-it-works`, also at `/admin/how-it-works` inside the console; lazy-loaded; copy in `pages/howItWorks/content.ts`, live values from `GET /api/v1/about`); and `pages/admin/` for the staff console (demo data).
+- `components/`, grouped by feature: `landing/` (`NeedNavigator`), `chat/`, `results/`, `services/`, `map/`, `layout/` (including `StartOverButton`), `common/` (including `PrivacyNotice`, `LanguageSelector`, `catalogFilters`, `FlowDiagram`).
 - `lib/`: `api.ts` (API client), `session.ts` (client-held intake state), `piiGuard.ts` (client PII pre-flight), `share.ts`, plus helpers.
 - `hooks/`: `useBrandConfig`, `useRealtimeVoiceSession` (WebRTC voice), `useAuth` (stub).
 - `theme/`: MUI theme built from the city config, plus the contrast gate and the theme guard test.

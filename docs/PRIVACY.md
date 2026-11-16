@@ -50,6 +50,8 @@ The notice is translated for Spanish, Vietnamese, Chinese, and Arabic.
 
 The greeting no longer calls the conversation "confidential", because typed text is sent to OpenAI and, in the opt-in `realtime_audio` voice mode, voice audio goes to OpenAI directly. Demo persona sessions (`POST /api/v1/intake/load-persona`) open with the persona's scripted first message instead of a greeting, so they don't show this notice. They are synthetic residents for staff demos. The landing page and the chat welcome say the same thing in short form ("Uses AI (OpenAI)", don't share names or ID numbers) and make no confidentiality promise.
 
+The privacy notice above the chat and search boxes (`PrivacyNotice.tsx`) ends with a "How this works" link to `/how-it-works#pii`, and the landing page footer links to `/how-it-works`. That page explains in plain language what is removed, what is sent to OpenAI, what the server keeps, and the limits of each protection, with the running deployment's model, voice mode and catalog counts read from `GET /api/v1/about`. It is English-only.
+
 ## PII redaction before the model
 
 `backend/app/services/pii.py` removes high-risk identifiers from resident-written text using fixed patterns (no AI involved). It is the authority; the browser runs a mirror of it first (see "Client pre-flight"). Each match is replaced with a placeholder:
