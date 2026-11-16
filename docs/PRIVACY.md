@@ -203,7 +203,7 @@ The research agent (#18) is a staff tool that drafts catalog entries from public
 - **No resident data.** A job's input is a place, a topic, categories, seed URLs and allowed domains typed by staff. Nothing from the intake goes to the worker.
 - **What the worker stores.** Job parameters, the public page text it fetched, the drafts built from it with their source quotes, and job events, in its own Postgres (SQLite in `inline` mode). The staff actor recorded on a job is the `X-Staff-Role` value or `token`. Finished jobs are deleted after `JOB_RETENTION_DAYS` (30).
 - **What goes to OpenAI.** Planning, extraction and checking prompts that contain the place, topic and fetched public page text, through the Responses API with `store=False` and the `OPENAI_RESEARCH_MODEL` model (default `gpt-6.1-sol`). `OPENAI_RESEARCH_API_KEY` can give it a separate OpenAI project and spend cap.
-- **Where search queries go.** With `RESEARCH_SEARCH_PROVIDER=searxng`, to the operator's own SearXNG, which forwards them to DuckDuckGo, Brave and Bing. With `openai_web_search`, to OpenAI. The queries name the place and topic, nothing about a resident.
+- **Where search queries go.** With `RESEARCH_SEARCH_PROVIDER=searxng`, to the operator's own SearXNG, which forwards them to Brave, Google and Bing. With `openai_web_search`, to OpenAI. The queries name the place and topic, nothing about a resident.
 - **Pages fetched.** The worker identifies itself with `RESEARCH_USER_AGENT`, honours `robots.txt`, and reads public pages only (see SECURITY.md for the address rules).
 - **Personal contact details.** An email that looks like a person's (`first.last@`) is removed from a draft and flagged; drafts keep organisation contacts only.
 
