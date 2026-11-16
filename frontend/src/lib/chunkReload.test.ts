@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ChunkLoadError, importWithReload, type ReloadEnv } from "./chunkReload";
+import { ChunkLoadError, importWithReload, reloadFresh, type ReloadEnv } from "./chunkReload";
 
 function fakeEnv(overrides: Partial<ReloadEnv> = {}) {
   let stored: number | null = null;
@@ -80,5 +80,26 @@ describe("importWithReload", () => {
     const { env } = fakeEnv({ markReload: () => false });
     await expect(importWithReload(failing, env)).rejects.toBeInstanceOf(ChunkLoadError);
     expect(env.reload).not.toHaveBeenCalled();
+  });
+});
+
+describe("reloadFresh", () => {
+  it("unregisters every service worker before reloading", async () => {
+    const order: string[] = [];
+    const reg = { unregister: vi.fn(async () => (order.push("unregister"), true)) };
+    vi.stubGlobal("navigator", { serviceWorker: { getRegistrations: async () => [reg, reg] } });
+    vi.stubGlobal("window", { location: { reload: () => order.push("reload") } });
+    await reloadFresh();
+    expect(order).toEqual(["unregister", "unregister", "reload"]);
+    vi.unstubAllGlobals();
+  });
+
+  it("still reloads when service workers are unavailable", async () => {
+    const reload = vi.fn();
+    vi.stubGlobal("navigator", {});
+    vi.stubGlobal("window", { location: { reload } });
+    await reloadFresh();
+    expect(reload).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
   });
 });
