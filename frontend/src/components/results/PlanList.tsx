@@ -1,54 +1,39 @@
-import { useState } from "react";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
-import Collapse from "@mui/material/Collapse";
-import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import StartHereHero from "./StartHereHero";
 import PlanItemRow from "./PlanItemRow";
+import MoreServices from "./MoreServices";
 import type { ApplicationOrderItem } from "@/lib/api";
 import type { ServiceMatch } from "@/types";
+import { otherMatches, planSteps } from "@/lib/planSteps";
 import { makeResultsT } from "@/lib/resultsI18n";
-
-// Display caps. ≤5 in the primary plan matches working-memory limits for
-// residents in scarcity (Cowan 2001 ~4±1 chunks; Iyengar & Lepper 2000
-// jam study; Mullainathan & Shafir 2013 Scarcity). Extended cap of 12
-// keeps the long-tail option without paying full choice-overload cost.
-const PLAN_PRIMARY_CAP = 5;
-const PLAN_EXTENDED_CAP = 12;
 
 interface PlanListProps {
   items: ApplicationOrderItem[];
   matches: ServiceMatch[];
   /** Opened from the resident's plan: detail pages link back to it. */
   fromPlan?: boolean;
-  onShowAll: () => void;
   language?: string;
 }
 
+/**
+ * The plan: a short ordered set of steps (planSteps caps it), then every
+ * other match in a collapsed "More services that may help" section.
+ */
 export default function PlanList({
   items,
   matches,
   fromPlan,
-  onShowAll,
   language,
 }: PlanListProps) {
-  const [extendedOpen, setExtendedOpen] = useState(false);
   const t = makeResultsT(language);
-
-  const topItem = items[0];
-  const topMatch = topItem
-    ? matches.find((m) => m.service.id === topItem.service_id)
-    : undefined;
-
-  const primary = items.slice(1, PLAN_PRIMARY_CAP);
-  const extended = items.slice(PLAN_PRIMARY_CAP, PLAN_EXTENDED_CAP);
-  const beyondExtended = Math.max(items.length - PLAN_EXTENDED_CAP, 0);
-
+  const steps = planSteps(items);
+  const topItem = steps[0];
   if (!topItem) return null;
+
+  const topMatch = matches.find((m) => m.service.id === topItem.service_id);
+  const rest = steps.slice(1);
 
   return (
     <Box>
@@ -59,77 +44,26 @@ export default function PlanList({
         language={language}
       />
 
-      {primary.length > 0 && (
-        <Box sx={{ mt: 1, mb: 2 }}>
+      {rest.length > 0 && (
+        <Box sx={{ mt: 1, mb: 3 }}>
           <Typography
             variant="overline"
+            component="h2"
             sx={{ display: "block", color: "text.secondary", mb: 1 }}
           >
             {t("then_these")}
           </Typography>
-          <Stack spacing={1}>
-            {primary.map((item, idx) => (
-              <PlanItemRow
-                key={item.service_id}
-                item={item}
-                rank={idx + 2}
-                fromPlan={fromPlan}
-              />
+          <Stack component="ol" spacing={1} sx={{ listStyle: "none", m: 0, p: 0 }}>
+            {rest.map((item, idx) => (
+              <li key={item.service_id}>
+                <PlanItemRow item={item} rank={idx + 2} fromPlan={fromPlan} />
+              </li>
             ))}
           </Stack>
         </Box>
       )}
 
-      {extended.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Button
-            variant="outlined"
-            size="large"
-            fullWidth
-            onClick={() => setExtendedOpen((v) => !v)}
-            endIcon={extendedOpen ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-            sx={{ minHeight: 52 }}
-          >
-            {extendedOpen
-              ? t("show_fewer")
-              : t("see_n_more", { n: extended.length })}
-          </Button>
-          <Collapse in={extendedOpen} unmountOnExit>
-            <Stack spacing={1} sx={{ mt: 1.5 }}>
-              {extended.map((item, idx) => (
-                <PlanItemRow
-                  key={item.service_id}
-                  item={item}
-                  rank={idx + PLAN_PRIMARY_CAP + 1}
-                  fromPlan={fromPlan}
-                />
-              ))}
-            </Stack>
-          </Collapse>
-        </Box>
-      )}
-
-      {beyondExtended > 0 && (
-        <>
-          <Divider sx={{ my: 2 }} />
-          <Box sx={{ textAlign: "center", mb: 1 }}>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 1 }}
-            >
-              {t("n_more_matched", { n: beyondExtended })}
-            </Typography>
-            <Button
-              size="small"
-              onClick={onShowAll}
-              sx={{ fontWeight: 600 }}
-            >
-              {t("browse_all")}
-            </Button>
-          </Box>
-        </>
-      )}
+      <MoreServices matches={otherMatches(matches, steps)} language={language} />
     </Box>
   );
 }

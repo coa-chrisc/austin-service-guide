@@ -119,3 +119,41 @@ def test_loaded_persona_stores_the_scripted_conversation(client):
         json={"state": res.json()["state"], "message": "hello"},
     )
     assert follow_up.status_code == 400
+
+
+def test_persona_plan_uses_rules_order_without_a_model_call(client, monkeypatch):
+    """Demo replays are scripted, so their plan is the deterministic rules
+    order, built instantly, even when live AI is on."""
+    from app.models import IntakeState
+    from app.services.intake_state import session_from_state
+    from app.services.plan import rules_plan
+    from tests.test_intake import _fake_openai
+
+    calls = _fake_openai(monkeypatch, '{"summary": "x", "items": []}')
+    state = client.post(
+        "/api/v1/intake/load-persona", json={"persona_id": "heat-outdoor-worker"}
+    ).json()["state"]
+    planned = client.post("/api/v1/intake/plan", json={"state": state})
+    assert planned.status_code == 200
+    plan = planned.json()["plan"]
+    assert calls == []
+    assert plan["ai_generated"] is False
+    expected = rules_plan(session_from_state(IntakeState.model_validate(state)))
+    assert [i["service_id"] for i in plan["items"]] == [i.service_id for i in expected.items]
+
+
+def test_live_intake_plan_uses_the_plan_reasoning_effort(client, monkeypatch):
+    """A non-persona intake still gets the model plan, at its own effort."""
+    from app.config import get_settings
+    from tests.test_intake import _fake_openai
+
+    calls = _fake_openai(monkeypatch, '{"summary": "x", "items": []}')
+    monkeypatch.setattr(get_settings(), "openai_plan_reasoning_effort", "low")
+    state = client.post(
+        "/api/v1/intake/load-persona", json={"persona_id": "heat-outdoor-worker"}
+    ).json()["state"]
+    state["entry_source"] = ""
+    planned = client.post("/api/v1/intake/plan", json={"state": state})
+    assert planned.status_code == 200
+    assert len(calls) == 1
+    assert calls[0]["reasoning"] == {"effort": "low"}

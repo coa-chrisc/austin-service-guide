@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -16,13 +16,11 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import ServiceDetailCard from "@/components/services/ServiceDetailCard";
 import ServiceMap from "@/components/map/ServiceMap";
-import { getServiceBySlug, getIntakeResults } from "@/lib/api";
-import { hasCompletedPlan, loadIntakeState } from "@/lib/session";
+import { getServiceBySlug } from "@/lib/api";
+import { loadIntakeState } from "@/lib/session";
+import { planNavigation } from "@/lib/planSteps";
+import { makeResultsT } from "@/lib/resultsI18n";
 import type { Service, MapPin } from "@/types";
-
-interface PlanContext {
-  slugs: string[];
-}
 
 export default function ServiceDetail() {
   const { slug } = useParams<{ slug: string }>();
@@ -33,7 +31,9 @@ export default function ServiceDetail() {
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plan, setPlan] = useState<PlanContext | null>(null);
+  // Set when the resident moved with prev/next, so focus can follow.
+  const stepNavRef = useRef(false);
+  const stepLabelRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -44,36 +44,33 @@ export default function ServiceDetail() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  // Load plan context (matched service slugs in plan order) from this tab's
-  // intake state when the page was opened from the plan (?plan=1).
-  useEffect(() => {
-    const state = loadIntakeState();
-    if (!fromPlan || !state || !hasCompletedPlan(state)) {
-      setPlan(null);
-      return;
-    }
-    getIntakeResults(state)
-      .then((res) => {
-        const slugs = (res.matches ?? []).map((m) => m.service.slug);
-        setPlan(slugs.length > 0 ? { slugs } : null);
-      })
-      .catch(() => setPlan(null));
-  }, [fromPlan]);
+  // Plan context from this tab's intake state when opened from the plan
+  // (?plan=1): a plan step steps through the plan's few ordered steps only
+  // ("Step 2 of 5"); any other match just links back to the plan.
+  const intakeState = useMemo(() => (fromPlan ? loadIntakeState() : null), [fromPlan]);
+  const planNav = useMemo(
+    () => (slug && service ? planNavigation(intakeState, slug, service.id) : null),
+    [intakeState, slug, service],
+  );
+  const t = makeResultsT(intakeState?.language);
 
-  const planNav = useMemo(() => {
-    if (!plan || !slug) return null;
-    const idx = plan.slugs.indexOf(slug);
-    if (idx === -1) return null;
-    return {
-      index: idx,
-      total: plan.slugs.length,
-      prevSlug: idx > 0 ? plan.slugs[idx - 1] : null,
-      nextSlug: idx < plan.slugs.length - 1 ? plan.slugs[idx + 1] : null,
-    };
-  }, [plan, slug]);
+  // After prev/next, the page re-renders with the new service: move focus to
+  // the step label so keyboard and screen-reader users hear "Step 3 of 5".
+  useEffect(() => {
+    if (!loading && service?.slug === slug && stepNavRef.current) {
+      stepNavRef.current = false;
+      stepLabelRef.current?.focus();
+    }
+  }, [loading, service, slug]);
+
+  const goToStep = (target: string | null) => {
+    if (!target) return;
+    stepNavRef.current = true;
+    navigate(`/services/${target}?plan=1`);
+  };
 
   const inPlanContext = !!planNav;
-  const planQs = inPlanContext ? "?plan=1" : "";
+  const step = planNav?.kind === "step" ? planNav : null;
 
   if (loading) {
     return (
@@ -148,9 +145,12 @@ export default function ServiceDetail() {
                   whiteSpace: "nowrap",
                 }}
               >
-                Back to my plan
+                {t("back_to_my_plan")}
               </Button>
               <Typography
+                ref={stepLabelRef}
+                component="span"
+                tabIndex={-1}
                 variant="body2"
                 color="text.primary"
                 sx={{
@@ -158,34 +158,35 @@ export default function ServiceDetail() {
                   textAlign: "center",
                   fontWeight: 700,
                   fontSize: { xs: 14, sm: 15 },
+                  outline: "none",
                 }}
               >
-                Service {planNav!.index + 1} of {planNav!.total}
+                {step
+                  ? t("step_n_of_total", { i: step.index + 1, total: step.total })
+                  : t("other_match")}
               </Typography>
-              <IconButton
-                size="small"
-                disabled={!planNav!.prevSlug}
-                onClick={() =>
-                  planNav!.prevSlug &&
-                  navigate(`/services/${planNav!.prevSlug}${planQs}`)
-                }
-                aria-label="Previous service"
-                sx={{ minWidth: 44, minHeight: 44 }}
-              >
-                <ChevronLeftIcon />
-              </IconButton>
-              <IconButton
-                size="small"
-                disabled={!planNav!.nextSlug}
-                onClick={() =>
-                  planNav!.nextSlug &&
-                  navigate(`/services/${planNav!.nextSlug}${planQs}`)
-                }
-                aria-label="Next service"
-                sx={{ minWidth: 44, minHeight: 44 }}
-              >
-                <ChevronRightIcon />
-              </IconButton>
+              {step && (
+                <>
+                  <IconButton
+                    size="small"
+                    disabled={!step.prevSlug}
+                    onClick={() => goToStep(step.prevSlug)}
+                    aria-label={t("previous_step")}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    disabled={!step.nextSlug}
+                    onClick={() => goToStep(step.nextSlug)}
+                    aria-label={t("next_step")}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </>
+              )}
             </Box>
           </Container>
         </Paper>
